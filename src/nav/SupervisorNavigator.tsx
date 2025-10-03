@@ -2,10 +2,19 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 import DailyReportsScreen from '../supervisor/DailyReportsScreen';
 import MaterialTrackingScreen from '../supervisor/MaterialTrackingScreen';
 import SiteInspectionScreen from '../supervisor/SiteInspectionScreen';
+
+export type RootStackParamList = {
+  Auth: undefined;
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+};
 
 export type SupervisorTabParamList = {
   DailyReports: undefined;
@@ -13,9 +22,13 @@ export type SupervisorTabParamList = {
   SiteInspection: undefined;
 };
 
+type SupervisorNavigatorProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Supervisor'>;
+};
+
 const Tab = createBottomTabNavigator<SupervisorTabParamList>();
 
-const SupervisorNavigator = ({ navigation: parentNavigation }) => {
+const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: parentNavigation }) => {
   const handleLogout = () => {
     parentNavigation.dispatch(
       CommonActions.reset({

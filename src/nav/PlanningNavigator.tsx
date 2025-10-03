@@ -2,11 +2,20 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 import GanttChartScreen from '../planning/GanttChartScreen';
 import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
 import MilestoneTrackingScreen from '../planning/MilestoneTrackingScreen';
+
+export type RootStackParamList = {
+  Auth: undefined;
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+};
 
 export type PlanningTabParamList = {
   GanttChart: undefined;
@@ -15,9 +24,13 @@ export type PlanningTabParamList = {
   MilestoneTracking: undefined;
 };
 
+type PlanningNavigatorProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Planning'>;
+};
+
 const Tab = createBottomTabNavigator<PlanningTabParamList>();
 
-const PlanningNavigator = ({ navigation: parentNavigation }) => {
+const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
   const handleLogout = () => {
     parentNavigation.dispatch(
       CommonActions.reset({

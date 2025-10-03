@@ -3,18 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'rea
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 
-type AuthStackParamList = {
-  Login: undefined;
-  RoleSelection: {
-    userId: string;
-    username: string;
-  };
-};
+import { AuthStackParamList, RootStackParamList } from './types';
 
 type RoleSelectionScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,
   'RoleSelection'
->;
+> & 
+StackNavigationProp<RootStackParamList>; // Adding the root stack navigation for role navigation
 
 type RoleSelectionScreenRouteProp = RouteProp<
   AuthStackParamList,
@@ -47,21 +42,33 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
     
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));
 
       // Navigate to appropriate dashboard based on selected role
       switch (selectedRole) {
         case 'supervisor':
-          navigation.navigate('Supervisor');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Supervisor' }],
+          });
           break;
         case 'manager':
-          navigation.navigate('Manager');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Manager' }],
+          });
           break;
         case 'planning':
-          navigation.navigate('Planning');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Planning' }],
+          });
           break;
         case 'logistics':
-          navigation.navigate('Logistics');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Logistics' }],
+          });
           break;
         default:
           Alert.alert('Error', 'Invalid role selected');

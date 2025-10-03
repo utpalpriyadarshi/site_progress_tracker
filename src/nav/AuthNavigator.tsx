@@ -3,13 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../auth/LoginScreen';
 import RoleSelectionScreen from './RoleSelectionScreen';
 
-export type AuthStackParamList = {
-  Login: undefined;
-  RoleSelection: {
-    userId: string;
-    username: string;
-  };
-};
+import { AuthStackParamList } from './types';
 
 const Stack = createStackNavigator<AuthStackParamList>();
 

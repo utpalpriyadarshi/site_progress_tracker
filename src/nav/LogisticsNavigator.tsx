@@ -2,11 +2,20 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 import MaterialTrackingScreen from '../logistics/MaterialTrackingScreen';
 import EquipmentManagementScreen from '../logistics/EquipmentManagementScreen';
 import DeliverySchedulingScreen from '../logistics/DeliverySchedulingScreen';
 import InventoryManagementScreen from '../logistics/InventoryManagementScreen';
+
+export type RootStackParamList = {
+  Auth: undefined;
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+};
 
 export type LogisticsTabParamList = {
   MaterialTracking: undefined;
@@ -15,9 +24,13 @@ export type LogisticsTabParamList = {
   InventoryManagement: undefined;
 };
 
+type LogisticsNavigatorProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Logistics'>;
+};
+
 const Tab = createBottomTabNavigator<LogisticsTabParamList>();
 
-const LogisticsNavigator = ({ navigation: parentNavigation }) => {
+const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNavigation }) => {
   const handleLogout = () => {
     parentNavigation.dispatch(
       CommonActions.reset({

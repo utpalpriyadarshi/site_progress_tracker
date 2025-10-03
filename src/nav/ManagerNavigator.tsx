@@ -2,11 +2,20 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 import ProjectOverviewScreen from '../manager/ProjectOverviewScreen';
 import TeamManagementScreen from '../manager/TeamManagementScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import ResourceAllocationScreen from '../manager/ResourceAllocationScreen';
+
+export type RootStackParamList = {
+  Auth: undefined;
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+};
 
 export type ManagerTabParamList = {
   ProjectOverview: undefined;
@@ -15,9 +24,13 @@ export type ManagerTabParamList = {
   ResourceAllocation: undefined;
 };
 
+type ManagerNavigatorProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Manager'>;
+};
+
 const Tab = createBottomTabNavigator<ManagerTabParamList>();
 
-const ManagerNavigator = ({ navigation: parentNavigation }) => {
+const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentNavigation }) => {
   const handleLogout = () => {
     parentNavigation.dispatch(
       CommonActions.reset({

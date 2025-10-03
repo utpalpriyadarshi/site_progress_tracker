@@ -8,13 +8,7 @@ import ManagerNavigator from './ManagerNavigator';
 import PlanningNavigator from './PlanningNavigator';
 import LogisticsNavigator from './LogisticsNavigator';
 
-export type RootStackParamList = {
-  Auth: undefined;
-  Supervisor: undefined;
-  Manager: undefined;
-  Planning: undefined;
-  Logistics: undefined;
-};
+import { RootStackParamList } from './types';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
