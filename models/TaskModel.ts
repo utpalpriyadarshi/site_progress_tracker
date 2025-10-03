@@ -8,6 +8,8 @@ export default class TaskModel extends Model {
   static associations: Associations = {
     project: { type: 'belongs_to', key: 'project_id' },
     progress_reports: { type: 'has_many', foreignKey: 'task_id' },
+    progress_logs: { type: 'has_many', foreignKey: 'task_id' },
+    hindrances: { type: 'has_many', foreignKey: 'task_id' },
   };
 
   @field('project_id') projectId!: string;

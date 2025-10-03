@@ -1,7 +1,6 @@
-Prompt 2: Navigation Structure
+Prompt 3: Database Models
 
-Create a navigation structure for construction management app with:
-- Role-based navigators (SupervisorNavigator, ManagerNavigator, PlanningNavigator,LogisticNavigator)
-- Authentication flow with role selection
-- Tab navigation for role-specific workflows
-- Construction-specific screen relationships
+Design WatermelonDB models for construction management:
+- Project, Site, Category, Item, ProgressLog, Hindrance, Material
+- Relationships between construction entities
+- Offline sync considerations for site supervisors
