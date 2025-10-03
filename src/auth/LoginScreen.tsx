@@ -2,24 +2,27 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-type RootStackParamList = {
-  ManagerDashboard: undefined;
-  PlanningDashboard: undefined;
-  SupervisorDashboard: undefined;
+type AuthStackParamList = {
+  Login: undefined;
+  RoleSelection: {
+    userId: string;
+    username: string;
+  };
 };
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ManagerDashboard'>;
+type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'RoleSelection'>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const defaultUsers: { [key: string]: { password: string; role: string } } = {
-    'admin': { password: 'admin123', role: 'manager' },
-    'manager': { password: 'manager123', role: 'manager' },
-    'supervisor': { password: 'supervisor123', role: 'supervisor' },
-    'planner': { password: 'planner123', role: 'planning' },
+  const defaultUsers: { [key: string]: { password: string; availableRoles: string[] } } = {
+    'admin': { password: 'admin123', availableRoles: ['manager', 'supervisor', 'planning', 'logistics'] },
+    'manager': { password: 'manager123', availableRoles: ['manager'] },
+    'supervisor': { password: 'supervisor123', availableRoles: ['supervisor'] },
+    'planner': { password: 'planner123', availableRoles: ['planning'] },
+    'logistics': { password: 'logistics123', availableRoles: ['logistics'] },
   };
 
   const handleLogin = async () => {
@@ -43,12 +46,11 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       // Simulate API call delay
       await new Promise<void>(resolve => setTimeout(resolve, 500));
 
-      // Navigate to appropriate dashboard based on role
-      navigation.replace(user.role === 'manager' 
-        ? 'ManagerDashboard' 
-        : user.role === 'planning' 
-          ? 'PlanningDashboard' 
-          : 'SupervisorDashboard');
+      // Navigate to role selection screen
+      navigation.replace('RoleSelection', { 
+        userId: username,
+        username: username
+      });
     } catch (error) {
       Alert.alert('Login Failed', 'Network error occurred');
       setIsLoading(false);
@@ -117,11 +119,18 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
           >
             <Text style={styles.demoButtonText}>Planner</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.demoButton}
+            onPress={() => handleDefaultLogin('logistics', 'logistics123')}
+          >
+            <Text style={styles.demoButtonText}>Logistics</Text>
+          </TouchableOpacity>
         </View>
       </View>
       
       <View style={styles.footer}>
-        <TouchableOpacity onPress={() => Alert.alert('Info', 'Default test accounts:\\n\\n- supervisor / supervisor123\\n- manager / manager123\\n- planner / planner123')}>
+        <TouchableOpacity onPress={() => Alert.alert('Info', 'Default test accounts:\\n\\n- supervisor / supervisor123\\n- manager / manager123\\n- planner / planner123\\n- logistics / logistics123')}>
           <Text style={styles.linkText}>Show Default Credentials</Text>
         </TouchableOpacity>
       </View>
