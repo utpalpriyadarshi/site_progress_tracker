@@ -6,24 +6,19 @@ export default class MaterialModel extends Model {
   static table = 'materials';
 
   static associations: Associations = {
-    project: { type: 'belongs_to', key: 'project_id' },
-    category: { type: 'belongs_to', key: 'category_id' },
-    material_logs: { type: 'has_many', foreignKey: 'material_id' },
+    item: { type: 'belongs_to', key: 'item_id' },
+    procurement_manager: { type: 'belongs_to', key: 'procurement_manager_id' }, // managed by procurement
   };
 
-  @field('project_id') projectId!: string;
-  @field('category_id') categoryId!: string;
   @field('name') name!: string;
-  @field('description') description!: string;
-  @field('category') category!: string; // concrete, steel, wood, etc. (keeping for compatibility)
-  @field('unit') unit!: string; // kg, m³, pieces, etc.
+  @field('item_id') itemId!: string; // belongs to item
   @field('quantity_required') quantityRequired!: number;
   @field('quantity_available') quantityAvailable!: number;
   @field('quantity_used') quantityUsed!: number;
-  @field('unit_cost') unitCost!: number;
+  @field('unit') unit!: string;
   @field('status') status!: string; // ordered, delivered, in_use, shortage
-  @date('delivery_date') deliveryDate!: Date;
   @field('supplier') supplier!: string;
+  @field('procurement_manager_id') procurementManagerId!: string; // managed by
 
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
