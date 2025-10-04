@@ -19,7 +19,4 @@ export default class MaterialModel extends Model {
   @field('status') status!: string; // ordered, delivered, in_use, shortage
   @field('supplier') supplier!: string;
   @field('procurement_manager_id') procurementManagerId!: string; // managed by
-
-  @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }

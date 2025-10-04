@@ -15,7 +15,4 @@ export default class SiteModel extends Model {
   @field('location') location!: string;
   @field('project_id') projectId!: string; // belongs to project
   @field('supervisor_id') supervisorId!: string; // assigned supervisor
-
-  @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }

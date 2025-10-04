@@ -19,7 +19,4 @@ export default class HindranceModel extends Model {
   @field('status') status!: string; // open, in_progress, resolved, closed
   @field('assigned_to') assignedTo!: string; // user ID
   @field('reported_by') reportedBy!: string; // user ID
-
-  @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }
