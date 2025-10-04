@@ -53,3 +53,26 @@ Please:
 4. Ensure offline-sync ready architecture
 
 Return the complete code for each file.
+
+PROMPT:5
+
+Now that our database is set up, let's build the first critical screen: Supervisor Daily Progress Reporting.
+
+PLEASE CREATE: src/supervisor/DailyReportsScreen.tsx
+
+REQUIREMENTS:
+1. Show a list of assigned Sites and Items for the supervisor
+2. For each Item, show: name, planned quantity, completed quantity, progress percentage
+3. Allow updating completed quantity with a simple +1/-1 or input field
+4. Add offline capability - updates should work without internet
+5. Show sync status (online/offline/syncing)
+6. Use React Native Paper components for UI
+7. Include a "Submit Progress" button that works offline
+
+TECH REQUIREMENTS:
+- Use WatermelonDB models we just created (Item, ProgressLog)
+- Implement offline-first pattern
+- Use React Native Paper for UI components
+- Follow the existing code style in the project
+
+Please provide the complete DailyReportsScreen.tsx code with proper TypeScript types and offline functionality.

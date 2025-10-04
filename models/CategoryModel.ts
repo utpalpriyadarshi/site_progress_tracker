@@ -11,7 +11,4 @@ export default class CategoryModel extends Model {
 
   @field('name') name!: string;
   @field('description') description!: string;
-
-  @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }

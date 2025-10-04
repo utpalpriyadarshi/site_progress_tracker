@@ -26,11 +26,11 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ## Step 1: Install Dependencies
 
-First, install all required npm dependencies:
+**IMPORTANT**: Always use `--legacy-peer-deps` flag when installing dependencies.
 
 ```sh
-# Using npm
-npm install
+# Using npm (REQUIRED: use --legacy-peer-deps)
+npm install --legacy-peer-deps
 
 # OR using Yarn
 yarn install
@@ -40,6 +40,14 @@ For iOS-specific setup (first time only):
 ```sh
 bundle install
 bundle exec pod install
+```
+
+### Installing New Packages
+
+When adding new packages, always use the `--legacy-peer-deps` flag:
+
+```sh
+npm install --save <package-name> --legacy-peer-deps
 ```
 
 ## Step 2: Start Metro
@@ -96,6 +104,44 @@ The app uses WatermelonDB for robust offline-first data management with the foll
 - **Hindrances**: Issues and obstacles affecting work
 - **Materials**: Construction materials with procurement tracking
 
+### WatermelonDB Important Notes
+
+**Field Naming Convention** (CRITICAL):
+- **Schema** uses `snake_case` column names (e.g., `supervisor_id`, `start_date`)
+- **Models** use `@field('snake_case')` decorator with camelCase property names
+- **Creating/Updating Records** MUST use camelCase property names
+
+```typescript
+// ✅ CORRECT - Use camelCase property names when creating records
+await database.write(async () => {
+  await database.collections.get('sites').create((site) => {
+    site.name = 'My Site';
+    site.supervisorId = 'supervisor-1';  // ✅ camelCase
+    site.projectId = 'project-123';      // ✅ camelCase
+  });
+});
+
+// ❌ WRONG - Do NOT use snake_case
+site.supervisor_id = 'supervisor-1';  // ❌ Will save as empty string!
+```
+
+**Querying Records** - Use snake_case column names:
+```typescript
+// ✅ CORRECT - Use snake_case in queries
+database.collections.get('sites')
+  .query(Q.where('supervisor_id', 'supervisor-1'))
+```
+
+**Timestamp Fields**:
+- Schema defines timestamps as `type: 'number'`
+- Models use `@field('field_name')` with `number` type (NOT `@date`)
+- Always pass timestamps as `new Date().getTime()` or a number
+
+**Auto-managed Fields**:
+- `created_at` and `updated_at` are automatically managed by WatermelonDB
+- Do NOT declare them in your models with decorators
+- They are accessible but should not be set manually
+
 ## Development Commands
 
 - **Testing**: `npm test` or `yarn test` - Run tests with Jest
@@ -151,7 +197,29 @@ When you want to forcefully reload, for example to reset the state of your app, 
 
 ## Troubleshooting
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+### Database Issues
+
+**Clear App Data** (if you need to reset the database):
+```sh
+# Android
+adb shell pm clear com.site_progress_tracker
+
+# iOS
+# Uninstall and reinstall the app
+```
+
+**Common Issues**:
+
+1. **"Cannot read property 'type' of undefined"**: This means there's a mismatch between model field decorators and schema. Ensure:
+   - All timestamp fields use `@field()` decorator, NOT `@date()`
+   - Field types in models match schema types
+   - No `@readonly @date` decorators for `created_at`/`updated_at`
+
+2. **Empty field values after insert**: You're using snake_case instead of camelCase when creating records. Always use camelCase property names.
+
+3. **Query returns no results**: Make sure to use snake_case column names in `Q.where()` queries.
+
+For general React Native issues, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
 ## Learn More
 

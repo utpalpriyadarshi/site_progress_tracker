@@ -11,11 +11,8 @@ export default class ProjectModel extends Model {
 
   @field('name') name!: string;
   @field('client') client!: string;
-  @date('start_date') startDate!: Date;
-  @date('end_date') endDate!: Date;
+  @field('start_date') startDate!: number; // timestamp
+  @field('end_date') endDate!: number; // timestamp
   @field('status') status!: string; // active, completed, on_hold, cancelled
   @field('budget') budget!: number;
-
-  @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }

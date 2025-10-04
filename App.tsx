@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 // Import navigation
 import MainNavigator from './src/nav/MainNavigator';
@@ -36,10 +37,12 @@ function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
-      <MainNavigator />
-    </SafeAreaProvider>
+    <PaperProvider>
+      <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" />
+        <MainNavigator />
+      </SafeAreaProvider>
+    </PaperProvider>
   );
 }
 

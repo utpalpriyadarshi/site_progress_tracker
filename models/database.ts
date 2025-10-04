@@ -12,6 +12,7 @@ import HindranceModel from './HindranceModel';
 
 const adapter = new SQLiteAdapter({
   schema,
+  dbName: 'ConstructionSiteDB',
 });
 
 export const database = new Database({
