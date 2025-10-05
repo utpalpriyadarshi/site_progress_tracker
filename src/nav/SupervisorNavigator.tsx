@@ -7,6 +7,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import DailyReportsScreen from '../supervisor/DailyReportsScreen';
 import MaterialTrackingScreen from '../supervisor/MaterialTrackingScreen';
 import SiteInspectionScreen from '../supervisor/SiteInspectionScreen';
+import SiteManagementScreen from '../supervisor/SiteManagementScreen';
+import ItemsManagementScreen from '../supervisor/ItemsManagementScreen';
+import { SiteProvider } from '../supervisor/context/SiteContext';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -19,6 +22,8 @@ export type RootStackParamList = {
 export type SupervisorTabParamList = {
   DailyReports: undefined;
   MaterialTracking: undefined;
+  ItemsManagement: undefined;
+  SiteManagement: undefined;
   SiteInspection: undefined;
 };
 
@@ -39,58 +44,82 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
   };
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconSymbol = '';
+    <SiteProvider>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconSymbol = '';
 
-          if (route.name === 'DailyReports') {
-            iconSymbol = '📝';
-          } else if (route.name === 'MaterialTracking') {
-            iconSymbol = '🚚';
-          } else if (route.name === 'SiteInspection') {
-            iconSymbol = '🔍';
-          }
+            if (route.name === 'DailyReports') {
+              iconSymbol = '📝';
+            } else if (route.name === 'MaterialTracking') {
+              iconSymbol = '🚚';
+            } else if (route.name === 'ItemsManagement') {
+              iconSymbol = '📋';
+            } else if (route.name === 'SiteManagement') {
+              iconSymbol = '🏗️';
+            } else if (route.name === 'SiteInspection') {
+              iconSymbol = '🔍';
+            }
 
-          return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-        headerRight: () => (
-          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
-            <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-          </TouchableOpacity>
-        ),
-      })}
-    >
-      <Tab.Screen 
-        name="DailyReports" 
-        component={DailyReportsScreen} 
-        options={{ 
-          title: 'Daily Reports',
-          headerShown: true,
-          headerTitle: 'Daily Reports',
-        }} 
-      />
-      <Tab.Screen 
-        name="MaterialTracking" 
-        component={MaterialTrackingScreen} 
-        options={{ 
-          title: 'Materials',
-          headerShown: true,
-          headerTitle: 'Material Tracking',
-        }} 
-      />
-      <Tab.Screen 
-        name="SiteInspection" 
-        component={SiteInspectionScreen} 
-        options={{ 
-          title: 'Inspections',
-          headerShown: true,
-          headerTitle: 'Site Inspections',
-        }} 
-      />
-    </Tab.Navigator>
+            return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
+          },
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: 'gray',
+          headerRight: () => (
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+            </TouchableOpacity>
+          ),
+        })}
+      >
+        <Tab.Screen
+          name="DailyReports"
+          component={DailyReportsScreen}
+          options={{
+            title: 'Reports',
+            headerShown: true,
+            headerTitle: 'Daily Reports',
+          }}
+        />
+        <Tab.Screen
+          name="ItemsManagement"
+          component={ItemsManagementScreen}
+          options={{
+            title: 'Items',
+            headerShown: true,
+            headerTitle: 'Manage Items',
+          }}
+        />
+        <Tab.Screen
+          name="MaterialTracking"
+          component={MaterialTrackingScreen}
+          options={{
+            title: 'Materials',
+            headerShown: true,
+            headerTitle: 'Material Tracking',
+          }}
+        />
+        <Tab.Screen
+          name="SiteManagement"
+          component={SiteManagementScreen}
+          options={{
+            title: 'Sites',
+            headerShown: true,
+            headerTitle: 'Manage Sites',
+          }}
+        />
+        <Tab.Screen
+          name="SiteInspection"
+          component={SiteInspectionScreen}
+          options={{
+            title: 'Inspection',
+            headerShown: true,
+            headerTitle: 'Site Inspections',
+          }}
+        />
+      </Tab.Navigator>
+    </SiteProvider>
   );
 };
 

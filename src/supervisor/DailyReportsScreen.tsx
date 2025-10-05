@@ -26,6 +26,8 @@ import { Q } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
 import ItemModel from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
+import { useSiteContext } from './context/SiteContext';
+import SiteSelector from './components/SiteSelector';
 
 interface ItemWithSite {
   item: ItemModel;
@@ -39,6 +41,7 @@ const DailyReportsScreenComponent = ({
   sites: SiteModel[];
   items: ItemModel[];
 }) => {
+  const { selectedSiteId, supervisorId } = useSiteContext();
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -66,11 +69,17 @@ const DailyReportsScreenComponent = ({
     return () => unsubscribe();
   }, []);
 
-  // Map items to their site names
+  // Map items to their site names and filter by selected site
   useEffect(() => {
     const mapItemsToSites = async () => {
       const mapped: ItemWithSite[] = [];
-      for (const item of items) {
+
+      // Filter items based on selected site
+      const filteredItems = selectedSiteId === 'all'
+        ? items
+        : items.filter(item => item.siteId === selectedSiteId);
+
+      for (const item of filteredItems) {
         const site = sites.find(s => s.id === item.siteId);
         mapped.push({
           item,
@@ -81,7 +90,7 @@ const DailyReportsScreenComponent = ({
     };
 
     mapItemsToSites();
-  }, [items, sites]);
+  }, [items, sites, selectedSiteId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -185,7 +194,7 @@ const DailyReportsScreenComponent = ({
               log.itemId = selectedItem.id;
               log.date = new Date().getTime(); // Convert to timestamp
               log.completedQuantity = newQuantity;
-              log.reportedBy = 'supervisor-1'; // In real app, use actual user ID
+              log.reportedBy = supervisorId; // Use actual supervisor ID from context
               log.photos = '[]';
               log.notes = notesInput || '';
               log.syncStatusField = isOnline ? 'synced' : 'pending';
@@ -273,6 +282,11 @@ const DailyReportsScreenComponent = ({
     return <Chip icon="cloud-off-outline" mode="outlined" style={styles.offlineChip}>Offline</Chip>;
   };
 
+  // Filter sites based on selection
+  const displayedSites = selectedSiteId === 'all'
+    ? sites
+    : sites.filter(site => site.id === selectedSiteId);
+
   return (
     <View style={styles.container}>
       {/* Header with sync status */}
@@ -281,20 +295,25 @@ const DailyReportsScreenComponent = ({
         {getSyncStatusChip()}
       </View>
 
+      {/* Site Selector */}
+      <View style={styles.selectorContainer}>
+        <SiteSelector />
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
         {/* Sites and Items List */}
-        {sites.length === 0 ? (
+        {displayedSites.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
               <Paragraph>No sites assigned to you yet.</Paragraph>
             </Card.Content>
           </Card>
         ) : (
-          sites.map(site => {
+          displayedSites.map(site => {
             const siteItems = itemsWithSites.filter(
               iws => iws.item.siteId === site.id,
             );
@@ -441,14 +460,21 @@ const DailyReportsScreenComponent = ({
 };
 
 // Enhance component with WatermelonDB observables
-const enhance = withObservables([], () => ({
+// Note: We use props to pass supervisorId from the wrapper component
+const enhance = withObservables(['supervisorId'], ({ supervisorId }: { supervisorId: string }) => ({
   sites: database.collections
     .get('sites')
-    .query(Q.where('supervisor_id', 'supervisor-1')), // In real app, use actual user ID
+    .query(Q.where('supervisor_id', supervisorId)),
   items: database.collections.get('items').query(),
 }));
 
-const DailyReportsScreen = enhance(DailyReportsScreenComponent);
+const EnhancedDailyReportsScreen = enhance(DailyReportsScreenComponent);
+
+// Wrapper component that provides context
+const DailyReportsScreen = () => {
+  const { supervisorId } = useSiteContext();
+  return <EnhancedDailyReportsScreen supervisorId={supervisorId} />;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -462,6 +488,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: 'white',
     elevation: 2,
+  },
+  selectorContainer: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    elevation: 1,
   },
   scrollView: {
     flex: 1,
