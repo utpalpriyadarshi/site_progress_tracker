@@ -58,6 +58,27 @@ export class SimpleDatabaseService {
         });
       });
 
+      const installationCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Installation';
+          category.description = 'Installation and assembly tasks';
+        });
+      });
+
+      const testingCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Testing';
+          category.description = 'Testing and quality assurance';
+        });
+      });
+
+      const commissioningCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Commissioning';
+          category.description = 'Commissioning and handover tasks';
+        });
+      });
+
       // ✅ Create sample items (construction work items)
       const foundationItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {

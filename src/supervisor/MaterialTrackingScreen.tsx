@@ -1,60 +1,102 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
-
-// Define an interface for the material data
-interface Material {
-  id: string;
-  name: string;
-  required: number;
-  available: number;
-  used: number;
-  unit: string;
-  status: 'shortage' | 'low' | 'ok';
-}
+import { Q } from '@nozbe/watermelondb';
+import { useSiteContext } from './context/SiteContext';
+import SiteSelector from './components/SiteSelector';
+import MaterialModel from '../../models/MaterialModel';
+import ItemModel from '../../models/ItemModel';
 
 // Sample Material Tracking screen for construction supervisors
-const MaterialTrackingScreenComponent = () => {
-  // Sample material data structure
-  const materials: Material[] = [
-    { id: '1', name: 'Concrete', required: 100, available: 90, used: 25, unit: 'm³', status: 'shortage' },
-    { id: '2', name: 'Steel Beams', required: 50, available: 45, used: 30, unit: 'pieces', status: 'low' },
-    { id: '3', name: 'Cement Bags', required: 200, available: 210, used: 120, unit: 'bags', status: 'ok' },
-    { id: '4', name: 'Rebar', required: 1000, available: 950, used: 600, unit: 'kg', status: 'shortage' },
-  ];
+const MaterialTrackingScreenComponent = ({
+  materials,
+  items,
+}: {
+  materials: MaterialModel[];
+  items: ItemModel[];
+}) => {
+  const { selectedSiteId } = useSiteContext();
+  const [filteredMaterials, setFilteredMaterials] = useState<MaterialModel[]>([]);
 
-  const renderMaterial = ({ item }: { item: Material }) => (
-    <View style={[
-      styles.materialItem, 
-      item.status === 'shortage' && styles.shortage,
-      item.status === 'low' && styles.low,
-      item.status === 'ok' && styles.ok
-    ]}>
-      <View style={styles.materialInfo}>
-        <Text style={styles.materialName}>{item.name}</Text>
-        <Text style={styles.materialDetails}>
-          Required: {item.required} {item.unit} | Available: {item.available} {item.unit} | Used: {item.used} {item.unit}
-        </Text>
+  // Filter materials based on selected site
+  useEffect(() => {
+    if (selectedSiteId === 'all') {
+      setFilteredMaterials(materials);
+    } else {
+      // Get items for selected site
+      const siteItems = items.filter(item => item.siteId === selectedSiteId);
+      const siteItemIds = siteItems.map(item => item.id);
+
+      // Filter materials that belong to items of the selected site
+      const siteMaterials = materials.filter(material =>
+        siteItemIds.includes(material.itemId)
+      );
+      setFilteredMaterials(siteMaterials);
+    }
+  }, [materials, items, selectedSiteId]);
+
+  const getStatusColor = (material: MaterialModel): string => {
+    const availablePercent = (material.quantityAvailable / material.quantityRequired) * 100;
+    if (availablePercent < 50) return 'shortage';
+    if (availablePercent < 80) return 'low';
+    return 'ok';
+  };
+
+  const renderMaterial = ({ item }: { item: MaterialModel }) => {
+    const status = getStatusColor(item);
+
+    return (
+      <View style={[
+        styles.materialItem,
+        status === 'shortage' && styles.shortage,
+        status === 'low' && styles.low,
+        status === 'ok' && styles.ok
+      ]}>
+        <View style={styles.materialInfo}>
+          <Text style={styles.materialName}>{item.name}</Text>
+          <Text style={styles.materialDetails}>
+            Required: {item.quantityRequired} {item.unit} | Available: {item.quantityAvailable} {item.unit} | Used: {item.quantityUsed} {item.unit}
+          </Text>
+          {item.supplier && (
+            <Text style={styles.supplierText}>Supplier: {item.supplier}</Text>
+          )}
+          <Text style={[styles.statusText, status === 'shortage' && styles.shortageText]}>
+            Status: {item.status}
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.updateButton}>
+          <Text style={styles.updateButtonText}>Update</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.updateButton}>
-        <Text style={styles.updateButtonText}>Update</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Material Tracking</Text>
-      <Text style={styles.subtitle}>Track material usage and identify shortages</Text>
-      
-      <FlatList
-        data={materials}
-        renderItem={renderMaterial}
-        keyExtractor={item => item.id}
-        style={styles.list}
-      />
-      
+      <View style={styles.header}>
+        <Text style={styles.title}>Material Tracking</Text>
+        <Text style={styles.subtitle}>Track material usage and identify shortages</Text>
+      </View>
+
+      {/* Site Selector */}
+      <View style={styles.selectorContainer}>
+        <SiteSelector />
+      </View>
+
+      {filteredMaterials.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No materials found for selected site</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredMaterials}
+          renderItem={renderMaterial}
+          keyExtractor={item => item.id}
+          style={styles.list}
+        />
+      )}
+
       <TouchableOpacity style={styles.scanButton}>
         <Text style={styles.scanButtonText}>Scan Material Delivery</Text>
       </TouchableOpacity>
@@ -62,15 +104,22 @@ const MaterialTrackingScreenComponent = () => {
   );
 };
 
-const enhance = withObservables([], () => ({}));
+const enhance = withObservables([], () => ({
+  materials: database.collections.get('materials').query(),
+  items: database.collections.get('items').query(),
+}));
 
 const MaterialTrackingScreen = enhance(MaterialTrackingScreenComponent);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: 'white',
+    padding: 16,
+    elevation: 2,
   },
   title: {
     fontSize: 24,
@@ -79,11 +128,28 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 24,
     color: '#666',
+  },
+  selectorContainer: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    elevation: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   list: {
     flex: 1,
+    padding: 16,
   },
   materialItem: {
     backgroundColor: 'white',
@@ -118,6 +184,21 @@ const styles = StyleSheet.create({
   materialDetails: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
+  },
+  supplierText: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#4CD964',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  shortageText: {
+    color: '#FF3B30',
   },
   updateButton: {
     backgroundColor: '#007AFF',
