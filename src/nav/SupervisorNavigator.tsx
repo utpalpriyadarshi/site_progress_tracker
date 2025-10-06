@@ -5,6 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import DailyReportsScreen from '../supervisor/DailyReportsScreen';
+import ReportsHistoryScreen from '../supervisor/ReportsHistoryScreen';
 import MaterialTrackingScreen from '../supervisor/MaterialTrackingScreen';
 import SiteInspectionScreen from '../supervisor/SiteInspectionScreen';
 import SiteManagementScreen from '../supervisor/SiteManagementScreen';
@@ -21,6 +22,7 @@ export type RootStackParamList = {
 
 export type SupervisorTabParamList = {
   DailyReports: undefined;
+  ReportsHistory: undefined;
   MaterialTracking: undefined;
   ItemsManagement: undefined;
   SiteManagement: undefined;
@@ -52,6 +54,8 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
 
             if (route.name === 'DailyReports') {
               iconSymbol = '📝';
+            } else if (route.name === 'ReportsHistory') {
+              iconSymbol = '📊';
             } else if (route.name === 'MaterialTracking') {
               iconSymbol = '🚚';
             } else if (route.name === 'ItemsManagement') {
@@ -80,6 +84,15 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
             title: 'Reports',
             headerShown: true,
             headerTitle: 'Daily Reports',
+          }}
+        />
+        <Tab.Screen
+          name="ReportsHistory"
+          component={ReportsHistoryScreen}
+          options={{
+            title: 'History',
+            headerShown: true,
+            headerTitle: 'Reports History',
           }}
         />
         <Tab.Screen

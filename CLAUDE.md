@@ -8,6 +8,14 @@ Construction Site Progress Tracker - A React Native mobile application for const
 
 ## Development Commands
 
+### Git & Branch Management
+
+**CRITICAL: Branch Deletion Policy**
+- **NEVER delete branches** when merging pull requests (local or remote)
+- Always preserve feature branches for historical reference and potential rollbacks
+- When creating PRs: Use `gh pr merge --merge` (without `--delete-branch` flag)
+- Keep all feature branches: `feature/v0.x`, `feature/xxx`, etc.
+
 ### Running the App
 ```bash
 # Start Metro bundler
