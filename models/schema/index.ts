@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 5, // Incremented version to reflect schema changes
+  version: 6, // Incremented for daily_reports table
   tables: [
     tableSchema({
       name: 'projects',
@@ -82,6 +82,20 @@ export default appSchema({
         { name: 'status', type: 'string' }, // ordered, delivered, in_use, shortage
         { name: 'supplier', type: 'string', isOptional: true },
         { name: 'procurement_manager_id', type: 'string', isIndexed: true }, // managed by
+      ],
+    }),
+    tableSchema({
+      name: 'daily_reports',
+      columns: [
+        { name: 'site_id', type: 'string', isIndexed: true }, // belongs to site
+        { name: 'supervisor_id', type: 'string', isIndexed: true }, // submitted by supervisor
+        { name: 'report_date', type: 'number' }, // timestamp for the report date
+        { name: 'submitted_at', type: 'number' }, // timestamp when submitted
+        { name: 'total_items', type: 'number' }, // count of items updated
+        { name: 'total_progress', type: 'number' }, // overall progress percentage
+        { name: 'pdf_path', type: 'string', isOptional: true }, // local path to PDF
+        { name: 'notes', type: 'string', isOptional: true }, // overall report notes
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
   ],
