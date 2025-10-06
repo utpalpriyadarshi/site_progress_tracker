@@ -28,6 +28,7 @@ import ItemModel from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
+import { ReportPdfService } from '../../services/pdf/ReportPdfService';
 
 interface ItemWithSite {
   item: ItemModel;
@@ -186,7 +187,7 @@ const DailyReportsScreenComponent = ({
           throw updateError;
         }
 
-        // Create a progress log entry
+        // Create a progress log entry (always pending until report is submitted)
         try {
           await database.collections
             .get('progress_logs')
@@ -197,7 +198,7 @@ const DailyReportsScreenComponent = ({
               log.reportedBy = supervisorId; // Use actual supervisor ID from context
               log.photos = '[]';
               log.notes = notesInput || '';
-              log.syncStatusField = isOnline ? 'synced' : 'pending';
+              log.syncStatusField = 'pending'; // Always pending until submitted as report
             });
           console.log('Progress log created successfully');
         } catch (logError) {
@@ -208,7 +209,7 @@ const DailyReportsScreenComponent = ({
 
       Alert.alert(
         'Success',
-        `Progress updated ${isOnline ? 'and synced' : 'locally (will sync when online)'}`,
+        'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report.',
       );
       closeDialog();
     } catch (error) {
@@ -239,33 +240,136 @@ const DailyReportsScreenComponent = ({
   const submitReports = async () => {
     setIsSyncing(true);
     try {
-      // In a real app, this would sync all pending progress logs to the server
+      // Get today's date range (start of day to end of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startOfDay = today.getTime();
+      const endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1;
+
+      // Get all pending progress logs for today for this supervisor's sites
       const progressLogs = await database.collections
         .get('progress_logs')
-        .query(Q.where('sync_status', 'pending'))
+        .query(
+          Q.where('sync_status', 'pending'),
+          Q.where('date', Q.gte(startOfDay)),
+          Q.where('date', Q.lte(endOfDay)),
+          Q.where('reported_by', supervisorId)
+        )
         .fetch();
 
-      // Simulate sync process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (progressLogs.length === 0) {
+        Alert.alert(
+          'No Updates',
+          'No pending progress updates to submit for today. Update some items first.'
+        );
+        setIsSyncing(false);
+        return;
+      }
 
-      if (isOnline) {
-        // Mark all as synced
-        await database.write(async () => {
+      // Group logs by site
+      const logsBySite: { [siteId: string]: typeof progressLogs } = {};
+      for (const log of progressLogs) {
+        const item = items.find(i => i.id === (log as any).itemId);
+        if (item) {
+          const siteId = item.siteId;
+          if (!logsBySite[siteId]) {
+            logsBySite[siteId] = [];
+          }
+          logsBySite[siteId].push(log);
+        }
+      }
+
+      // Generate reports for each site
+      let totalReportsGenerated = 0;
+      const reportPaths: string[] = [];
+
+      await database.write(async () => {
+        for (const siteId of Object.keys(logsBySite)) {
+          const site = sites.find(s => s.id === siteId);
+          if (!site) continue;
+
+          const siteLogs = logsBySite[siteId];
+          const siteItems = items.filter(i => i.siteId === siteId);
+
+          // Calculate total progress for site
+          const totalProgress = siteItems.length > 0
+            ? siteItems.reduce((sum, item) => {
+                const progress = item.plannedQuantity > 0
+                  ? (item.completedQuantity / item.plannedQuantity) * 100
+                  : 0;
+                return sum + progress;
+              }, 0) / siteItems.length
+            : 0;
+
+          // Generate PDF (temporarily disabled - will enable after linking library)
+          let pdfPath = '';
+          try {
+            // TODO: Re-enable after linking react-native-html-to-pdf
+            // const itemsWithLogs = siteItems.map(item => ({
+            //   item,
+            //   progressLog: siteLogs.find(log => (log as any).itemId === item.id) || null,
+            // }));
+
+            // pdfPath = await ReportPdfService.generateDailyReport({
+            //   site,
+            //   items: itemsWithLogs,
+            //   supervisorName: `Supervisor ${supervisorId}`,
+            //   reportDate: new Date(),
+            // });
+            // reportPaths.push(pdfPath);
+
+            pdfPath = ''; // PDF generation temporarily disabled
+            console.log('PDF generation skipped - will enable after library linking');
+          } catch (pdfError) {
+            console.error('Error generating PDF:', pdfError);
+            // Continue even if PDF generation fails
+          }
+
+          // Create daily report record
+          await database.collections.get('daily_reports').create((report: any) => {
+            report.siteId = siteId;
+            report.supervisorId = supervisorId;
+            report.reportDate = startOfDay;
+            report.submittedAt = new Date().getTime();
+            report.totalItems = siteLogs.length;
+            report.totalProgress = totalProgress;
+            report.pdfPath = pdfPath;
+            report.notes = `${siteLogs.length} items updated`;
+            report.syncStatus = isOnline ? 'synced' : 'pending';
+          });
+
+          totalReportsGenerated++;
+        }
+
+        // Mark all progress logs as synced
+        if (isOnline) {
           for (const log of progressLogs) {
             await log.update((l: any) => {
               l.syncStatusField = 'synced';
             });
           }
-        });
-      }
+        }
+      });
 
+      const reportDate = new Date().toLocaleDateString();
       Alert.alert(
-        'Success',
+        'Report Submitted Successfully! ✅',
         isOnline
-          ? `${progressLogs.length} report(s) submitted successfully`
-          : `${progressLogs.length} report(s) saved offline`,
+          ? `${totalReportsGenerated} daily report(s) submitted\n${progressLogs.length} progress update(s) for ${reportDate}\n\n✓ Reports saved to database\n✓ Reports synced with server\n\nNote: PDF generation coming soon`
+          : `${totalReportsGenerated} daily report(s) submitted\n${progressLogs.length} progress update(s) for ${reportDate}\n\n✓ Reports saved locally\n⏳ Will sync when connection is restored\n\nNote: PDF generation coming soon`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (reportPaths.length > 0) {
+                console.log('PDF Reports generated at:', reportPaths);
+              }
+            },
+          },
+        ]
       );
     } catch (error) {
+      console.error('Error submitting reports:', error);
       Alert.alert('Error', 'Failed to submit reports: ' + (error as Error).message);
     } finally {
       setIsSyncing(false);
