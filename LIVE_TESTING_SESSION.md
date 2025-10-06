@@ -742,7 +742,8 @@ D. **Add React.memo to expensive components**
 **Metro Bundler**: http://localhost:8081
 **Emulator**: Pixel 2 (emulator-5554)
 **App Package**: com.site_progress_tracker
-**Database**: WatermelonDB (SQLite) - **RESET & REINITIALIZED** with 6 categories
+**Database**: WatermelonDB (SQLite) - Schema v6
+**Last Build**: October 6, 2025 - Reports History Feature Added ✅
 
 ---
 
@@ -813,3 +814,201 @@ D. **Add React.memo to expensive components**
 
 ### Test Material Management:
 **Follow Test 11 above** to verify all material CRUD operations work correctly!
+
+---
+
+## 📊 LATEST UPDATE - Reports History Feature (October 6, 2025)
+
+### ✅ NEW Feature Implemented: View Reports History
+
+**New Screen Added**: Reports History Screen
+**Navigation**: New "History" tab (📊) in Supervisor tabs
+**Status**: ✅ Built and installed on emulator
+
+### What Was Added:
+
+1. **New Bottom Tab - "History" (📊)**
+   - 6th tab in Supervisor navigation (between Reports and Items)
+   - Icon: 📊 chart emoji
+   - Title: "Reports History"
+
+2. **Reports History Screen Features**:
+   - ✅ **Report List View**
+     - Shows all submitted daily reports
+     - Sorted by submission time (newest first)
+     - Beautiful card-based UI
+
+   - ✅ **Date Filtering**
+     - Today - reports from today only
+     - Last 7 Days - reports from past week (default)
+     - Last 30 Days - reports from past month
+     - All Time - all reports ever submitted
+
+   - ✅ **Search Functionality**
+     - Search by site name
+     - Search by report notes
+     - Real-time filtering as you type
+
+   - ✅ **Site Filtering**
+     - Filter by selected site
+     - "All Sites" mode shows all reports
+     - Persists across tabs (same as other screens)
+
+   - ✅ **Report Cards Display**
+     - Site name and report date
+     - Sync status badge (synced/pending/failed)
+     - Three key statistics:
+       - Items Updated (count)
+       - Overall Progress (percentage)
+       - Submitted time
+     - Report notes (if any)
+     - Action buttons: "View Details" and "Share"
+
+   - ✅ **Report Details Dialog**
+     - Full report information
+     - Site details
+     - Report and submission dates
+     - Progress summary
+     - Complete list of updated items
+     - Item-level notes
+     - Scrollable for long reports
+
+   - ✅ **Share Functionality** (Placeholder)
+     - Share button ready for future PDF integration
+     - Shows preview alert with report summary
+     - Will enable email/WhatsApp sharing once PDF generation is active
+
+   - ✅ **Pull to Refresh**
+     - Swipe down to reload reports
+     - Updates from database
+
+   - ✅ **Empty States**
+     - "No reports found" for sites without reports
+     - "No matches" for empty search results
+     - Clear, user-friendly messaging
+
+3. **Database Integration**:
+   - ✅ Reads from `daily_reports` table (schema v6)
+   - ✅ Fetches related `progress_logs` for each report
+   - ✅ Joins with `sites` table for site information
+   - ✅ Efficient querying with WatermelonDB
+
+4. **UI/UX Enhancements**:
+   - ✅ Consistent with existing app design
+   - ✅ React Native Paper components
+   - ✅ Color-coded sync status indicators:
+     - Green (synced) with cloud-check icon
+     - Orange (pending) with cloud-upload icon
+     - Red (failed) with cloud-alert icon
+   - ✅ Responsive card layout
+   - ✅ Smooth scrolling and filtering
+
+### Files Created/Modified:
+
+**NEW FILES**:
+- ✅ `src/supervisor/ReportsHistoryScreen.tsx` - Complete reports history screen
+- ✅ `REPORTS_HISTORY_TESTING.md` - Comprehensive testing guide
+
+**MODIFIED FILES**:
+- ✅ `src/nav/SupervisorNavigator.tsx` - Added History tab navigation
+- ✅ `LIVE_TESTING_SESSION.md` - Updated with new feature info
+
+### Testing Guide:
+
+**📖 Full testing instructions**: See `REPORTS_HISTORY_TESTING.md`
+
+**Quick Test (5 min)**:
+1. Login as supervisor
+2. Go to Reports tab → Update items → Submit report
+3. Go to History tab (📊)
+4. Verify report appears in list
+5. Test filters (Today, Week, etc.)
+6. Test search bar
+7. Click "View Details" → Verify all information shown
+8. Test pull-to-refresh
+
+### What This Solves:
+
+✅ Users can now **view all submitted reports**
+✅ Users can **filter reports by date** (today, week, month, all time)
+✅ Users can **search reports** by site or notes
+✅ Users can **see detailed breakdown** of each report
+✅ **Preparation for PDF sharing** (share button ready)
+✅ **Historical tracking** of all construction progress
+✅ **Audit trail** for submitted daily reports
+
+### Next Steps (Future Enhancements):
+
+1. **Enable PDF Generation** (Priority 1)
+   - Link `react-native-html-to-pdf` native library
+   - Re-enable PDF creation in DailyReportsScreen
+   - Add PDF preview functionality
+   - Enable actual sharing via email/WhatsApp
+
+2. **Add Export Options**
+   - Export reports to email
+   - Share via WhatsApp
+   - Save PDFs to device storage
+   - Print reports
+
+3. **Enhanced Analytics**
+   - Summary dashboard
+   - Progress trends over time
+   - Site comparison charts
+   - Completion rate graphs
+
+4. **Advanced Filtering**
+   - Custom date range picker
+   - Filter by sync status
+   - Filter by progress percentage
+   - Sort options (date, site, progress)
+
+### Known Limitations:
+
+⏳ **PDF Generation**: Disabled (requires native linking)
+  - Share button shows placeholder message
+  - Will be enabled in next update
+
+### Build Info:
+
+**Build Date**: October 6, 2025
+**Build Status**: ✅ SUCCESS (Bug Fixed!)
+**Install Location**: Pixel_2 emulator (emulator-5554)
+**APK**: app-debug.apk
+**Gradle Tasks**: 249 actionable (25 executed, 224 up-to-date)
+
+### Bug Fixes Applied:
+
+**Fix 1**: SQLiteException - `no such column: progress_logs.site_id`
+- **Root Cause**: `progress_logs` table doesn't have `site_id` column (only has `item_id`)
+- **Fix**: Modified query to get items for site first, then query progress_logs by item IDs
+- **File**: `src/supervisor/ReportsHistoryScreen.tsx:68-102`
+- **Status**: ✅ FIXED
+
+**Fix 2**: Date filter chips displayed as tall empty boxes
+- **Root Cause**: Missing height constraints and proper container structure
+- **Fix**: Added View wrapper, maxHeight constraint, and fixed chip height to 36px
+- **File**: `src/supervisor/ReportsHistoryScreen.tsx:244-279, 467-478`
+- **Status**: ✅ FIXED
+
+**Fix 3**: Search by notes not working
+- **Root Cause**: Daily report notes are auto-generated, not user-entered
+- **Fix**: Enhanced search to include item-level notes from progress logs
+- **File**: `src/supervisor/ReportsHistoryScreen.tsx:144-165`
+- **Features**: Now searches in:
+  - Site names ✅
+  - Report-level notes ✅
+  - Item-level notes (progress logs) ✅ **NEW!**
+- **Status**: ✅ FIXED and rebuilt
+
+---
+
+## 🎯 START TESTING HERE!
+
+### Recommended Test Order:
+
+1. ✅ **REPORTS_HISTORY_TESTING.md** - New feature testing (start here!)
+2. ✅ **Tests 1-11** (above) - Existing features regression testing
+3. ✅ Verify all previous features still work correctly
+
+**Ready to test! 🚀**
