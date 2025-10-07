@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 6, // Incremented for daily_reports table
+  version: 8, // Incremented for hindrances reported_at field
   tables: [
     tableSchema({
       name: 'projects',
@@ -68,6 +68,9 @@ export default appSchema({
         { name: 'status', type: 'string' }, // open, in_progress, resolved, closed
         { name: 'assigned_to', type: 'string', isIndexed: true }, // user ID
         { name: 'reported_by', type: 'string', isIndexed: true }, // user ID
+        { name: 'reported_at', type: 'number' }, // timestamp when reported
+        { name: 'photos', type: 'string' }, // JSON string of photo paths
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({

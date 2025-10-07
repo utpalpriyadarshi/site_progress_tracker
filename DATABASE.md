@@ -4,67 +4,107 @@
 
 The application uses WatermelonDB as an offline-first database solution, allowing full functionality even in remote construction sites with limited connectivity. WatermelonDB provides reactive queries that automatically update UI components when data changes.
 
+**Current Schema Version**: 8
+
 ## Schema Definition
 
 ### Projects Table
 - `id`: Primary key
 - `name`: Project name (string)
-- `description`: Project description (string, optional)
-- `location`: Project location (string)
-- `status`: Project status (string) - active, completed, on_hold
+- `client`: Client name (string)
 - `start_date`: Project start date (timestamp)
 - `end_date`: Project end date (timestamp)
-- `budget`: Project budget (number, optional)
-- `manager_id`: Reference to managing user (string, optional)
-- `created_at`: Record creation timestamp (timestamp, readonly)
-- `updated_at`: Record update timestamp (timestamp, readonly)
+- `status`: Project status (string) - active, completed, on_hold, cancelled
+- `budget`: Project budget (number)
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
 
-### Tasks Table
+### Sites Table
 - `id`: Primary key
+- `name`: Site name (string)
+- `location`: Site location (string)
 - `project_id`: Reference to parent project (string, indexed)
-- `name`: Task name (string)
-- `description`: Task description (string, optional)
-- `status`: Task status (string) - not_started, in_progress, completed
-- `priority`: Task priority (string) - low, medium, high
-- `start_date`: Task start date (timestamp)
-- `end_date`: Task end date (timestamp)
-- `assigned_to`: Reference to supervisor (string, optional)
-- `estimated_hours`: Estimated hours for task (number, optional)
-- `created_at`: Record creation timestamp (timestamp, readonly)
-- `updated_at`: Record update timestamp (timestamp, readonly)
+- `supervisor_id`: Reference to assigned supervisor (string, indexed)
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
+
+### Categories Table
+- `id`: Primary key
+- `name`: Category name (string)
+- `description`: Category description (string, optional)
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
+
+### Items Table
+- `id`: Primary key
+- `name`: Item name (string)
+- `category_id`: Reference to category (string, indexed)
+- `site_id`: Reference to site (string, indexed)
+- `planned_quantity`: Planned quantity (number)
+- `completed_quantity`: Completed quantity (number)
+- `unit_of_measurement`: Unit of measurement (string) - m³, kg, pieces, etc.
+- `planned_start_date`: Planned start date (timestamp)
+- `planned_end_date`: Planned end date (timestamp)
+- `status`: Item status (string) - not_started, in_progress, completed
+- `weightage`: Percentage weightage in project (number)
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
+
+### Progress Logs Table
+- `id`: Primary key
+- `item_id`: Reference to item (string, indexed)
+- `date`: Log date (timestamp)
+- `completed_quantity`: Quantity completed (number)
+- `reported_by`: Reference to reporting user (string, indexed)
+- `photos`: JSON string array of photo URIs (string)
+- `notes`: Progress notes (string, optional)
+- `sync_status`: Sync status (string) - pending, synced, failed
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
+
+### Hindrances Table
+- `id`: Primary key
+- `title`: Hindrance title (string)
+- `description`: Hindrance description (string, optional)
+- `item_id`: Reference to related item (string, indexed, optional)
+- `site_id`: Reference to related site (string, indexed)
+- `priority`: Priority level (string) - low, medium, high
+- `status`: Hindrance status (string) - open, in_progress, resolved, closed
+- `assigned_to`: Reference to assigned user (string, indexed)
+- `reported_by`: Reference to reporting user (string, indexed)
+- `reported_at`: Report timestamp (timestamp)
+- `photos`: JSON string array of photo URIs (string)
+- `sync_status`: Sync status (string) - pending, synced, failed
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
 
 ### Materials Table
 - `id`: Primary key
-- `project_id`: Reference to parent project (string, indexed)
 - `name`: Material name (string)
-- `description`: Material description (string, optional)
-- `category`: Material category (string) - concrete, steel, wood, etc.
-- `unit`: Unit of measurement (string) - kg, m³, pieces, etc.
+- `item_id`: Reference to item (string, indexed)
 - `quantity_required`: Required quantity (number)
 - `quantity_available`: Available quantity (number)
 - `quantity_used`: Used quantity (number)
-- `unit_cost`: Cost per unit (number)
+- `unit`: Unit of measurement (string) - kg, m³, pieces, etc.
 - `status`: Material status (string) - ordered, delivered, in_use, shortage
-- `delivery_date`: Expected delivery date (timestamp)
 - `supplier`: Supplier name (string, optional)
-- `created_at`: Record creation timestamp (timestamp, readonly)
-- `updated_at`: Record update timestamp (timestamp, readonly)
+- `procurement_manager_id`: Reference to procurement manager (string, indexed)
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
 
-### Progress Reports Table
+### Daily Reports Table
 - `id`: Primary key
-- `project_id`: Reference to parent project (string, indexed)
-- `task_id`: Reference to associated task (string, indexed)
-- `supervisor_id`: Reference to reporting supervisor (string, indexed)
-- `report_date`: Date of report (timestamp)
-- `progress_percentage`: Progress as percentage (number)
-- `work_completed`: Description of work completed (string, optional)
-- `issues_identified`: Description of issues (string, optional)
-- `weather_conditions`: Weather conditions (string, optional)
-- `next_day_plan`: Plan for next day (string, optional)
-- `photos_count`: Number of photos attached (number)
-- `status`: Report status (string) - draft, submitted, approved
-- `created_at`: Record creation timestamp (timestamp, readonly)
-- `updated_at`: Record update timestamp (timestamp, readonly)
+- `site_id`: Reference to site (string, indexed)
+- `supervisor_id`: Reference to supervisor (string, indexed)
+- `report_date`: Report date (timestamp)
+- `submitted_at`: Submission timestamp (timestamp)
+- `total_items`: Count of items updated (number)
+- `total_progress`: Overall progress percentage (number)
+- `pdf_path`: Local path to PDF file (string, optional) - **Note**: PDF generation currently disabled
+- `notes`: Report notes (string, optional)
+- `sync_status`: Sync status (string) - pending, synced, failed
+- `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
+- `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
 
 ## Default Users for Testing
 
@@ -90,25 +130,55 @@ The application will include the following default users for testing different r
 - Password: `planner123`
 - Role: Planning Specialist (can manage schedules, Gantt charts, and resources)
 
+## Database Relationships
+
+### Entity Relationships
+
+```
+Projects (1) ──→ (Many) Sites
+Sites (1) ──→ (Many) Items
+Sites (1) ──→ (Many) Hindrances
+Categories (1) ──→ (Many) Items
+Items (1) ──→ (Many) ProgressLogs
+Items (1) ──→ (Many) Materials
+Items (1) ──→ (Many) Hindrances
+```
+
+**Relationship Details**:
+- **Project → Sites**: One project can have multiple construction sites
+- **Site → Items**: One site can have multiple work items
+- **Category → Items**: Items are categorized (e.g., Structural, Electrical, Plumbing)
+- **Item → ProgressLogs**: Each item tracks daily progress updates
+- **Item → Materials**: Each item tracks required materials
+- **Item/Site → Hindrances**: Issues can be linked to specific items or sites
+
 ## Database Initialization
 
 ### Default Data Setup
 When the app starts for the first time, it will create default data entries:
 
-1. **Default Project**: "Sample Construction Project"
-2. **Sample Tasks**: 
-   - Foundation work
-   - Framing
-   - Electrical
-   - Plumbing
-   - Finishing
+1. **Default Project**: "Main Construction Project"
+2. **Default Site**: "Main Construction Site"
+3. **Sample Categories**:
+   - Structural Work
+   - Electrical Work
+   - Plumbing Work
+   - Finishing Work
 
-3. **Sample Materials**:
-   - Concrete (100 m³ required)
-   - Steel Beams (50 pieces required)
-   - Cement Bags (200 bags required)
+4. **Sample Items** (10 construction tasks):
+   - Foundation Work
+   - Excavation Work
+   - Concrete Pouring
+   - Steel Framework
+   - Drywall Installation
+   - Electrical Wiring
+   - Plumbing Installation
+   - Roofing Work
+   - Painting & Finishing
+   - Flooring Installation
+   - HVAC Installation
 
-4. **Sample Progress Reports**: Initial status reports for demonstration
+5. **Sample Materials**: Materials linked to items for tracking
 
 ## Offline-Sync Architecture
 

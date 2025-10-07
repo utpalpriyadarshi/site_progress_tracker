@@ -8,6 +8,7 @@ import DailyReportsScreen from '../supervisor/DailyReportsScreen';
 import ReportsHistoryScreen from '../supervisor/ReportsHistoryScreen';
 import MaterialTrackingScreen from '../supervisor/MaterialTrackingScreen';
 import SiteInspectionScreen from '../supervisor/SiteInspectionScreen';
+import HindranceReportScreen from '../supervisor/HindranceReportScreen';
 import SiteManagementScreen from '../supervisor/SiteManagementScreen';
 import ItemsManagementScreen from '../supervisor/ItemsManagementScreen';
 import { SiteProvider } from '../supervisor/context/SiteContext';
@@ -26,6 +27,7 @@ export type SupervisorTabParamList = {
   MaterialTracking: undefined;
   ItemsManagement: undefined;
   SiteManagement: undefined;
+  HindranceReport: undefined;
   SiteInspection: undefined;
 };
 
@@ -62,6 +64,8 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
               iconSymbol = '📋';
             } else if (route.name === 'SiteManagement') {
               iconSymbol = '🏗️';
+            } else if (route.name === 'HindranceReport') {
+              iconSymbol = '⚠️';
             } else if (route.name === 'SiteInspection') {
               iconSymbol = '🔍';
             }
@@ -120,6 +124,15 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
             title: 'Sites',
             headerShown: true,
             headerTitle: 'Manage Sites',
+          }}
+        />
+        <Tab.Screen
+          name="HindranceReport"
+          component={HindranceReportScreen}
+          options={{
+            title: 'Issues',
+            headerShown: true,
+            headerTitle: 'Hindrance Reports',
           }}
         />
         <Tab.Screen
