@@ -1,4 +1,4 @@
-import { schemaMigrations, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, createTable, addColumns } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
@@ -19,6 +19,29 @@ export default schemaMigrations({
             { name: 'sync_status', type: 'string' },
             { name: 'created_at', type: 'number' },
             { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 7,
+      steps: [
+        addColumns({
+          table: 'hindrances',
+          columns: [
+            { name: 'photos', type: 'string' },
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 8,
+      steps: [
+        addColumns({
+          table: 'hindrances',
+          columns: [
+            { name: 'reported_at', type: 'number' },
           ],
         }),
       ],

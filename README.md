@@ -11,8 +11,12 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Construction-Specific**: Tailored for construction site management workflows
 - **Role-Based Access**: Different interfaces for supervisors, managers, planners, and logistics
 - **Progress Tracking**: Detailed logging of work progress with photo documentation
-- **Issue Management**: Track and resolve hindrances affecting project timelines
+- **Daily Reports**: Submit daily progress reports with automatic aggregation and history viewing
+- **Hindrance Management**: Report and track construction issues/obstacles with photo capture (camera/gallery)
+- **Reports History**: View, filter, and search submitted daily reports with detailed breakdowns
 - **Material Management**: Monitor materials required, available, and used
+- **Site Context**: Persistent site selection across all supervisor screens
+- **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
 
 ## Getting Started
 
@@ -94,15 +98,23 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB for robust offline-first data management with the following entities:
+The app uses WatermelonDB (Schema v8) for robust offline-first data management with the following entities:
 
 - **Projects**: Top-level project containers with client, dates, and budgets
 - **Sites**: Construction sites associated with projects
 - **Categories**: Categorization for construction items
 - **Items**: Specific construction tasks and deliverables
-- **ProgressLogs**: Detailed progress records linked to items
-- **Hindrances**: Issues and obstacles affecting work
+- **ProgressLogs**: Detailed progress records linked to items with photos (JSON array)
+- **Hindrances**: Issues and obstacles affecting work with photo documentation and timestamps
 - **Materials**: Construction materials with procurement tracking
+- **DailyReports**: Aggregated daily progress reports with sync status
+
+### Key Database Features
+- **Schema Version 8**: Latest schema with hindrance photos and daily reports
+- **Offline-First**: All operations work without internet
+- **Sync Status**: Track pending/synced/failed states for all records
+- **Photo Storage**: JSON arrays for multiple photos per record
+- **Relationships**: Full foreign key relationships between all entities
 
 ### WatermelonDB Important Notes
 
@@ -158,10 +170,14 @@ MainNavigator
 │   ├── LoginScreen
 │   └── RoleSelectionScreen
 └── Role-specific Navigators
-    ├── SupervisorNavigator (Bottom Tabs)
-    │   ├── DailyReportsScreen
-    │   ├── MaterialTrackingScreen
-    │   └── SiteInspectionScreen
+    ├── SupervisorNavigator (Bottom Tabs - 7 screens)
+    │   ├── DailyReportsScreen (📝 Reports) - Submit progress
+    │   ├── ReportsHistoryScreen (📊 History) - View submitted reports
+    │   ├── ItemsManagementScreen (📋 Items) - Manage work items
+    │   ├── MaterialTrackingScreen (🚚 Materials) - Track materials
+    │   ├── SiteManagementScreen (🏗️ Sites) - Manage sites
+    │   ├── HindranceReportScreen (⚠️ Issues) - Report hindrances with photos
+    │   └── SiteInspectionScreen (🔍 Inspection) - Site inspections
     ├── ManagerNavigator (Bottom Tabs)
     │   ├── ProjectOverviewScreen
     │   ├── TeamManagementScreen
@@ -178,6 +194,16 @@ MainNavigator
         ├── DeliverySchedulingScreen
         └── InventoryManagementScreen
 ```
+
+### Supervisor Features (Current Focus)
+The supervisor role has the most complete implementation with 7 screens:
+1. **Daily Reports**: Update item progress and submit daily reports
+2. **Reports History**: View, filter, and search submitted reports with date/site filters
+3. **Items Management**: Create and manage construction work items
+4. **Materials**: Track material quantities (required/available/used)
+5. **Sites**: Create and manage construction sites
+6. **Hindrance Reports**: Report issues with photos (camera/gallery), priority, and status tracking
+7. **Site Inspection**: Conduct site inspections
 
 ## Step 4: Modify your app
 

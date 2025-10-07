@@ -57,12 +57,22 @@ The app uses a hierarchical navigation system:
 - **MainNavigator** (`src/nav/MainNavigator.tsx`) - Root navigator
   - **AuthNavigator** - Login and role selection
   - **Role-based Navigators** - Bottom tab navigators for each role:
-    - SupervisorNavigator
-    - ManagerNavigator
-    - PlanningNavigator
-    - LogisticsNavigator
+    - **SupervisorNavigator** - 7 screens with shared SiteContext
+    - ManagerNavigator - 4 screens
+    - PlanningNavigator - 4 screens
+    - LogisticsNavigator - 4 screens
 
-Each role has 3-4 dedicated screens organized in `src/{role}/` directories.
+### Supervisor Navigation (Most Complete)
+The supervisor role has 7 dedicated screens in `src/supervisor/`:
+1. **DailyReportsScreen** - Submit daily progress reports
+2. **ReportsHistoryScreen** - View submitted reports with filtering
+3. **HindranceReportScreen** - Report issues with photo capture
+4. **ItemsManagementScreen** - Manage construction items
+5. **MaterialTrackingScreen** - Track materials
+6. **SiteManagementScreen** - Manage sites
+7. **SiteInspectionScreen** - Conduct inspections
+
+**SiteContext**: All supervisor screens share site selection via `src/supervisor/context/SiteContext.tsx`
 
 ### Database Architecture (WatermelonDB)
 
@@ -70,22 +80,29 @@ Each role has 3-4 dedicated screens organized in `src/{role}/` directories.
 
 **Database Location**: Database models are in `/models/`, NOT `/src/db/`. This is important for imports.
 
-**Schema**: Defined in `models/schema/index.ts` (current version: 5)
+**Schema**: Defined in `models/schema/index.ts` (current version: 8)
 
 **Core Collections**:
 - `projects` - Top-level project containers
 - `sites` - Construction sites (belongs to projects)
 - `categories` - Item categorization
 - `items` - Construction work items (belongs to sites and categories)
-- `progress_logs` - Progress tracking records (belongs to items)
-- `hindrances` - Issues/obstacles (belongs to items/sites)
+- `progress_logs` - Progress tracking records (belongs to items, includes photos as JSON)
+- `hindrances` - Issues/obstacles (belongs to items/sites, includes photos and reported_at)
 - `materials` - Material tracking (belongs to items)
+- `daily_reports` - Aggregated daily reports (belongs to sites, includes sync_status)
 
 **Key Relationships**:
 - Project → has many → Sites
-- Site → belongs to → Project, has many → Items, Hindrances
+- Site → belongs to → Project, has many → Items, Hindrances, DailyReports
 - Category → has many → Items
 - Item → belongs to → Site and Category, has many → ProgressLogs, Materials, Hindrances
+
+**Schema v8 Changes**:
+- Added `daily_reports` table for report history
+- Added `reported_at` timestamp to `hindrances`
+- Added `photos` JSON field to `hindrances` for photo storage
+- Added `sync_status` to `hindrances` and `daily_reports`
 
 **Database Service Pattern**: Use `DatabaseService.ts` in `/services/db/` for database operations. It implements lazy loading via `getDatabase()` to avoid initialization issues.
 
@@ -202,10 +219,13 @@ items.forEach(item => {
 
 ## Key Dependencies
 
-- **@nozbe/watermelondb** - Offline-first database
+- **@nozbe/watermelondb** - Offline-first database (Schema v8)
 - **@react-navigation** - Navigation (stack + bottom tabs)
-- **react-native-vector-icons** - Icon system
+- **react-native-paper** - Material Design components (Cards, Dialogs, Chips)
+- **react-native-vector-icons** - Icon system (MaterialCommunityIcons)
+- **react-native-image-picker** - Camera and gallery integration for photos
 - **@react-native-community/netinfo** - Network status monitoring
+- **react-native-html-to-pdf** - PDF generation (currently disabled, reserved for future)
 - **sqlite3** - Database backend
 
 ## Common Patterns
@@ -213,10 +233,20 @@ items.forEach(item => {
 ### Screen Organization
 Screens are organized by role in `src/{role}/`:
 - `auth/` - Authentication flows
-- `supervisor/` - Field supervisor screens
-- `manager/` - Project manager screens
-- `planning/` - Planning specialist screens
-- `logistics/` - Logistics coordinator screens
+- `supervisor/` - Field supervisor screens (7 screens + shared context)
+  - Includes `context/SiteContext.tsx` for shared site selection
+  - Includes `components/SiteSelector.tsx` reusable component
+- `manager/` - Project manager screens (4 screens)
+- `planning/` - Planning specialist screens (4 screens)
+- `logistics/` - Logistics coordinator screens (4 screens)
+
+### Photo Capture Pattern
+For screens that need photo capture (e.g., HindranceReportScreen):
+- Use `react-native-image-picker` for camera and gallery access
+- Store photos as JSON string arrays in database
+- Request camera permissions on Android with `PermissionsAndroid`
+- Support both `launchCamera()` and `launchImageLibrary()`
+- Parse JSON arrays safely with try-catch when reading photos
 
 ### Import Paths
 - Models: `import { database } from '../../models/database'`

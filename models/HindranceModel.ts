@@ -19,4 +19,7 @@ export default class HindranceModel extends Model {
   @field('status') status!: string; // open, in_progress, resolved, closed
   @field('assigned_to') assignedTo!: string; // user ID
   @field('reported_by') reportedBy!: string; // user ID
+  @field('reported_at') reportedAt!: number; // timestamp when reported
+  @field('photos') photos!: string; // JSON string of photo paths
+  @field('sync_status') syncStatus!: string; // pending, synced, failed
 }

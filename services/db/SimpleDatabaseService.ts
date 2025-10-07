@@ -140,6 +140,96 @@ export class SimpleDatabaseService {
         });
       });
 
+      const electricalItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'Electrical Wiring';
+          item.categoryId = installationCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 200;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'meters';
+          item.plannedStartDate = new Date('2025-04-01').getTime();
+          item.plannedEndDate = new Date('2025-05-15').getTime();
+          item.status = 'not_started';
+          item.weightage = 10;
+        });
+      });
+
+      const plumbingItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'Plumbing Installation';
+          item.categoryId = installationCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 150;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'meters';
+          item.plannedStartDate = new Date('2025-04-01').getTime();
+          item.plannedEndDate = new Date('2025-05-15').getTime();
+          item.status = 'not_started';
+          item.weightage = 10;
+        });
+      });
+
+      const roofingItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'Roofing Work';
+          item.categoryId = framingCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 500;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'square_meters';
+          item.plannedStartDate = new Date('2025-05-01').getTime();
+          item.plannedEndDate = new Date('2025-06-01').getTime();
+          item.status = 'not_started';
+          item.weightage = 15;
+        });
+      });
+
+      const paintingItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'Painting & Finishing';
+          item.categoryId = finishingCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 1200;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'square_meters';
+          item.plannedStartDate = new Date('2025-06-16').getTime();
+          item.plannedEndDate = new Date('2025-07-15').getTime();
+          item.status = 'not_started';
+          item.weightage = 8;
+        });
+      });
+
+      const flooringItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'Flooring Installation';
+          item.categoryId = finishingCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 800;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'square_meters';
+          item.plannedStartDate = new Date('2025-06-01').getTime();
+          item.plannedEndDate = new Date('2025-07-01').getTime();
+          item.status = 'not_started';
+          item.weightage = 12;
+        });
+      });
+
+      const hvacItem = await database.write(async () => {
+        return await database.collections.get('items').create((item: any) => {
+          item.name = 'HVAC Installation';
+          item.categoryId = installationCategory.id;
+          item.siteId = sampleSite.id;
+          item.plannedQuantity = 20;
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = 'units';
+          item.plannedStartDate = new Date('2025-05-15').getTime();
+          item.plannedEndDate = new Date('2025-06-30').getTime();
+          item.status = 'not_started';
+          item.weightage = 12;
+        });
+      });
+
       // ✅ Create sample progress log
       await database.write(async () => {
         await database.collections.get('progress_logs').create((log: any) => {
