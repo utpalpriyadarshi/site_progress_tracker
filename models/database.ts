@@ -11,6 +11,7 @@ import MaterialModel from './MaterialModel';
 import ProgressLogModel from './ProgressLogModel';
 import HindranceModel from './HindranceModel';
 import DailyReportModel from './DailyReportModel';
+import SiteInspectionModel from './SiteInspectionModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -29,5 +30,6 @@ export const database = new Database({
     ProgressLogModel,
     HindranceModel,
     DailyReportModel,
+    SiteInspectionModel,
   ],
 });
