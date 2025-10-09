@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 8, // Incremented for hindrances reported_at field
+  version: 9, // Incremented for site_inspections table
   tables: [
     tableSchema({
       name: 'projects',
@@ -98,6 +98,23 @@ export default appSchema({
         { name: 'total_progress', type: 'number' }, // overall progress percentage
         { name: 'pdf_path', type: 'string', isOptional: true }, // local path to PDF
         { name: 'notes', type: 'string', isOptional: true }, // overall report notes
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
+      ],
+    }),
+    tableSchema({
+      name: 'site_inspections',
+      columns: [
+        { name: 'site_id', type: 'string', isIndexed: true }, // belongs to site
+        { name: 'inspector_id', type: 'string', isIndexed: true }, // supervisor/inspector user ID
+        { name: 'inspection_date', type: 'number' }, // timestamp of inspection
+        { name: 'inspection_type', type: 'string' }, // daily, weekly, safety, quality
+        { name: 'overall_rating', type: 'string' }, // excellent, good, fair, poor
+        { name: 'checklist_data', type: 'string' }, // JSON string of checklist items
+        { name: 'photos', type: 'string' }, // JSON string array of photo URIs
+        { name: 'safety_flagged', type: 'boolean' }, // true if safety issues found
+        { name: 'follow_up_date', type: 'number' }, // timestamp for follow-up (0 if none)
+        { name: 'follow_up_notes', type: 'string', isOptional: true }, // follow-up action notes
+        { name: 'notes', type: 'string', isOptional: true }, // overall inspection notes
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
