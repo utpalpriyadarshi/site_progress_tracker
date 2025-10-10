@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useAuth, UserRole } from './AuthContext';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -10,19 +11,42 @@ type AuthStackParamList = {
   };
 };
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'RoleSelection'>;
+type RootStackParamList = {
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+};
+
+type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'RoleSelection'> &
+  StackNavigationProp<RootStackParamList>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login, selectRole, getLastSelectedRole } = useAuth();
 
-  const defaultUsers: { [key: string]: { password: string; availableRoles: string[] } } = {
+  const defaultUsers: { [key: string]: { password: string; availableRoles: UserRole[] } } = {
     'admin': { password: 'admin123', availableRoles: ['manager', 'supervisor', 'planning', 'logistics'] },
     'manager': { password: 'manager123', availableRoles: ['manager'] },
     'supervisor': { password: 'supervisor123', availableRoles: ['supervisor'] },
     'planner': { password: 'planner123', availableRoles: ['planning'] },
     'logistics': { password: 'logistics123', availableRoles: ['logistics'] },
+  };
+
+  const navigateToRole = (role: UserRole) => {
+    const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      supervisor: 'Supervisor',
+      manager: 'Manager',
+      planning: 'Planning',
+      logistics: 'Logistics',
+    };
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: roleMap[role] }],
+    });
   };
 
   const handleLogin = async () => {
@@ -32,11 +56,11 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     }
 
     setIsLoading(true);
-    
+
     try {
       // Check if the user exists in our default users
       const user = defaultUsers[username];
-      
+
       if (!user || user.password !== password) {
         Alert.alert('Login Failed', 'Invalid username or password');
         setIsLoading(false);
@@ -46,8 +70,28 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       // Simulate API call delay
       await new Promise<void>(resolve => setTimeout(resolve, 500));
 
-      // Navigate to role selection screen
-      navigation.replace('RoleSelection', { 
+      // Save user data to context
+      await login(username, username, user.availableRoles);
+
+      // Option 1: Single role user - auto-navigate directly
+      if (user.availableRoles.length === 1) {
+        const singleRole = user.availableRoles[0];
+        await selectRole(singleRole);
+        navigateToRole(singleRole);
+        return;
+      }
+
+      // Option 2: Multi-role user - check for last selected role
+      const lastRole = await getLastSelectedRole();
+      if (lastRole && user.availableRoles.includes(lastRole)) {
+        // Auto-navigate to last used role
+        await selectRole(lastRole);
+        navigateToRole(lastRole);
+        return;
+      }
+
+      // Option 3: No last role - show role selection screen
+      navigation.replace('RoleSelection', {
         userId: username,
         username: username
       });
@@ -57,9 +101,9 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     }
   };
 
-  const handleDefaultLogin = (username: string, password: string): void => {
-    setUsername(username);
-    setPassword(password);
+  const handleDefaultLogin = (user: string, pass: string): void => {
+    setUsername(user);
+    setPassword(pass);
   };
 
   return (

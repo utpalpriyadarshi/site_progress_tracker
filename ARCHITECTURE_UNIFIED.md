@@ -1,0 +1,922 @@
+# Construction Site Progress Tracker - Unified Architecture Documentation
+
+## Project Overview
+
+A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, and material management.
+
+**Current Version**: v1.0 (with Site Inspection feature)
+**Database Schema Version**: 8
+**Platform**: React Native (Android & iOS)
+
+---
+
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Architecture Layers](#architecture-layers)
+3. [Navigation Architecture](#navigation-architecture)
+4. [Database Architecture](#database-architecture)
+5. [Service Layer](#service-layer)
+6. [Key Features](#key-features)
+7. [Development Practices](#development-practices)
+8. [Technical Stack](#technical-stack)
+
+---
+
+## Project Structure
+
+### Current Implementation
+
+The project follows a **hybrid structure** where actual implementation resides in `/src/`, `/models/`, and `/services/` directories, with placeholder directories at root level for future expansion.
+
+```
+site_progress_tracker/
+├── android/                      # Android native code
+├── ios/                          # iOS native code
+├── models/                       # WatermelonDB models and schema (Schema v8)
+│   ├── migrations/               # Database migration files
+│   │   ├── 001-initial.js        # Initial schema
+│   │   ├── 002-daily-reports.js  # Added daily_reports table
+│   │   └── 003-hindrances-photos.js # Added photos to hindrances
+│   ├── schema/                   # Database schema definitions
+│   │   └── index.ts              # Schema v8 definition
+│   ├── CategoryModel.ts          # Item/material category model
+│   ├── DailyReportModel.ts       # Daily reports model
+│   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
+│   ├── ItemModel.ts              # Construction work items model
+│   ├── MaterialModel.ts          # Material model
+│   ├── ProgressLogModel.ts       # Progress log model
+│   ├── ProgressReportModel.ts    # Progress report model (legacy)
+│   ├── ProjectModel.ts           # Project model
+│   ├── SiteInspectionModel.ts    # Site inspection model (v1.0)
+│   ├── SiteModel.ts              # Construction site model
+│   ├── TaskModel.ts              # Task model (legacy)
+│   └── database.ts               # Database initialization
+├── services/                     # Application services
+│   ├── db/                       # Database services
+│   │   ├── SimpleDatabaseService.ts  # Basic database service & initialization
+│   │   └── DatabaseService.ts        # Enhanced database service with queries
+│   ├── offline/                  # Offline functionality
+│   │   └── OfflineService.ts     # Network status & offline management
+│   ├── pdf/                      # PDF generation services
+│   │   └── ReportPdfService.ts   # Report PDF generation (disabled)
+│   └── sync/                     # Sync functionality
+│       └── SyncService.ts        # Data synchronization & conflict resolution
+├── src/                          # Application source code (ACTIVE)
+│   ├── auth/                     # Authentication screens
+│   │   └── LoginScreen.tsx       # User login screen
+│   ├── logistics/                # Logistics-specific screens (4 screens)
+│   │   ├── MaterialTrackingScreen.tsx
+│   │   ├── EquipmentManagementScreen.tsx
+│   │   ├── DeliverySchedulingScreen.tsx
+│   │   └── InventoryManagementScreen.tsx
+│   ├── manager/                  # Manager-specific screens (4 screens)
+│   │   ├── ProjectOverviewScreen.tsx
+│   │   ├── TeamManagementScreen.tsx
+│   │   ├── FinancialReportsScreen.tsx
+│   │   └── ResourceAllocationScreen.tsx
+│   ├── planning/                 # Planning-specific screens (4 screens)
+│   │   ├── GanttChartScreen.tsx
+│   │   ├── ScheduleManagementScreen.tsx
+│   │   ├── ResourcePlanningScreen.tsx
+│   │   └── MilestoneTrackingScreen.tsx
+│   ├── supervisor/               # Supervisor-specific screens (7 screens)
+│   │   ├── DailyReportsScreen.tsx        # Submit daily progress reports
+│   │   ├── ReportsHistoryScreen.tsx      # View submitted reports history
+│   │   ├── HindranceReportScreen.tsx     # Report and track hindrances/issues
+│   │   ├── ItemsManagementScreen.tsx     # Manage construction items
+│   │   ├── MaterialTrackingScreen.tsx    # Track materials
+│   │   ├── SiteManagementScreen.tsx      # Manage sites
+│   │   ├── SiteInspectionScreen.tsx      # Site inspections (v1.0)
+│   │   ├── context/
+│   │   │   └── SiteContext.tsx           # Shared site selection context
+│   │   └── components/
+│   │       └── SiteSelector.tsx          # Reusable site selector component
+│   └── nav/                      # Navigation components
+│       ├── MainNavigator.tsx     # Root navigator
+│       ├── AuthNavigator.tsx     # Authentication flow navigator
+│       ├── RoleSelectionScreen.tsx # Role selection screen
+│       ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
+│       ├── ManagerNavigator.tsx   # Manager bottom tabs (4 tabs)
+│       ├── PlanningNavigator.tsx  # Planning bottom tabs (4 tabs)
+│       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
+│       └── types.ts              # Navigation type definitions
+├── __tests__/                    # Test files
+├── prompts/                      # Project prompts and documentation
+├── node_modules/                 # NPM dependencies
+├── .vscode/                      # VS Code settings
+├── .eslintrc.js                  # ESLint configuration
+├── .gitignore                    # Git ignore patterns
+├── .prettierrc.js                # Prettier configuration
+├── .watchmanconfig               # Watchman configuration
+├── app.json                      # App configuration
+├── App.tsx                       # Main application component
+├── babel.config.js               # Babel configuration (decorator support)
+├── ARCHITECTURE.md               # Architecture documentation
+├── ARCHITECTURE_UNIFIED.md       # This file - unified architecture
+├── CLAUDE.md                     # Claude Code instructions
+├── CONSTRUCTION_APP_README.md    # Construction app documentation
+├── CONSTRUCTION_APP_STRUCTURE.md # Construction app structure (reference)
+├── DATABASE.md                   # Database schema documentation
+├── Gemfile                       # Ruby dependencies (for iOS)
+├── index.js                      # App entry point
+├── jest.config.js                # Jest configuration
+├── metro.config.js               # Metro bundler configuration
+├── package.json                  # Project dependencies and scripts
+├── README.md                     # Project README
+├── tsconfig.json                 # TypeScript configuration
+└── [Empty placeholder directories for future expansion:]
+    ├── auth/                     # (Empty - actual code in src/auth/)
+    ├── components/               # (Empty subdirs - for future shared components)
+    │   ├── construction/
+    │   ├── forms/
+    │   ├── gantt/
+    │   ├── tracking/
+    │   └── ui/
+    ├── manager/                  # (Empty - actual code in src/manager/)
+    ├── planning/                 # (Empty - actual code in src/planning/)
+    ├── screens/                  # (Empty - for future general screens)
+    ├── supervisor/               # (Empty - actual code in src/supervisor/)
+    └── utils/                    # (Empty subdirs - for future utilities)
+        ├── formatters/
+        ├── helpers/
+        ├── storage/
+        └── validation/
+```
+
+### Directory Organization Best Practices
+
+1. **Active Code Location**: All active TypeScript/React code is in `/src/`, `/models/`, and `/services/`
+2. **Model Layer**: Database models are in `/models/` (NOT `/src/db/` or `/src/models/`)
+3. **Service Layer**: All services are in `/services/` (NOT `/src/services/`)
+4. **Role-based Screens**: Each role has dedicated screens in `src/{role}/`
+5. **Shared Navigation**: Navigation setup is in `src/nav/`
+6. **Future Expansion**: Root-level placeholder directories exist for future shared components and utilities
+
+---
+
+## Architecture Layers
+
+### 1. Presentation Layer (`src/`)
+
+**Purpose**: UI components, screens, and navigation logic
+
+#### Authentication Flow
+- **Location**: `src/auth/`
+- **Components**: LoginScreen, RoleSelectionScreen
+- **Pattern**: Simple credential-based authentication with role selection
+
+#### Role-based Screens
+Screens are organized by user role for clear separation of concerns:
+
+- **Supervisor** (`src/supervisor/`): 7 screens for field operations
+  - Daily report submission, history viewing, hindrance reporting
+  - Item management, material tracking, site management
+  - Site inspections with safety checklists
+  - **Context Management**: SiteContext provides shared site selection across all supervisor screens
+
+- **Manager** (`src/manager/`): 4 screens for project oversight
+  - Project overview, team management
+  - Financial reports, resource allocation
+
+- **Planning** (`src/planning/`): 4 screens for scheduling
+  - Gantt charts, schedule management
+  - Resource planning, milestone tracking
+
+- **Logistics** (`src/logistics/`): 4 screens for materials/equipment
+  - Material tracking, equipment management
+  - Delivery scheduling, inventory management
+
+#### Navigation Architecture
+- **Location**: `src/nav/`
+- **Pattern**: Hierarchical navigation with role-based bottom tabs
+- **Implementation**: React Navigation v6 (Stack + Bottom Tabs)
+
+### 2. Data Layer (`models/`)
+
+**Purpose**: Database models, schema, and relationships
+
+#### WatermelonDB Models
+- **Location**: `/models/` (root level, NOT in src/)
+- **Schema Version**: 8 (defined in `models/schema/index.ts`)
+- **Pattern**: Model classes extend `Model` with decorators for fields
+- **Migrations**: Tracked in `models/migrations/` for schema evolution
+
+#### Core Entities
+1. **ProjectModel**: Top-level project container
+2. **SiteModel**: Construction sites (belongs to projects)
+3. **CategoryModel**: Item categorization
+4. **ItemModel**: Construction work items (belongs to sites and categories)
+5. **ProgressLogModel**: Progress tracking records (with photos)
+6. **HindranceModel**: Issues/obstacles (with photos, timestamps)
+7. **MaterialModel**: Material tracking
+8. **DailyReportModel**: Aggregated daily reports
+9. **SiteInspectionModel**: Safety inspection checklists (v1.0)
+
+#### Field Naming Convention (CRITICAL)
+- **Schema columns**: `snake_case` (e.g., `supervisor_id`, `start_date`)
+- **Model properties**: camelCase (e.g., `supervisorId`, `startDate`)
+- **Decorator usage**: `@field('snake_case_column') camelCaseProperty!: type`
+- **When creating records**: Always use camelCase property names
+- **In queries**: Use snake_case column names with `Q.where()`
+
+### 3. Service Layer (`services/`)
+
+**Purpose**: Business logic, database operations, offline/sync management
+
+#### Database Services (`services/db/`)
+- **SimpleDatabaseService.ts**: Basic initialization and default data setup
+- **DatabaseService.ts**: Enhanced service with lazy loading via `getDatabase()`
+- **Pattern**: Lazy initialization to avoid timing issues
+
+#### Offline Services (`services/offline/`)
+- **OfflineService.ts**: Network status monitoring and offline capability management
+- **Pattern**: NetInfo integration for connectivity detection
+
+#### Sync Services (`services/sync/`)
+- **SyncService.ts**: Bidirectional data synchronization
+- **Pattern**: Queue-based sync with conflict resolution
+- **Features**: Timestamp-based conflict handling
+
+#### PDF Services (`services/pdf/`)
+- **ReportPdfService.ts**: PDF generation for reports
+- **Status**: Currently disabled, reserved for future use
+
+### 4. Platform Layer (`android/`, `ios/`)
+
+**Purpose**: Native code for each platform
+
+- React Native bridge implementations
+- Platform-specific configurations
+- Native module integrations (camera, file system, etc.)
+
+---
+
+## Navigation Architecture
+
+### Hierarchical Structure
+
+```
+MainNavigator (Stack)
+├── AuthNavigator (Stack)
+│   ├── LoginScreen
+│   └── RoleSelectionScreen
+└── Role-specific Navigators (Bottom Tabs)
+    ├── SupervisorNavigator (7 tabs)
+    │   ├── DailyReportsScreen (📝 Reports)
+    │   ├── ReportsHistoryScreen (📊 History)
+    │   ├── ItemsManagementScreen (📋 Items)
+    │   ├── MaterialTrackingScreen (🚚 Materials)
+    │   ├── SiteManagementScreen (🏗️ Sites)
+    │   ├── HindranceReportScreen (⚠️ Issues)
+    │   └── SiteInspectionScreen (🔍 Inspection)
+    ├── ManagerNavigator (4 tabs)
+    │   ├── ProjectOverviewScreen (📊 Overview)
+    │   ├── TeamManagementScreen (👥 Team)
+    │   ├── FinancialReportsScreen (💰 Finance)
+    │   └── ResourceAllocationScreen (📦 Resources)
+    ├── PlanningNavigator (4 tabs)
+    │   ├── GanttChartScreen (📅 Gantt)
+    │   ├── ScheduleManagementScreen (🗓️ Schedule)
+    │   ├── ResourcePlanningScreen (📊 Planning)
+    │   └── MilestoneTrackingScreen (🎯 Milestones)
+    └── LogisticsNavigator (4 tabs)
+        ├── MaterialTrackingScreen (📦 Materials)
+        ├── EquipmentManagementScreen (🚜 Equipment)
+        ├── DeliverySchedulingScreen (🚚 Delivery)
+        └── InventoryManagementScreen (📋 Inventory)
+```
+
+### Navigation Patterns
+
+1. **Role-based Access**: Different navigators and screens per role
+2. **Bottom Tab Navigation**: Primary navigation within each role
+3. **Shared Context**: Supervisor screens share SiteContext for site selection
+4. **Type Safety**: Full TypeScript navigation types in `src/nav/types.ts`
+
+---
+
+## Database Architecture
+
+### Schema Version History
+
+- **v1**: Initial schema with basic entities
+- **v2**: Added `daily_reports` table
+- **v3**: Added `photos` and `reported_at` to `hindrances`
+- **v8**: Current version with Site Inspection support
+
+### Core Collections
+
+#### projects
+- Top-level project containers
+- Fields: name, client, start_date, end_date, status, budget
+
+#### sites
+- Construction sites belonging to projects
+- Fields: name, location, project_id, supervisor_id
+- **Relationships**: belongs_to project, has_many items/hindrances/daily_reports
+
+#### categories
+- Item categorization (Structural, Electrical, Plumbing, etc.)
+- Fields: name, description
+
+#### items
+- Construction work items
+- Fields: name, category_id, site_id, planned_quantity, completed_quantity, unit_of_measurement, planned_start_date, planned_end_date, status, weightage
+- **Relationships**: belongs_to site/category, has_many progress_logs/materials/hindrances
+
+#### progress_logs
+- Progress tracking records
+- Fields: item_id, date, completed_quantity, reported_by, photos (JSON), notes, sync_status
+- **Relationships**: belongs_to item
+
+#### hindrances
+- Issues and obstacles
+- Fields: title, description, item_id, site_id, priority, status, assigned_to, reported_by, reported_at, photos (JSON), sync_status
+- **Relationships**: belongs_to item (optional), belongs_to site
+
+#### materials
+- Material tracking and management
+- Fields: name, item_id, quantity_required, quantity_available, quantity_used, unit, status, supplier, procurement_manager_id
+- **Relationships**: belongs_to item
+
+#### daily_reports
+- Aggregated daily progress reports
+- Fields: site_id, supervisor_id, report_date, submitted_at, total_items, total_progress, pdf_path, notes, sync_status
+- **Relationships**: belongs_to site
+
+#### site_inspections (v1.0)
+- Safety inspection checklists
+- Fields: site_id, inspector_id, inspection_date, safety_items (JSON), overall_status, notes
+- **Relationships**: belongs_to site
+
+### Entity Relationship Diagram
+
+```
+┌─────────────┐
+│   Project   │
+└──────┬──────┘
+       │ 1:N
+       │
+┌──────▼──────┐
+│    Site     │◄────────┐
+└──────┬──────┘         │
+       │ 1:N            │
+       ├────────────────┤
+       │                │
+┌──────▼──────┐  ┌──────┴──────────┐
+│    Item     │  │   Hindrance     │
+└──────┬──────┘  └─────────────────┘
+       │ 1:N            ▲
+       │                │ N:1
+       ├────────────────┤
+       │                │
+┌──────▼──────┐  ┌──────┴──────────┐
+│ProgressLog │  │    Material     │
+└─────────────┘  └─────────────────┘
+
+┌──────────────┐
+│ DailyReport  │──► Site (N:1)
+└──────────────┘
+
+┌──────────────┐
+│Site          │
+│Inspection    │──► Site (N:1)
+└──────────────┘
+
+┌──────────────┐
+│  Category    │──► Item (1:N)
+└──────────────┘
+```
+
+### Relationships Summary
+
+- **Project → Sites** (1:N): One project can have multiple construction sites
+- **Site → Items** (1:N): One site can have multiple work items
+- **Site → Hindrances** (1:N): One site can have multiple issues
+- **Site → DailyReports** (1:N): One site can have multiple daily reports
+- **Site → SiteInspections** (1:N): One site can have multiple inspections
+- **Category → Items** (1:N): Items are categorized
+- **Item → ProgressLogs** (1:N): Each item tracks daily progress updates
+- **Item → Materials** (1:N): Each item tracks required materials
+- **Item → Hindrances** (1:N, optional): Issues can be linked to specific items
+
+### Database Best Practices
+
+1. **Offline-first**: All operations work offline, sync when online
+2. **Reactive Queries**: Use WatermelonDB's reactive queries for UI updates
+3. **Lazy Loading**: Database initialized via lazy loading pattern
+4. **Migration Support**: Schema changes tracked via migrations
+5. **Type Safety**: Full TypeScript support for models
+6. **Sync Status**: Track sync state with `sync_status` field
+7. **Photo Storage**: Photos stored as JSON string arrays
+8. **Timestamp Fields**: Use `number` type (milliseconds since epoch)
+
+---
+
+## Service Layer
+
+### Database Services
+
+#### SimpleDatabaseService (`services/db/SimpleDatabaseService.ts`)
+- **Purpose**: Database initialization and default data setup
+- **Key Methods**:
+  - `initializeDefaultData()`: Creates default projects, sites, categories, items
+  - Called from `App.tsx` on startup
+- **Pattern**: One-time initialization service
+
+#### DatabaseService (`services/db/DatabaseService.ts`)
+- **Purpose**: Enhanced database operations with query methods
+- **Key Methods**:
+  - `getDatabase()`: Lazy database initialization
+  - Query methods for各 collections
+- **Pattern**: Lazy loading to avoid timing issues
+
+### Offline Service (`services/offline/OfflineService.ts`)
+- **Purpose**: Network status monitoring and offline capability management
+- **Dependencies**: `@react-native-community/netinfo`
+- **Features**:
+  - Real-time connectivity detection
+  - Offline mode management
+  - User notifications for connectivity changes
+
+### Sync Service (`services/sync/SyncService.ts`)
+- **Purpose**: Bidirectional data synchronization
+- **Process**:
+  1. Sync Down: Pull latest data from server when online
+  2. Local Changes: All modifications saved locally in WatermelonDB
+  3. Sync Up: Push changes to server when connectivity restored
+  4. Conflict Resolution: Timestamp-based conflict handling
+- **Pattern**: Queue-based sync with retry logic
+
+### PDF Service (`services/pdf/ReportPdfService.ts`)
+- **Purpose**: Generate PDF reports for daily progress
+- **Status**: Currently disabled, reserved for future implementation
+- **Dependency**: `react-native-html-to-pdf`
+
+---
+
+## Key Features
+
+### 1. Role-based Access Control
+- Different UI and functionality based on user role
+- 4 distinct role types: Supervisor, Manager, Planner, Logistics
+- Role selection during login flow
+
+### 2. Offline-first Architecture
+- Works without internet connectivity
+- Local database with WatermelonDB
+- Automatic sync when connectivity restored
+- Queue-based sync with conflict resolution
+
+### 3. Construction-Specific Workflows
+
+#### Daily Reporting (Supervisor)
+- Submit daily progress reports
+- Track item completion with photos
+- View report history with filtering
+- Aggregate progress tracking
+
+#### Hindrance Tracking (Supervisor)
+- Report issues and obstacles
+- Attach photos from camera/gallery
+- Priority and status management
+- Link to specific items or sites
+
+#### Site Inspection (Supervisor v1.0)
+- Comprehensive safety checklists
+- Multiple category inspection (Safety Equipment, Site Conditions, etc.)
+- Pass/Fail/NA status for each item
+- Overall site safety status
+
+#### Material Management
+- Track material requirements and usage
+- Monitor material availability
+- Supplier management
+- Shortage alerts
+
+#### Progress Tracking
+- Photo documentation support
+- Percentage completion tracking
+- Task status updates (not_started, in_progress, completed)
+- Weightage-based progress calculation
+
+### 4. Photo Documentation
+- Camera integration via `react-native-image-picker`
+- Gallery access for existing photos
+- Photo storage as JSON arrays in database
+- Permission handling for camera access
+
+### 5. Site Context Management (Supervisor)
+- Shared site selection across supervisor screens
+- Context provider: `src/supervisor/context/SiteContext.tsx`
+- Reusable component: `src/supervisor/components/SiteSelector.tsx`
+- Persistent site selection during session
+
+### 6. Data Synchronization
+- Automatic sync when online
+- Manual sync trigger option
+- Sync status indicators
+- Conflict resolution for concurrent edits
+
+### 7. Modular Design
+- Organized by feature and responsibility
+- Separation of concerns (UI, data, business logic)
+- Reusable components and contexts
+- Type-safe navigation
+
+### 8. Type Safety
+- Full TypeScript support
+- Type definitions for navigation
+- Model type definitions
+- Service type definitions
+
+---
+
+## Development Practices
+
+### Code Organization
+
+1. **Role-based Structure**: Screens organized by user role in `src/{role}/`
+2. **Model Layer Separation**: Database models in `/models/` (root level)
+3. **Service Layer Separation**: Business logic in `/services/` (root level)
+4. **Shared Contexts**: Contexts in relevant feature directories
+5. **Reusable Components**: Components co-located with features
+
+### TypeScript Configuration
+
+#### Decorator Support (CRITICAL for WatermelonDB)
+```javascript
+// tsconfig.json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+
+// babel.config.js
+module.exports = {
+  plugins: [
+    ['@babel/plugin-proposal-decorators', { legacy: true }],
+    ['@babel/plugin-transform-class-properties', { loose: true }],
+    '@babel/plugin-transform-class-static-block',
+  ]
+}
+```
+
+### WatermelonDB Model Creation Pattern
+
+```typescript
+import { Model } from '@nozbe/watermelondb';
+import { field, relation } from '@nozbe/watermelondb/decorators';
+
+export default class ItemModel extends Model {
+  static table = 'items';
+
+  static associations = {
+    sites: { type: 'belongs_to', key: 'site_id' },
+    categories: { type: 'belongs_to', key: 'category_id' },
+  };
+
+  // ✅ CORRECT: decorator uses snake_case, property is camelCase
+  @field('name') name!: string;
+  @field('site_id') siteId!: string;
+  @field('category_id') categoryId!: string;
+  @field('planned_quantity') plannedQuantity!: number;
+  @field('completed_quantity') completedQuantity!: number;
+  @field('planned_start_date') plannedStartDate!: number; // Use @field for timestamps
+
+  @relation('sites', 'site_id') site!: Relation<SiteModel>;
+}
+```
+
+### Database Query Pattern
+
+```typescript
+import { Q } from '@nozbe/watermelondb';
+
+// ✅ CORRECT: Use snake_case in queries, access with camelCase
+const items = await database.collections.get('items')
+  .query(Q.where('site_id', siteId))  // snake_case in query
+  .fetch();
+
+// Access results using camelCase properties
+items.forEach(item => {
+  console.log(item.siteId);         // camelCase property
+  console.log(item.plannedQuantity);
+});
+```
+
+### Creating Database Records
+
+```typescript
+// ✅ CORRECT: Use camelCase when setting values
+await database.write(async () => {
+  await database.collections.get('items').create((item) => {
+    item.name = 'Foundation Work';
+    item.siteId = 'site-123';           // camelCase
+    item.categoryId = 'category-456';   // camelCase
+    item.plannedQuantity = 100;
+    item.completedQuantity = 0;
+    item.plannedStartDate = Date.now(); // timestamp
+  });
+});
+
+// ❌ WRONG: Never use snake_case when setting values
+item.site_id = 'site-123';  // Will save empty value!
+```
+
+### Code Style
+
+- **Linting**: ESLint with `@react-native` config
+- **Formatting**: Prettier (single quotes, trailing commas, arrow parens avoid)
+- **TypeScript**: Strict mode enabled
+- **Comments**: Document complex logic and business rules
+
+### Testing
+
+- **Framework**: Jest
+- **Test Location**: `__tests__/`
+- **Test Users**: Defined in DATABASE.md
+  - Manager: `manager` / `manager123`
+  - Supervisor: `supervisor` / `supervisor123`
+  - Planner: `planner` / `planner123`
+  - Admin: `admin` / `admin123`
+
+### Git Workflow
+
+- **Branch Strategy**: Feature branches (`feature/v0.x`, `feature/xxx`)
+- **Main Branch**: `main`
+- **Merge Strategy**: Merge commits (preserve history)
+- **Branch Preservation**: NEVER delete branches after merging
+
+---
+
+## Technical Stack
+
+### Core Dependencies
+
+- **React Native**: Mobile framework
+- **TypeScript**: Type safety and developer experience
+- **WatermelonDB**: Offline-first reactive database (Schema v8)
+- **SQLite**: Database backend
+
+### Navigation
+
+- **@react-navigation/native**: Navigation framework
+- **@react-navigation/stack**: Stack navigator for auth flow
+- **@react-navigation/bottom-tabs**: Bottom tab navigation for roles
+
+### UI Components
+
+- **react-native-paper**: Material Design components (Cards, Dialogs, Chips, TextInput)
+- **react-native-vector-icons**: Icon system (MaterialCommunityIcons)
+
+### Device Features
+
+- **react-native-image-picker**: Camera and gallery integration
+- **@react-native-community/netinfo**: Network status monitoring
+- **react-native-html-to-pdf**: PDF generation (currently disabled)
+
+### Development Tools
+
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **Jest**: Testing framework
+- **Babel**: Transpilation with decorator support
+- **Metro**: React Native bundler
+
+### Platform Support
+
+- **Android**: Full support
+- **iOS**: Full support
+- **Minimum SDK**: Android API 21+, iOS 12+
+
+---
+
+## Common Patterns
+
+### Screen Template Pattern
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button } from 'react-native-paper';
+import { database } from '../../models/database';
+
+const ExampleScreen = ({ navigation }) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const items = await database.collections.get('items').query().fetch();
+      setData(items);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView>
+        {data.map(item => (
+          <Card key={item.id} style={styles.card}>
+            <Card.Content>
+              <Text>{item.name}</Text>
+            </Card.Content>
+          </Card>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  card: { margin: 10 },
+});
+
+export default ExampleScreen;
+```
+
+### Photo Capture Pattern
+
+```typescript
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { PermissionsAndroid, Platform } from 'react-native';
+
+const requestCameraPermission = async () => {
+  if (Platform.OS === 'android') {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.CAMERA
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  return true;
+};
+
+const takePhoto = async () => {
+  const hasPermission = await requestCameraPermission();
+  if (!hasPermission) return;
+
+  launchCamera({ mediaType: 'photo', quality: 0.8 }, response => {
+    if (response.assets && response.assets[0]) {
+      const uri = response.assets[0].uri;
+      // Store URI in database as JSON array
+      const photos = [uri];
+    }
+  });
+};
+```
+
+### Context Provider Pattern
+
+```typescript
+import React, { createContext, useState, useContext } from 'react';
+
+interface ContextType {
+  selectedSite: string | null;
+  setSelectedSite: (id: string | null) => void;
+}
+
+const ExampleContext = createContext<ContextType | undefined>(undefined);
+
+export const ExampleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedSite, setSelectedSite] = useState<string | null>(null);
+
+  return (
+    <ExampleContext.Provider value={{ selectedSite, setSelectedSite }}>
+      {children}
+    </ExampleContext.Provider>
+  );
+};
+
+export const useExample = () => {
+  const context = useContext(ExampleContext);
+  if (!context) throw new Error('useExample must be used within ExampleProvider');
+  return context;
+};
+```
+
+---
+
+## Import Path Conventions
+
+```typescript
+// Models (from any file in src/)
+import { database } from '../../models/database';
+import SiteModel from '../../models/SiteModel';
+
+// Services (from any file in src/)
+import { DatabaseService } from '../../services/db/DatabaseService';
+import { OfflineService } from '../../services/offline/OfflineService';
+
+// Navigation types
+import { RootStackParamList } from './types';
+
+// WatermelonDB utilities
+import { Q } from '@nozbe/watermelondb';
+
+// React Navigation
+import { useNavigation } from '@react-navigation/native';
+
+// React Native Paper
+import { Card, Button, TextInput } from 'react-native-paper';
+```
+
+---
+
+## Future Expansion Areas
+
+Based on the current structure, these areas are prepared for future development:
+
+### Shared Components (`/components/`)
+- Construction-specific UI components
+- Form components
+- Gantt chart components
+- Progress tracking components
+- General UI components
+
+### Utilities (`/utils/`)
+- Storage utilities
+- Validation utilities
+- Data formatting utilities
+- General helper functions
+
+### Additional Services
+- Cache services (`services/cache/`)
+- API service calls (`services/api/`)
+- Enhanced sync services
+
+### Advanced Features
+- PDF generation for reports (currently disabled)
+- Real-time collaboration
+- Advanced analytics and reporting
+- Equipment tracking
+- Weather logging
+- Quality check workflows
+
+---
+
+## Version History
+
+- **v0.7**: Added Reports History screen for supervisors
+- **v0.8**: Added Hindrance Report screen with photo capture
+- **v0.9**: Enhanced database schema and sync capabilities
+- **v1.0**: Added Site Inspection screen with comprehensive safety checklists
+
+---
+
+## References
+
+- **ARCHITECTURE.md**: Original architecture documentation (role-based focus)
+- **CONSTRUCTION_APP_STRUCTURE.md**: Construction app structure reference (component organization focus)
+- **DATABASE.md**: Complete database schema and relationships
+- **CLAUDE.md**: Development guidelines and AI assistant instructions
+- **README.md**: Setup instructions and project overview
+- **Testing Documentation**:
+  - TESTING_GUIDE.md
+  - HINDRANCE_REPORT_TESTING.md
+  - REPORTS_HISTORY_TESTING.md
+  - SITE_INSPECTION_TESTING.md
+
+---
+
+## Summary of Best Choices
+
+This unified document combines the strengths of both original architecture documents:
+
+### From ARCHITECTURE.md (Role-based focus)
+✅ Clear role-based navigation structure
+✅ Comprehensive database relationship documentation
+✅ Detailed supervisor screen breakdown (7 screens)
+✅ SiteContext pattern for shared state
+✅ Migration history and versioning
+✅ Actual implementation structure
+
+### From CONSTRUCTION_APP_STRUCTURE.md (Component organization focus)
+✅ Future-ready directory structure for shared components
+✅ Utility organization patterns
+✅ Construction industry-specific features documentation
+✅ Service layer organization with offline/sync separation
+✅ Babel configuration details for decorators
+
+### Additional Improvements
+✅ Clear distinction between active code (`src/`, `models/`, `services/`) and placeholder directories
+✅ Comprehensive import path conventions
+✅ WatermelonDB best practices with field naming conventions
+✅ Common pattern examples for quick reference
+✅ Version history tracking
+✅ Photo capture and context provider patterns
+
+---
+
+**This document serves as the single source of truth for the Construction Site Progress Tracker architecture, combining actual implementation details with forward-looking structural guidance.**
