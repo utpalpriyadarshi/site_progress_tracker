@@ -70,5 +70,34 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 10,
+      steps: [
+        createTable({
+          name: 'roles',
+          columns: [
+            { name: 'name', type: 'string', isIndexed: true },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'permissions', type: 'string' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'users',
+          columns: [
+            { name: 'username', type: 'string', isIndexed: true },
+            { name: 'password', type: 'string' },
+            { name: 'full_name', type: 'string' },
+            { name: 'email', type: 'string', isOptional: true },
+            { name: 'phone', type: 'string', isOptional: true },
+            { name: 'is_active', type: 'boolean' },
+            { name: 'role_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

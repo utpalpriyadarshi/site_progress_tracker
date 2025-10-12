@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 9, // Incremented for site_inspections table
+  version: 10, // Incremented for admin role management (users, roles, user_roles tables)
   tables: [
     tableSchema({
       name: 'projects',
@@ -116,6 +116,26 @@ export default appSchema({
         { name: 'follow_up_notes', type: 'string', isOptional: true }, // follow-up action notes
         { name: 'notes', type: 'string', isOptional: true }, // overall inspection notes
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+      ],
+    }),
+    tableSchema({
+      name: 'users',
+      columns: [
+        { name: 'username', type: 'string', isIndexed: true }, // unique username for login
+        { name: 'password', type: 'string' }, // hashed password (for mock auth)
+        { name: 'full_name', type: 'string' }, // display name
+        { name: 'email', type: 'string', isOptional: true }, // optional email
+        { name: 'phone', type: 'string', isOptional: true }, // optional phone
+        { name: 'is_active', type: 'boolean' }, // account active status
+        { name: 'role_id', type: 'string', isIndexed: true }, // assigned role (belongs to role)
+      ],
+    }),
+    tableSchema({
+      name: 'roles',
+      columns: [
+        { name: 'name', type: 'string', isIndexed: true }, // role name (Admin, Supervisor, Manager, etc.)
+        { name: 'description', type: 'string', isOptional: true }, // role description
+        { name: 'permissions', type: 'string' }, // JSON string of permissions array
       ],
     }),
   ],

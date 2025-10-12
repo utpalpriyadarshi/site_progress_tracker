@@ -9,7 +9,13 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 ### Key Features
 - **Offline-First**: Works seamlessly without internet connectivity
 - **Construction-Specific**: Tailored for construction site management workflows
-- **Role-Based Access**: Different interfaces for supervisors, managers, planners, and logistics
+- **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, and admin
+- **Admin Role** (v1.2 - NEW): Complete administration panel with:
+  - User management (CRUD operations)
+  - Role assignment
+  - Project management with cascade deletion
+  - Role switching to test different user experiences
+  - Active/inactive user account management
 - **Progress Tracking**: Detailed logging of work progress with photo documentation
 - **Daily Reports**: Submit daily progress reports with automatic aggregation and history viewing
 - **Hindrance Management**: Report and track construction issues/obstacles with photo capture (camera/gallery)
@@ -17,6 +23,7 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Material Management**: Monitor materials required, available, and used
 - **Site Context**: Persistent site selection across all supervisor screens
 - **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
+- **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
 
 ## Getting Started
 
@@ -98,8 +105,9 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB (Schema v8) for robust offline-first data management with the following entities:
+The app uses WatermelonDB (Schema v10, updated October 2025) for robust offline-first data management with the following entities:
 
+### Core Entities
 - **Projects**: Top-level project containers with client, dates, and budgets
 - **Sites**: Construction sites associated with projects
 - **Categories**: Categorization for construction items
@@ -108,13 +116,19 @@ The app uses WatermelonDB (Schema v8) for robust offline-first data management w
 - **Hindrances**: Issues and obstacles affecting work with photo documentation and timestamps
 - **Materials**: Construction materials with procurement tracking
 - **DailyReports**: Aggregated daily progress reports with sync status
+- **SiteInspections**: Site inspection records with checklists and photos
+
+### Admin & User Management (v1.2 - NEW)
+- **Users**: User accounts with authentication credentials
+- **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
 
 ### Key Database Features
-- **Schema Version 8**: Latest schema with hindrance photos and daily reports
+- **Schema Version 10**: Latest schema with user management and admin features
 - **Offline-First**: All operations work without internet
 - **Sync Status**: Track pending/synced/failed states for all records
 - **Photo Storage**: JSON arrays for multiple photos per record
 - **Relationships**: Full foreign key relationships between all entities
+- **Cascade Deletion**: Deleting projects removes all associated sites, items, and related data
 
 ### WatermelonDB Important Notes
 
@@ -154,6 +168,12 @@ database.collections.get('sites')
 - Do NOT declare them in your models with decorators
 - They are accessible but should not be set manually
 
+**Sync Status Field** (CRITICAL):
+- WatermelonDB's Model class has a built-in `syncStatus` property
+- To avoid conflicts, use `syncStatusField` as the property name
+- Decorator maps to schema: `@field('sync_status') syncStatusField!: string`
+- This applies to: ProgressLogModel, HindranceModel, DailyReportModel, SiteInspectionModel
+
 ## Development Commands
 
 - **Testing**: `npm test` or `yarn test` - Run tests with Jest
@@ -167,9 +187,23 @@ The application implements a role-based navigation system with offline-first arc
 ```
 MainNavigator
 ├── AuthNavigator
-│   ├── LoginScreen
-│   └── RoleSelectionScreen
+│   └── LoginScreen (Database-based authentication)
 └── Role-specific Navigators
+    ├── AdminNavigator (Bottom Tabs - 3 screens) [v1.2 NEW]
+    │   ├── AdminDashboardScreen (🏠 Dashboard)
+    │   │   ├── Statistics (projects, sites, users, items)
+    │   │   ├── Role Switcher (test different role views)
+    │   │   └── Quick access to management screens
+    │   ├── ProjectManagementScreen (📁 Projects)
+    │   │   ├── CRUD operations for projects
+    │   │   ├── Searchable project list
+    │   │   ├── Status management (Active/Completed/On Hold/Cancelled)
+    │   │   └── CASCADE DELETE (removes all sites, items, and related data)
+    │   └── RoleManagementScreen (👥 Users)
+    │       ├── CRUD operations for users
+    │       ├── Role assignment
+    │       ├── Activate/Deactivate accounts
+    │       └── Searchable user list
     ├── SupervisorNavigator (Bottom Tabs - 7 screens)
     │   ├── DailyReportsScreen (📝 Reports) - Submit progress
     │   ├── ReportsHistoryScreen (📊 History) - View submitted reports
@@ -195,7 +229,36 @@ MainNavigator
         └── InventoryManagementScreen
 ```
 
-### Supervisor Features (Current Focus)
+### Admin Role Features (v1.2 - NEW)
+The admin role provides complete system administration:
+
+**Dashboard**:
+- Real-time statistics (total projects, sites, users, items)
+- Role switcher to view app as different roles
+- Quick navigation to management screens
+
+**Project Management**:
+- Create, edit, and delete projects
+- Search projects by name, client, or status
+- Status management with color-coded chips
+- **CASCADE DELETE**: Deleting a project removes all associated:
+  - Sites
+  - Items
+  - Progress logs
+  - Hindrances
+  - Materials
+  - Daily reports
+  - Site inspections
+
+**User & Role Management**:
+- Create, edit, and delete users
+- Assign roles (Admin, Supervisor, Manager, Planner, Logistics)
+- Activate/Deactivate user accounts
+- Search users by username, name, or email
+- Password management
+- Role-based color coding
+
+### Supervisor Features
 The supervisor role has the most complete implementation with 7 screens:
 1. **Daily Reports**: Update item progress and submit daily reports
 2. **Reports History**: View, filter, and search submitted reports with date/site filters
@@ -203,7 +266,29 @@ The supervisor role has the most complete implementation with 7 screens:
 4. **Materials**: Track material quantities (required/available/used)
 5. **Sites**: Create and manage construction sites
 6. **Hindrance Reports**: Report issues with photos (camera/gallery), priority, and status tracking
-7. **Site Inspection**: Conduct site inspections
+7. **Site Inspection**: Conduct site inspections with comprehensive checklists
+
+## Test Credentials
+
+The app comes with 5 pre-configured test accounts (seeded on first launch):
+
+```
+Admin:      admin      / admin123
+Supervisor: supervisor / supervisor123
+Manager:    manager    / manager123
+Planner:    planner    / planner123
+Logistics:  logistics  / logistics123
+```
+
+### Quick Login
+Use the **Demo Users** buttons on the login screen to quickly fill credentials and test different roles.
+
+### Testing Admin Features
+1. Click the red "Admin" button on login screen
+2. Explore the 3 admin tabs: Dashboard, Projects, Users
+3. Try creating/editing/deleting projects and users
+4. Test the role switcher to view other role interfaces
+5. See the complete test plan in [ADMIN_TEST_PLAN.md](./ADMIN_TEST_PLAN.md)
 
 ## Step 4: Modify your app
 
@@ -220,6 +305,39 @@ When you want to forcefully reload, for example to reset the state of your app, 
 
 - [Architecture Documentation](./ARCHITECTURE.md) - Detailed technical architecture overview
 - [Database Schema](./DATABASE.md) - Complete database schema documentation
+- [Admin Test Plan](./ADMIN_TEST_PLAN.md) - Comprehensive testing guide for admin features (v1.2)
+
+## Version History
+
+### v1.2 - Admin Role Implementation (Current)
+- ✅ Database schema upgraded to v10
+- ✅ User and role management tables
+- ✅ Admin Navigator with 3 screens
+- ✅ Project Management with CASCADE DELETE
+- ✅ User & Role Management (CRUD)
+- ✅ Role assignment and account activation
+- ✅ Database-based authentication
+- ✅ Role switcher for testing different views
+- ✅ Offline-first admin operations
+
+### v1.1 - Navigation UX Improvements
+- Enhanced supervisor navigation with 7 screens
+- Site context persistence
+- Role switching capabilities
+
+### v1.0 - Site Inspection Feature
+- Comprehensive safety and quality checklists
+- Photo documentation
+- Follow-up management
+
+### v0.9 - Hindrance Reporting
+- Photo capture (camera/gallery)
+- Priority and status tracking
+
+### v0.8 - Daily Reports History
+- View submitted reports
+- Date and site filtering
+- Search functionality
 
 ## Troubleshooting
 
@@ -246,6 +364,33 @@ adb shell pm clear com.site_progress_tracker
 3. **Query returns no results**: Make sure to use snake_case column names in `Q.where()` queries.
 
 For general React Native issues, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+
+### Admin Feature Limitations (v1.2)
+
+**Current State**:
+- ✅ Fully functional CRUD operations
+- ✅ Offline-first with WatermelonDB
+- ✅ Cascade deletion implemented
+- ✅ Role-based authentication
+
+**Known Limitations**:
+1. **Passwords**: Currently stored as plaintext. Production implementation should use bcrypt or similar hashing.
+2. **Permissions**: Role permissions defined but not enforced. All admin users have full access.
+3. **Audit Trail**: Admin actions not logged. No history of who changed what.
+4. **Undo**: No undo functionality for deletions (except database restore).
+5. **Advanced Search**: Basic search only. No filters by date, status combinations, etc.
+
+**Future Enhancements** (Roadmap):
+- [ ] Password hashing with bcrypt
+- [ ] Role-based permission enforcement
+- [ ] Audit logging for admin actions
+- [ ] Bulk user import/export (CSV)
+- [ ] Password reset functionality
+- [ ] Two-factor authentication (2FA)
+- [ ] Advanced filtering and sorting
+- [ ] Soft delete with restore capability
+- [ ] Admin dashboard analytics charts
+- [ ] Email notifications for account changes
 
 ## Learn More
 

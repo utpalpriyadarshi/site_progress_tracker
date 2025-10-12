@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import { AuthProvider } from '../auth/AuthContext';
 import AuthNavigator from './AuthNavigator';
+import AdminNavigator from './AdminNavigator';
 import SupervisorNavigator from './SupervisorNavigator';
 import ManagerNavigator from './ManagerNavigator';
 import PlanningNavigator from './PlanningNavigator';
@@ -24,6 +25,11 @@ const MainNavigator = () => {
           }}
         >
           <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen
+            name="Admin"
+            component={AdminNavigator}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="Supervisor"
             component={SupervisorNavigator}

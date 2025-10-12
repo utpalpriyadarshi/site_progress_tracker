@@ -210,23 +210,25 @@ const SiteManagementScreenComponent = ({
             {projects.length > 0 && (
               <View style={styles.projectSelector}>
                 <Text style={styles.label}>Select Project:</Text>
-                {projects.map((project) => (
-                  <List.Item
-                    key={project.id}
-                    title={project.name}
-                    left={(props) => (
-                      <List.Icon
-                        {...props}
-                        icon={
-                          selectedProjectId === project.id
-                            ? 'radiobox-marked'
-                            : 'radiobox-blank'
-                        }
-                      />
-                    )}
-                    onPress={() => setSelectedProjectId(project.id)}
-                  />
-                ))}
+                <ScrollView style={styles.projectList}>
+                  {projects.map((project) => (
+                    <List.Item
+                      key={project.id}
+                      title={project.name}
+                      left={(props) => (
+                        <List.Icon
+                          {...props}
+                          icon={
+                            selectedProjectId === project.id
+                              ? 'radiobox-marked'
+                              : 'radiobox-blank'
+                          }
+                        />
+                      )}
+                      onPress={() => setSelectedProjectId(project.id)}
+                    />
+                  ))}
+                </ScrollView>
               </View>
             )}
           </Dialog.Content>
@@ -316,6 +318,9 @@ const styles = StyleSheet.create({
   },
   projectSelector: {
     marginTop: 8,
+  },
+  projectList: {
+    maxHeight: 200,
   },
   label: {
     fontSize: 14,

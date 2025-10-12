@@ -18,5 +18,5 @@ export default class DailyReportModel extends Model {
   @field('total_progress') totalProgress!: number; // overall progress percentage
   @field('pdf_path') pdfPath!: string; // local path to generated PDF
   @field('notes') notes!: string; // overall report notes/summary
-  @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('sync_status') syncStatusField!: string; // pending, synced, failed
 }

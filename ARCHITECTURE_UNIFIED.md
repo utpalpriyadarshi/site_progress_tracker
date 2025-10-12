@@ -4,9 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, and material management.
 
-**Current Version**: v1.0 (with Site Inspection feature)
-**Database Schema Version**: 8
+**Current Version**: v1.2 (Admin Role Implementation)
+**Database Schema Version**: 10
 **Platform**: React Native (Android & iOS)
+**Last Updated**: October 2025
 
 ---
 
@@ -33,13 +34,14 @@ The project follows a **hybrid structure** where actual implementation resides i
 site_progress_tracker/
 ├── android/                      # Android native code
 ├── ios/                          # iOS native code
-├── models/                       # WatermelonDB models and schema (Schema v8)
+├── models/                       # WatermelonDB models and schema (Schema v10)
 │   ├── migrations/               # Database migration files
 │   │   ├── 001-initial.js        # Initial schema
 │   │   ├── 002-daily-reports.js  # Added daily_reports table
-│   │   └── 003-hindrances-photos.js # Added photos to hindrances
+│   │   ├── 003-hindrances-photos.js # Added photos to hindrances
+│   │   └── 004-admin-users-roles.js # Added users and roles tables (v9→v10)
 │   ├── schema/                   # Database schema definitions
-│   │   └── index.ts              # Schema v8 definition
+│   │   └── index.ts              # Schema v10 definition
 │   ├── CategoryModel.ts          # Item/material category model
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
@@ -48,9 +50,11 @@ site_progress_tracker/
 │   ├── ProgressLogModel.ts       # Progress log model
 │   ├── ProgressReportModel.ts    # Progress report model (legacy)
 │   ├── ProjectModel.ts           # Project model
+│   ├── RoleModel.ts              # User roles model (v1.2)
 │   ├── SiteInspectionModel.ts    # Site inspection model (v1.0)
 │   ├── SiteModel.ts              # Construction site model
 │   ├── TaskModel.ts              # Task model (legacy)
+│   ├── UserModel.ts              # User accounts model (v1.2)
 │   └── database.ts               # Database initialization
 ├── services/                     # Application services
 │   ├── db/                       # Database services
@@ -80,6 +84,16 @@ site_progress_tracker/
 │   │   ├── ScheduleManagementScreen.tsx
 │   │   ├── ResourcePlanningScreen.tsx
 │   │   └── MilestoneTrackingScreen.tsx
+│   ├── admin/                    # Admin-specific screens (3 screens - v1.2)
+│   │   ├── AdminDashboardScreen.tsx      # Admin dashboard with statistics
+│   │   ├── ProjectManagementScreen.tsx   # Project CRUD with cascade delete
+│   │   ├── RoleManagementScreen.tsx      # User & role management
+│   │   ├── context/
+│   │   │   └── AdminContext.tsx          # Admin role switching context
+│   │   └── components/
+│   │       ├── ProjectCard.tsx           # Project display card
+│   │       ├── UserCard.tsx              # User display card
+│   │       └── StatisticsCard.tsx        # Dashboard statistics
 │   ├── supervisor/               # Supervisor-specific screens (7 screens)
 │   │   ├── DailyReportsScreen.tsx        # Submit daily progress reports
 │   │   ├── ReportsHistoryScreen.tsx      # View submitted reports history
@@ -94,8 +108,9 @@ site_progress_tracker/
 │   │       └── SiteSelector.tsx          # Reusable site selector component
 │   └── nav/                      # Navigation components
 │       ├── MainNavigator.tsx     # Root navigator
-│       ├── AuthNavigator.tsx     # Authentication flow navigator
-│       ├── RoleSelectionScreen.tsx # Role selection screen
+│       ├── AuthNavigator.tsx     # Authentication flow navigator (database-based)
+│       ├── RoleSelectionScreen.tsx # Role selection screen (legacy)
+│       ├── AdminNavigator.tsx    # Admin bottom tabs (3 tabs - v1.2)
 │       ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
 │       ├── ManagerNavigator.tsx   # Manager bottom tabs (4 tabs)
 │       ├── PlanningNavigator.tsx  # Planning bottom tabs (4 tabs)
@@ -169,6 +184,12 @@ site_progress_tracker/
 #### Role-based Screens
 Screens are organized by user role for clear separation of concerns:
 
+- **Admin** (`src/admin/`): 3 screens for system administration (v1.2)
+  - Dashboard with statistics and role switcher
+  - Project management with CASCADE deletion
+  - User and role management (CRUD operations)
+  - **Context Management**: AdminContext provides role switching and state management
+
 - **Supervisor** (`src/supervisor/`): 7 screens for field operations
   - Daily report submission, history viewing, hindrance reporting
   - Item management, material tracking, site management
@@ -198,7 +219,7 @@ Screens are organized by user role for clear separation of concerns:
 
 #### WatermelonDB Models
 - **Location**: `/models/` (root level, NOT in src/)
-- **Schema Version**: 8 (defined in `models/schema/index.ts`)
+- **Schema Version**: 10 (defined in `models/schema/index.ts`)
 - **Pattern**: Model classes extend `Model` with decorators for fields
 - **Migrations**: Tracked in `models/migrations/` for schema evolution
 
@@ -212,6 +233,8 @@ Screens are organized by user role for clear separation of concerns:
 7. **MaterialModel**: Material tracking
 8. **DailyReportModel**: Aggregated daily reports
 9. **SiteInspectionModel**: Safety inspection checklists (v1.0)
+10. **UserModel**: User accounts with authentication (v1.2)
+11. **RoleModel**: User roles and permissions (v1.2)
 
 #### Field Naming Convention (CRITICAL)
 - **Schema columns**: `snake_case` (e.g., `supervisor_id`, `start_date`)
@@ -219,6 +242,12 @@ Screens are organized by user role for clear separation of concerns:
 - **Decorator usage**: `@field('snake_case_column') camelCaseProperty!: type`
 - **When creating records**: Always use camelCase property names
 - **In queries**: Use snake_case column names with `Q.where()`
+
+#### Sync Status Field (CRITICAL)
+- **Issue**: WatermelonDB's Model class has a built-in `syncStatus` property
+- **Solution**: Use `syncStatusField` as the property name to avoid conflicts
+- **Pattern**: `@field('sync_status') syncStatusField!: string`
+- **Applies to**: ProgressLogModel, HindranceModel, DailyReportModel, SiteInspectionModel
 
 ### 3. Service Layer (`services/`)
 
@@ -259,9 +288,13 @@ Screens are organized by user role for clear separation of concerns:
 ```
 MainNavigator (Stack)
 ├── AuthNavigator (Stack)
-│   ├── LoginScreen
-│   └── RoleSelectionScreen
+│   ├── LoginScreen (Database-based authentication)
+│   └── RoleSelectionScreen (Legacy - not used in v1.2)
 └── Role-specific Navigators (Bottom Tabs)
+    ├── AdminNavigator (3 tabs - v1.2)
+    │   ├── AdminDashboardScreen (🏠 Dashboard)
+    │   ├── ProjectManagementScreen (📁 Projects)
+    │   └── RoleManagementScreen (👥 Users)
     ├── SupervisorNavigator (7 tabs)
     │   ├── DailyReportsScreen (📝 Reports)
     │   ├── ReportsHistoryScreen (📊 History)
@@ -289,10 +322,13 @@ MainNavigator (Stack)
 
 ### Navigation Patterns
 
-1. **Role-based Access**: Different navigators and screens per role
-2. **Bottom Tab Navigation**: Primary navigation within each role
-3. **Shared Context**: Supervisor screens share SiteContext for site selection
-4. **Type Safety**: Full TypeScript navigation types in `src/nav/types.ts`
+1. **Role-based Access**: Different navigators and screens per role (Admin, Supervisor, Manager, Planner, Logistics)
+2. **Database-based Authentication**: Login validates against users table with role-based routing (v1.2)
+3. **Bottom Tab Navigation**: Primary navigation within each role
+4. **Shared Context**:
+   - AdminContext for role switching and admin state management
+   - SiteContext for supervisor site selection
+5. **Type Safety**: Full TypeScript navigation types in `src/nav/types.ts`
 
 ---
 
@@ -300,10 +336,10 @@ MainNavigator (Stack)
 
 ### Schema Version History
 
-- **v1**: Initial schema with basic entities
-- **v2**: Added `daily_reports` table
-- **v3**: Added `photos` and `reported_at` to `hindrances`
-- **v8**: Current version with Site Inspection support
+- **v1-v7**: Progressive schema evolution with basic entities
+- **v8**: Added Site Inspection support with comprehensive checklists
+- **v9**: Preparation for user management features
+- **v10**: Current version - Added `users` and `roles` tables for Admin role implementation (v1.2)
 
 ### Core Collections
 
@@ -350,6 +386,18 @@ MainNavigator (Stack)
 - Fields: site_id, inspector_id, inspection_date, safety_items (JSON), overall_status, notes
 - **Relationships**: belongs_to site
 
+#### users (v1.2)
+- User accounts with authentication
+- Fields: username, password, full_name, email, phone, is_active, role_id
+- **Relationships**: belongs_to role
+- **Note**: Passwords currently stored as plaintext (TODO: implement bcrypt hashing)
+
+#### roles (v1.2)
+- User roles and permissions
+- Fields: name, description, permissions (JSON)
+- **Relationships**: has_many users
+- **System Roles**: Admin, Supervisor, Manager, Planner, Logistics
+
 ### Entity Relationship Diagram
 
 ```
@@ -387,6 +435,15 @@ MainNavigator (Stack)
 ┌──────────────┐
 │  Category    │──► Item (1:N)
 └──────────────┘
+
+┌──────────────┐        ┌──────────────┐
+│    Role      │◄───────│    User      │
+│  (v1.2)      │ 1:N    │  (v1.2)      │
+└──────────────┘        └──────────────┘
+     │                        │
+     │                        │ Authentication
+     │                        └─► LoginScreen
+     └─► Permissions (JSON)
 ```
 
 ### Relationships Summary
@@ -400,6 +457,8 @@ MainNavigator (Stack)
 - **Item → ProgressLogs** (1:N): Each item tracks daily progress updates
 - **Item → Materials** (1:N): Each item tracks required materials
 - **Item → Hindrances** (1:N, optional): Issues can be linked to specific items
+- **Role → Users** (1:N): One role can be assigned to multiple users (v1.2)
+- **User → Authentication**: Users authenticate via LoginScreen with database validation (v1.2)
 
 ### Database Best Practices
 
@@ -458,10 +517,12 @@ MainNavigator (Stack)
 
 ## Key Features
 
-### 1. Role-based Access Control
+### 1. Role-based Access Control (Enhanced in v1.2)
 - Different UI and functionality based on user role
-- 4 distinct role types: Supervisor, Manager, Planner, Logistics
-- Role selection during login flow
+- 5 distinct role types: Admin, Supervisor, Manager, Planner, Logistics
+- Database-based authentication with role assignment
+- Admin role for system administration and user management
+- Role switcher for admins to test different role views
 
 ### 2. Offline-first Architecture
 - Works without internet connectivity
@@ -469,7 +530,27 @@ MainNavigator (Stack)
 - Automatic sync when connectivity restored
 - Queue-based sync with conflict resolution
 
-### 3. Construction-Specific Workflows
+### 3. Admin Role Features (v1.2 - NEW)
+
+#### Dashboard
+- Real-time statistics (projects, sites, users, items)
+- Role switcher to view app as different roles
+- Quick navigation to management screens
+
+#### Project Management
+- Create, edit, and delete projects
+- Search projects by name, client, or status
+- Status management with color-coded chips
+- **CASCADE DELETE**: Deleting a project removes all associated sites, items, progress logs, hindrances, materials, daily reports, and site inspections
+
+#### User & Role Management
+- Create, edit, and delete users
+- Assign roles (Admin, Supervisor, Manager, Planner, Logistics)
+- Activate/Deactivate user accounts
+- Search users by username, name, or email
+- Password management (currently plaintext - TODO: bcrypt)
+
+### 4. Construction-Specific Workflows
 
 #### Daily Reporting (Supervisor)
 - Submit daily progress reports
@@ -501,31 +582,31 @@ MainNavigator (Stack)
 - Task status updates (not_started, in_progress, completed)
 - Weightage-based progress calculation
 
-### 4. Photo Documentation
+### 5. Photo Documentation
 - Camera integration via `react-native-image-picker`
 - Gallery access for existing photos
 - Photo storage as JSON arrays in database
 - Permission handling for camera access
 
-### 5. Site Context Management (Supervisor)
+### 6. Site Context Management (Supervisor)
 - Shared site selection across supervisor screens
 - Context provider: `src/supervisor/context/SiteContext.tsx`
 - Reusable component: `src/supervisor/components/SiteSelector.tsx`
 - Persistent site selection during session
 
-### 6. Data Synchronization
+### 7. Data Synchronization
 - Automatic sync when online
 - Manual sync trigger option
 - Sync status indicators
 - Conflict resolution for concurrent edits
 
-### 7. Modular Design
+### 8. Modular Design
 - Organized by feature and responsibility
 - Separation of concerns (UI, data, business logic)
 - Reusable components and contexts
 - Type-safe navigation
 
-### 8. Type Safety
+### 9. Type Safety
 - Full TypeScript support
 - Type definitions for navigation
 - Model type definitions
@@ -638,11 +719,13 @@ item.site_id = 'site-123';  // Will save empty value!
 
 - **Framework**: Jest
 - **Test Location**: `__tests__/`
-- **Test Users**: Defined in DATABASE.md
-  - Manager: `manager` / `manager123`
-  - Supervisor: `supervisor` / `supervisor123`
-  - Planner: `planner` / `planner123`
+- **Test Users**: Stored in database (seeded on first launch)
   - Admin: `admin` / `admin123`
+  - Supervisor: `supervisor` / `supervisor123`
+  - Manager: `manager` / `manager123`
+  - Planner: `planner` / `planner123`
+  - Logistics: `logistics` / `logistics123`
+- **Admin Test Plan**: See ADMIN_TEST_PLAN.md for comprehensive v1.2 testing (54 tests - all passing)
 
 ### Git Workflow
 
@@ -659,7 +742,7 @@ item.site_id = 'site-123';  // Will save empty value!
 
 - **React Native**: Mobile framework
 - **TypeScript**: Type safety and developer experience
-- **WatermelonDB**: Offline-first reactive database (Schema v8)
+- **WatermelonDB**: Offline-first reactive database (Schema v10)
 - **SQLite**: Database backend
 
 ### Navigation
@@ -871,7 +954,16 @@ Based on the current structure, these areas are prepared for future development:
 - **v0.7**: Added Reports History screen for supervisors
 - **v0.8**: Added Hindrance Report screen with photo capture
 - **v0.9**: Enhanced database schema and sync capabilities
-- **v1.0**: Added Site Inspection screen with comprehensive safety checklists
+- **v1.0**: Added Site Inspection screen with comprehensive safety checklists (Schema v8)
+- **v1.1**: Navigation UX improvements with enhanced supervisor workflow
+- **v1.2**: Admin Role Implementation (Current - Schema v10)
+  - Database-based authentication
+  - User and role management (CRUD)
+  - Project management with CASCADE deletion
+  - Role switcher for testing
+  - AdminNavigator with 3 screens
+  - AdminContext for state management
+  - 54 comprehensive tests (all passing)
 
 ---
 
@@ -883,10 +975,12 @@ Based on the current structure, these areas are prepared for future development:
 - **CLAUDE.md**: Development guidelines and AI assistant instructions
 - **README.md**: Setup instructions and project overview
 - **Testing Documentation**:
+  - ADMIN_TEST_PLAN.md - v1.2 admin role testing (54 comprehensive tests)
   - TESTING_GUIDE.md
   - HINDRANCE_REPORT_TESTING.md
   - REPORTS_HISTORY_TESTING.md
   - SITE_INSPECTION_TESTING.md
+- **Next Steps**: NEXT_STEPS.md - Future roadmap and enhancements
 
 ---
 
