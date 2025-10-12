@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth, UserRole } from './AuthContext';
+import { database } from '../../models/database';
+import UserModel from '../../models/UserModel';
+import { Q } from '@nozbe/watermelondb';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -12,6 +15,7 @@ type AuthStackParamList = {
 };
 
 type RootStackParamList = {
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
@@ -27,25 +31,10 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
   const [isLoading, setIsLoading] = useState(false);
   const { login, selectRole, getLastSelectedRole } = useAuth();
 
-  const defaultUsers: { [key: string]: { password: string; availableRoles: UserRole[] } } = {
-    'admin': { password: 'admin123', availableRoles: ['manager', 'supervisor', 'planning', 'logistics'] },
-    'manager': { password: 'manager123', availableRoles: ['manager'] },
-    'supervisor': { password: 'supervisor123', availableRoles: ['supervisor'] },
-    'planner': { password: 'planner123', availableRoles: ['planning'] },
-    'logistics': { password: 'logistics123', availableRoles: ['logistics'] },
-  };
-
-  const navigateToRole = (role: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-    };
-
+  const navigateToScreen = (screenName: keyof RootStackParamList) => {
     navigation.reset({
       index: 0,
-      routes: [{ name: roleMap[role] }],
+      routes: [{ name: screenName }],
     });
   };
 
@@ -58,11 +47,38 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     setIsLoading(true);
 
     try {
-      // Check if the user exists in our default users
-      const user = defaultUsers[username];
+      // Query user from database
+      const users = await database.collections
+        .get<UserModel>('users')
+        .query(Q.where('username', username))
+        .fetch();
 
-      if (!user || user.password !== password) {
+      if (users.length === 0) {
         Alert.alert('Login Failed', 'Invalid username or password');
+        setIsLoading(false);
+        return;
+      }
+
+      const user = users[0];
+
+      // Check password (in production, compare hashed password)
+      if (user.password !== password) {
+        Alert.alert('Login Failed', 'Invalid username or password');
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        Alert.alert('Account Disabled', 'Your account has been deactivated. Please contact an administrator.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Get user's role
+      const role = await user.role.fetch();
+      if (!role) {
+        Alert.alert('Error', 'Unable to determine user role');
         setIsLoading(false);
         return;
       }
@@ -70,33 +86,27 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       // Simulate API call delay
       await new Promise<void>(resolve => setTimeout(resolve, 500));
 
-      // Save user data to context
-      await login(username, username, user.availableRoles);
+      // Save user data to context (still using old auth system for compatibility)
+      await login(user.id, user.username, [role.name.toLowerCase() as UserRole]);
 
-      // Option 1: Single role user - auto-navigate directly
-      if (user.availableRoles.length === 1) {
-        const singleRole = user.availableRoles[0];
-        await selectRole(singleRole);
-        navigateToRole(singleRole);
-        return;
+      // Navigate based on role
+      if (role.name === 'Admin') {
+        navigateToScreen('Admin');
+      } else if (role.name === 'Supervisor') {
+        navigateToScreen('Supervisor');
+      } else if (role.name === 'Manager') {
+        navigateToScreen('Manager');
+      } else if (role.name === 'Planner') {
+        navigateToScreen('Planning');
+      } else if (role.name === 'Logistics') {
+        navigateToScreen('Logistics');
+      } else {
+        Alert.alert('Error', 'Unknown role type');
+        setIsLoading(false);
       }
-
-      // Option 2: Multi-role user - check for last selected role
-      const lastRole = await getLastSelectedRole();
-      if (lastRole && user.availableRoles.includes(lastRole)) {
-        // Auto-navigate to last used role
-        await selectRole(lastRole);
-        navigateToRole(lastRole);
-        return;
-      }
-
-      // Option 3: No last role - show role selection screen
-      navigation.replace('RoleSelection', {
-        userId: username,
-        username: username
-      });
     } catch (error) {
-      Alert.alert('Login Failed', 'Network error occurred');
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', 'An error occurred during login');
       setIsLoading(false);
     }
   };
@@ -143,28 +153,36 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       <View style={styles.demoSection}>
         <Text style={styles.demoTitle}>Demo Users</Text>
         <View style={styles.demoButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
+            style={[styles.demoButton, styles.adminButton]}
+            onPress={() => handleDefaultLogin('admin', 'admin123')}
+          >
+            <Text style={styles.demoButtonText}>Admin</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.demoButton}
             onPress={() => handleDefaultLogin('supervisor', 'supervisor123')}
           >
             <Text style={styles.demoButtonText}>Supervisor</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.demoButton}
             onPress={() => handleDefaultLogin('manager', 'manager123')}
           >
             <Text style={styles.demoButtonText}>Manager</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+        </View>
+        <View style={[styles.demoButtons, styles.demoButtonsSecondRow]}>
+          <TouchableOpacity
             style={styles.demoButton}
             onPress={() => handleDefaultLogin('planner', 'planner123')}
           >
             <Text style={styles.demoButtonText}>Planner</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.demoButton}
             onPress={() => handleDefaultLogin('logistics', 'logistics123')}
           >
@@ -249,6 +267,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  demoButtonsSecondRow: {
+    marginTop: 10,
+  },
   demoButton: {
     flex: 1,
     backgroundColor: '#4CD964',
@@ -256,6 +277,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderRadius: 6,
     alignItems: 'center',
+  },
+  adminButton: {
+    backgroundColor: '#F44336',
   },
   demoButtonText: {
     color: 'white',

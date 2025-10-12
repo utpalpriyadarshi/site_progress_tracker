@@ -1,5 +1,6 @@
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;

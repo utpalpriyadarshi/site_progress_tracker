@@ -12,6 +12,110 @@ export class SimpleDatabaseService {
         return;
       }
 
+      // ✅ Create default roles
+      const adminRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'Admin';
+          role.description = 'Administrator with full system access';
+          role.permissions = JSON.stringify(['all']);
+        });
+      });
+
+      const supervisorRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'Supervisor';
+          role.description = 'Site supervisor managing daily operations';
+          role.permissions = JSON.stringify(['view_sites', 'manage_items', 'create_reports', 'view_materials']);
+        });
+      });
+
+      const managerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'Manager';
+          role.description = 'Project manager overseeing multiple sites';
+          role.permissions = JSON.stringify(['view_projects', 'view_sites', 'view_reports', 'manage_team']);
+        });
+      });
+
+      const plannerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'Planner';
+          role.description = 'Planning specialist for project scheduling';
+          role.permissions = JSON.stringify(['view_projects', 'manage_schedule', 'view_items']);
+        });
+      });
+
+      const logisticsRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'Logistics';
+          role.description = 'Logistics coordinator for materials and equipment';
+          role.permissions = JSON.stringify(['view_materials', 'manage_materials', 'view_suppliers']);
+        });
+      });
+
+      // ✅ Create default users
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'admin';
+          user.password = 'admin123'; // In production, hash this
+          user.fullName = 'Admin User';
+          user.email = 'admin@construction.com';
+          user.phone = '+1234567890';
+          user.isActive = true;
+          user.roleId = adminRole.id;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'supervisor';
+          user.password = 'supervisor123';
+          user.fullName = 'John Supervisor';
+          user.email = 'supervisor@construction.com';
+          user.phone = '+1234567891';
+          user.isActive = true;
+          user.roleId = supervisorRole.id;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'manager';
+          user.password = 'manager123';
+          user.fullName = 'Jane Manager';
+          user.email = 'manager@construction.com';
+          user.phone = '+1234567892';
+          user.isActive = true;
+          user.roleId = managerRole.id;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'planner';
+          user.password = 'planner123';
+          user.fullName = 'Mike Planner';
+          user.email = 'planner@construction.com';
+          user.phone = '+1234567893';
+          user.isActive = true;
+          user.roleId = plannerRole.id;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'logistics';
+          user.password = 'logistics123';
+          user.fullName = 'Sarah Logistics';
+          user.email = 'logistics@construction.com';
+          user.phone = '+1234567894';
+          user.isActive = true;
+          user.roleId = logisticsRole.id;
+        });
+      });
+
+      console.log('Default roles and users created successfully');
+
       // ✅ Create default project
       const sampleProject = await database.write(async () => {
         return await database.collections.get('projects').create((project: any) => {
