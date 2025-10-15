@@ -8,6 +8,7 @@ import GanttChartScreen from '../planning/GanttChartScreen';
 import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
 import MilestoneTrackingScreen from '../planning/MilestoneTrackingScreen';
+import BaselineScreen from '../planning/BaselineScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
 
@@ -24,6 +25,7 @@ export type PlanningTabParamList = {
   ScheduleManagement: undefined;
   ResourcePlanning: undefined;
   MilestoneTracking: undefined;
+  Baseline: undefined;
 };
 
 type PlanningNavigatorProps = {
@@ -75,6 +77,8 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
             iconSymbol = '👷';
           } else if (route.name === 'MilestoneTracking') {
             iconSymbol = '🏁';
+          } else if (route.name === 'Baseline') {
+            iconSymbol = '📋';
           }
 
           return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -118,14 +122,23 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
           headerTitle: 'Resource Planning',
         }} 
       />
-      <Tab.Screen 
-        name="MilestoneTracking" 
-        component={MilestoneTrackingScreen} 
-        options={{ 
+      <Tab.Screen
+        name="MilestoneTracking"
+        component={MilestoneTrackingScreen}
+        options={{
           title: 'Milestones',
           headerShown: true,
           headerTitle: 'Milestone Tracking',
-        }} 
+        }}
+      />
+      <Tab.Screen
+        name="Baseline"
+        component={BaselineScreen}
+        options={{
+          title: 'Baseline',
+          headerShown: true,
+          headerTitle: 'Baseline Planning',
+        }}
       />
     </Tab.Navigator>
   );

@@ -99,5 +99,41 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 11,
+      steps: [
+        addColumns({
+          table: 'items',
+          columns: [
+            { name: 'baseline_start_date', type: 'number', isOptional: true },
+            { name: 'baseline_end_date', type: 'number', isOptional: true },
+            { name: 'dependencies', type: 'string', isOptional: true },
+            { name: 'is_baseline_locked', type: 'boolean' },
+            { name: 'actual_start_date', type: 'number', isOptional: true },
+            { name: 'actual_end_date', type: 'number', isOptional: true },
+            { name: 'critical_path_flag', type: 'boolean', isOptional: true },
+          ],
+        }),
+        createTable({
+          name: 'schedule_revisions',
+          columns: [
+            { name: 'item_id', type: 'string', isIndexed: true },
+            { name: 'old_start_date', type: 'number' },
+            { name: 'old_end_date', type: 'number' },
+            { name: 'new_start_date', type: 'number' },
+            { name: 'new_end_date', type: 'number' },
+            { name: 'reason', type: 'string' },
+            { name: 'revision_version', type: 'number' },
+            { name: 'revised_by', type: 'string', isIndexed: true },
+            { name: 'approved_by', type: 'string', isOptional: true },
+            { name: 'approval_status', type: 'string' },
+            { name: 'impact_summary', type: 'string', isOptional: true },
+            { name: 'sync_status', type: 'string' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

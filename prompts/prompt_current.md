@@ -1,97 +1,152 @@
-Prompt:
+Prompt 7
 
-I’m extending my existing React Native app called Construction Site Progress Tracker, which already has offline-first architecture using WatermelonDB, role-based navigation (Supervisor, Manager, Planner, Logistics), and entity models such as Projects, Sites, Items, and DailyReports.
+🧩 Suggested Prompt Refinement for Each Screen
+P1 — BaselineScreen.tsx
 
-I need to implement an Admin role with the following features:
+Goal: Establish a master plan for schedule control.
 
-1. Role Overview
+Add these refinements:
 
-Admin is a user type who can switch between roles (Supervisor, Manager, Planner, Logistic) using a dropdown selector or toggle button at the top of the main admin page.
+Allow project selection at top (dropdown or context from active project)
 
-When switched, the admin should see the same UI and functionality as the selected role (reuse existing navigators).
+Editable list of project items with planned start/end date pickers
 
-Admin mode should clearly display the active role context.
+“Set Dependency” modal (select predecessor/successor)
 
-2. CRUD Administration
+Button: [Calculate Critical Path]
 
-Create a dedicated AdminDashboardScreen accessible only to Admin users.
+Use topological sort (Kahn’s algorithm) with durations
 
-Admin should be able to:
+Button: [Lock Baseline]
 
-Manage Projects (Create, Read, Update, Delete)
+When locked → baseline dates copied to baseline_start_date, baseline_end_date fields in DB
 
-Manage Roles (Create, Assign, Update, Delete)
+Extra prompt refinement:
 
-Assign roles to users
+Integrate with WatermelonDB items table by adding planned_start_date, planned_end_date, baseline_start_date, baseline_end_date, and dependencies (JSON array of item IDs). Use database.write() transactions. Store dates as timestamps (numbers).
 
-Implement CRUD using WatermelonDB (local-first) — updates should work offline and sync when online.
+P2 — GanttChartScreen.tsx
 
-Use database.write() transactions for create/update/delete.
+Goal: Visual, interactive progress comparison.
 
-3. UI/UX Requirements
+Add these refinements:
 
-Use React Navigation to add a new AdminNavigator with:
+Use react-native-svg or react-native-animated-gantt-chart for rendering.
 
-AdminDashboardScreen (overview + role switcher)
+Horizontal scrollable timeline (week/day/month zoom)
 
-ProjectManagementScreen
+Each item:
 
-RoleManagementScreen
+Bar = planned duration (gray)
 
-Use React Native Paper (or your preferred component library) for UI consistency.
+Overlay bar = actual progress (green/orange/red depending on variance)
 
-Add a Floating Action Button (FAB) for adding new records (projects or roles).
+Dependency arrows (SVG lines between bars)
 
-Each management screen should include:
+Critical path items highlighted (red border)
 
-A searchable list
+Tap item → open detail modal (planned vs actual dates, variance, progress %)
 
-Modal forms for create/edit
+Extra prompt refinement:
 
-Swipe-to-delete or context menu for delete
+Fetch planned & actual progress data from items and progress_logs. Calculate variance dynamically. Use moment or dayjs for time scale calculations.
 
-4. Role Switching
+P3 — ProgressAnalyticsScreen.tsx
 
-Maintain selected role context using React Context or Redux.
+Goal: Quantitative insight.
 
-When the admin switches roles, update the global role state and render the corresponding role navigator (SupervisorNavigator, ManagerNavigator, etc.).
+Add these refinements:
 
-Persist the last selected role using AsyncStorage.
+KPIs:
 
-5. Code & Architecture Expectations
+Overall Progress (%) = sum(actual_qty) / sum(planned_qty)
 
-Modify existing MainNavigator to include the AdminNavigator.
+Schedule Variance (days) = average(actual_end_date - planned_end_date)
 
-Add new WatermelonDB models and schemas if needed (e.g., roles or users_roles table).
+Charts:
 
-Ensure consistency with your naming convention:
+Line chart: Progress trend (weekly)
 
-snake_case for schema fields
+Bar chart: Schedule variance by site/item
 
-camelCase for model properties
+Donut chart: On-track / delayed / ahead
 
-Include TypeScript types for new entities (e.g., Role, UserRole, Project).
+Alerts:
 
-6. Output Expected
+List items behind schedule (variance > 0)
 
-Please generate:
+Forecast:
 
-AdminNavigator.tsx
+Trend-based completion estimate (use linear regression or moving average)
 
-AdminDashboardScreen.tsx
+Extra prompt refinement:
 
-ProjectManagementScreen.tsx
+Use recharts for visual analytics. Fetch data offline from WatermelonDB collections items and progress_logs. Include a “Sync Status” indicator showing if analytics are based on offline data.
 
-RoleManagementScreen.tsx
+P4 — ScheduleUpdateScreen.tsx
 
-Example code showing role switching logic using Context API
+Goal: Controlled re-planning.
 
-Example WatermelonDB model for roles
+Add these refinements:
 
-Optional
+Editable list of items with current vs revised planned dates
 
-Include offline sync placeholders for admin CRUD changes.
+Field: “Reason for change” (text input or dropdown)
 
-Use mock data for users and projects if real sync isn’t implemented yet.
+On submit:
 
-Goal: A fully functional Admin interface that integrates cleanly into the existing architecture — reuses navigators, adheres to WatermelonDB best practices, and lets Admin manage both projects and roles with CRUD, while being able to switch into any role context seamlessly.
+Store revision in schedule_revisions table with fields:
+
+item_id, old_start, old_end, new_start, new_end, reason, timestamp
+
+Calculate and display impact:
+
+If a predecessor is delayed, dependent items show “Impacted”
+
+Compare charts: Baseline vs Revised Gantt overlay
+
+Extra prompt refinement:
+
+Add a new WatermelonDB model: schedule_revisions. Each revision is versioned (v1, v2, …). Keep baseline locked for reference. Allow exporting revision history as JSON.
+
+🔧 Additional Planning Module Infrastructure (Before You Code)
+
+Add these in your prompt sequence before implementing the screens:
+
+PL1 – Schema Update
+
+Update WatermelonDB schema to version 11:
+
+Add planned_start_date, planned_end_date, baseline_start_date, baseline_end_date to items
+
+Add new table schedule_revisions with:
+
+id, item_id, old_start, old_end, new_start, new_end, reason, timestamp
+
+PL2 – PlanningService.ts
+
+Create /src/planning/PlanningService.ts containing:
+
+calculateCriticalPath(items: Item[]): Item[]
+
+calculateProgressMetrics(projectId: string)
+
+calculateScheduleVariance(itemId: string)
+
+generateForecast(projectId: string)
+
+Keep computation in this file to reuse across screens.
+
+PL3 – Navigation
+
+Create PlanningNavigator with 4 bottom tabs:
+
+Baseline
+
+Gantt
+
+Analytics
+
+Schedule Update
+
+Each tab loads one of the four screens.
