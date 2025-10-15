@@ -10,12 +10,19 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Offline-First**: Works seamlessly without internet connectivity
 - **Construction-Specific**: Tailored for construction site management workflows
 - **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, and admin
-- **Admin Role** (v1.2 - NEW): Complete administration panel with:
+- **Admin Role** (v1.2): Complete administration panel with:
   - User management (CRUD operations)
   - Role assignment
   - Project management with cascade deletion
   - Role switching to test different user experiences
   - Active/inactive user account management
+- **Planning Module** (v1.3 - NEW): Advanced project planning capabilities with:
+  - Critical path calculation using Kahn's algorithm
+  - Dependency management with circular dependency detection
+  - Baseline planning and locking
+  - Visual critical path indicators
+  - Progress metrics and forecasting
+  - Schedule variance tracking
 - **Progress Tracking**: Detailed logging of work progress with photo documentation
 - **Daily Reports**: Submit daily progress reports with automatic aggregation and history viewing
 - **Hindrance Management**: Report and track construction issues/obstacles with photo capture (camera/gallery)
@@ -24,6 +31,7 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Site Context**: Persistent site selection across all supervisor screens
 - **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
 - **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
+- **Automated Testing** (v1.3 - NEW): 35 tests with Jest covering critical functionality
 
 ## Getting Started
 
@@ -105,7 +113,7 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB (Schema v10, updated October 2025) for robust offline-first data management with the following entities:
+The app uses WatermelonDB (Schema v11, updated October 2025) for robust offline-first data management with the following entities:
 
 ### Core Entities
 - **Projects**: Top-level project containers with client, dates, and budgets
@@ -117,13 +125,22 @@ The app uses WatermelonDB (Schema v10, updated October 2025) for robust offline-
 - **Materials**: Construction materials with procurement tracking
 - **DailyReports**: Aggregated daily progress reports with sync status
 - **SiteInspections**: Site inspection records with checklists and photos
+- **ScheduleRevisions** (v1.3 - NEW): Track schedule changes and their impact
 
-### Admin & User Management (v1.2 - NEW)
+### Admin & User Management (v1.2)
 - **Users**: User accounts with authentication credentials
 - **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
 
+### Planning Fields (v1.3 - NEW)
+Items now include advanced planning capabilities:
+- **baseline_start_date / baseline_end_date**: Locked baseline dates
+- **dependencies**: JSON array of dependent item IDs
+- **is_baseline_locked**: Boolean flag for baseline lock status
+- **actual_start_date / actual_end_date**: Track actual work dates
+- **critical_path_flag**: Boolean flag indicating critical path items
+
 ### Key Database Features
-- **Schema Version 10**: Latest schema with user management and admin features
+- **Schema Version 11**: Latest schema with planning module features (v1.3)
 - **Offline-First**: All operations work without internet
 - **Sync Status**: Track pending/synced/failed states for all records
 - **Photo Storage**: JSON arrays for multiple photos per record
@@ -176,9 +193,42 @@ database.collections.get('sites')
 
 ## Development Commands
 
-- **Testing**: `npm test` or `yarn test` - Run tests with Jest
+- **Testing**: `npm test` or `yarn test` - Run tests with Jest (35 tests passing)
+- **Testing with Coverage**: `npm test -- --coverage` - Generate coverage report
 - **Linting**: `npm run lint` or `yarn lint` - Check code style with ESLint
 - **Fast Refresh**: When Metro is running, save changes to files to automatically reload them (powered by Fast Refresh)
+
+### Testing (v1.3 - NEW)
+
+The project now includes comprehensive automated testing:
+
+**Test Coverage:**
+- 35 tests passing (100% pass rate)
+- Test execution time: ~7 seconds
+- Coverage: ItemModel 100%, PlanningService 13.47%
+
+**Test Suites:**
+- **PlanningService Tests** (9 tests): Circular dependency detection, linear dependencies, branching dependencies, self-dependencies, missing dependencies handling
+- **ItemModel Tests** (26 tests): Dependency JSON parsing, duration calculations, variance calculations, progress percentage calculations
+
+**Quick Commands:**
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test PlanningService.test.ts
+
+# Run in watch mode
+npm test -- --watch
+```
+
+**Documentation:**
+- See [TESTING_QUICKSTART.md](./TESTING_QUICKSTART.md) for a 10-minute testing guide
+- See [TESTING_STRATEGY.md](./TESTING_STRATEGY.md) for comprehensive testing strategy
 
 ## Architecture
 
@@ -218,6 +268,7 @@ MainNavigator
     │   ├── FinancialReportsScreen
     │   └── ResourceAllocationScreen
     ├── PlanningNavigator (Bottom Tabs)
+    │   ├── BaselineScreen (v1.3 - NEW) - Project planning with dependencies
     │   ├── GanttChartScreen
     │   ├── ScheduleManagementScreen
     │   ├── ResourcePlanningScreen
@@ -303,13 +354,39 @@ When you want to forcefully reload, for example to reset the state of your app, 
 
 ## Documentation
 
+### Architecture & Database
+- [Unified Architecture](./ARCHITECTURE_UNIFIED.md) - Complete unified architecture documentation
 - [Architecture Documentation](./ARCHITECTURE.md) - Detailed technical architecture overview
 - [Database Schema](./DATABASE.md) - Complete database schema documentation
-- [Admin Test Plan](./ADMIN_TEST_PLAN.md) - Comprehensive testing guide for admin features (v1.2)
+
+### Testing Documentation (v1.3 - NEW)
+- [Testing Quick Start](./TESTING_QUICKSTART.md) - 10-minute testing guide
+- [Testing Strategy](./TESTING_STRATEGY.md) - Comprehensive testing strategy
+- [Testing Session Checklist](./TESTING_SESSION_CHECKLIST.md) - Manual testing checklist
+- [Admin Test Plan](./ADMIN_TEST_PLAN.md) - Admin features testing guide (v1.2)
+
+### Planning Module Documentation (v1.3 - NEW)
+- [Planning Module Status](./PLANNING_MODULE_IMPLEMENTATION_STATUS.md) - Implementation status and progress
+- [Planning Module Quick Start](./PLANNING_MODULE_QUICK_START.md) - User guide for planning features
+- [Planning Module Fixes](./PLANNING_MODULE_FIXES_v1.3.md) - UX fixes and improvements
+- [Planning Testing Plan](./PLANNING_MODULE_TESTING_PLAN.md) - Comprehensive testing plan
 
 ## Version History
 
-### v1.2 - Admin Role Implementation (Current)
+### v1.3 - Planning Module & Testing Infrastructure (Current)
+- ✅ Database schema upgraded to v11 (7 new planning fields in items table)
+- ✅ Planning Service with critical path calculation (Kahn's algorithm)
+- ✅ Baseline Planning Screen with visual indicators
+- ✅ Dependency management with circular detection
+- ✅ Progress metrics and forecasting
+- ✅ Schedule variance tracking
+- ✅ ScheduleRevisionModel for tracking changes
+- ✅ ItemModel helper methods (7 new methods)
+- ✅ Automated testing infrastructure (Jest + 35 tests)
+- ✅ UX fixes for critical path visualization
+- **Components Added**: BaselineScreen (295 lines), ItemPlanningCard (250 lines), DependencyModal (184 lines), ProjectSelector (71 lines), PlanningService (479 lines)
+
+### v1.2 - Admin Role Implementation
 - ✅ Database schema upgraded to v10
 - ✅ User and role management tables
 - ✅ Admin Navigator with 3 screens

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 10, // Incremented for admin role management (users, roles, user_roles tables)
+  version: 11, // Incremented for planning module (baseline dates, dependencies, schedule revisions)
   tables: [
     tableSchema({
       name: 'projects',
@@ -43,6 +43,14 @@ export default appSchema({
         { name: 'planned_end_date', type: 'number' }, // timestamp
         { name: 'status', type: 'string' }, // not_started, in_progress, completed
         { name: 'weightage', type: 'number' }, // percentage of total project
+        // Planning module fields (v11)
+        { name: 'baseline_start_date', type: 'number', isOptional: true }, // locked baseline start
+        { name: 'baseline_end_date', type: 'number', isOptional: true }, // locked baseline end
+        { name: 'dependencies', type: 'string', isOptional: true }, // JSON array of item IDs
+        { name: 'is_baseline_locked', type: 'boolean' }, // baseline lock status
+        { name: 'actual_start_date', type: 'number', isOptional: true }, // when work actually began
+        { name: 'actual_end_date', type: 'number', isOptional: true }, // when work actually completed
+        { name: 'critical_path_flag', type: 'boolean', isOptional: true }, // on critical path
       ],
     }),
     tableSchema({
@@ -136,6 +144,23 @@ export default appSchema({
         { name: 'name', type: 'string', isIndexed: true }, // role name (Admin, Supervisor, Manager, etc.)
         { name: 'description', type: 'string', isOptional: true }, // role description
         { name: 'permissions', type: 'string' }, // JSON string of permissions array
+      ],
+    }),
+    tableSchema({
+      name: 'schedule_revisions',
+      columns: [
+        { name: 'item_id', type: 'string', isIndexed: true }, // belongs to item
+        { name: 'old_start_date', type: 'number' }, // previous planned start
+        { name: 'old_end_date', type: 'number' }, // previous planned end
+        { name: 'new_start_date', type: 'number' }, // new planned start
+        { name: 'new_end_date', type: 'number' }, // new planned end
+        { name: 'reason', type: 'string' }, // reason for schedule change
+        { name: 'revision_version', type: 'number' }, // v1, v2, v3...
+        { name: 'revised_by', type: 'string', isIndexed: true }, // user ID who made change
+        { name: 'approved_by', type: 'string', isOptional: true }, // approver user ID
+        { name: 'approval_status', type: 'string' }, // pending, approved, rejected
+        { name: 'impact_summary', type: 'string', isOptional: true }, // JSON: affected items
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
   ],

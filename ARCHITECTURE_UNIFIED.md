@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, and material management.
+A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v1.2 (Admin Role Implementation)
-**Database Schema Version**: 10
+**Current Version**: v1.3 (Planning Module & Testing Infrastructure)
+**Database Schema Version**: 11
 **Platform**: React Native (Android & iOS)
 **Last Updated**: October 2025
 
@@ -34,14 +34,15 @@ The project follows a **hybrid structure** where actual implementation resides i
 site_progress_tracker/
 ├── android/                      # Android native code
 ├── ios/                          # iOS native code
-├── models/                       # WatermelonDB models and schema (Schema v10)
+├── models/                       # WatermelonDB models and schema (Schema v11)
 │   ├── migrations/               # Database migration files
 │   │   ├── 001-initial.js        # Initial schema
 │   │   ├── 002-daily-reports.js  # Added daily_reports table
 │   │   ├── 003-hindrances-photos.js # Added photos to hindrances
-│   │   └── 004-admin-users-roles.js # Added users and roles tables (v9→v10)
+│   │   ├── 004-admin-users-roles.js # Added users and roles tables (v9→v10)
+│   │   └── 005-planning-fields.js # Added planning fields to items (v10→v11)
 │   ├── schema/                   # Database schema definitions
-│   │   └── index.ts              # Schema v10 definition
+│   │   └── index.ts              # Schema v11 definition
 │   ├── CategoryModel.ts          # Item/material category model
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
@@ -53,10 +54,13 @@ site_progress_tracker/
 │   ├── RoleModel.ts              # User roles model (v1.2)
 │   ├── SiteInspectionModel.ts    # Site inspection model (v1.0)
 │   ├── SiteModel.ts              # Construction site model
+│   ├── ScheduleRevisionModel.ts  # Schedule revision model (v1.3 - NEW)
 │   ├── TaskModel.ts              # Task model (legacy)
 │   ├── UserModel.ts              # User accounts model (v1.2)
 │   └── database.ts               # Database initialization
 ├── services/                     # Application services
+│   ├── planning/                 # Planning services (v1.3 - NEW)
+│   │   └── PlanningService.ts    # Critical path, metrics, forecasting
 │   ├── db/                       # Database services
 │   │   ├── SimpleDatabaseService.ts  # Basic database service & initialization
 │   │   └── DatabaseService.ts        # Enhanced database service with queries
@@ -79,11 +83,16 @@ site_progress_tracker/
 │   │   ├── TeamManagementScreen.tsx
 │   │   ├── FinancialReportsScreen.tsx
 │   │   └── ResourceAllocationScreen.tsx
-│   ├── planning/                 # Planning-specific screens (4 screens)
+│   ├── planning/                 # Planning-specific screens (5 screens)
+│   │   ├── BaselineScreen.tsx         # Baseline planning (v1.3 - NEW)
 │   │   ├── GanttChartScreen.tsx
 │   │   ├── ScheduleManagementScreen.tsx
 │   │   ├── ResourcePlanningScreen.tsx
-│   │   └── MilestoneTrackingScreen.tsx
+│   │   ├── MilestoneTrackingScreen.tsx
+│   │   └── components/                # Planning components (v1.3 - NEW)
+│   │       ├── ProjectSelector.tsx    # Project dropdown selector
+│   │       ├── ItemPlanningCard.tsx   # Item card with date pickers
+│   │       └── DependencyModal.tsx    # Dependency management modal
 │   ├── admin/                    # Admin-specific screens (3 screens - v1.2)
 │   │   ├── AdminDashboardScreen.tsx      # Admin dashboard with statistics
 │   │   ├── ProjectManagementScreen.tsx   # Project CRUD with cascade delete
@@ -116,7 +125,11 @@ site_progress_tracker/
 │       ├── PlanningNavigator.tsx  # Planning bottom tabs (4 tabs)
 │       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
 │       └── types.ts              # Navigation type definitions
-├── __tests__/                    # Test files
+├── __tests__/                    # Test files (v1.3 - NEW)
+│   ├── models/                   # Model tests
+│   │   └── ItemModel.test.ts     # ItemModel tests (26 tests)
+│   └── services/                 # Service tests
+│       └── PlanningService.test.ts # PlanningService tests (9 tests)
 ├── prompts/                      # Project prompts and documentation
 ├── node_modules/                 # NPM dependencies
 ├── .vscode/                      # VS Code settings
@@ -135,7 +148,8 @@ site_progress_tracker/
 ├── DATABASE.md                   # Database schema documentation
 ├── Gemfile                       # Ruby dependencies (for iOS)
 ├── index.js                      # App entry point
-├── jest.config.js                # Jest configuration
+├── jest.config.js                # Jest configuration (v1.3 - configured)
+├── jest.setup.js                 # Jest setup with mocks (v1.3 - NEW)
 ├── metro.config.js               # Metro bundler configuration
 ├── package.json                  # Project dependencies and scripts
 ├── README.md                     # Project README
@@ -200,7 +214,9 @@ Screens are organized by user role for clear separation of concerns:
   - Project overview, team management
   - Financial reports, resource allocation
 
-- **Planning** (`src/planning/`): 4 screens for scheduling
+- **Planning** (`src/planning/`): 5 screens for scheduling (v1.3 updated)
+  - Baseline planning with critical path calculation (NEW)
+  - Dependency management with circular detection (NEW)
   - Gantt charts, schedule management
   - Resource planning, milestone tracking
 
@@ -219,7 +235,7 @@ Screens are organized by user role for clear separation of concerns:
 
 #### WatermelonDB Models
 - **Location**: `/models/` (root level, NOT in src/)
-- **Schema Version**: 10 (defined in `models/schema/index.ts`)
+- **Schema Version**: 11 (defined in `models/schema/index.ts`)
 - **Pattern**: Model classes extend `Model` with decorators for fields
 - **Migrations**: Tracked in `models/migrations/` for schema evolution
 
@@ -227,7 +243,7 @@ Screens are organized by user role for clear separation of concerns:
 1. **ProjectModel**: Top-level project container
 2. **SiteModel**: Construction sites (belongs to projects)
 3. **CategoryModel**: Item categorization
-4. **ItemModel**: Construction work items (belongs to sites and categories)
+4. **ItemModel**: Construction work items (belongs to sites and categories) - **Enhanced v1.3 with 7 planning fields**
 5. **ProgressLogModel**: Progress tracking records (with photos)
 6. **HindranceModel**: Issues/obstacles (with photos, timestamps)
 7. **MaterialModel**: Material tracking
@@ -235,6 +251,7 @@ Screens are organized by user role for clear separation of concerns:
 9. **SiteInspectionModel**: Safety inspection checklists (v1.0)
 10. **UserModel**: User accounts with authentication (v1.2)
 11. **RoleModel**: User roles and permissions (v1.2)
+12. **ScheduleRevisionModel**: Schedule revision tracking (v1.3 - NEW)
 
 #### Field Naming Convention (CRITICAL)
 - **Schema columns**: `snake_case` (e.g., `supervisor_id`, `start_date`)
@@ -339,7 +356,8 @@ MainNavigator (Stack)
 - **v1-v7**: Progressive schema evolution with basic entities
 - **v8**: Added Site Inspection support with comprehensive checklists
 - **v9**: Preparation for user management features
-- **v10**: Current version - Added `users` and `roles` tables for Admin role implementation (v1.2)
+- **v10**: Added `users` and `roles` tables for Admin role implementation (v1.2)
+- **v11**: Current version - Added 7 planning fields to `items` table and `schedule_revisions` table (v1.3)
 
 ### Core Collections
 
@@ -356,9 +374,15 @@ MainNavigator (Stack)
 - Item categorization (Structural, Electrical, Plumbing, etc.)
 - Fields: name, description
 
-#### items
-- Construction work items
-- Fields: name, category_id, site_id, planned_quantity, completed_quantity, unit_of_measurement, planned_start_date, planned_end_date, status, weightage
+#### items (Enhanced in v1.3)
+- Construction work items with planning capabilities
+- **Core Fields**: name, category_id, site_id, planned_quantity, completed_quantity, unit_of_measurement, planned_start_date, planned_end_date, status, weightage
+- **Planning Fields (v1.3 - NEW)**:
+  - `baseline_start_date / baseline_end_date`: Locked baseline dates
+  - `dependencies`: JSON array of dependent item IDs
+  - `is_baseline_locked`: Boolean flag for baseline lock status
+  - `actual_start_date / actual_end_date`: Track actual work dates
+  - `critical_path_flag`: Boolean indicating critical path items
 - **Relationships**: belongs_to site/category, has_many progress_logs/materials/hindrances
 
 #### progress_logs
@@ -385,6 +409,12 @@ MainNavigator (Stack)
 - Safety inspection checklists
 - Fields: site_id, inspector_id, inspection_date, safety_items (JSON), overall_status, notes
 - **Relationships**: belongs_to site
+
+#### schedule_revisions (v1.3 - NEW)
+- Track schedule changes and their impact
+- Fields: item_id, revision_number, old_start_date, old_end_date, new_start_date, new_end_date, reason, impact_description, impacted_items (JSON), created_at
+- **Relationships**: belongs_to item
+- **Purpose**: Track schedule changes, analyze impact, maintain revision history
 
 #### users (v1.2)
 - User accounts with authentication
@@ -530,7 +560,52 @@ MainNavigator (Stack)
 - Automatic sync when connectivity restored
 - Queue-based sync with conflict resolution
 
-### 3. Admin Role Features (v1.2 - NEW)
+### 3. Planning Module Features (v1.3 - NEW)
+
+#### Baseline Planning Screen
+- Project selection with dropdown
+- Item planning cards with visual indicators
+- Date pickers for planned start/end dates
+- Critical path calculation and visualization
+- Baseline locking workflow
+
+#### Critical Path Calculation
+- **Algorithm**: Kahn's topological sort with forward/backward pass
+- **Features**:
+  - Identifies critical path items (zero slack)
+  - Calculates project duration
+  - Updates database flags automatically
+  - Visual indicators (red borders) for critical items
+
+#### Dependency Management
+- **Modal Interface**: Search and multi-select dependencies
+- **Validation**: Circular dependency detection
+- **Visual Feedback**: Dependency count display
+- **Safety**: Prevents invalid dependency graphs
+
+#### Progress Metrics & Forecasting
+- **Metrics**: Overall progress, schedule variance, on-track/delayed counts
+- **Forecasting**: Linear regression for completion estimation
+- **Confidence Levels**: High/medium/low based on data quality
+
+#### Baseline Locking
+- **Purpose**: Lock project schedule for baseline comparison
+- **Effects**:
+  - Copies planned dates to baseline fields
+  - Disables date editing
+  - Enables variance tracking
+- **Visual Indicators**: Lock chips, warning cards, disabled inputs
+
+#### ItemModel Helper Methods (v1.3 - 7 NEW methods)
+- `getDependencies()`: Parse JSON dependencies
+- `setDependencies()`: Set dependencies as JSON
+- `getScheduleVariance()`: Calculate variance in days
+- `getPlannedDuration()`: Calculate planned duration
+- `getActualDuration()`: Calculate actual duration
+- `getBaselineVariance()`: Calculate baseline variance
+- `getProgressPercentage()`: Calculate completion percentage
+
+### 4. Admin Role Features (v1.2)
 
 #### Dashboard
 - Real-time statistics (projects, sites, users, items)
@@ -715,17 +790,45 @@ item.site_id = 'site-123';  // Will save empty value!
 - **TypeScript**: Strict mode enabled
 - **Comments**: Document complex logic and business rules
 
-### Testing
+### Testing (v1.3 - Enhanced)
 
-- **Framework**: Jest
+- **Framework**: Jest with comprehensive mocks
 - **Test Location**: `__tests__/`
+- **Configuration**: `jest.config.js` with React Native module mocks
+- **Setup**: `jest.setup.js` with WatermelonDB, gesture-handler, and navigation mocks
+
+#### Test Coverage (v1.3)
+- **Total Tests**: 35 tests (100% pass rate)
+- **Test Execution**: ~7 seconds
+- **Coverage**: Overall 5.32%, ItemModel 100%, PlanningService 13.47%
+
+#### Test Suites
+1. **PlanningService.test.ts** (9 tests):
+   - Circular dependency detection (all edge cases)
+   - Linear dependencies validation
+   - Branching dependencies (Y-shape)
+   - Self-dependencies handling
+   - Missing dependencies handling
+
+2. **ItemModel.test.ts** (26 tests):
+   - Dependency JSON parsing (all edge cases)
+   - Duration calculations (planned, actual)
+   - Variance calculations (schedule, baseline)
+   - Progress percentage (including edge cases: zero division, over 100%)
+
+#### Test Users
 - **Test Users**: Stored in database (seeded on first launch)
   - Admin: `admin` / `admin123`
   - Supervisor: `supervisor` / `supervisor123`
   - Manager: `manager` / `manager123`
   - Planner: `planner` / `planner123`
   - Logistics: `logistics` / `logistics123`
-- **Admin Test Plan**: See ADMIN_TEST_PLAN.md for comprehensive v1.2 testing (54 tests - all passing)
+
+#### Testing Documentation
+- **TESTING_QUICKSTART.md**: 10-minute testing guide
+- **TESTING_STRATEGY.md**: Comprehensive testing strategy
+- **TESTING_SESSION_CHECKLIST.md**: Manual testing checklist (all tests passed)
+- **ADMIN_TEST_PLAN.md**: v1.2 admin testing (54 tests)
 
 ### Git Workflow
 
@@ -956,7 +1059,7 @@ Based on the current structure, these areas are prepared for future development:
 - **v0.9**: Enhanced database schema and sync capabilities
 - **v1.0**: Added Site Inspection screen with comprehensive safety checklists (Schema v8)
 - **v1.1**: Navigation UX improvements with enhanced supervisor workflow
-- **v1.2**: Admin Role Implementation (Current - Schema v10)
+- **v1.2**: Admin Role Implementation (Schema v10)
   - Database-based authentication
   - User and role management (CRUD)
   - Project management with CASCADE deletion
@@ -964,6 +1067,15 @@ Based on the current structure, these areas are prepared for future development:
   - AdminNavigator with 3 screens
   - AdminContext for state management
   - 54 comprehensive tests (all passing)
+- **v1.3**: Planning Module & Testing Infrastructure (Current - Schema v11)
+  - **Database**: 7 new planning fields in items table, schedule_revisions table
+  - **Service Layer**: PlanningService.ts (479 lines) with critical path calculation
+  - **UI Components**: BaselineScreen, ItemPlanningCard, DependencyModal, ProjectSelector
+  - **Testing**: Jest infrastructure with 35 automated tests (100% pass rate)
+  - **Features**: Critical path calculation (Kahn's algorithm), dependency management, baseline locking, progress metrics, forecasting
+  - **Lines of Code Added**: ~1,600 lines
+  - **UX Fixes**: Critical path visualization improvements
+  - **Test Documentation**: TESTING_QUICKSTART.md, TESTING_STRATEGY.md, TESTING_SESSION_CHECKLIST.md
 
 ---
 
@@ -974,13 +1086,23 @@ Based on the current structure, these areas are prepared for future development:
 - **DATABASE.md**: Complete database schema and relationships
 - **CLAUDE.md**: Development guidelines and AI assistant instructions
 - **README.md**: Setup instructions and project overview
-- **Testing Documentation**:
+- **Testing Documentation** (v1.3 - NEW):
+  - TESTING_QUICKSTART.md - 10-minute testing guide
+  - TESTING_STRATEGY.md - Comprehensive testing strategy
+  - TESTING_SESSION_CHECKLIST.md - Manual testing checklist
   - ADMIN_TEST_PLAN.md - v1.2 admin role testing (54 comprehensive tests)
   - TESTING_GUIDE.md
   - HINDRANCE_REPORT_TESTING.md
   - REPORTS_HISTORY_TESTING.md
   - SITE_INSPECTION_TESTING.md
-- **Next Steps**: NEXT_STEPS.md - Future roadmap and enhancements
+- **Planning Module Documentation** (v1.3 - NEW):
+  - PLANNING_MODULE_IMPLEMENTATION_STATUS.md - Implementation status and progress
+  - PLANNING_MODULE_QUICK_START.md - User guide for planning features
+  - PLANNING_MODULE_FIXES_v1.3.md - UX fixes and improvements
+  - PLANNING_MODULE_TESTING_PLAN.md - Comprehensive testing plan
+- **Next Steps**:
+  - NEXT_STEPS.md - Future roadmap and enhancements
+  - CURRENT_STATUS_AND_NEXT_STEPS.md - Current status and immediate next steps
 
 ---
 
