@@ -348,4 +348,211 @@ describe('ItemModel', () => {
       expect(progress).toBe(33);
     });
   });
+
+  // WBS & Phase Management Tests (v12)
+  describe('getFormattedWbsCode', () => {
+    it('should return WBS code when set', () => {
+      const item = {
+        wbsCode: '1.2.3.4',
+        getFormattedWbsCode: ItemModel.prototype.getFormattedWbsCode,
+      } as ItemModel;
+
+      expect(item.getFormattedWbsCode()).toBe('1.2.3.4');
+    });
+
+    it('should return N/A when wbsCode is not set', () => {
+      const item = {
+        wbsCode: undefined,
+        getFormattedWbsCode: ItemModel.prototype.getFormattedWbsCode,
+      } as ItemModel;
+
+      expect(item.getFormattedWbsCode()).toBe('N/A');
+    });
+  });
+
+  describe('getIndentLevel', () => {
+    it('should return 0 for level 1 (root)', () => {
+      const item = {
+        wbsLevel: 1,
+        getIndentLevel: ItemModel.prototype.getIndentLevel,
+      } as ItemModel;
+
+      expect(item.getIndentLevel()).toBe(0);
+    });
+
+    it('should return 1 for level 2', () => {
+      const item = {
+        wbsLevel: 2,
+        getIndentLevel: ItemModel.prototype.getIndentLevel,
+      } as ItemModel;
+
+      expect(item.getIndentLevel()).toBe(1);
+    });
+
+    it('should return 3 for level 4', () => {
+      const item = {
+        wbsLevel: 4,
+        getIndentLevel: ItemModel.prototype.getIndentLevel,
+      } as ItemModel;
+
+      expect(item.getIndentLevel()).toBe(3);
+    });
+  });
+
+  describe('getPhaseLabel', () => {
+    it('should return correct label for design phase', () => {
+      const item = {
+        projectPhase: 'design' as const,
+        getPhaseLabel: ItemModel.prototype.getPhaseLabel,
+      } as ItemModel;
+
+      expect(item.getPhaseLabel()).toBe('✏️ Design & Engineering');
+    });
+
+    it('should return correct label for construction phase', () => {
+      const item = {
+        projectPhase: 'construction' as const,
+        getPhaseLabel: ItemModel.prototype.getPhaseLabel,
+      } as ItemModel;
+
+      expect(item.getPhaseLabel()).toBe('🔨 Construction');
+    });
+
+    it('should return correct label for SAT phase', () => {
+      const item = {
+        projectPhase: 'sat' as const,
+        getPhaseLabel: ItemModel.prototype.getPhaseLabel,
+      } as ItemModel;
+
+      expect(item.getPhaseLabel()).toBe('✅ Site Acceptance Test');
+    });
+
+    it('should return Unknown for invalid phase', () => {
+      const item = {
+        projectPhase: 'invalid_phase' as any,
+        getPhaseLabel: ItemModel.prototype.getPhaseLabel,
+      } as ItemModel;
+
+      expect(item.getPhaseLabel()).toBe('Unknown');
+    });
+  });
+
+  describe('getPhaseColor', () => {
+    it('should return blue for design phase', () => {
+      const item = {
+        projectPhase: 'design' as const,
+        getPhaseColor: ItemModel.prototype.getPhaseColor,
+      } as ItemModel;
+
+      expect(item.getPhaseColor()).toBe('#2196F3');
+    });
+
+    it('should return green for construction phase', () => {
+      const item = {
+        projectPhase: 'construction' as const,
+        getPhaseColor: ItemModel.prototype.getPhaseColor,
+      } as ItemModel;
+
+      expect(item.getPhaseColor()).toBe('#4CAF50');
+    });
+
+    it('should return default color for invalid phase', () => {
+      const item = {
+        projectPhase: 'invalid' as any,
+        getPhaseColor: ItemModel.prototype.getPhaseColor,
+      } as ItemModel;
+
+      expect(item.getPhaseColor()).toBe('#666666');
+    });
+  });
+
+  describe('isOnCriticalPath', () => {
+    it('should return true when isCriticalPath flag is set', () => {
+      const item = {
+        isCriticalPath: true,
+        floatDays: 10,
+        isOnCriticalPath: ItemModel.prototype.isOnCriticalPath,
+      } as ItemModel;
+
+      expect(item.isOnCriticalPath()).toBe(true);
+    });
+
+    it('should return true when float days is 0', () => {
+      const item = {
+        isCriticalPath: false,
+        floatDays: 0,
+        isOnCriticalPath: ItemModel.prototype.isOnCriticalPath,
+      } as ItemModel;
+
+      expect(item.isOnCriticalPath()).toBe(true);
+    });
+
+    it('should return true when float days is negative', () => {
+      const item = {
+        isCriticalPath: false,
+        floatDays: -5,
+        isOnCriticalPath: ItemModel.prototype.isOnCriticalPath,
+      } as ItemModel;
+
+      expect(item.isOnCriticalPath()).toBe(true);
+    });
+
+    it('should return false when not critical and has positive float', () => {
+      const item = {
+        isCriticalPath: false,
+        floatDays: 5,
+        isOnCriticalPath: ItemModel.prototype.isOnCriticalPath,
+      } as ItemModel;
+
+      expect(item.isOnCriticalPath()).toBe(false);
+    });
+
+    it('should return false when floatDays is undefined', () => {
+      const item = {
+        isCriticalPath: false,
+        floatDays: undefined,
+        isOnCriticalPath: ItemModel.prototype.isOnCriticalPath,
+      } as ItemModel;
+
+      expect(item.isOnCriticalPath()).toBe(false);
+    });
+  });
+
+  describe('getRiskBadgeColor', () => {
+    it('should return null for low risk', () => {
+      const item = {
+        dependencyRisk: 'low' as const,
+        getRiskBadgeColor: ItemModel.prototype.getRiskBadgeColor,
+      } as ItemModel;
+
+      expect(item.getRiskBadgeColor()).toBe(null);
+    });
+
+    it('should return amber for medium risk', () => {
+      const item = {
+        dependencyRisk: 'medium' as const,
+        getRiskBadgeColor: ItemModel.prototype.getRiskBadgeColor,
+      } as ItemModel;
+
+      expect(item.getRiskBadgeColor()).toBe('#FFC107');
+    });
+
+    it('should return red for high risk', () => {
+      const item = {
+        dependencyRisk: 'high' as const,
+        getRiskBadgeColor: ItemModel.prototype.getRiskBadgeColor,
+      } as ItemModel;
+
+      expect(item.getRiskBadgeColor()).toBe('#F44336');
+    });
+
+    it('should return null when dependencyRisk is not set', () => {
+      const item = {
+        dependencyRisk: undefined,
+        getRiskBadgeColor: ItemModel.prototype.getRiskBadgeColor,
+      } as ItemModel;
+
+      expect(item.getRiskBadgeColor()).toBe(null);
+    });
+  });
 });

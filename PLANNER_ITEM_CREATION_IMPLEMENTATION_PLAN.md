@@ -4,7 +4,7 @@
 **Date:** 2025-10-14
 **Status:** Ready for Implementation
 **Approved Option:** Option 1 - Planner Creates All Items
-**Project Type:** Metro Electrification (220kV, 132kV, 66kV, 33kV substations, 25kV OHE, 650VDC)
+**Project Type:** Metro Electrification (220kV, 132kV, 66kV, 33kV SS, ASS, TSS, 25kV OHE, 750VDC)
 
 ---
 
@@ -32,6 +32,7 @@
 - Third rail systems (650VDC)
 - Control room buildings
 - Multi-contractor interface management
+- Since these are large projects hence projects are divide into small sections called KDs(Key Dates) or milestones. Each and every works/items belongs to KDs. KDs are numberd.
 
 ### Key Decisions
 
@@ -2382,12 +2383,12 @@ interface TemplateItem {
 }
 ```
 
-### Predefined Template Modules
+### Predefined but editable Template Modules
 
-#### 1. **220kV Incoming System Module**
+#### 1. **220kV or 132kV or 110kV or 66kV Incoming Power System Module RSS**
 
 **Category:** `substation`
-**Voltage Level:** `220kV`
+**Voltage Level:** `220kV or 132kV or 110kV or 66kV`
 **Items:** 18
 **Duration:** ~90 days
 **Compatible With:** 132kV Transformer, 66kV Distribution, Control & Protection
@@ -2460,7 +2461,7 @@ interface TemplateItem {
 - Construction: Mast erection, catenary stringing (20 days per km)
 - Testing: Tension testing, energization (5 days per km)
 
-#### 6. **650VDC Third Rail Module (per km)**
+#### 6. **750VDC Third Rail Module (per km)**
 
 **Category:** `third_rail`
 **Voltage Level:** `650VDC`
@@ -2807,8 +2808,923 @@ interface TemplateItem {
 
 ---
 
+## Sprint 6-8: CMRL Key Dates Integration (v1.5)
+
+**Added:** 2025-10-16
+**Status:** Planning Phase
+**Approach:** Option 1 - Minimal Schema Changes (Recommended)
+**Total Duration:** 3 weeks (28-38 hours)
+
+### Background & Context
+
+The CMRL (Chennai Metro Rail Limited) Key Dates document (`prompts/KeyDatesCMRL.pdf`) defines contractual milestones with:
+- **Key Date Numbering** (KD-G-01, KD-A-01, etc.)
+- **Category-based Organization** (G=General, A=Design, B=Depot, C=Corridor, D/E/F=Sections)
+- **Time-based Milestones** (Calendar days from commencement date)
+- **Delay Damages/Liquidated Damages** (Financial penalties: 1-10 Lakhs/day or 0.1% of contract price)
+- **Multi-stage Revenue Service** (Stage 1, Stage 4a, Stage 7)
+- **Package/Section Management** (ECV01, ECV02, UG01, UG02)
+
+### Integration Strategy
+
+**Philosophy:** Add new specialized tables for Key Dates tracking while preserving existing WBS structure.
+
+**Benefits:**
+- ✅ Backward compatible with Sprint 1-5 implementation
+- ✅ Flexible for both CMRL and non-CMRL projects
+- ✅ Professional financial tracking (delay damages)
+- ✅ Multi-stage project delivery support
+- ✅ Minimal disruption to existing codebase
+
+---
+
+### Sprint 6: Key Dates Foundation (Week 6)
+
+**Goal:** Add database schema for Key Dates tracking and create core models/services.
+
+**Duration:** 8-12 hours
+
+#### 6.1 Schema v13 Update (2 hours)
+
+**File:** `models/schema/index.ts`
+
+**Changes:**
+1. Increment version: `version: 13`
+2. Add `key_dates` table
+3. Add `revenue_stages` table
+4. Enhance `projects` table with Key Date fields
+
+```typescript
+export default appSchema({
+  version: 13, // ✅ NEW: Key Dates tracking
+  tables: [
+    // ... existing tables
+
+    // Add to projects table
+    tableSchema({
+      name: 'projects',
+      columns: [
+        // ... existing columns
+        { name: 'key_dates_enabled', type: 'boolean' },           // ✅ NEW
+        { name: 'contract_price', type: 'number', isOptional: true }, // ✅ NEW
+        { name: 'commencement_date', type: 'number', isOptional: true }, // ✅ NEW
+      ],
+    }),
+
+    // ✅ NEW TABLE: key_dates
+    tableSchema({
+      name: 'key_dates',
+      columns: [
+        { name: 'key_date_id', type: 'string', isIndexed: true },      // KD-G-01, KD-A-01
+        { name: 'category', type: 'string', isIndexed: true },          // G, A, B, C, D, E, F
+        { name: 'description', type: 'string' },                        // Full description
+        { name: 'completion_days', type: 'number' },                    // Days from commencement
+        { name: 'delay_damage_1_28', type: 'number' },                  // Lakhs/day (1-28 days)
+        { name: 'delay_damage_29_plus', type: 'number' },               // Lakhs/day (29+ days)
+        { name: 'is_percent_based', type: 'boolean' },                  // For 0.1% of contract price
+        { name: 'linked_item_ids', type: 'string' },                    // JSON array of item IDs
+        { name: 'project_id', type: 'string', isIndexed: true },        // belongs to project
+        { name: 'package_name', type: 'string', isOptional: true },     // ECV01, ECV02, UG01, UG02
+        { name: 'status', type: 'string' },                             // pending, achieved, delayed
+        { name: 'target_date', type: 'number', isOptional: true },      // Calculated target timestamp
+        { name: 'actual_date', type: 'number', isOptional: true },      // Actual achievement timestamp
+        { name: 'delay_days', type: 'number', isOptional: true },       // Calculated delay
+        { name: 'accumulated_damages', type: 'number', isOptional: true }, // Calculated damages
+      ],
+    }),
+
+    // ✅ NEW TABLE: revenue_stages
+    tableSchema({
+      name: 'revenue_stages',
+      columns: [
+        { name: 'stage_name', type: 'string' },                         // Stage 1, Stage 4a, Stage 7
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'completion_cert_kd', type: 'string' },                 // Link to key_dates.key_date_id
+        { name: 'operational_accept_kd', type: 'string' },              // Link to key_dates.key_date_id
+        { name: 'section_start', type: 'string' },                      // Poonamallee Bypass
+        { name: 'section_end', type: 'string' },                        // Porur Bypass
+        { name: 'status', type: 'string' },                             // planning, under_construction, operational
+        { name: 'progress_percentage', type: 'number' },
+      ],
+    }),
+  ],
+});
+```
+
+#### 6.2 Migration v13 Script (1 hour)
+
+**File:** `models/migrations/index.ts`
+
+```typescript
+{
+  toVersion: 13,
+  steps: [
+    // Add columns to projects table
+    {
+      type: 'add_columns',
+      table: 'projects',
+      columns: [
+        { name: 'key_dates_enabled', type: 'boolean' },
+        { name: 'contract_price', type: 'number', isOptional: true },
+        { name: 'commencement_date', type: 'number', isOptional: true },
+      ],
+    },
+
+    // Create key_dates table
+    {
+      type: 'create_table',
+      schema: {
+        name: 'key_dates',
+        columns: [
+          { name: 'id', type: 'string' },
+          { name: 'key_date_id', type: 'string', isIndexed: true },
+          { name: 'category', type: 'string', isIndexed: true },
+          { name: 'description', type: 'string' },
+          { name: 'completion_days', type: 'number' },
+          { name: 'delay_damage_1_28', type: 'number' },
+          { name: 'delay_damage_29_plus', type: 'number' },
+          { name: 'is_percent_based', type: 'boolean' },
+          { name: 'linked_item_ids', type: 'string' },
+          { name: 'project_id', type: 'string', isIndexed: true },
+          { name: 'package_name', type: 'string', isOptional: true },
+          { name: 'status', type: 'string' },
+          { name: 'target_date', type: 'number', isOptional: true },
+          { name: 'actual_date', type: 'number', isOptional: true },
+          { name: 'delay_days', type: 'number', isOptional: true },
+          { name: 'accumulated_damages', type: 'number', isOptional: true },
+          { name: 'created_at', type: 'number' },
+          { name: 'updated_at', type: 'number' },
+        ],
+      },
+    },
+
+    // Create revenue_stages table
+    {
+      type: 'create_table',
+      schema: {
+        name: 'revenue_stages',
+        columns: [
+          { name: 'id', type: 'string' },
+          { name: 'stage_name', type: 'string' },
+          { name: 'project_id', type: 'string', isIndexed: true },
+          { name: 'completion_cert_kd', type: 'string' },
+          { name: 'operational_accept_kd', type: 'string' },
+          { name: 'section_start', type: 'string' },
+          { name: 'section_end', type: 'string' },
+          { name: 'status', type: 'string' },
+          { name: 'progress_percentage', type: 'number' },
+          { name: 'created_at', type: 'number' },
+          { name: 'updated_at', type: 'number' },
+        ],
+      },
+    },
+
+    // Set default values for existing projects
+    {
+      type: 'sql',
+      sql: `UPDATE projects SET key_dates_enabled = 0 WHERE key_dates_enabled IS NULL;`,
+    },
+  ],
+},
+```
+
+#### 6.3 Create KeyDateModel (2 hours)
+
+**File:** `models/KeyDateModel.ts`
+
+```typescript
+import { Model } from '@nozbe/watermelondb';
+import { field, relation } from '@nozbe/watermelondb/decorators';
+
+export type KeyDateCategory = 'G' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type KeyDateStatus = 'pending' | 'achieved' | 'delayed' | 'overdue';
+
+export default class KeyDateModel extends Model {
+  static table = 'key_dates';
+
+  static associations = {
+    projects: { type: 'belongs_to', key: 'project_id' },
+  };
+
+  @field('key_date_id') keyDateId!: string;                   // KD-G-01
+  @field('category') category!: KeyDateCategory;              // G, A, B, etc.
+  @field('description') description!: string;
+  @field('completion_days') completionDays!: number;          // 60, 150, 500, etc.
+  @field('delay_damage_1_28') delayDamage1To28!: number;      // Lakhs/day (1-28)
+  @field('delay_damage_29_plus') delayDamage29Plus!: number;  // Lakhs/day (29+)
+  @field('is_percent_based') isPercentBased!: boolean;        // For 0.1% damages
+  @field('linked_item_ids') linkedItemIds!: string;           // JSON array
+  @field('project_id') projectId!: string;
+  @field('package_name') packageName?: string;                // ECV01, etc.
+  @field('status') status!: KeyDateStatus;
+  @field('target_date') targetDate?: number;
+  @field('actual_date') actualDate?: number;
+  @field('delay_days') delayDays?: number;
+  @field('accumulated_damages') accumulatedDamages?: number;
+
+  // Helper methods
+  getLinkedItemIds(): string[] {
+    try {
+      return JSON.parse(this.linkedItemIds);
+    } catch {
+      return [];
+    }
+  }
+
+  calculateDelayDamages(contractPrice?: number): number {
+    if (!this.delayDays || this.delayDays <= 0) return 0;
+
+    if (this.isPercentBased && contractPrice) {
+      // 0.1% of contract price per day
+      return (contractPrice * 0.001) * this.delayDays;
+    } else {
+      // Fixed damages
+      let damages = 0;
+      if (this.delayDays <= 28) {
+        damages = this.delayDays * this.delayDamage1To28;
+      } else {
+        damages = (28 * this.delayDamage1To28) +
+                  ((this.delayDays - 28) * this.delayDamage29Plus);
+      }
+      return damages * 100000; // Convert Lakhs to Rupees
+    }
+  }
+
+  isOverdue(): boolean {
+    if (!this.targetDate || this.status === 'achieved') return false;
+    return Date.now() > this.targetDate;
+  }
+
+  getStatusColor(): string {
+    const colors: Record<KeyDateStatus, string> = {
+      pending: '#2196F3',    // Blue
+      achieved: '#4CAF50',   // Green
+      delayed: '#FF9800',    // Orange
+      overdue: '#F44336',    // Red
+    };
+    return colors[this.status] || '#666666';
+  }
+
+  getCategoryLabel(): string {
+    const labels: Record<KeyDateCategory, string> = {
+      G: 'General',
+      A: 'Design',
+      B: 'Poonamallee Depot',
+      C: 'Corridor 4 (ECV)',
+      D: 'Thirumayilai RSS',
+      E: 'Corridor 4 (UG02)',
+      F: 'Corridor 4 (UG01)',
+    };
+    return labels[this.category] || 'Unknown';
+  }
+}
+```
+
+#### 6.4 Create RevenueStageModel (1 hour)
+
+**File:** `models/RevenueStageModel.ts`
+
+```typescript
+import { Model } from '@nozbe/watermelondb';
+import { field, relation } from '@nozbe/watermelondb/decorators';
+
+export type RevenueStageStatus = 'planning' | 'under_construction' | 'testing' | 'operational';
+
+export default class RevenueStageModel extends Model {
+  static table = 'revenue_stages';
+
+  static associations = {
+    projects: { type: 'belongs_to', key: 'project_id' },
+  };
+
+  @field('stage_name') stageName!: string;                    // Stage 1, Stage 4a, Stage 7
+  @field('project_id') projectId!: string;
+  @field('completion_cert_kd') completionCertKd!: string;     // KD-C-08, KD-E-05
+  @field('operational_accept_kd') operationalAcceptKd!: string; // KD-C-09, KD-E-06
+  @field('section_start') sectionStart!: string;
+  @field('section_end') sectionEnd!: string;
+  @field('status') status!: RevenueStageStatus;
+  @field('progress_percentage') progressPercentage!: number;
+
+  getStatusColor(): string {
+    const colors: Record<RevenueStageStatus, string> = {
+      planning: '#9E9E9E',         // Grey
+      under_construction: '#2196F3', // Blue
+      testing: '#FF9800',            // Orange
+      operational: '#4CAF50',        // Green
+    };
+    return colors[this.status] || '#666666';
+  }
+
+  getStatusIcon(): string {
+    const icons: Record<RevenueStageStatus, string> = {
+      planning: '📋',
+      under_construction: '🏗️',
+      testing: '🧪',
+      operational: '✅',
+    };
+    return icons[this.status] || '❓';
+  }
+}
+```
+
+#### 6.5 Create KeyDateService (3 hours)
+
+**File:** `services/planning/KeyDateService.ts`
+
+```typescript
+import { database } from '../../models/database';
+import KeyDateModel from '../../models/KeyDateModel';
+import RevenueStageModel from '../../models/RevenueStageModel';
+import ItemModel from '../../models/ItemModel';
+import ProjectModel from '../../models/ProjectModel';
+import { Q } from '@nozbe/watermelondb';
+
+export class KeyDateService {
+  /**
+   * Calculate target date from commencement date
+   */
+  static calculateTargetDate(commencementDate: number, completionDays: number): number {
+    return commencementDate + (completionDays * 24 * 60 * 60 * 1000);
+  }
+
+  /**
+   * Update Key Date status based on actual date
+   */
+  static async updateKeyDateStatus(keyDateId: string): Promise<void> {
+    const keyDate = await database.collections
+      .get<KeyDateModel>('key_dates')
+      .find(keyDateId);
+
+    await database.write(async () => {
+      await keyDate.update(kd => {
+        if (kd.actualDate) {
+          // Achieved
+          kd.status = 'achieved';
+          if (kd.targetDate) {
+            const delayMs = kd.actualDate - kd.targetDate;
+            kd.delayDays = Math.ceil(delayMs / (1000 * 60 * 60 * 24));
+          }
+        } else if (kd.targetDate && Date.now() > kd.targetDate) {
+          // Overdue
+          kd.status = 'overdue';
+          const delayMs = Date.now() - kd.targetDate;
+          kd.delayDays = Math.ceil(delayMs / (1000 * 60 * 60 * 24));
+        } else if (kd.targetDate && Date.now() > (kd.targetDate - 7 * 24 * 60 * 60 * 1000)) {
+          // Delayed (within 7 days of target)
+          kd.status = 'delayed';
+        } else {
+          // Pending
+          kd.status = 'pending';
+        }
+
+        // Calculate accumulated damages
+        if (kd.delayDays && kd.delayDays > 0) {
+          // Get project contract price
+          database.collections
+            .get<ProjectModel>('projects')
+            .find(kd.projectId)
+            .then(project => {
+              kd.accumulatedDamages = kd.calculateDelayDamages(project.contractPrice);
+            });
+        }
+      });
+    });
+  }
+
+  /**
+   * Track Key Date progress based on linked items
+   */
+  static async trackKeyDateProgress(keyDateId: string): Promise<number> {
+    const keyDate = await database.collections
+      .get<KeyDateModel>('key_dates')
+      .find(keyDateId);
+
+    const linkedIds = keyDate.getLinkedItemIds();
+    if (linkedIds.length === 0) return 0;
+
+    // Fetch linked items
+    const items = await database.collections
+      .get<ItemModel>('items')
+      .query(Q.where('id', Q.oneOf(linkedIds)))
+      .fetch();
+
+    // Calculate average progress
+    const totalProgress = items.reduce((sum, item) => {
+      return sum + item.getProgressPercentage();
+    }, 0);
+
+    return totalProgress / items.length;
+  }
+
+  /**
+   * Generate delay report for all key dates
+   */
+  static async generateDelayReport(projectId: string): Promise<{
+    totalDelayedDays: number;
+    totalDamages: number;
+    delayedKeyDates: any[];
+  }> {
+    const keyDates = await database.collections
+      .get<KeyDateModel>('key_dates')
+      .query(
+        Q.where('project_id', projectId),
+        Q.where('status', Q.oneOf(['delayed', 'overdue']))
+      )
+      .fetch();
+
+    const delayedKeyDates = keyDates.map(kd => ({
+      keyDateId: kd.keyDateId,
+      description: kd.description,
+      delayDays: kd.delayDays || 0,
+      damages: kd.accumulatedDamages || 0,
+      status: kd.status,
+    }));
+
+    const totalDelayedDays = delayedKeyDates.reduce(
+      (sum, kd) => sum + kd.delayDays,
+      0
+    );
+
+    const totalDamages = delayedKeyDates.reduce(
+      (sum, kd) => sum + kd.damages,
+      0
+    );
+
+    return {
+      totalDelayedDays,
+      totalDamages,
+      delayedKeyDates,
+    };
+  }
+
+  /**
+   * Import CMRL Key Dates from structured data
+   */
+  static async importCMRLKeyDates(
+    projectId: string,
+    commencementDate: number,
+    cmrlData: any[]
+  ): Promise<void> {
+    await database.write(async () => {
+      for (const kdData of cmrlData) {
+        await database.collections.get<KeyDateModel>('key_dates').create(kd => {
+          kd.keyDateId = kdData.keyDateId;
+          kd.category = kdData.category;
+          kd.description = kdData.description;
+          kd.completionDays = kdData.completionDays;
+          kd.delayDamage1To28 = kdData.delayDamage1To28;
+          kd.delayDamage29Plus = kdData.delayDamage29Plus;
+          kd.isPercentBased = kdData.isPercentBased || false;
+          kd.linkedItemIds = JSON.stringify(kdData.linkedItemIds || []);
+          kd.projectId = projectId;
+          kd.packageName = kdData.packageName;
+          kd.status = 'pending';
+          kd.targetDate = this.calculateTargetDate(commencementDate, kdData.completionDays);
+        });
+      }
+    });
+  }
+}
+```
+
+#### 6.6 Register Models (1 hour)
+
+**File:** `models/database.ts`
+
+```typescript
+import KeyDateModel from './KeyDateModel';        // ✅ NEW
+import RevenueStageModel from './RevenueStageModel'; // ✅ NEW
+
+export const database = new Database({
+  adapter,
+  modelClasses: [
+    // ... existing models
+    KeyDateModel,        // ✅ NEW
+    RevenueStageModel,   // ✅ NEW
+  ],
+});
+```
+
+#### 6.7 Unit Tests (2 hours)
+
+**File:** `__tests__/models/KeyDateModel.test.ts`
+
+Create comprehensive tests for Key Date models and service.
+
+#### Sprint 6 Deliverables
+
+- ✅ Schema v13 with 2 new tables
+- ✅ KeyDateModel with helper methods
+- ✅ RevenueStageModel created
+- ✅ KeyDateService with business logic
+- ✅ Models registered in database
+- ✅ Migration script working
+- ✅ Unit tests passing
+
+---
+
+### Sprint 7: Key Dates UI (Week 7)
+
+**Goal:** Create user interfaces for Key Dates management and tracking.
+
+**Duration:** 12-16 hours
+
+#### 7.1 KeyDatesListScreen (4 hours)
+
+**File:** `src/planning/KeyDatesListScreen.tsx`
+
+**Features:**
+- Display all key dates grouped by category (G, A, B, C, D, E, F)
+- Status chips (Pending, Achieved, Delayed, Overdue)
+- Filter by category
+- Sort by due date / status
+- Progress indicators
+- Color-coded urgency (red for overdue, orange for delayed)
+- Tap to view details
+
+**UI Structure:**
+```
+┌─────────────────────────────────────────┐
+│  Key Dates Dashboard                    │
+├─────────────────────────────────────────┤
+│  Filters: [All] [G] [A] [B] [C] [D] [E] │
+│                                          │
+│  📋 General (G)                          │
+│  ├─ 🟢 KD-G-01: Site Office (45/60)     │
+│  └─ 🟡 KD-G-02: Construction Program    │
+│                                          │
+│  ✏️ Design (A)                           │
+│  ├─ 🟢 KD-A-01: Preliminary Design      │
+│  ├─ 🟡 KD-A-08A: Equipment Delivery     │
+│  └─ 🔴 KD-A-08B: UG Equipment (OVERDUE) │
+│      ⚠️ Delayed: 10 days | ₹100L penalty│
+│                                          │
+│  Revenue Service Stages:                 │
+│  ▓▓▓▓▓▓░░░░ Stage 1: 65% (730/990)      │
+│  ▓▓░░░░░░░░ Stage 4a: 20% (300/1495)    │
+│  ░░░░░░░░░░ Stage 7: 0% (0/1600)        │
+└─────────────────────────────────────────┘
+```
+
+#### 7.2 KeyDateDetailScreen (3 hours)
+
+**File:** `src/planning/KeyDateDetailScreen.tsx`
+
+**Features:**
+- Full key date information (ID, description, category)
+- Target date vs actual date
+- Days remaining / days delayed
+- Linked items list (with completion status)
+- Progress calculation based on items
+- Delay tracking graph (visual timeline)
+- Damage calculation display (₹ Lakhs)
+- Mark as achieved button
+- Export to PDF report
+
+#### 7.3 RevenueStagesDashboard (3 hours)
+
+**File:** `src/planning/RevenueStagesDashboard.tsx`
+
+**Features:**
+- Stage cards (Stage 1, 4a, 7)
+- Progress visualization (circular progress)
+- Timeline view: Planning → Construction → Testing → Operational
+- Key milestones per stage (Completion Cert, Operational Acceptance)
+- Critical path to stage completion
+- Section information (from → to)
+- Status indicators
+
+#### 7.4 Add to PlanningNavigator (1 hour)
+
+**File:** `src/nav/PlanningNavigator.tsx`
+
+```typescript
+import KeyDatesListScreen from '../planning/KeyDatesListScreen';
+import RevenueStagesDashboard from '../planning/RevenueStagesDashboard';
+
+<Tab.Screen
+  name="KeyDates"
+  component={KeyDatesListScreen}
+  options={{
+    title: 'Key Dates',
+    tabBarIcon: '📅',
+  }}
+/>
+
+<Tab.Screen
+  name="RevenueStages"
+  component={RevenueStagesDashboard}
+  options={{
+    title: 'Stages',
+    tabBarIcon: '🎯',
+  }}
+/>
+```
+
+#### 7.5 WBS Integration - Key Date Badge (2 hours)
+
+**File:** `src/planning/components/WBSItemCard.tsx`
+
+**Enhancement:** Show Key Date badge on items linked to Key Dates
+
+```typescript
+// Add to WBSItemCard
+{item.riskNotes?.includes('KD-') && (
+  <Chip
+    compact
+    style={styles.keyDateBadge}
+    icon="calendar-alert"
+  >
+    {extractKeyDateId(item.riskNotes)}
+  </Chip>
+)}
+```
+
+**File:** `src/planning/WBSManagementScreen.tsx`
+
+**Enhancement:** Add filter to show only KD-linked items
+
+```typescript
+const [showKeyDatesOnly, setShowKeyDatesOnly] = useState(false);
+
+// Filter logic
+if (showKeyDatesOnly) {
+  query.push(Q.where('risk_notes', Q.like('%KD-%')));
+}
+```
+
+#### Sprint 7 Deliverables
+
+- ✅ KeyDatesListScreen with category filtering
+- ✅ KeyDateDetailScreen with full tracking
+- ✅ RevenueStagesDashboard for stage tracking
+- ✅ Integration with WBS Management (badges)
+- ✅ Navigation updates (2 new tabs)
+- ✅ Status indicators and color coding
+
+---
+
+### Sprint 8: CMRL Data Import & Reports (Week 8)
+
+**Goal:** Import actual CMRL data and create reporting features.
+
+**Duration:** 8-10 hours
+
+#### 8.1 CMRL Data Seeder Script (3 hours)
+
+**File:** `services/planning/CMRLDataSeeder.ts`
+
+**Purpose:** Parse and import all 50+ Key Dates from KeyDatesCMRL.pdf structure
+
+```typescript
+export const CMRL_CORRIDOR_4_KEY_DATES = [
+  // General (G)
+  {
+    keyDateId: 'KD-G-01',
+    category: 'G',
+    description: 'Establishment of Site Office',
+    completionDays: 60,
+    delayDamage1To28: 1,
+    delayDamage29Plus: 10,
+    isPercentBased: false,
+  },
+  {
+    keyDateId: 'KD-G-02',
+    category: 'G',
+    description: 'Obtaining NONO for Construction Program and Construction Methodology',
+    completionDays: 90,
+    delayDamage1To28: 1,
+    delayDamage29Plus: 10,
+    isPercentBased: false,
+  },
+
+  // Design (A)
+  {
+    keyDateId: 'KD-A-01',
+    category: 'A',
+    description: 'Obtaining NONO for Preliminary Design Submission',
+    completionDays: 150,
+    delayDamage1To28: 1,
+    delayDamage29Plus: 10,
+    isPercentBased: false,
+  },
+  // ... (continue for all 50+ key dates)
+
+  // Corridor 4 (C)
+  {
+    keyDateId: 'KD-C-07',
+    category: 'C',
+    description: 'Acceptance of Integrated Testing and Commissioning for Stage 1 Revenue Service',
+    completionDays: 960,
+    delayDamage1To28: 0,
+    delayDamage29Plus: 0,
+    isPercentBased: true, // 0.1% of contract price
+    packageName: 'ECV01, ECV02',
+  },
+  // ... continue for all categories
+];
+
+export const CMRL_REVENUE_STAGES = [
+  {
+    stageName: 'Stage 1',
+    completionCertKd: 'KD-C-08',
+    operationalAcceptKd: 'KD-C-09',
+    sectionStart: 'Poonamallee Bypass Metro Station',
+    sectionEnd: 'Power House Metro Station',
+    targetCompletionDays: 990,
+    targetOperationalDays: 1538,
+  },
+  {
+    stageName: 'Stage 4a',
+    completionCertKd: 'KD-E-05',
+    operationalAcceptKd: 'KD-E-06',
+    sectionStart: 'Boat Club Station',
+    sectionEnd: 'Kodambakkam Flyover Station',
+    targetCompletionDays: 1495,
+    targetOperationalDays: 2043,
+  },
+  {
+    stageName: 'Stage 7',
+    completionCertKd: 'KD-F-05',
+    operationalAcceptKd: 'KD-F-06',
+    sectionStart: 'Lighthouse Metro Station',
+    sectionEnd: 'Bharathidasan Metro Station',
+    targetCompletionDays: 1600,
+    targetOperationalDays: 2148,
+  },
+];
+
+export class CMRLDataSeeder {
+  static async seedKeyDates(projectId: string, commencementDate: number): Promise<void> {
+    await KeyDateService.importCMRLKeyDates(
+      projectId,
+      commencementDate,
+      CMRL_CORRIDOR_4_KEY_DATES
+    );
+  }
+
+  static async seedRevenueStages(projectId: string): Promise<void> {
+    await database.write(async () => {
+      for (const stage of CMRL_REVENUE_STAGES) {
+        await database.collections.get<RevenueStageModel>('revenue_stages').create(rs => {
+          rs.stageName = stage.stageName;
+          rs.projectId = projectId;
+          rs.completionCertKd = stage.completionCertKd;
+          rs.operationalAcceptKd = stage.operationalAcceptKd;
+          rs.sectionStart = stage.sectionStart;
+          rs.sectionEnd = stage.sectionEnd;
+          rs.status = 'planning';
+          rs.progressPercentage = 0;
+        });
+      }
+    });
+  }
+}
+```
+
+#### 8.2 Delay Dashboard (3 hours)
+
+**File:** `src/planning/DelayDashboardScreen.tsx`
+
+**Features:**
+- Financial impact visualization (bar chart)
+- Total accumulated damages (₹ Crores)
+- Days delayed vs damages comparison
+- Red/amber/green status summary
+- Top 5 critical delayed key dates
+- Export delay report (PDF/Excel)
+- Trend analysis (delays over time)
+
+#### 8.3 Package/Section Management (2 hours)
+
+**File:** `src/planning/PackageSectionScreen.tsx`
+
+**Features:**
+- Package cards (ECV01, ECV02, UG01, UG02)
+- Section-wise progress visualization
+- Key Dates grouped by package
+- Interface points between packages
+- Completion percentage per package
+- Filter items by package
+
+#### 8.4 Testing & Integration (2 hours)
+
+- Import CMRL data for test project
+- Verify all 50+ Key Dates loaded correctly
+- Test delay calculations
+- Test revenue stage tracking
+- End-to-end testing
+
+#### Sprint 8 Deliverables
+
+- ✅ CMRL data seeder with all 50+ Key Dates
+- ✅ Revenue stages seeder (Stage 1, 4a, 7)
+- ✅ Delay Dashboard with financial tracking
+- ✅ Package/Section management screen
+- ✅ Data import functionality working
+- ✅ Complete integration tested
+
+---
+
+## Data Mapping: CMRL → Your Schema
+
+| CMRL Concept | Your Schema Implementation |
+|--------------|----------------------------|
+| Key Date ID (KD-G-01) | `key_dates.key_date_id` (string) |
+| Category (G, A, B...) | `key_dates.category` (indexed) |
+| Time for Completion | `key_dates.completion_days` (number) |
+| Delay Damages (1-28) | `key_dates.delay_damage_1_28` (Lakhs) |
+| Delay Damages (29+) | `key_dates.delay_damage_29_plus` (Lakhs) |
+| 0.1% Contract Price | `key_dates.is_percent_based` (boolean) |
+| Work Packages | `key_dates.package_name` (string) |
+| Items linked to KD | `key_dates.linked_item_ids` (JSON array) |
+| Revenue Stages | `revenue_stages` table |
+| NONO Approvals | `items.projectPhase = 'approvals'` |
+| Commissioning | `items.projectPhase = 'commissioning'` |
+| SAT | `items.projectPhase = 'sat'` |
+
+---
+
+## Integration with Existing Features
+
+### How Key Dates Work with WBS Items
+
+1. **Linking Items to Key Dates:**
+   - Planners create WBS items normally (Sprints 1-5)
+   - In item's `risk_notes` field, add: "Part of KD-A-08A"
+   - Or use `linked_item_ids` in Key Date to link multiple items
+
+2. **Progress Tracking:**
+   - Key Date progress = average completion of linked items
+   - Example: KD-B-01 (RSS Building) links to 10 items
+   - If 6 items are 100% complete and 4 are 50% complete, Key Date shows 80% progress
+
+3. **Automatic Status Updates:**
+   - When all linked items reach 100%, Key Date can be marked "Achieved"
+   - If target date passes, status auto-updates to "Delayed" or "Overdue"
+
+4. **Visual Integration:**
+   - WBS cards show Key Date badge if linked
+   - Filter WBS view to show only KD-related items
+   - Gantt chart highlights KD milestones
+
+---
+
+## Summary & Timeline
+
+### Complete v1.5 Implementation Timeline
+
+| Sprint | Focus | Duration | Status |
+|--------|-------|----------|--------|
+| Sprint 1 | Database Foundation | Week 1 | ✅ Complete |
+| Sprint 2 | WBS UI | Week 2 | ⏳ In Progress (10%) |
+| Sprint 3 | Item Creation | Week 3 | ⏳ Planned |
+| Sprint 4 | Baseline Lock | Week 4 | ⏳ Planned |
+| Sprint 5 | Templates | Week 5 | ⏳ Planned |
+| **Sprint 6** | **Key Dates Foundation** | **Week 6** | **📋 NEW** |
+| **Sprint 7** | **Key Dates UI** | **Week 7** | **📋 NEW** |
+| **Sprint 8** | **CMRL Data & Reports** | **Week 8** | **📋 NEW** |
+
+**Total v1.5 Timeline:** 8 weeks (72-100 hours)
+- **Core Planning (Sprints 1-5):** 44-62 hours
+- **CMRL Key Dates (Sprints 6-8):** 28-38 hours
+
+### Key Benefits of This Approach
+
+1. **✅ Backward Compatible** - Doesn't break existing Sprint 1-5 work
+2. **✅ Optional Feature** - Non-CMRL projects can disable Key Dates
+3. **✅ Professional Financial Tracking** - Liquidated damages calculation
+4. **✅ Industry Standard** - Matches large infrastructure project requirements
+5. **✅ Scalable** - Can add more Key Date categories in future
+6. **✅ Flexible** - Works with existing WBS structure
+
+---
+
+### Recommended Action Plan
+
+**Immediate (This Week):**
+1. ✅ Complete Sprint 2 implementation (WBS UI components - 8 hours)
+2. ✅ Run and fix Sprint 2 tests
+3. ✅ Verify WBS Management screen working end-to-end
+
+**Next Week:**
+4. Implement Sprint 3 (Item Creation & Editing)
+5. Implement Sprint 4 (Baseline Lock)
+
+**Following Weeks:**
+6. Implement Sprint 5 (Template System)
+7. Implement Sprint 6 (Key Dates Foundation)
+8. Implement Sprint 7 (Key Dates UI)
+9. Implement Sprint 8 (CMRL Data Import)
+
+**Decision Point:** After Sprint 5 completion, confirm if CMRL Key Dates feature is required. If yes, proceed with Sprints 6-8. If no, v1.4 is complete.
+
+---
+
 **Document End**
 
-**Total Pages:** ~75
-**Total Words:** ~18,000
-**Estimated Reading Time:** 60-75 minutes
+**Total Pages:** ~90
+**Total Words:** ~25,000
+**Estimated Reading Time:** 90-105 minutes
+**Last Updated:** 2025-10-16 (Added CMRL Key Dates Integration v1.5)

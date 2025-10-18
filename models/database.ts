@@ -15,6 +15,8 @@ import SiteInspectionModel from './SiteInspectionModel';
 import RoleModel from './RoleModel';
 import UserModel from './UserModel';
 import ScheduleRevisionModel from './ScheduleRevisionModel';
+import TemplateModuleModel from './TemplateModuleModel';
+import InterfacePointModel from './InterfacePointModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -37,5 +39,7 @@ export const database = new Database({
     RoleModel,
     UserModel,
     ScheduleRevisionModel,
+    TemplateModuleModel,
+    InterfacePointModel,
   ],
 });

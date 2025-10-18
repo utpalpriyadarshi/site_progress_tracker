@@ -135,5 +135,57 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 12,
+      steps: [
+        // Add WBS & Phase Management columns to items table
+        addColumns({
+          table: 'items',
+          columns: [
+            { name: 'project_phase', type: 'string', isIndexed: true },
+            { name: 'is_milestone', type: 'boolean' },
+            { name: 'created_by_role', type: 'string' },
+            { name: 'wbs_code', type: 'string', isIndexed: true },
+            { name: 'wbs_level', type: 'number' },
+            { name: 'parent_wbs_code', type: 'string', isOptional: true },
+            { name: 'is_critical_path', type: 'boolean' },
+            { name: 'float_days', type: 'number', isOptional: true },
+            { name: 'dependency_risk', type: 'string', isOptional: true },
+            { name: 'risk_notes', type: 'string', isOptional: true },
+          ],
+        }),
+        // Create template_modules table
+        createTable({
+          name: 'template_modules',
+          columns: [
+            { name: 'name', type: 'string' },
+            { name: 'category', type: 'string', isIndexed: true },
+            { name: 'voltage_level', type: 'string', isOptional: true },
+            { name: 'items_json', type: 'string' },
+            { name: 'compatible_modules', type: 'string' },
+            { name: 'is_predefined', type: 'boolean' },
+            { name: 'description', type: 'string' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create interface_points table (for v1.4)
+        createTable({
+          name: 'interface_points',
+          columns: [
+            { name: 'item_id', type: 'string', isIndexed: true },
+            { name: 'from_contractor', type: 'string' },
+            { name: 'to_contractor', type: 'string' },
+            { name: 'interface_type', type: 'string' },
+            { name: 'status', type: 'string' },
+            { name: 'target_date', type: 'number', isOptional: true },
+            { name: 'actual_date', type: 'number', isOptional: true },
+            { name: 'notes', type: 'string', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

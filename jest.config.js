@@ -5,6 +5,7 @@ module.exports = {
   ],
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
+    '<rootDir>/jest.setup.afterEnv.js',
   ],
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-paper|react-native-gesture-handler|@react-native-community|@nozbe/watermelondb|@nozbe/with-observables)/)',
