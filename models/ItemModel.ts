@@ -2,6 +2,21 @@ import { Model } from '@nozbe/watermelondb';
 import { field, date, readonly, relation } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
 
+export type ProjectPhase =
+  | 'design'           // Design & Engineering
+  | 'approvals'        // Statutory/Utility approvals
+  | 'mobilization'     // Resource mobilization to site
+  | 'procurement'      // Equipment procurement
+  | 'interface'        // Interface coordination
+  | 'site_prep'        // Site preparation & civil works
+  | 'construction'     // Installation/Construction
+  | 'testing'          // Testing & Pre-commissioning
+  | 'commissioning'    // Commissioning
+  | 'sat'              // Site Acceptance Test
+  | 'handover';        // Handover & Documentation
+
+export type DependencyRisk = 'low' | 'medium' | 'high';
+
 export default class ItemModel extends Model {
   static table = 'items';
 
@@ -12,6 +27,7 @@ export default class ItemModel extends Model {
     materials: { type: 'has_many', foreignKey: 'item_id' },
     hindrances: { type: 'has_many', foreignKey: 'item_id' },
     schedule_revisions: { type: 'has_many', foreignKey: 'item_id' },
+    interface_points: { type: 'has_many', foreignKey: 'item_id' },
   };
 
   @field('name') name!: string;
@@ -33,6 +49,22 @@ export default class ItemModel extends Model {
   @field('actual_start_date') actualStartDate?: number;
   @field('actual_end_date') actualEndDate?: number;
   @field('critical_path_flag') criticalPathFlag?: boolean;
+
+  // WBS & Phase Management (v12)
+  @field('project_phase') projectPhase!: ProjectPhase;
+  @field('is_milestone') isMilestone!: boolean;
+  @field('created_by_role') createdByRole!: string; // 'planner' | 'supervisor'
+
+  // WBS Structure (v12)
+  @field('wbs_code') wbsCode!: string;
+  @field('wbs_level') wbsLevel!: number;
+  @field('parent_wbs_code') parentWbsCode?: string;
+
+  // Critical Path & Risk Management (v12)
+  @field('is_critical_path') isCriticalPath!: boolean;
+  @field('float_days') floatDays?: number;
+  @field('dependency_risk') dependencyRisk?: DependencyRisk;
+  @field('risk_notes') riskNotes?: string;
 
   // Helper methods for dependencies
   getDependencies(): string[] {
@@ -75,5 +107,62 @@ export default class ItemModel extends Model {
   getProgressPercentage(): number {
     if (this.plannedQuantity === 0) return 0;
     return Math.min(100, (this.completedQuantity / this.plannedQuantity) * 100);
+  }
+
+  // WBS Helper Methods (v12)
+  getFormattedWbsCode(): string {
+    return this.wbsCode || 'N/A';
+  }
+
+  getIndentLevel(): number {
+    return Math.max(0, this.wbsLevel - 1);
+  }
+
+  getPhaseLabel(): string {
+    const labels: Record<ProjectPhase, string> = {
+      design: '✏️ Design & Engineering',
+      approvals: '📋 Statutory Approvals',
+      mobilization: '🚛 Mobilization',
+      procurement: '🛒 Procurement',
+      interface: '🔗 Interface Coordination',
+      site_prep: '🏗️ Site Preparation',
+      construction: '🔨 Construction',
+      testing: '🧪 Testing',
+      commissioning: '⚡ Commissioning',
+      sat: '✅ Site Acceptance Test',
+      handover: '📦 Handover',
+    };
+    return labels[this.projectPhase] || 'Unknown';
+  }
+
+  getPhaseColor(): string {
+    const colors: Record<ProjectPhase, string> = {
+      design: '#2196F3',        // Blue
+      approvals: '#9C27B0',     // Purple
+      mobilization: '#FF5722',  // Deep Orange
+      procurement: '#FF9800',   // Orange
+      interface: '#00BCD4',     // Cyan
+      site_prep: '#795548',     // Brown
+      construction: '#4CAF50',  // Green
+      testing: '#F44336',       // Red
+      commissioning: '#3F51B5', // Indigo
+      sat: '#009688',           // Teal
+      handover: '#607D8B',      // Blue Grey
+    };
+    return colors[this.projectPhase] || '#666666';
+  }
+
+  isOnCriticalPath(): boolean {
+    return this.isCriticalPath || (this.floatDays !== undefined && this.floatDays <= 0);
+  }
+
+  getRiskBadgeColor(): string | null {
+    if (!this.dependencyRisk) return null;
+    const colors: Record<DependencyRisk, string | null> = {
+      low: null,          // No badge
+      medium: '#FFC107',  // Amber
+      high: '#F44336',    // Red
+    };
+    return colors[this.dependencyRisk];
   }
 }

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 11, // Incremented for planning module (baseline dates, dependencies, schedule revisions)
+  version: 12, // Incremented for WBS management, critical path, and modular templates (v1.4)
   tables: [
     tableSchema({
       name: 'projects',
@@ -51,6 +51,18 @@ export default appSchema({
         { name: 'actual_start_date', type: 'number', isOptional: true }, // when work actually began
         { name: 'actual_end_date', type: 'number', isOptional: true }, // when work actually completed
         { name: 'critical_path_flag', type: 'boolean', isOptional: true }, // on critical path
+        // WBS & Phase Management (v12)
+        { name: 'project_phase', type: 'string', isIndexed: true }, // design, approvals, mobilization, etc.
+        { name: 'is_milestone', type: 'boolean' }, // milestone flag
+        { name: 'created_by_role', type: 'string' }, // planner, supervisor
+        { name: 'wbs_code', type: 'string', isIndexed: true }, // hierarchical code (e.g., "1.2.3.4")
+        { name: 'wbs_level', type: 'number' }, // depth level (1-4)
+        { name: 'parent_wbs_code', type: 'string', isOptional: true }, // parent WBS code
+        // Critical Path & Risk Management (v12)
+        { name: 'is_critical_path', type: 'boolean' }, // critical path indicator
+        { name: 'float_days', type: 'number', isOptional: true }, // total float
+        { name: 'dependency_risk', type: 'string', isOptional: true }, // low, medium, high
+        { name: 'risk_notes', type: 'string', isOptional: true }, // risk description
       ],
     }),
     tableSchema({
@@ -161,6 +173,31 @@ export default appSchema({
         { name: 'approval_status', type: 'string' }, // pending, approved, rejected
         { name: 'impact_summary', type: 'string', isOptional: true }, // JSON: affected items
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+      ],
+    }),
+    tableSchema({
+      name: 'template_modules',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'category', type: 'string', isIndexed: true }, // substation, ohe, third_rail, building, interface
+        { name: 'voltage_level', type: 'string', isOptional: true }, // 220kV, 132kV, 66kV, 33kV, 25kV, 650VDC
+        { name: 'items_json', type: 'string' }, // JSON array of template items
+        { name: 'compatible_modules', type: 'string' }, // JSON array of compatible module IDs
+        { name: 'is_predefined', type: 'boolean' }, // system template flag
+        { name: 'description', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'interface_points',
+      columns: [
+        { name: 'item_id', type: 'string', isIndexed: true }, // belongs to item
+        { name: 'from_contractor', type: 'string' },
+        { name: 'to_contractor', type: 'string' },
+        { name: 'interface_type', type: 'string' }, // handover, approval, information
+        { name: 'status', type: 'string' }, // pending, in_progress, resolved, blocked
+        { name: 'target_date', type: 'number', isOptional: true }, // target completion timestamp
+        { name: 'actual_date', type: 'number', isOptional: true }, // actual completion timestamp
+        { name: 'notes', type: 'string', isOptional: true },
       ],
     }),
   ],

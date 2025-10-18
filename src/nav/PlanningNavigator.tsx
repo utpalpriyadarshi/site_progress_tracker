@@ -1,9 +1,12 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
+import WBSManagementScreen from '../planning/WBSManagementScreen';
+import ItemCreationScreen from '../planning/ItemCreationScreen';
 import GanttChartScreen from '../planning/GanttChartScreen';
 import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
@@ -11,6 +14,7 @@ import MilestoneTrackingScreen from '../planning/MilestoneTrackingScreen';
 import BaselineScreen from '../planning/BaselineScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
+import { PlanningStackParamList } from './types';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -21,6 +25,7 @@ export type RootStackParamList = {
 };
 
 export type PlanningTabParamList = {
+  WBSManagement: undefined;
   GanttChart: undefined;
   ScheduleManagement: undefined;
   ResourcePlanning: undefined;
@@ -33,8 +38,10 @@ type PlanningNavigatorProps = {
 };
 
 const Tab = createBottomTabNavigator<PlanningTabParamList>();
+const Stack = createNativeStackNavigator<PlanningStackParamList>();
 
-const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
+// Tab Navigator Component (all the tabs)
+const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
   const { logout } = useAuth();
 
   const handleLogout = async () => {
@@ -69,7 +76,9 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
         tabBarIcon: ({ focused, color, size }) => {
           let iconSymbol = '';
 
-          if (route.name === 'GanttChart') {
+          if (route.name === 'WBSManagement') {
+            iconSymbol = '🗂️';
+          } else if (route.name === 'GanttChart') {
             iconSymbol = '📊';
           } else if (route.name === 'ScheduleManagement') {
             iconSymbol = '📅';
@@ -95,14 +104,23 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
         ),
       })}
     >
-      <Tab.Screen 
-        name="GanttChart" 
-        component={GanttChartScreen} 
-        options={{ 
+      <Tab.Screen
+        name="WBSManagement"
+        component={WBSManagementScreen}
+        options={{
+          title: 'WBS',
+          headerShown: true,
+          headerTitle: 'Work Breakdown Structure',
+        }}
+      />
+      <Tab.Screen
+        name="GanttChart"
+        component={GanttChartScreen}
+        options={{
           title: 'Gantt Chart',
           headerShown: true,
           headerTitle: 'Project Timeline',
-        }} 
+        }}
       />
       <Tab.Screen 
         name="ScheduleManagement" 
@@ -141,6 +159,27 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
         }}
       />
     </Tab.Navigator>
+  );
+};
+
+// Main Stack Navigator with Tabs + Item Creation screens
+const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="WBSManagement">
+        {(props) => <PlanningTabs {...props} navigation={parentNavigation} />}
+      </Stack.Screen>
+      <Stack.Screen
+        name="ItemCreation"
+        component={ItemCreationScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ItemEdit"
+        component={ItemCreationScreen} // Reuse same screen for now
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
   );
 };
 

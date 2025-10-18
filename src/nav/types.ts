@@ -14,3 +14,14 @@ export type AuthStackParamList = {
     username: string;
   };
 };
+
+export type PlanningStackParamList = {
+  WBSManagement: undefined;
+  ItemCreation: {
+    siteId: string;
+    parentWbsCode?: string;
+  };
+  ItemEdit: {
+    itemId: string;
+  };
+};
