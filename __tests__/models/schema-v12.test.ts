@@ -10,13 +10,8 @@ import TemplateModuleModel from '../../models/TemplateModuleModel';
 import InterfacePointModel from '../../models/InterfacePointModel';
 
 describe('Schema v12 Migration', () => {
-  beforeAll(async () => {
-    // Ensure database is initialized
-    await database.write(async () => {
-      // Reset database for clean tests
-      await database.unsafeResetDatabase();
-    });
-  });
+  // Database is already initialized by jest.setup.js
+  // No beforeAll needed - tests will use the mocked database
 
   describe('New Tables', () => {
     it('should have template_modules table', async () => {

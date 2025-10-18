@@ -57,6 +57,17 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [selectedSite, selectedPhase, loadItems]);
 
+  // Reload items when screen comes into focus (after creating/editing)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (selectedSite) {
+        loadItems();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, selectedSite, loadItems]);
+
   const handleAddItem = () => {
     if (!selectedSite) {
       Alert.alert('No Site Selected', 'Please select a site first.');
@@ -65,6 +76,31 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
     navigation.navigate('ItemCreation', {
       siteId: selectedSite.id,
+    });
+  };
+
+  const handleAddChildItem = (parentItem: ItemModel) => {
+    if (parentItem.isBaselineLocked) {
+      Alert.alert(
+        'Baseline Locked',
+        'Cannot add child items after baseline is locked.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (parentItem.wbsLevel >= 4) {
+      Alert.alert(
+        'Maximum Level Reached',
+        'Cannot create child items beyond level 4.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    navigation.navigate('ItemCreation', {
+      siteId: selectedSite!.id,
+      parentWbsCode: parentItem.wbsCode,
     });
   };
 
@@ -77,11 +113,10 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       );
       return;
     }
-    Alert.alert(
-      'Edit Item',
-      'Item editing will be implemented in Sprint 3',
-      [{ text: 'OK' }]
-    );
+
+    navigation.navigate('ItemEdit', {
+      itemId: item.id,
+    });
   };
 
   const handleDeleteItem = async (item: ItemModel) => {
@@ -189,6 +224,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
                 onPress={() => {}}
                 onEdit={() => handleEditItem(item)}
                 onDelete={() => handleDeleteItem(item)}
+                onAddChild={() => handleAddChildItem(item)}
               />
             )}
             ListEmptyComponent={

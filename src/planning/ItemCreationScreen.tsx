@@ -31,7 +31,7 @@ import { database } from '../../models/database';
 import CategorySelector from './components/CategorySelector';
 import PhaseSelector from './components/PhaseSelector';
 
-type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation'>;
+type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
 
 interface FormData {
   name: string;

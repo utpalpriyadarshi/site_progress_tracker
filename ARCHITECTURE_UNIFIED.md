@@ -4,8 +4,8 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v1.3 (Planning Module & Testing Infrastructure)
-**Database Schema Version**: 11
+**Current Version**: v1.5 (WBS Management & Item Creation)
+**Database Schema Version**: 12
 **Platform**: React Native (Android & iOS)
 **Last Updated**: October 2025
 
@@ -34,16 +34,19 @@ The project follows a **hybrid structure** where actual implementation resides i
 site_progress_tracker/
 ├── android/                      # Android native code
 ├── ios/                          # iOS native code
-├── models/                       # WatermelonDB models and schema (Schema v11)
+├── models/                       # WatermelonDB models and schema (Schema v12)
 │   ├── migrations/               # Database migration files
 │   │   ├── 001-initial.js        # Initial schema
 │   │   ├── 002-daily-reports.js  # Added daily_reports table
 │   │   ├── 003-hindrances-photos.js # Added photos to hindrances
 │   │   ├── 004-admin-users-roles.js # Added users and roles tables (v9→v10)
-│   │   └── 005-planning-fields.js # Added planning fields to items (v10→v11)
+│   │   ├── 005-planning-fields.js # Added planning fields to items (v10→v11)
+│   │   └── 006-wbs-fields.js     # Added WBS fields to items (v11→v12)
 │   ├── schema/                   # Database schema definitions
-│   │   └── index.ts              # Schema v11 definition
+│   │   └── index.ts              # Schema v12 definition
 │   ├── CategoryModel.ts          # Item/material category model
+│   ├── InterfacePointModel.ts    # Interface coordination points (v1.4 - NEW)
+│   ├── TemplateModuleModel.ts    # Reusable work templates (v1.4 - NEW)
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
 │   ├── ItemModel.ts              # Construction work items model
@@ -60,7 +63,8 @@ site_progress_tracker/
 │   └── database.ts               # Database initialization
 ├── services/                     # Application services
 │   ├── planning/                 # Planning services (v1.3 - NEW)
-│   │   └── PlanningService.ts    # Critical path, metrics, forecasting
+│   │   ├── PlanningService.ts    # Critical path, metrics, forecasting
+│   │   └── WBSCodeGenerator.ts   # WBS code generation (v1.4 - NEW)
 │   ├── db/                       # Database services
 │   │   ├── SimpleDatabaseService.ts  # Basic database service & initialization
 │   │   └── DatabaseService.ts        # Enhanced database service with queries
@@ -83,16 +87,22 @@ site_progress_tracker/
 │   │   ├── TeamManagementScreen.tsx
 │   │   ├── FinancialReportsScreen.tsx
 │   │   └── ResourceAllocationScreen.tsx
-│   ├── planning/                 # Planning-specific screens (5 screens)
-│   │   ├── BaselineScreen.tsx         # Baseline planning (v1.3 - NEW)
+│   ├── planning/                 # Planning-specific screens (7 screens)
+│   │   ├── BaselineScreen.tsx         # Baseline planning (v1.3)
 │   │   ├── GanttChartScreen.tsx
 │   │   ├── ScheduleManagementScreen.tsx
 │   │   ├── ResourcePlanningScreen.tsx
 │   │   ├── MilestoneTrackingScreen.tsx
-│   │   └── components/                # Planning components (v1.3 - NEW)
-│   │       ├── ProjectSelector.tsx    # Project dropdown selector
-│   │       ├── ItemPlanningCard.tsx   # Item card with date pickers
-│   │       └── DependencyModal.tsx    # Dependency management modal
+│   │   ├── WBSManagementScreen.tsx    # WBS management (v1.4 - NEW)
+│   │   ├── ItemCreationScreen.tsx     # Create/Edit WBS items (v1.4 - NEW)
+│   │   └── components/                # Planning components
+│   │       ├── ProjectSelector.tsx    # Project dropdown selector (v1.3)
+│   │       ├── ItemPlanningCard.tsx   # Item card with date pickers (v1.3)
+│   │       ├── DependencyModal.tsx    # Dependency management modal (v1.3)
+│   │       ├── SimpleSiteSelector.tsx # Site selector (v1.4 - NEW)
+│   │       ├── WBSItemCard.tsx        # WBS item display card (v1.4 - NEW)
+│   │       ├── CategorySelector.tsx   # Category dropdown (v1.4 - NEW)
+│   │       └── PhaseSelector.tsx      # Phase dropdown (v1.4 - NEW)
 │   ├── admin/                    # Admin-specific screens (3 screens - v1.2)
 │   │   ├── AdminDashboardScreen.tsx      # Admin dashboard with statistics
 │   │   ├── ProjectManagementScreen.tsx   # Project CRUD with cascade delete
@@ -125,11 +135,18 @@ site_progress_tracker/
 │       ├── PlanningNavigator.tsx  # Planning bottom tabs (4 tabs)
 │       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
 │       └── types.ts              # Navigation type definitions
-├── __tests__/                    # Test files (v1.3 - NEW)
+├── __tests__/                    # Test files (v1.3+)
 │   ├── models/                   # Model tests
-│   │   └── ItemModel.test.ts     # ItemModel tests (26 tests)
-│   └── services/                 # Service tests
-│       └── PlanningService.test.ts # PlanningService tests (9 tests)
+│   │   ├── ItemModel.test.ts     # ItemModel tests (26 tests)
+│   │   ├── InterfacePointModel.test.ts # InterfacePointModel tests (v1.4 - NEW)
+│   │   ├── TemplateModuleModel.test.ts # TemplateModuleModel tests (v1.4 - NEW)
+│   │   └── schema-v12.test.ts    # Schema v12 tests (v1.4 - NEW)
+│   ├── services/                 # Service tests
+│   │   ├── PlanningService.test.ts # PlanningService tests (9 tests)
+│   │   └── WBSCodeGenerator.test.ts # WBS code generator tests (v1.4 - NEW)
+│   └── planning/                 # Planning screen tests (v1.4 - NEW)
+│       ├── ItemCreationScreen.test.tsx
+│       └── WBSManagementScreen.test.tsx
 ├── prompts/                      # Project prompts and documentation
 ├── node_modules/                 # NPM dependencies
 ├── .vscode/                      # VS Code settings
@@ -214,9 +231,11 @@ Screens are organized by user role for clear separation of concerns:
   - Project overview, team management
   - Financial reports, resource allocation
 
-- **Planning** (`src/planning/`): 5 screens for scheduling (v1.3 updated)
-  - Baseline planning with critical path calculation (NEW)
-  - Dependency management with circular detection (NEW)
+- **Planning** (`src/planning/`): 7 screens for scheduling (v1.3-v1.5)
+  - Baseline planning with critical path calculation (v1.3)
+  - Dependency management with circular detection (v1.3)
+  - WBS Management with hierarchical item structure (v1.4 - NEW)
+  - Item Creation/Editing with auto-generated WBS codes (v1.4 - NEW)
   - Gantt charts, schedule management
   - Resource planning, milestone tracking
 
@@ -325,11 +344,15 @@ MainNavigator (Stack)
     │   ├── TeamManagementScreen (👥 Team)
     │   ├── FinancialReportsScreen (💰 Finance)
     │   └── ResourceAllocationScreen (📦 Resources)
-    ├── PlanningNavigator (4 tabs)
-    │   ├── GanttChartScreen (📅 Gantt)
-    │   ├── ScheduleManagementScreen (🗓️ Schedule)
-    │   ├── ResourcePlanningScreen (📊 Planning)
-    │   └── MilestoneTrackingScreen (🎯 Milestones)
+    ├── PlanningNavigator (Stack + Bottom Tabs - v1.4 Updated)
+    │   ├── Bottom Tabs (4 tabs)
+    │   │   ├── WBSManagementScreen (📋 WBS) [v1.4 - NEW]
+    │   │   ├── GanttChartScreen (📅 Gantt)
+    │   │   ├── ScheduleManagementScreen (🗓️ Schedule)
+    │   │   └── MilestoneTrackingScreen (🎯 Milestones)
+    │   └── Stack Screens (Modal/Detail screens)
+    │       ├── ItemCreation (Create new WBS items) [v1.4 - NEW]
+    │       └── ItemEdit (Edit existing WBS items) [v1.5 - NEW]
     └── LogisticsNavigator (4 tabs)
         ├── MaterialTrackingScreen (📦 Materials)
         ├── EquipmentManagementScreen (🚜 Equipment)
@@ -357,7 +380,8 @@ MainNavigator (Stack)
 - **v8**: Added Site Inspection support with comprehensive checklists
 - **v9**: Preparation for user management features
 - **v10**: Added `users` and `roles` tables for Admin role implementation (v1.2)
-- **v11**: Current version - Added 7 planning fields to `items` table and `schedule_revisions` table (v1.3)
+- **v11**: Added 7 planning fields to `items` table and `schedule_revisions` table (v1.3)
+- **v12**: Current version - Added WBS fields to `items`, new `interface_points` and `template_modules` tables (v1.4)
 
 ### Core Collections
 
@@ -374,15 +398,26 @@ MainNavigator (Stack)
 - Item categorization (Structural, Electrical, Plumbing, etc.)
 - Fields: name, description
 
-#### items (Enhanced in v1.3)
-- Construction work items with planning capabilities
+#### items (Enhanced in v1.3 & v1.4)
+- Construction work items with planning and WBS capabilities
 - **Core Fields**: name, category_id, site_id, planned_quantity, completed_quantity, unit_of_measurement, planned_start_date, planned_end_date, status, weightage
-- **Planning Fields (v1.3 - NEW)**:
+- **Planning Fields (v1.3)**:
   - `baseline_start_date / baseline_end_date`: Locked baseline dates
   - `dependencies`: JSON array of dependent item IDs
   - `is_baseline_locked`: Boolean flag for baseline lock status
   - `actual_start_date / actual_end_date`: Track actual work dates
   - `critical_path_flag`: Boolean indicating critical path items
+- **WBS Fields (v1.4 - NEW)**:
+  - `wbs_code`: Auto-generated hierarchical code (e.g., 1.2.3.0)
+  - `wbs_level`: Hierarchy level (1-4)
+  - `parent_wbs_code`: Parent item's WBS code
+  - `project_phase`: Design, Construction, Testing, etc.
+  - `is_milestone`: Boolean flag for milestone items
+  - `created_by_role`: planner, supervisor, manager
+  - `is_critical_path`: Critical path indicator (v1.4 field, separate from v1.3 critical_path_flag)
+  - `float_days`: Schedule float/slack
+  - `dependency_risk`: low, medium, high
+  - `risk_notes`: Risk description and mitigation
 - **Relationships**: belongs_to site/category, has_many progress_logs/materials/hindrances
 
 #### progress_logs
@@ -427,6 +462,18 @@ MainNavigator (Stack)
 - Fields: name, description, permissions (JSON)
 - **Relationships**: has_many users
 - **System Roles**: Admin, Supervisor, Manager, Planner, Logistics
+
+#### interface_points (v1.4 - NEW)
+- Interface coordination points between contractors/phases
+- Fields: site_id, name, description, responsible_party_1, responsible_party_2, target_date, status, coordination_notes
+- **Relationships**: belongs_to site
+- **Purpose**: Track handoffs between teams, coordination requirements, and interface dependencies
+
+#### template_modules (v1.4 - NEW)
+- Reusable work breakdown templates
+- Fields: name, description, category_id, typical_duration, typical_quantity, unit_of_measurement, items_json
+- **Relationships**: belongs_to category
+- **Purpose**: Quick-start WBS creation from predefined templates (e.g., "Substation Installation" template)
 
 ### Entity Relationship Diagram
 
@@ -560,7 +607,7 @@ MainNavigator (Stack)
 - Automatic sync when connectivity restored
 - Queue-based sync with conflict resolution
 
-### 3. Planning Module Features (v1.3 - NEW)
+### 3. Planning Module Features (v1.3-v1.5)
 
 #### Baseline Planning Screen
 - Project selection with dropdown
@@ -596,7 +643,8 @@ MainNavigator (Stack)
   - Enables variance tracking
 - **Visual Indicators**: Lock chips, warning cards, disabled inputs
 
-#### ItemModel Helper Methods (v1.3 - 7 NEW methods)
+#### ItemModel Helper Methods
+**v1.3 Methods (7 methods)**:
 - `getDependencies()`: Parse JSON dependencies
 - `setDependencies()`: Set dependencies as JSON
 - `getScheduleVariance()`: Calculate variance in days
@@ -604,6 +652,64 @@ MainNavigator (Stack)
 - `getActualDuration()`: Calculate actual duration
 - `getBaselineVariance()`: Calculate baseline variance
 - `getProgressPercentage()`: Calculate completion percentage
+
+**v1.4 Methods (8 NEW methods)**:
+- `getFormattedWbsCode()`: Format WBS code for display
+- `getIndentLevel()`: Calculate indent level from WBS hierarchy
+- `getPhaseLabel()`: Get human-readable phase name
+- `getPhaseColor()`: Get color code for phase
+- `getRiskBadgeColor()`: Get color for risk level
+- `isOnCriticalPath()`: Check if item is on critical path
+- `hasChildren()`: Check if item has child items
+- `getChildItems()`: Fetch child items by parent WBS code
+
+#### WBS Management Screen (v1.4 - NEW)
+- **Site Selection**: SimpleSiteSelector component with dropdown
+- **Phase Filtering**: 11 project phases with chip filters
+- **WBS Item List**: Hierarchical display with WBSItemCard components
+- **Item Actions**: Create root items, add child items (up to 4 levels)
+- **Context Menu** (v1.5): Long-press menu with Edit/Delete/Add Child options
+- **Auto-refresh**: Navigation focus listener for automatic list refresh
+- **Visual Indicators**: Badges for critical path, risk level, baseline locked status
+- **Max Level Enforcement**: Prevents creation beyond level 4
+
+#### Item Creation Screen (v1.4 - NEW)
+- **WBS Code Auto-generation**: Root codes (1.0.0.0, 2.0.0.0) and child codes (1.1.0.0, 1.1.1.0)
+- **Form Sections**:
+  - Item Details: Name, description
+  - Category Selection: Database-driven dropdown
+  - Phase Selection: 11 phases with emojis and colors
+  - Schedule & Quantity: Duration, quantity, unit of measurement
+  - Critical Path & Risk: Milestone, critical path, float days
+  - Dependency Risk: Low/medium/high with risk notes
+- **Validation**: Required fields, numeric validation
+- **Snackbar Notifications**: Success/error feedback
+- **Database Save**: Full WatermelonDB persistence
+- **Navigation**: Auto-navigate back after save
+
+#### Category & Phase Selectors (v1.4 - NEW)
+- **CategorySelector**: Live database integration, description display
+- **PhaseSelector**: 11 phases with visual indicators
+  - Design & Engineering (Blue)
+  - Statutory Approvals (Purple)
+  - Mobilization (Deep Orange)
+  - Procurement (Orange)
+  - Interface Coordination (Cyan)
+  - Site Preparation (Brown)
+  - Construction (Green)
+  - Testing & Pre-commissioning (Red)
+  - Commissioning (Indigo)
+  - Site Acceptance Test (Teal)
+  - Handover & Documentation (Blue Grey)
+
+#### WBS Code Generation Service (v1.4 - NEW)
+- **Algorithm**: Hierarchical code generation with database queries
+- **Static Methods**:
+  - `generateRootCode(siteId)`: Generates next root code (1.0.0.0, 2.0.0.0, etc.)
+  - `generateChildCode(siteId, parentWbsCode)`: Generates child code (1.1.0.0, 1.2.0.0, etc.)
+  - `calculateLevel(wbsCode)`: Extracts hierarchy level from code
+- **Constraints**: Maximum 4 levels, numeric sorting
+- **Database Queries**: Finds existing codes to prevent duplicates
 
 ### 4. Admin Role Features (v1.2)
 
@@ -1067,7 +1173,7 @@ Based on the current structure, these areas are prepared for future development:
   - AdminNavigator with 3 screens
   - AdminContext for state management
   - 54 comprehensive tests (all passing)
-- **v1.3**: Planning Module & Testing Infrastructure (Current - Schema v11)
+- **v1.3**: Planning Module & Testing Infrastructure (Schema v11)
   - **Database**: 7 new planning fields in items table, schedule_revisions table
   - **Service Layer**: PlanningService.ts (479 lines) with critical path calculation
   - **UI Components**: BaselineScreen, ItemPlanningCard, DependencyModal, ProjectSelector
@@ -1076,6 +1182,20 @@ Based on the current structure, these areas are prepared for future development:
   - **Lines of Code Added**: ~1,600 lines
   - **UX Fixes**: Critical path visualization improvements
   - **Test Documentation**: TESTING_QUICKSTART.md, TESTING_STRATEGY.md, TESTING_SESSION_CHECKLIST.md
+- **v1.4**: WBS Management & Item Creation (Schema v12)
+  - **Database**: 10 WBS fields in items table, interface_points table, template_modules table
+  - **Service Layer**: WBSCodeGenerator.ts (147 lines) with hierarchical code generation
+  - **UI Components**: WBSManagementScreen, ItemCreationScreen, WBSItemCard, CategorySelector, PhaseSelector, SimpleSiteSelector
+  - **Navigation**: Stack navigator within PlanningNavigator for ItemCreation/ItemEdit screens
+  - **Features**: Auto-generated WBS codes (4-level hierarchy), 11 project phases, critical path tracking, risk management
+  - **Lines of Code Added**: ~1,200 lines
+  - **Testing**: 4 new test suites (InterfacePointModel, TemplateModuleModel, WBSCodeGenerator, schema-v12)
+- **v1.5**: Context Menu & Item Editing (Current - Schema v12)
+  - **UI Updates**: Long-press context menu on WBSItemCard with Edit/Delete/Add Child options
+  - **Navigation**: ItemEdit screen support with handleEditItem navigation
+  - **Features**: Auto-refresh on screen focus, baseline lock enforcement
+  - **Lines of Code Modified**: ~100 lines
+  - **User Experience**: Enhanced touch interactions for mobile
 
 ---
 
