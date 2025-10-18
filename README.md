@@ -16,7 +16,19 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   - Project management with cascade deletion
   - Role switching to test different user experiences
   - Active/inactive user account management
-- **Planning Module** (v1.3 - NEW): Advanced project planning capabilities with:
+- **Planning Module** (v1.3-v1.5 - ENHANCED): Advanced project planning capabilities with:
+  - **WBS Management** (v1.4-v1.5): Hierarchical Work Breakdown Structure
+    - Auto-generated WBS codes (1.0.0.0, 1.1.0.0, etc.)
+    - 4-level hierarchy support (root → child → grandchild → great-grandchild)
+    - Visual indentation for parent-child relationships
+    - Context menu (long-press) for item operations
+    - Child item creation workflow
+  - **Item Creation & Editing** (v1.4-v1.5):
+    - Category selector with database integration (6 categories)
+    - Phase selector with 11 project phases (color-coded with emojis)
+    - Complete form validation with real-time feedback
+    - Snackbar notifications for user actions
+    - Database persistence with WatermelonDB
   - Critical path calculation using Kahn's algorithm
   - Dependency management with circular dependency detection
   - Baseline planning and locking
@@ -131,21 +143,35 @@ The app uses WatermelonDB (Schema v11, updated October 2025) for robust offline-
 - **Users**: User accounts with authentication credentials
 - **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
 
-### Planning Fields (v1.3 - NEW)
-Items now include advanced planning capabilities:
-- **baseline_start_date / baseline_end_date**: Locked baseline dates
-- **dependencies**: JSON array of dependent item IDs
-- **is_baseline_locked**: Boolean flag for baseline lock status
-- **actual_start_date / actual_end_date**: Track actual work dates
-- **critical_path_flag**: Boolean flag indicating critical path items
+### Planning & WBS Fields (v1.3-v1.5 - ENHANCED)
+Items now include advanced planning and WBS management capabilities:
+- **Planning Fields (v1.3)**:
+  - **baseline_start_date / baseline_end_date**: Locked baseline dates
+  - **dependencies**: JSON array of dependent item IDs
+  - **is_baseline_locked**: Boolean flag for baseline lock status
+  - **actual_start_date / actual_end_date**: Track actual work dates
+  - **critical_path_flag**: Boolean flag indicating critical path items
+- **WBS Structure Fields (v1.4)**:
+  - **wbs_code**: Hierarchical code (e.g., "1.2.3.4")
+  - **wbs_level**: Depth level (1-4)
+  - **parent_wbs_code**: Parent WBS code reference
+  - **project_phase**: Design, Procurement, Construction, etc. (11 phases)
+  - **is_milestone**: Milestone indicator
+  - **created_by_role**: Planner or Supervisor
+- **Risk Management Fields (v1.4)**:
+  - **is_critical_path**: Critical path indicator
+  - **float_days**: Total float in days
+  - **dependency_risk**: Low, Medium, High
+  - **risk_notes**: Risk description and mitigation plan
 
 ### Key Database Features
-- **Schema Version 11**: Latest schema with planning module features (v1.3)
+- **Schema Version 12**: Latest schema with WBS management (v1.4)
 - **Offline-First**: All operations work without internet
 - **Sync Status**: Track pending/synced/failed states for all records
 - **Photo Storage**: JSON arrays for multiple photos per record
 - **Relationships**: Full foreign key relationships between all entities
 - **Cascade Deletion**: Deleting projects removes all associated sites, items, and related data
+- **Hierarchical Data**: Support for 4-level WBS hierarchy with parent-child relationships
 
 ### WatermelonDB Important Notes
 
@@ -267,8 +293,10 @@ MainNavigator
     │   ├── TeamManagementScreen
     │   ├── FinancialReportsScreen
     │   └── ResourceAllocationScreen
-    ├── PlanningNavigator (Bottom Tabs)
-    │   ├── BaselineScreen (v1.3 - NEW) - Project planning with dependencies
+    ├── PlanningNavigator (Bottom Tabs + Stack Screens)
+    │   ├── WBSManagementScreen (v1.4) - Hierarchical WBS with auto-generated codes
+    │   │   └── ItemCreationScreen (v1.4) - Create/Edit items with selectors
+    │   ├── BaselineScreen (v1.3) - Project planning with dependencies
     │   ├── GanttChartScreen
     │   ├── ScheduleManagementScreen
     │   ├── ResourcePlanningScreen
@@ -373,7 +401,29 @@ When you want to forcefully reload, for example to reset the state of your app, 
 
 ## Version History
 
-### v1.3 - Planning Module & Testing Infrastructure (Current)
+### v1.5 - Child Items & Context Menu (Current)
+- ✅ Context menu on WBS items (long-press or menu icon)
+- ✅ Child item creation workflow with parent context
+- ✅ Auto-refresh on screen focus after item operations
+- ✅ Navigation to edit screen (structure implemented)
+- ✅ Delete confirmation with cascade checks
+- **Components Modified**: WBSItemCard (Menu component), WBSManagementScreen (3 new handlers)
+
+### v1.4 - WBS Management & Item Creation
+- ✅ Database schema upgraded to v12 (14 new WBS/risk fields in items table)
+- ✅ WBS Management Screen with hierarchical display
+- ✅ Auto-generated WBS codes (WBSCodeGenerator service)
+- ✅ Item Creation Screen with complete form workflow
+- ✅ Category selector (database-driven dropdown)
+- ✅ Phase selector (11 phases with color coding)
+- ✅ Risk management fields (critical path, float days, dependency risk)
+- ✅ Snackbar notifications for user feedback
+- ✅ Form validation with real-time error display
+- ✅ Database persistence with WatermelonDB
+- **Components Added**: ItemCreationScreen (560 lines), WBSManagementScreen (303 lines), WBSItemCard (279 lines), CategorySelector (173 lines), PhaseSelector (174 lines), WBSCodeGenerator (147 lines)
+- **Lines of Code**: ~1,600 new lines across Sprint 4 & 5
+
+### v1.3 - Planning Module & Testing Infrastructure
 - ✅ Database schema upgraded to v11 (7 new planning fields in items table)
 - ✅ Planning Service with critical path calculation (Kahn's algorithm)
 - ✅ Baseline Planning Screen with visual indicators

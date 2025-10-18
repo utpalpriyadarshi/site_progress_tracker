@@ -22,13 +22,16 @@ import {
   HelperText,
   Chip,
   ActivityIndicator,
+  Snackbar,
 } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
 import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
 import { database } from '../../models/database';
+import CategorySelector from './components/CategorySelector';
+import PhaseSelector from './components/PhaseSelector';
 
-type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation'>;
+type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
 
 interface FormData {
   name: string;
@@ -81,6 +84,11 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // Code generation loading
   const [generatingCode, setGeneratingCode] = useState(false);
+
+  // Snackbar state
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
 
   // Generate WBS code when screen loads
   useEffect(() => {
@@ -156,7 +164,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle save (to be implemented)
+  // Handle save
   const handleSave = async () => {
     if (!validateForm()) {
       return;
@@ -164,12 +172,71 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      // TODO: Generate WBS code
-      // TODO: Save to database
-      // TODO: Navigate back
-      console.log('Saving item...', formData);
+      // Calculate planned dates
+      const durationInMs = parseInt(formData.duration) * 24 * 60 * 60 * 1000;
+      const plannedStartDate = formData.startDate.getTime();
+      const plannedEndDate = formData.endDate.getTime();
+
+      // Calculate WBS level from code
+      const wbsLevel = WBSCodeGenerator.calculateLevel(generatedWbsCode);
+
+      // Save to database
+      await database.write(async () => {
+        await database.collections.get('items').create((item: any) => {
+          // Basic fields
+          item.name = formData.name.trim();
+          item.categoryId = formData.categoryId;
+          item.siteId = siteId;
+
+          // Quantity and measurements
+          item.plannedQuantity = parseFloat(formData.quantity);
+          item.completedQuantity = 0;
+          item.unitOfMeasurement = formData.unit.trim() || 'Set';
+
+          // Schedule
+          item.plannedStartDate = plannedStartDate;
+          item.plannedEndDate = plannedEndDate;
+          item.status = 'not_started';
+          item.weightage = 0; // Can be calculated later based on hierarchy
+
+          // Planning fields
+          item.baselineStartDate = plannedStartDate;
+          item.baselineEndDate = plannedEndDate;
+          item.isBaselineLocked = false;
+          item.dependencies = JSON.stringify([]); // Empty dependencies for now
+
+          // WBS Structure
+          item.wbsCode = generatedWbsCode;
+          item.wbsLevel = wbsLevel;
+          item.parentWbsCode = formData.parentWbsCode || null;
+
+          // Phase and Milestone
+          item.projectPhase = formData.phase;
+          item.isMilestone = formData.isMilestone;
+          item.createdByRole = 'planner';
+
+          // Critical Path and Risk
+          item.isCriticalPath = formData.isCriticalPath;
+          item.floatDays = formData.isCriticalPath ? 0 : (parseFloat(formData.floatDays) || 0);
+          item.dependencyRisk = formData.dependencyRisk;
+          item.riskNotes = formData.riskNotes.trim() || null;
+        });
+      });
+
+      // Success - show snackbar and navigate back
+      setSnackbarMessage('WBS item created successfully');
+      setSnackbarType('success');
+      setSnackbarVisible(true);
+
+      // Navigate back after a short delay to show snackbar
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1500);
     } catch (error) {
       console.error('Error saving item:', error);
+      setSnackbarMessage('Failed to create item. Please try again.');
+      setSnackbarType('error');
+      setSnackbarVisible(true);
     } finally {
       setLoading(false);
     }
@@ -242,19 +309,16 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               )}
             </View>
 
-            {/* Category Selection (placeholder for now) */}
+            {/* Category Selection */}
             <View style={styles.section}>
               <Text variant="labelLarge" style={styles.sectionTitle}>
                 Category *
               </Text>
-              <Surface style={styles.placeholderBox}>
-                <Text variant="bodyMedium">
-                  Category Selector (To be implemented)
-                </Text>
-              </Surface>
-              {errors.categoryId && (
-                <HelperText type="error">{errors.categoryId}</HelperText>
-              )}
+              <CategorySelector
+                value={formData.categoryId}
+                onSelect={(categoryId) => updateField('categoryId', categoryId)}
+                error={errors.categoryId}
+              />
             </View>
 
             {/* Phase Selection */}
@@ -262,14 +326,10 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text variant="labelLarge" style={styles.sectionTitle}>
                 Project Phase *
               </Text>
-              <Surface style={styles.placeholderBox}>
-                <Text variant="bodyMedium">
-                  Phase Selector (To be implemented)
-                </Text>
-                <Text variant="bodySmall" style={styles.currentValue}>
-                  Current: {formData.phase}
-                </Text>
-              </Surface>
+              <PhaseSelector
+                value={formData.phase}
+                onSelect={(phase) => updateField('phase', phase)}
+              />
             </View>
 
             {/* Duration and Quantity */}
@@ -409,6 +469,18 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Snackbar for feedback */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        style={{
+          backgroundColor: snackbarType === 'success' ? '#4CAF50' : '#F44336',
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Chip, IconButton } from 'react-native-paper';
+import { Card, Text, Chip, IconButton, Menu } from 'react-native-paper';
 import ItemModel from '../../../models/ItemModel';
 
 interface WBSItemCardProps {
@@ -8,6 +8,7 @@ interface WBSItemCardProps {
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onAddChild?: () => void;
 }
 
 const WBSItemCard: React.FC<WBSItemCardProps> = ({
@@ -15,7 +16,10 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
   onPress,
   onEdit,
   onDelete,
+  onAddChild,
 }) => {
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const indentLevel = item.getIndentLevel();
   const phaseColor = item.getPhaseColor();
   const riskBadgeColor = item.getRiskBadgeColor();
@@ -28,6 +32,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
         { marginLeft: 16 + indentLevel * 20 }, // Indent based on WBS level
       ]}
       onPress={onPress}
+      onLongPress={() => setMenuVisible(true)}
     >
       <Card.Content>
         {/* Header Row */}
@@ -67,23 +72,54 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               </Chip>
             )}
           </View>
-          {onEdit && onDelete && (
-            <View style={styles.actions}>
-              <IconButton
-                icon="pencil"
-                size={20}
-                onPress={onEdit}
-                disabled={item.isBaselineLocked}
-                iconColor={item.isBaselineLocked ? '#ccc' : '#6200ee'}
-              />
-              <IconButton
-                icon="delete"
-                size={20}
-                onPress={onDelete}
-                disabled={item.isBaselineLocked}
-                iconColor={item.isBaselineLocked ? '#ccc' : '#d32f2f'}
-              />
-            </View>
+          {(onEdit || onDelete || onAddChild) && (
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  size={20}
+                  onPress={() => setMenuVisible(true)}
+                  iconColor="#666"
+                />
+              }
+            >
+              {onAddChild && item.wbsLevel < 4 && (
+                <Menu.Item
+                  leadingIcon="plus-box"
+                  onPress={() => {
+                    setMenuVisible(false);
+                    onAddChild();
+                  }}
+                  title="Add Child Item"
+                  disabled={item.isBaselineLocked}
+                />
+              )}
+              {onEdit && (
+                <Menu.Item
+                  leadingIcon="pencil"
+                  onPress={() => {
+                    setMenuVisible(false);
+                    onEdit();
+                  }}
+                  title="Edit"
+                  disabled={item.isBaselineLocked}
+                />
+              )}
+              {onDelete && (
+                <Menu.Item
+                  leadingIcon="delete"
+                  onPress={() => {
+                    setMenuVisible(false);
+                    onDelete();
+                  }}
+                  title="Delete"
+                  disabled={item.isBaselineLocked}
+                  titleStyle={{ color: item.isBaselineLocked ? '#ccc' : '#d32f2f' }}
+                />
+              )}
+            </Menu>
           )}
         </View>
 
