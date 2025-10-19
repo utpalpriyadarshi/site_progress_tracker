@@ -4,7 +4,14 @@
 
 The application uses WatermelonDB as an offline-first database solution, allowing full functionality even in remote construction sites with limited connectivity. WatermelonDB provides reactive queries that automatically update UI components when data changes.
 
-**Current Schema Version**: 8
+**Current Schema Version**: 12 (v1.6 - October 2025)
+
+**Schema Evolution:**
+- v8: Initial schema with daily_reports and hindrance photos
+- v9: Preparation for user management
+- v10: Added users and roles tables (Admin module)
+- v11: Added planning fields (critical path, dependencies, baseline)
+- v12: Added WBS fields (hierarchical codes, phases, risk management)
 
 ## Schema Definition
 
