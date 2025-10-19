@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to prevent clipping
     marginBottom: 8,
   },
   headerLeft: {
@@ -215,7 +215,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     flex: 1,
-    marginRight: 8, // Ensure space before action buttons
+    marginRight: 4, // Reduced margin to give more space for badges
+    gap: 6, // Modern gap property for consistent spacing
   },
   wbsCode: {
     fontFamily: 'monospace',
@@ -223,14 +224,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    marginRight: 6,
     marginBottom: 4, // Allow wrapping without overlap
   },
   badge: {
-    height: 26, // Increased from 24 to prevent clipping
-    marginRight: 6,
-    marginVertical: 2,
-    paddingHorizontal: 8, // Ensure text has breathing room
+    height: 28, // Increased height to prevent emoji/text clipping
+    marginBottom: 4, // Vertical margin for wrapped badges
   },
   criticalBadge: {
     backgroundColor: '#ffebee',
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontWeight: 'bold',
     fontSize: 11,
-    paddingHorizontal: 2, // Extra padding for text
   },
   lockedBadge: {
     backgroundColor: '#e0e0e0',
@@ -297,8 +294,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 8,
     backgroundColor: '#fff3e0',
-    borderLeftWidth: 3,
+    borderWidth: 1,
+    borderColor: '#ff9800',
+    borderLeftWidth: 3, // Thicker left border for emphasis
     borderLeftColor: '#ff9800',
+    borderRadius: 4,
     color: '#e65100',
   },
   datesRow: {

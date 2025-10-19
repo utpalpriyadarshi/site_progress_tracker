@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v1.5 (WBS Management & Item Creation)
+**Current Version**: v1.6 (Sprint 4 & 5 Complete - Context Menus & Badge Fixes)
 **Database Schema Version**: 12
 **Platform**: React Native (Android & iOS)
-**Last Updated**: October 2025
+**Last Updated**: October 19, 2025
 
 ---
 
@@ -1190,12 +1190,22 @@ Based on the current structure, these areas are prepared for future development:
   - **Features**: Auto-generated WBS codes (4-level hierarchy), 11 project phases, critical path tracking, risk management
   - **Lines of Code Added**: ~1,200 lines
   - **Testing**: 4 new test suites (InterfacePointModel, TemplateModuleModel, WBSCodeGenerator, schema-v12)
-- **v1.5**: Context Menu & Item Editing (Current - Schema v12)
-  - **UI Updates**: Long-press context menu on WBSItemCard with Edit/Delete/Add Child options
+- **v1.5**: Database Save & Selector Components (Schema v12)
+  - **Database Integration**: Full WatermelonDB persistence for WBS items
+  - **UI Components**: CategorySelector, PhaseSelector with database integration
+  - **Features**: Snackbar notifications, auto-navigation after save
+  - **Lines of Code Added**: ~350 lines
+  - **Testing**: Sprint 4 test plan created
+- **v1.6**: Sprint 4 & 5 Complete - Context Menus & Item Management (Current - Schema v12)
+  - **Sprint 4**: WBS Management Screen with site selection and phase filtering
+  - **Sprint 5**: Context menu implementation (long-press) with Edit/Delete/Add Child options
+  - **UI Updates**: WBSItemCard with context menu, improved badge display
   - **Navigation**: ItemEdit screen support with handleEditItem navigation
-  - **Features**: Auto-refresh on screen focus, baseline lock enforcement
-  - **Lines of Code Modified**: ~100 lines
-  - **User Experience**: Enhanced touch interactions for mobile
+  - **Features**: Auto-refresh on screen focus, baseline lock enforcement, delete with confirmation
+  - **UX Fixes**: Badge layout improvements, risk notes border visibility (all sides)
+  - **Lines of Code Added**: ~500 lines
+  - **Testing**: 41 manual test cases executed (SPRINT_4_5_MANUAL_TEST_PLAN.md)
+  - **User Experience**: Enhanced touch interactions for mobile, non-blocking snackbars
 
 ---
 

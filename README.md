@@ -16,25 +16,35 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   - Project management with cascade deletion
   - Role switching to test different user experiences
   - Active/inactive user account management
-- **Planning Module** (v1.3-v1.5 - ENHANCED): Advanced project planning capabilities with:
-  - **WBS Management** (v1.4-v1.5): Hierarchical Work Breakdown Structure
-    - Auto-generated WBS codes (1.0.0.0, 1.1.0.0, etc.)
-    - 4-level hierarchy support (root → child → grandchild → great-grandchild)
-    - Visual indentation for parent-child relationships
-    - Context menu (long-press) for item operations
-    - Child item creation workflow
-  - **Item Creation & Editing** (v1.4-v1.5):
+- **Planning Module** (v1.3-v1.6 - COMPLETE): Advanced project planning with 6 specialized tabs:
+  - **Tab 1: WBS Management** (v1.4-v1.6): Hierarchical Work Breakdown Structure
+    - Auto-generated WBS codes (1.0.0.0, 1.1.0.0, 1.1.1.0, 1.1.1.1)
+    - 4-level hierarchy support with visual indentation
+    - Context menu (long-press) with Add Child, Edit, Delete options
+    - Child item creation with automatic code generation
+    - Phase filtering (11 construction phases)
+    - Site selection with persistent state
+    - Baseline locking to prevent edits after approval
+    - Max level enforcement (Level 4 cannot have children)
+  - **Tab 2: Gantt Chart**: Project timeline visualization (placeholder - Phase 2.4 planned)
+  - **Tab 3: Schedule Management**: Schedule revisions and updates (stub - Phase 2.6 planned)
+  - **Tab 4: Resource Planning**: Manpower, equipment, materials (stub - Phase 4 planned)
+  - **Tab 5: Milestone Tracking**: Track key deliverables (stub - Phase 5 planned)
+  - **Tab 6: Baseline Planning** (v1.3 - COMPLETE): Critical path and dependency management
+    - Critical path calculation using Kahn's algorithm
+    - Dependency management with circular dependency detection
+    - Baseline locking workflow
+    - Visual critical path indicators (red borders)
+    - Progress metrics and forecasting
+    - Schedule variance tracking
+  - **Item Creation Screen** (v1.4-v1.5):
     - Category selector with database integration (6 categories)
     - Phase selector with 11 project phases (color-coded with emojis)
-    - Complete form validation with real-time feedback
-    - Snackbar notifications for user actions
+    - Complete form validation with real-time error messages
+    - Snackbar notifications (non-blocking)
+    - Risk management fields (dependency risk, risk notes)
+    - Milestone and critical path toggles
     - Database persistence with WatermelonDB
-  - Critical path calculation using Kahn's algorithm
-  - Dependency management with circular dependency detection
-  - Baseline planning and locking
-  - Visual critical path indicators
-  - Progress metrics and forecasting
-  - Schedule variance tracking
 - **Progress Tracking**: Detailed logging of work progress with photo documentation
 - **Daily Reports**: Submit daily progress reports with automatic aggregation and history viewing
 - **Hindrance Management**: Report and track construction issues/obstacles with photo capture (camera/gallery)
@@ -44,6 +54,39 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
 - **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
 - **Automated Testing** (v1.3 - NEW): 35 tests with Jest covering critical functionality
+
+## Recent Updates
+
+### v1.6 (October 2025) - Sprint 4 & 5 Complete
+- ✅ WBS Management Screen with context menus (long-press)
+- ✅ Child item creation with hierarchical code generation
+- ✅ Delete items with confirmation dialog
+- ✅ Baseline locking enforcement (prevents edits when locked)
+- ✅ Max level enforcement (4 levels maximum)
+- ✅ Phase filtering with visual chips
+- ✅ Auto-refresh after create/delete operations
+- ✅ Badge display improvements (Critical, High Risk, Med Risk, Locked)
+- ✅ Risk notes visual enhancements (bordered box)
+- 📋 Manual testing completed (41 test cases, all passed)
+
+### v1.5 (October 2025) - Sprint 4 Complete
+- ✅ Database save functionality with WatermelonDB
+- ✅ Category selector component (dropdown with database)
+- ✅ Phase selector component (11 phases with icons)
+- ✅ Snackbar notifications (success/error)
+- ✅ Auto-navigation after save
+
+### v1.4 (October 2025) - Sprint 3 Complete
+- ✅ Item Creation Screen full UI
+- ✅ WBS code auto-generation logic
+- ✅ Form validation (client-side)
+- ✅ 4-level hierarchy support
+
+### v1.3 (October 2025) - Baseline Planning & Testing
+- ✅ Baseline Planning Screen (critical path, dependencies)
+- ✅ PlanningService with Kahn's algorithm
+- ✅ Testing infrastructure (Jest + 35 tests)
+- ✅ Database schema v11 with planning fields
 
 ## Getting Started
 
