@@ -12,6 +12,7 @@ import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
 import MilestoneTrackingScreen from '../planning/MilestoneTrackingScreen';
 import BaselineScreen from '../planning/BaselineScreen';
+import SiteManagementScreen from '../planning/SiteManagementScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
 import { PlanningStackParamList } from './types';
@@ -31,6 +32,7 @@ export type PlanningTabParamList = {
   ResourcePlanning: undefined;
   MilestoneTracking: undefined;
   Baseline: undefined;
+  SiteManagement: undefined;
 };
 
 type PlanningNavigatorProps = {
@@ -88,6 +90,8 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
             iconSymbol = '🏁';
           } else if (route.name === 'Baseline') {
             iconSymbol = '📋';
+          } else if (route.name === 'SiteManagement') {
+            iconSymbol = '🏗️';
           }
 
           return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -104,6 +108,17 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
         ),
       })}
     >
+      {/* Tab 1: Sites - Where work happens */}
+      <Tab.Screen
+        name="SiteManagement"
+        component={SiteManagementScreen}
+        options={{
+          title: 'Sites',
+          headerShown: true,
+          headerTitle: 'Site Management',
+        }}
+      />
+      {/* Tab 2: WBS - What work needs to be done */}
       <Tab.Screen
         name="WBSManagement"
         component={WBSManagementScreen}
@@ -113,42 +128,37 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
           headerTitle: 'Work Breakdown Structure',
         }}
       />
+      {/* Tab 3: Resources - Who does the work */}
+      <Tab.Screen
+        name="ResourcePlanning"
+        component={ResourcePlanningScreen}
+        options={{
+          title: 'Resources',
+          headerShown: true,
+          headerTitle: 'Resource Planning',
+        }}
+      />
+      {/* Tab 4: Schedule - When work happens */}
+      <Tab.Screen
+        name="ScheduleManagement"
+        component={ScheduleManagementScreen}
+        options={{
+          title: 'Schedule',
+          headerShown: true,
+          headerTitle: 'Schedule Management',
+        }}
+      />
+      {/* Tab 5: Gantt Chart - Visualize the timeline */}
       <Tab.Screen
         name="GanttChart"
         component={GanttChartScreen}
         options={{
-          title: 'Gantt Chart',
+          title: 'Gantt',
           headerShown: true,
           headerTitle: 'Project Timeline',
         }}
       />
-      <Tab.Screen 
-        name="ScheduleManagement" 
-        component={ScheduleManagementScreen} 
-        options={{ 
-          title: 'Schedule',
-          headerShown: true,
-          headerTitle: 'Schedule Management',
-        }} 
-      />
-      <Tab.Screen 
-        name="ResourcePlanning" 
-        component={ResourcePlanningScreen} 
-        options={{ 
-          title: 'Resources',
-          headerShown: true,
-          headerTitle: 'Resource Planning',
-        }} 
-      />
-      <Tab.Screen
-        name="MilestoneTracking"
-        component={MilestoneTrackingScreen}
-        options={{
-          title: 'Milestones',
-          headerShown: true,
-          headerTitle: 'Milestone Tracking',
-        }}
-      />
+      {/* Tab 6: Baseline - Lock in the plan */}
       <Tab.Screen
         name="Baseline"
         component={BaselineScreen}
@@ -156,6 +166,16 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
           title: 'Baseline',
           headerShown: true,
           headerTitle: 'Baseline Planning',
+        }}
+      />
+      {/* Tab 7: Milestones - Track key deliverables */}
+      <Tab.Screen
+        name="MilestoneTracking"
+        component={MilestoneTrackingScreen}
+        options={{
+          title: 'Milestones',
+          headerShown: true,
+          headerTitle: 'Milestone Tracking',
         }}
       />
     </Tab.Navigator>

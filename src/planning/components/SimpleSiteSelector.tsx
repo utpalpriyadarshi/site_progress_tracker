@@ -18,22 +18,19 @@ const SimpleSiteSelector: React.FC<SimpleSiteSelectorProps> = ({
   const [menuVisible, setMenuVisible] = useState(false);
   const [sites, setSites] = useState<SiteModel[]>([]);
 
+  // Subscribe to sites collection for real-time updates
   useEffect(() => {
-    loadSites();
-  }, []);
+    const sitesCollection = database.collections.get<SiteModel>('sites');
+    const query = sitesCollection.query();
 
-  const loadSites = async () => {
-    try {
-      const allSites = await database.collections
-        .get<SiteModel>('sites')
-        .query()
-        .fetch();
-
+    // Subscribe to query changes
+    const subscription = query.observe().subscribe((allSites) => {
       setSites(allSites);
-    } catch (error) {
-      console.error('Error fetching sites:', error);
-    }
-  };
+    });
+
+    // Cleanup subscription on unmount
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSiteSelect = (site: SiteModel | null) => {
     onSiteChange(site);
@@ -64,6 +61,7 @@ const SimpleSiteSelector: React.FC<SimpleSiteSelectorProps> = ({
             {selectedSiteName}
           </Button>
         }
+        // @ts-ignore - react-native-paper Menu children typing issue
         contentContainerStyle={styles.menuContent}
       >
         {sites.map(site => (
@@ -80,7 +78,7 @@ const SimpleSiteSelector: React.FC<SimpleSiteSelectorProps> = ({
           />
         ))}
 
-        {sites.length > 0 && <Divider />}
+        {sites.length > 0 ? <Divider /> : null}
 
         <Menu.Item
           onPress={() => handleSiteSelect(null)}
@@ -89,13 +87,13 @@ const SimpleSiteSelector: React.FC<SimpleSiteSelectorProps> = ({
           disabled={!selectedSite}
         />
 
-        {sites.length === 0 && (
+        {sites.length === 0 ? (
           <Menu.Item
             title="No sites available"
             disabled
             titleStyle={styles.disabledItem}
           />
-        )}
+        ) : null}
       </Menu>
 
       {selectedSite && (

@@ -20,7 +20,7 @@ export default appSchema({
         { name: 'name', type: 'string' },
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
-        { name: 'supervisor_id', type: 'string', isIndexed: true }, // assigned supervisor
+        { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
       ],
     }),
     tableSchema({

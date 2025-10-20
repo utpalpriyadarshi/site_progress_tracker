@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import {
   Card,
@@ -14,14 +13,16 @@ import {
   Dialog,
   List,
   IconButton,
-  Divider,
   Text,
+  Chip,
+  Snackbar,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
-import { useSiteContext } from './context/SiteContext';
+import UserModel from '../../models/UserModel';
+import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -30,26 +31,55 @@ const SiteManagementScreenComponent = ({
   sites: SiteModel[];
   projects: any[];
 }) => {
-  const { supervisorId, setSelectedSiteId } = useSiteContext();
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [supervisorPickerVisible, setSupervisorPickerVisible] = useState(false);
   const [editingSite, setEditingSite] = useState<SiteModel | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
+  const [supervisorName, setSupervisorName] = useState('Unassigned');
+
+  // Snackbar state
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
+
+  // Dialog for delete confirmation
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [siteToDelete, setSiteToDelete] = useState<SiteModel | null>(null);
 
   const openAddDialog = () => {
     setEditingSite(null);
     setSiteName('');
     setSiteLocation('');
     setSelectedProjectId(projects[0]?.id || '');
+    setSelectedSupervisorId(undefined);
+    setSupervisorName('Unassigned');
     setDialogVisible(true);
   };
 
-  const openEditDialog = (site: SiteModel) => {
+  const openEditDialog = async (site: SiteModel) => {
     setEditingSite(site);
     setSiteName(site.name);
     setSiteLocation(site.location);
     setSelectedProjectId(site.projectId);
+    setSelectedSupervisorId(site.supervisorId);
+
+    // Load supervisor name
+    if (site.supervisorId) {
+      try {
+        const supervisor = await database.collections
+          .get('users')
+          .find(site.supervisorId) as UserModel;
+        setSupervisorName(supervisor.fullName);
+      } catch (error) {
+        setSupervisorName('Unassigned');
+      }
+    } else {
+      setSupervisorName('Unassigned');
+    }
+
     setDialogVisible(true);
   };
 
@@ -59,11 +89,32 @@ const SiteManagementScreenComponent = ({
     setSiteName('');
     setSiteLocation('');
     setSelectedProjectId('');
+    setSelectedSupervisorId(undefined);
+    setSupervisorName('Unassigned');
+  };
+
+  const handleSupervisorSelect = async (supervisorId?: string) => {
+    setSelectedSupervisorId(supervisorId);
+
+    if (supervisorId) {
+      try {
+        const supervisor = await database.collections
+          .get('users')
+          .find(supervisorId) as UserModel;
+        setSupervisorName(supervisor.fullName);
+      } catch (error) {
+        setSupervisorName('Unassigned');
+      }
+    } else {
+      setSupervisorName('Unassigned');
+    }
   };
 
   const handleSave = async () => {
     if (!siteName.trim() || !siteLocation.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setSnackbarMessage('Please fill in all required fields');
+      setSnackbarType('error');
+      setSnackbarVisible(true);
       return;
     }
 
@@ -75,53 +126,62 @@ const SiteManagementScreenComponent = ({
             site.name = siteName.trim();
             site.location = siteLocation.trim();
             site.projectId = selectedProjectId;
+            site.supervisorId = selectedSupervisorId || null;
           });
-          Alert.alert('Success', 'Site updated successfully');
+          setSnackbarMessage('Site updated successfully');
         } else {
-          // Create new site (auto-assign to current supervisor)
-          const newSite = await database.collections.get('sites').create((site: any) => {
+          // Create new site
+          await database.collections.get('sites').create((site: any) => {
             site.name = siteName.trim();
             site.location = siteLocation.trim();
             site.projectId = selectedProjectId;
-            site.supervisorId = supervisorId || null;
+            site.supervisorId = selectedSupervisorId || null;
           });
-          Alert.alert('Success', 'Site created successfully');
-
-          // Optionally auto-select the new site
-          setSelectedSiteId(newSite.id);
+          setSnackbarMessage('Site created successfully');
         }
+        setSnackbarType('success');
+        setSnackbarVisible(true);
       });
       closeDialog();
     } catch (error) {
       console.error('Error saving site:', error);
-      Alert.alert('Error', 'Failed to save site: ' + (error as Error).message);
+      setSnackbarMessage('Failed to save site: ' + (error as Error).message);
+      setSnackbarType('error');
+      setSnackbarVisible(true);
     }
   };
 
-  const handleDelete = (site: SiteModel) => {
-    Alert.alert(
-      'Delete Site',
-      `Are you sure you want to delete "${site.name}"? This will also delete all associated items and data.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                // Note: In production, you should also delete related items, materials, etc.
-                await site.markAsDeleted();
-              });
-              Alert.alert('Success', 'Site deleted successfully');
-            } catch (error) {
-              console.error('Error deleting site:', error);
-              Alert.alert('Error', 'Failed to delete site: ' + (error as Error).message);
-            }
-          },
-        },
-      ]
-    );
+  const openDeleteDialog = (site: SiteModel) => {
+    setSiteToDelete(site);
+    setDeleteDialogVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (!siteToDelete) return;
+
+    try {
+      await database.write(async () => {
+        // Note: In production, you should cascade delete or handle related items
+        await siteToDelete.markAsDeleted();
+      });
+      setSnackbarMessage('Site deleted successfully');
+      setSnackbarType('success');
+      setSnackbarVisible(true);
+      setDeleteDialogVisible(false);
+      setSiteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting site:', error);
+      setSnackbarMessage('Failed to delete site: ' + (error as Error).message);
+      setSnackbarType('error');
+      setSnackbarVisible(true);
+    }
+  };
+
+  // Get supervisor display info
+  const getSupervisorInfo = (site: SiteModel) => {
+    // This will be reactive through WatermelonDB
+    // For simplicity, we'll show the ID or "Unassigned"
+    return site.supervisorId || null;
   };
 
   return (
@@ -161,6 +221,16 @@ const SiteManagementScreenComponent = ({
                           Project: {project.name}
                         </Text>
                       )}
+                      <View style={styles.supervisorChip}>
+                        <Chip
+                          icon={site.supervisorId ? 'account-check' : 'account-alert'}
+                          mode="outlined"
+                          compact
+                          style={site.supervisorId ? styles.assignedChip : styles.unassignedChip}
+                        >
+                          {site.supervisorId ? 'Assigned' : 'Unassigned'}
+                        </Chip>
+                      </View>
                     </View>
                     <View style={styles.actions}>
                       <IconButton
@@ -172,7 +242,7 @@ const SiteManagementScreenComponent = ({
                         icon="delete"
                         size={20}
                         iconColor="#FF3B30"
-                        onPress={() => handleDelete(site)}
+                        onPress={() => openDeleteDialog(site)}
                       />
                     </View>
                   </View>
@@ -191,14 +261,14 @@ const SiteManagementScreenComponent = ({
           </Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="Site Name"
+              label="Site Name *"
               value={siteName}
               onChangeText={setSiteName}
               mode="outlined"
               style={styles.input}
             />
             <TextInput
-              label="Location"
+              label="Location *"
               value={siteLocation}
               onChangeText={setSiteLocation}
               mode="outlined"
@@ -231,6 +301,19 @@ const SiteManagementScreenComponent = ({
                 </ScrollView>
               </View>
             )}
+
+            {/* Supervisor Assignment */}
+            <View style={styles.supervisorSection}>
+              <Text style={styles.label}>Assign Supervisor:</Text>
+              <Button
+                mode="outlined"
+                icon="account"
+                onPress={() => setSupervisorPickerVisible(true)}
+                style={styles.supervisorButton}
+              >
+                {supervisorName}
+              </Button>
+            </View>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closeDialog}>Cancel</Button>
@@ -239,26 +322,56 @@ const SiteManagementScreenComponent = ({
             </Button>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Delete Site</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Are you sure you want to delete "{siteToDelete?.name}"? This will
+              also delete all associated items and data.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleDelete} textColor="#FF3B30">
+              Delete
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
+
+      {/* Supervisor Assignment Picker */}
+      <SupervisorAssignmentPicker
+        visible={supervisorPickerVisible}
+        selectedSupervisorId={selectedSupervisorId}
+        onDismiss={() => setSupervisorPickerVisible(false)}
+        onSelect={handleSupervisorSelect}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        style={snackbarType === 'error' ? styles.errorSnackbar : styles.successSnackbar}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };
 
 // Enhance component with WatermelonDB observables
-const enhance = withObservables(['supervisorId'], ({ supervisorId }: { supervisorId: string }) => ({
-  sites: database.collections
-    .get('sites')
-    .query(Q.where('supervisor_id', supervisorId)),
+const enhance = withObservables([], () => ({
+  sites: database.collections.get('sites').query(), // Load ALL sites for planner
   projects: database.collections.get('projects').query(),
 }));
 
-const EnhancedSiteManagementScreen = enhance(SiteManagementScreenComponent as any);
-
-// Wrapper component that provides context
-const SiteManagementScreen = () => {
-  const { supervisorId } = useSiteContext();
-  return <EnhancedSiteManagementScreen supervisorId={supervisorId} />;
-};
+const SiteManagementScreen = enhance(SiteManagementScreenComponent as any);
 
 const styles = StyleSheet.create({
   container: {
@@ -309,6 +422,17 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: 12,
     color: '#999',
+    marginBottom: 8,
+  },
+  supervisorChip: {
+    marginTop: 4,
+    flexDirection: 'row',
+  },
+  assignedChip: {
+    backgroundColor: '#E8F5E9',
+  },
+  unassignedChip: {
+    backgroundColor: '#FFF3E0',
   },
   actions: {
     flexDirection: 'row',
@@ -318,14 +442,27 @@ const styles = StyleSheet.create({
   },
   projectSelector: {
     marginTop: 8,
+    marginBottom: 12,
   },
   projectList: {
-    maxHeight: 200,
+    maxHeight: 150,
   },
   label: {
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
+  },
+  supervisorSection: {
+    marginTop: 8,
+  },
+  supervisorButton: {
+    marginTop: 4,
+  },
+  errorSnackbar: {
+    backgroundColor: '#D32F2F',
+  },
+  successSnackbar: {
+    backgroundColor: '#388E3C',
   },
 });
 

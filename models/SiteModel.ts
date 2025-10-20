@@ -14,5 +14,5 @@ export default class SiteModel extends Model {
   @field('name') name!: string;
   @field('location') location!: string;
   @field('project_id') projectId!: string; // belongs to project
-  @field('supervisor_id') supervisorId!: string; // assigned supervisor
+  @field('supervisor_id') supervisorId?: string; // assigned supervisor (optional, can be null)
 }
