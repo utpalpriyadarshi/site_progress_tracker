@@ -17,12 +17,14 @@ interface CategorySelectorProps {
   value: string;
   onSelect: (categoryId: string) => void;
   error?: string;
+  disabled?: boolean;
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({
   value,
   onSelect,
   error,
+  disabled = false,
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,13 +86,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         anchor={
           <Button
             mode="outlined"
-            onPress={() => setMenuVisible(true)}
+            onPress={() => !disabled && setMenuVisible(true)}
             icon="chevron-down"
             contentStyle={styles.buttonContent}
             style={[
               styles.button,
               error ? styles.buttonError : null,
             ]}
+            disabled={disabled}
           >
             {selectedCategory ? selectedCategory.name : 'Select Category *'}
           </Button>

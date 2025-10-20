@@ -98,9 +98,10 @@ const PHASE_OPTIONS: PhaseOption[] = [
 interface PhaseSelectorProps {
   value: ProjectPhase;
   onSelect: (phase: ProjectPhase) => void;
+  disabled?: boolean;
 }
 
-const PhaseSelector: React.FC<PhaseSelectorProps> = ({ value, onSelect }) => {
+const PhaseSelector: React.FC<PhaseSelectorProps> = ({ value, onSelect, disabled = false }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<PhaseOption | null>(null);
 
@@ -124,10 +125,11 @@ const PhaseSelector: React.FC<PhaseSelectorProps> = ({ value, onSelect }) => {
         anchor={
           <Button
             mode="outlined"
-            onPress={() => setMenuVisible(true)}
+            onPress={() => !disabled && setMenuVisible(true)}
             icon="chevron-down"
             contentStyle={styles.buttonContent}
             style={styles.button}
+            disabled={disabled}
           >
             {selectedPhase?.icon} {selectedPhase?.label || 'Select Phase *'}
           </Button>
