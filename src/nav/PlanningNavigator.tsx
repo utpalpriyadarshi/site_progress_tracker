@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import WBSManagementScreen from '../planning/WBSManagementScreen';
 import ItemCreationScreen from '../planning/ItemCreationScreen';
+import ItemEditScreen from '../planning/ItemEditScreen';
 import GanttChartScreen from '../planning/GanttChartScreen';
 import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
@@ -196,7 +197,7 @@ const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: paren
       />
       <Stack.Screen
         name="ItemEdit"
-        component={ItemCreationScreen} // Reuse same screen for now
+        component={ItemEditScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
