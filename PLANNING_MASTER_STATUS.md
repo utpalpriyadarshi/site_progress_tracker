@@ -12,16 +12,19 @@
 
 This document consolidates ALL planning-related work into a single source of truth. The Planning module has **6 BOTTOM TABS**, and the work is divided into **THREE MAJOR PHASES**:
 
-### 📱 Planning Module Tabs Overview (6 Tabs)
+### 📱 Planning Module Tabs Overview (7 Tabs - Logical Workflow Order)
 
-| Tab | Icon | Screen | Status | Completion | Phase |
-|-----|------|--------|--------|------------|-------|
-| 1. WBS | 🗂️ | WBSManagementScreen | ✅ Functional | 83% | Phase 1 |
-| 2. Gantt Chart | 📊 | GanttChartScreen | ⚠️ Placeholder | 10% | Phase 2 (P4) |
-| 3. Schedule | 📅 | ScheduleManagementScreen | ⚠️ Stub | 0% | Phase 2 (P6) |
-| 4. Resources | 👷 | ResourcePlanningScreen | ⚠️ Stub | 0% | Phase 4 (NEW) |
-| 5. Milestones | 🏁 | MilestoneTrackingScreen | ⚠️ Stub | 0% | Phase 5 (NEW) |
-| 6. Baseline | 📋 | BaselineScreen | ✅ Functional | 100% | Phase 2 (P1-3) |
+**Workflow:** Sites → WBS → Resources → Schedule → Gantt → Baseline → Milestones
+
+| Tab | Icon | Screen | Purpose | Status | Completion | Phase |
+|-----|------|--------|---------|--------|------------|-------|
+| 1. Sites | 🏗️ | SiteManagementScreen | **Where** work happens | ✅ Functional | 100% | Phase 6 |
+| 2. WBS | 🗂️ | WBSManagementScreen | **What** work to do | ✅ Functional | 83% | Phase 1 |
+| 3. Resources | 👷 | ResourcePlanningScreen | **Who** does the work | ⚠️ Stub | 0% | Phase 4 |
+| 4. Schedule | 📅 | ScheduleManagementScreen | **When** work happens | ⚠️ Stub | 0% | Phase 2 (P6) |
+| 5. Gantt | 📊 | GanttChartScreen | **Visualize** timeline | ⚠️ Placeholder | 10% | Phase 2 (P4) |
+| 6. Baseline | 📋 | BaselineScreen | **Lock** the plan | ✅ Functional | 100% | Phase 2 (P1-3) |
+| 7. Milestones | 🏁 | MilestoneTrackingScreen | **Track** deliverables | ⚠️ Stub | 0% | Phase 5 |
 
 ### Phase Breakdown
 

@@ -69,10 +69,28 @@ The supervisor role has 7 dedicated screens in `src/supervisor/`:
 3. **HindranceReportScreen** - Report issues with photo capture
 4. **ItemsManagementScreen** - Manage construction items
 5. **MaterialTrackingScreen** - Track materials
-6. **SiteManagementScreen** - Manage sites
+6. **SiteManagementScreen** - Manage assigned sites
 7. **SiteInspectionScreen** - Conduct inspections
 
 **SiteContext**: All supervisor screens share site selection via `src/supervisor/context/SiteContext.tsx`
+
+### Planning Navigation (7 Tabs - Logical Workflow Order)
+The planning role has 7 dedicated tabs in `src/planning/` organized in workflow sequence:
+
+**Workflow:** Sites → WBS → Resources → Schedule → Gantt → Baseline → Milestones
+
+1. **SiteManagementScreen** 🏗️ - Create sites and assign supervisors (WHERE work happens)
+2. **WBSManagementScreen** 🗂️ - Work Breakdown Structure management (WHAT work to do)
+3. **ResourcePlanningScreen** 👷 - Resource allocation (WHO does the work)
+4. **ScheduleManagementScreen** 📅 - Schedule management (WHEN work happens)
+5. **GanttChartScreen** 📊 - Project timeline visualization (VISUALIZE timeline)
+6. **BaselineScreen** 📋 - Baseline planning and critical path (LOCK the plan)
+7. **MilestoneTrackingScreen** 🏁 - Milestone tracking (TRACK deliverables)
+
+**Site Management Workflow**:
+- **Planners** create sites during project planning phase and assign supervisors
+- **Supervisors** can view and manage their assigned sites
+- `supervisor_id` field is optional in the Sites table to support this workflow
 
 ### Database Architecture (WatermelonDB)
 

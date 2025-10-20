@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v1.6 (Sprint 4 & 5 Complete - Context Menus & Badge Fixes)
+**Current Version**: v1.7 (Site Management Workflow + Tab Reordering Complete)
 **Database Schema Version**: 12
 **Platform**: React Native (Android & iOS)
-**Last Updated**: October 19, 2025
+**Last Updated**: October 20, 2025
 
 ---
 
@@ -87,22 +87,24 @@ site_progress_tracker/
 │   │   ├── TeamManagementScreen.tsx
 │   │   ├── FinancialReportsScreen.tsx
 │   │   └── ResourceAllocationScreen.tsx
-│   ├── planning/                 # Planning-specific screens (7 screens)
-│   │   ├── BaselineScreen.tsx         # Baseline planning (v1.3)
-│   │   ├── GanttChartScreen.tsx
-│   │   ├── ScheduleManagementScreen.tsx
-│   │   ├── ResourcePlanningScreen.tsx
-│   │   ├── MilestoneTrackingScreen.tsx
-│   │   ├── WBSManagementScreen.tsx    # WBS management (v1.4 - NEW)
-│   │   ├── ItemCreationScreen.tsx     # Create/Edit WBS items (v1.4 - NEW)
-│   │   └── components/                # Planning components
-│   │       ├── ProjectSelector.tsx    # Project dropdown selector (v1.3)
-│   │       ├── ItemPlanningCard.tsx   # Item card with date pickers (v1.3)
-│   │       ├── DependencyModal.tsx    # Dependency management modal (v1.3)
-│   │       ├── SimpleSiteSelector.tsx # Site selector (v1.4 - NEW)
-│   │       ├── WBSItemCard.tsx        # WBS item display card (v1.4 - NEW)
-│   │       ├── CategorySelector.tsx   # Category dropdown (v1.4 - NEW)
-│   │       └── PhaseSelector.tsx      # Phase dropdown (v1.4 - NEW)
+│   ├── planning/                 # Planning-specific screens (7 screens - v1.7 workflow order)
+│   │   ├── SiteManagementScreen.tsx    # Site creation & supervisor assignment (v1.7 - NEW)
+│   │   ├── WBSManagementScreen.tsx     # WBS management (v1.4)
+│   │   ├── ResourcePlanningScreen.tsx  # Resource planning (stub)
+│   │   ├── ScheduleManagementScreen.tsx # Schedule management (stub)
+│   │   ├── GanttChartScreen.tsx        # Timeline visualization (placeholder)
+│   │   ├── BaselineScreen.tsx          # Baseline planning (v1.3)
+│   │   ├── MilestoneTrackingScreen.tsx # Milestone tracking (stub)
+│   │   ├── ItemCreationScreen.tsx      # Create/Edit WBS items (v1.4)
+│   │   └── components/                 # Planning components
+│   │       ├── SiteSelector/SimpleSiteSelector.tsx # Site selector with observables (v1.7)
+│   │       ├── SupervisorAssignmentPicker.tsx # Supervisor picker (v1.7 - NEW)
+│   │       ├── ProjectSelector.tsx     # Project dropdown selector (v1.3)
+│   │       ├── ItemPlanningCard.tsx    # Item card with date pickers (v1.3)
+│   │       ├── DependencyModal.tsx     # Dependency management modal (v1.3)
+│   │       ├── WBSItemCard.tsx         # WBS item display card (v1.4)
+│   │       ├── CategorySelector.tsx    # Category dropdown (v1.4)
+│   │       └── PhaseSelector.tsx       # Phase dropdown (v1.4)
 │   ├── admin/                    # Admin-specific screens (3 screens - v1.2)
 │   │   ├── AdminDashboardScreen.tsx      # Admin dashboard with statistics
 │   │   ├── ProjectManagementScreen.tsx   # Project CRUD with cascade delete
@@ -132,7 +134,7 @@ site_progress_tracker/
 │       ├── AdminNavigator.tsx    # Admin bottom tabs (3 tabs - v1.2)
 │       ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
 │       ├── ManagerNavigator.tsx   # Manager bottom tabs (4 tabs)
-│       ├── PlanningNavigator.tsx  # Planning bottom tabs (4 tabs)
+│       ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
 │       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
 │       └── types.ts              # Navigation type definitions
 ├── __tests__/                    # Test files (v1.3+)
@@ -344,15 +346,18 @@ MainNavigator (Stack)
     │   ├── TeamManagementScreen (👥 Team)
     │   ├── FinancialReportsScreen (💰 Finance)
     │   └── ResourceAllocationScreen (📦 Resources)
-    ├── PlanningNavigator (Stack + Bottom Tabs - v1.4 Updated)
-    │   ├── Bottom Tabs (4 tabs)
-    │   │   ├── WBSManagementScreen (📋 WBS) [v1.4 - NEW]
-    │   │   ├── GanttChartScreen (📅 Gantt)
-    │   │   ├── ScheduleManagementScreen (🗓️ Schedule)
-    │   │   └── MilestoneTrackingScreen (🎯 Milestones)
+    ├── PlanningNavigator (Stack + Bottom Tabs - v1.7 Workflow Order)
+    │   ├── Bottom Tabs (7 tabs - LOGICAL WORKFLOW ORDER)
+    │   │   ├── SiteManagementScreen (🏗️ Sites - WHERE work happens) [v1.7 - NEW]
+    │   │   ├── WBSManagementScreen (🗂️ WBS - WHAT work to do) [v1.4]
+    │   │   ├── ResourcePlanningScreen (👷 Resources - WHO does work) [stub]
+    │   │   ├── ScheduleManagementScreen (📅 Schedule - WHEN work happens) [stub]
+    │   │   ├── GanttChartScreen (📊 Gantt - VISUALIZE timeline) [placeholder]
+    │   │   ├── BaselineScreen (📋 Baseline - LOCK the plan) [v1.3]
+    │   │   └── MilestoneTrackingScreen (🏁 Milestones - TRACK progress) [stub]
     │   └── Stack Screens (Modal/Detail screens)
-    │       ├── ItemCreation (Create new WBS items) [v1.4 - NEW]
-    │       └── ItemEdit (Edit existing WBS items) [v1.5 - NEW]
+    │       ├── ItemCreation (Create new WBS items) [v1.4]
+    │       └── ItemEdit (Edit existing WBS items) [v1.5]
     └── LogisticsNavigator (4 tabs)
         ├── MaterialTrackingScreen (📦 Materials)
         ├── EquipmentManagementScreen (🚜 Equipment)
@@ -391,8 +396,9 @@ MainNavigator (Stack)
 
 #### sites
 - Construction sites belonging to projects
-- Fields: name, location, project_id, supervisor_id
+- Fields: name, location, project_id, supervisor_id (optional - v1.7)
 - **Relationships**: belongs_to project, has_many items/hindrances/daily_reports
+- **v1.7 Update**: supervisor_id is now optional to support planner-created sites
 
 #### categories
 - Item categorization (Structural, Electrical, Plumbing, etc.)

@@ -31,9 +31,11 @@ The application uses WatermelonDB as an offline-first database solution, allowin
 - `name`: Site name (string)
 - `location`: Site location (string)
 - `project_id`: Reference to parent project (string, indexed)
-- `supervisor_id`: Reference to assigned supervisor (string, indexed)
+- `supervisor_id`: Reference to assigned supervisor (string, indexed, **optional**)
 - `created_at`: Record creation timestamp (timestamp, readonly, auto-managed)
 - `updated_at`: Record update timestamp (timestamp, readonly, auto-managed)
+
+**Note**: `supervisor_id` is optional to support the workflow where Planners create sites during project planning phase and assign supervisors later.
 
 ### Categories Table
 - `id`: Primary key
