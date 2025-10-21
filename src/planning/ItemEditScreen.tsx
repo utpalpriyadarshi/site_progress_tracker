@@ -33,6 +33,7 @@ import { database } from '../../models/database';
 import ItemModel from '../../models/ItemModel';
 import CategorySelector from './components/CategorySelector';
 import PhaseSelector from './components/PhaseSelector';
+import DatePickerField from './components/DatePickerField';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
@@ -45,6 +46,7 @@ interface FormData {
   endDate: Date;
   unit: string;
   quantity: string;
+  completedQuantity: string;
   isMilestone: boolean;
   isCriticalPath: boolean;
   floatDays: string;
@@ -70,6 +72,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
     endDate: new Date(),
     unit: 'Set',
     quantity: '1',
+    completedQuantity: '0',
     isMilestone: false,
     isCriticalPath: false,
     floatDays: '0',
@@ -122,6 +125,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
           endDate: new Date(loadedItem.plannedEndDate),
           unit: loadedItem.unitOfMeasurement || 'Set',
           quantity: loadedItem.plannedQuantity.toString(),
+          completedQuantity: loadedItem.completedQuantity.toString(),
           isMilestone: loadedItem.isMilestone,
           isCriticalPath: loadedItem.isCriticalPath,
           floatDays: (loadedItem.floatDays || 0).toString(),
@@ -163,6 +167,29 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  // Handle start date change - auto-calculate end date based on duration
+  const handleStartDateChange = (date: Date) => {
+    const durationDays = parseInt(formData.duration) || 30;
+    const endDate = new Date(date.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    setFormData(prev => ({ ...prev, startDate: date, endDate }));
+  };
+
+  // Handle end date change - auto-calculate duration
+  const handleEndDateChange = (date: Date) => {
+    const durationMs = date.getTime() - formData.startDate.getTime();
+    const durationDays = Math.max(1, Math.ceil(durationMs / (24 * 60 * 60 * 1000)));
+    setFormData(prev => ({ ...prev, endDate: date, duration: durationDays.toString() }));
+  };
+
+  // Handle duration change - auto-calculate end date
+  const handleDurationChange = (value: string) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      const durationDays = parseInt(value) || 1;
+      const endDate = new Date(formData.startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      setFormData(prev => ({ ...prev, duration: value, endDate }));
+    }
+  };
+
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -199,6 +226,17 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       const plannedStartDate = formData.startDate.getTime();
       const plannedEndDate = formData.endDate.getTime();
 
+      // Calculate status based on completed quantity
+      const completedQty = parseFloat(formData.completedQuantity) || 0;
+      const plannedQty = parseFloat(formData.quantity);
+      let itemStatus = 'not_started';
+
+      if (completedQty >= plannedQty) {
+        itemStatus = 'completed';
+      } else if (completedQty > 0) {
+        itemStatus = 'in_progress';
+      }
+
       // Update database record
       await database.write(async () => {
         await item.update((i: any) => {
@@ -207,8 +245,12 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
           i.categoryId = formData.categoryId;
 
           // Quantity and measurements
-          i.plannedQuantity = parseFloat(formData.quantity);
+          i.plannedQuantity = plannedQty;
+          i.completedQuantity = completedQty;
           i.unitOfMeasurement = formData.unit.trim() || 'Set';
+
+          // Status (auto-calculated from progress)
+          i.status = itemStatus;
 
           // Schedule
           i.plannedStartDate = plannedStartDate;
@@ -354,39 +396,79 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
               <PhaseSelector
                 value={formData.phase}
-                onSelect={(phase) => updateField('phase', phase)}
+                onSelect={(phase) => updateField('phase', phase as any)}
                 disabled={isLocked}
               />
             </View>
 
-            {/* Duration and Quantity */}
+            {/* Schedule Section */}
             <View style={styles.section}>
               <Text variant="labelLarge" style={styles.sectionTitle}>
-                Schedule & Quantity
+                Schedule
               </Text>
+
+              <DatePickerField
+                label="Start Date *"
+                value={formData.startDate}
+                onChange={handleStartDateChange}
+                error={errors.startDate}
+                disabled={isLocked}
+              />
+
+              <View style={styles.marginTop}>
+                <DatePickerField
+                  label="End Date *"
+                  value={formData.endDate}
+                  onChange={handleEndDateChange}
+                  minimumDate={formData.startDate}
+                  error={errors.endDate}
+                  disabled={isLocked}
+                />
+              </View>
+
+              <TextInput
+                label="Duration (days) *"
+                value={formData.duration}
+                onChangeText={handleDurationChange}
+                mode="outlined"
+                keyboardType="number-pad"
+                error={!!errors.duration}
+                style={styles.marginTop}
+                disabled={isLocked}
+              />
+              {errors.duration && (
+                <HelperText type="error">{errors.duration}</HelperText>
+              )}
+              <HelperText type="info">
+                Duration auto-calculates based on start and end dates
+              </HelperText>
+            </View>
+
+            {/* Quantity Section */}
+            <View style={styles.section}>
+              <Text variant="labelLarge" style={styles.sectionTitle}>
+                Quantity & Progress
+              </Text>
+
               <View style={styles.row}>
                 <View style={styles.halfWidth}>
                   <TextInput
-                    label="Duration (days) *"
-                    value={formData.duration}
-                    onChangeText={(text) => updateNumericField('duration', text)}
-                    mode="outlined"
-                    keyboardType="number-pad"
-                    error={!!errors.duration}
-                    disabled={isLocked}
-                  />
-                  {errors.duration && (
-                    <HelperText type="error">{errors.duration}</HelperText>
-                  )}
-                </View>
-                <View style={styles.halfWidth}>
-                  <TextInput
-                    label="Quantity *"
+                    label="Planned Quantity *"
                     value={formData.quantity}
                     onChangeText={(text) => updateNumericField('quantity', text)}
                     mode="outlined"
                     keyboardType="number-pad"
                     error={!!errors.quantity}
+                    disabled={isLocked}
+                  />
+                </View>
+                <View style={styles.halfWidth}>
+                  <TextInput
+                    label="Completed Quantity"
+                    value={formData.completedQuantity}
+                    onChangeText={(text) => updateNumericField('completedQuantity', text)}
+                    mode="outlined"
+                    keyboardType="number-pad"
                     disabled={isLocked}
                   />
                 </View>
@@ -401,6 +483,12 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.marginTop}
                 disabled={isLocked}
               />
+
+              <HelperText type="info">
+                Progress: {formData.quantity && parseFloat(formData.quantity) > 0
+                  ? Math.min(100, Math.round((parseFloat(formData.completedQuantity) / parseFloat(formData.quantity)) * 100))
+                  : 0}%
+              </HelperText>
             </View>
 
             {/* Milestone & Critical Path */}
@@ -499,16 +587,21 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
               <Surface style={styles.infoBox}>
                 <Text variant="bodySmall" style={styles.infoText}>
-                  Created: {new Date(item.createdAt).toLocaleDateString()}
+                  WBS Code: {item.wbsCode}
                 </Text>
                 <Text variant="bodySmall" style={styles.infoText}>
-                  Last Modified: {new Date(item.updatedAt).toLocaleDateString()}
+                  WBS Level: {item.wbsLevel}
                 </Text>
                 <Text variant="bodySmall" style={styles.infoText}>
-                  Status: {item.status.replace('_', ' ').toUpperCase()}
+                  Current Status: {item.status.replace('_', ' ').toUpperCase()}
                 </Text>
                 <Text variant="bodySmall" style={styles.infoText}>
-                  Progress: {item.getProgressPercentage().toFixed(0)}%
+                  Current Progress: {Math.round(item.getProgressPercentage())}%
+                </Text>
+                <Text variant="bodySmall" style={styles.infoText}>
+                  New Progress: {formData.quantity && parseFloat(formData.quantity) > 0
+                    ? Math.min(100, Math.round((parseFloat(formData.completedQuantity) / parseFloat(formData.quantity)) * 100))
+                    : 0}%
                 </Text>
               </Surface>
             </View>

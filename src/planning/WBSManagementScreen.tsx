@@ -34,6 +34,28 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
         .query(...query)
         .fetch();
 
+      // Fix status for items where status doesn't match progress
+      // This handles items created before auto-status was implemented
+      await database.write(async () => {
+        for (const item of siteItems) {
+          const progress = item.getProgressPercentage();
+          let correctStatus = 'not_started';
+
+          if (progress >= 100) {
+            correctStatus = 'completed';
+          } else if (progress > 0) {
+            correctStatus = 'in_progress';
+          }
+
+          // Only update if status is incorrect
+          if (item.status !== correctStatus) {
+            await item.update((i: any) => {
+              i.status = correctStatus;
+            });
+          }
+        }
+      });
+
       // Sort by WBS code
       siteItems.sort((a, b) => {
         return a.wbsCode.localeCompare(b.wbsCode, undefined, { numeric: true });
