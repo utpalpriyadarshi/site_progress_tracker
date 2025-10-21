@@ -154,9 +154,23 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               Float: {item.floatDays} days
             </Text>
           )}
-          <Text variant="bodySmall" style={styles.detailText}>
-            Status: {item.status.replace('_', ' ')}
-          </Text>
+          <Chip
+            compact
+            style={[
+              styles.statusChip,
+              {
+                backgroundColor:
+                  item.status === 'completed' ? '#4CAF50' :
+                  item.status === 'in_progress' ? '#FF9800' :
+                  '#9E9E9E'
+              }
+            ]}
+            textStyle={styles.statusChipText}
+          >
+            {item.status === 'completed' ? '✓ COMPLETED' :
+             item.status === 'in_progress' ? '⚡ IN PROGRESS' :
+             '○ NOT STARTED'}
+          </Chip>
         </View>
 
         {/* Progress Bar */}
@@ -262,11 +276,22 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     flexWrap: 'wrap',
     marginBottom: 12,
+    gap: 8,
   },
   detailText: {
     color: '#666',
+  },
+  statusChip: {
+    height: 28,
+    minWidth: 100,
+  },
+  statusChipText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 9,
   },
   progressContainer: {
     flexDirection: 'row',
