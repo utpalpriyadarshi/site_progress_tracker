@@ -280,6 +280,7 @@ Default test users (defined in DATABASE.md):
 
 ## References
 
-- `ARCHITECTURE.md` - Detailed architecture documentation
+- `ARCHITECTURE_UNIFIED.md` - Complete architecture documentation (single source of truth)
 - `DATABASE.md` - Complete database schema and relationships
 - `README.md` - Setup instructions and project overview
+- `PLANNING_MASTER_STATUS.md` - Planning module status and roadmap

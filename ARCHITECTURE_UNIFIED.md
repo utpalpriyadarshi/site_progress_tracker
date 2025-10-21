@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v1.7 (Site Management Workflow + Tab Reordering Complete)
+**Current Version**: v1.9.1 (WBS Date Pickers & Progress Tracking Complete)
 **Database Schema Version**: 12
 **Platform**: React Native (Android & iOS)
-**Last Updated**: October 20, 2025
+**Last Updated**: October 21, 2025
 
 ---
 
@@ -1202,7 +1202,7 @@ Based on the current structure, these areas are prepared for future development:
   - **Features**: Snackbar notifications, auto-navigation after save
   - **Lines of Code Added**: ~350 lines
   - **Testing**: Sprint 4 test plan created
-- **v1.6**: Sprint 4 & 5 Complete - Context Menus & Item Management (Current - Schema v12)
+- **v1.6**: Sprint 4 & 5 Complete - Context Menus & Item Management (Schema v12)
   - **Sprint 4**: WBS Management Screen with site selection and phase filtering
   - **Sprint 5**: Context menu implementation (long-press) with Edit/Delete/Add Child options
   - **UI Updates**: WBSItemCard with context menu, improved badge display
@@ -1212,13 +1212,38 @@ Based on the current structure, these areas are prepared for future development:
   - **Lines of Code Added**: ~500 lines
   - **Testing**: 41 manual test cases executed (SPRINT_4_5_MANUAL_TEST_PLAN.md)
   - **User Experience**: Enhanced touch interactions for mobile, non-blocking snackbars
+- **v1.7**: Site Management Workflow & Planning Tab Reordering (Schema v12)
+  - **Site Management**: Planners can create sites and assign supervisors
+  - **Tab Reordering**: Planning tabs reordered to logical workflow (Sites → WBS → Resources → Schedule → Gantt → Baseline → Milestones)
+  - **Supervisor Assignment**: Added SupervisorAssignmentPicker component
+  - **Database**: Made supervisor_id optional in sites table
+  - **Lines of Code Added**: ~200 lines
+- **v1.8**: Reserved for future use
+- **v1.9**: Sprint 6 - WBS Item Edit Functionality (Schema v12)
+  - **Item Editing**: ItemEditScreen with full edit capabilities
+  - **Navigation**: Edit flow from WBS Management screen
+  - **Features**: Pre-populated forms, validation, error handling
+  - **Lines of Code Added**: ~400 lines
+- **v1.9.1**: Sprint 6.1 - WBS Date Pickers & Progress Tracking (Current - Schema v12)
+  - **Date Pickers**: Added DatePickerField component with iOS/Android support
+  - **Duration Auto-calculation**: Bidirectional sync between dates and duration
+  - **Progress Tracking**: Completed quantity input with real-time percentage display
+  - **Auto-status Updates**: Status automatically updates based on progress (not_started → in_progress → completed)
+  - **Auto-fix**: Existing items with wrong status corrected on WBS screen load
+  - **Gantt Fixes**: Phase colors (light background + green progress overlay), accurate progress rendering
+  - **Status Display**: Color-coded status chips with proper sizing (no text clipping)
+  - **Invalid Dates Fixed**: Replaced with WBS code, level, and progress information
+  - **Files Created**: DatePickerField.tsx, FIXES_SUMMARY_v1.9.1.md, 3 Gantt testing docs, GanttChartScreen.test.tsx
+  - **Files Modified**: ItemCreationScreen, ItemEditScreen, GanttChartScreen, WBSItemCard, WBSManagementScreen
+  - **Dependencies**: Added @react-native-community/datetimepicker
+  - **Lines of Code Added**: ~3,676 lines (including tests and documentation)
+  - **Testing**: All 9 reported issues verified fixed per GANTT_TESTING_QUICK_START.md
+  - **Module Status**: Planning Module 100% complete (WBS, Gantt, Baseline all functional)
 
 ---
 
 ## References
 
-- **ARCHITECTURE.md**: Original architecture documentation (role-based focus)
-- **CONSTRUCTION_APP_STRUCTURE.md**: Construction app structure reference (component organization focus)
 - **DATABASE.md**: Complete database schema and relationships
 - **CLAUDE.md**: Development guidelines and AI assistant instructions
 - **README.md**: Setup instructions and project overview
@@ -1231,14 +1256,17 @@ Based on the current structure, these areas are prepared for future development:
   - HINDRANCE_REPORT_TESTING.md
   - REPORTS_HISTORY_TESTING.md
   - SITE_INSPECTION_TESTING.md
-- **Planning Module Documentation** (v1.3 - NEW):
-  - PLANNING_MODULE_IMPLEMENTATION_STATUS.md - Implementation status and progress
+- **Planning Module Documentation**:
+  - PLANNING_MASTER_STATUS.md - Planning module master status (v1.9.1 - CURRENT)
+  - FIXES_SUMMARY_v1.9.1.md - Detailed fix documentation for v1.9.1
+  - GANTT_TESTING_QUICK_START.md - Quick start testing guide for Gantt
+  - GANTT_MANUAL_TEST_PLAN.md - Comprehensive Gantt test plan
+  - GANTT_TEST_DATA.md - Test data reference for Gantt testing
   - PLANNING_MODULE_QUICK_START.md - User guide for planning features
-  - PLANNING_MODULE_FIXES_v1.3.md - UX fixes and improvements
-  - PLANNING_MODULE_TESTING_PLAN.md - Comprehensive testing plan
-- **Next Steps**:
-  - NEXT_STEPS.md - Future roadmap and enhancements
-  - CURRENT_STATUS_AND_NEXT_STEPS.md - Current status and immediate next steps
+  - PLANNING_MODULE_IMPLEMENTATION_STATUS.md - Implementation status (v1.3 baseline)
+- **Archived Documentation** (Historical reference):
+  - PLANNING_MODULE_FIXES_v1.3.md - v1.3 UX fixes
+  - CURRENT_STATUS_AND_NEXT_STEPS.md - Superseded by PLANNING_MASTER_STATUS.md
 
 ---
 

@@ -426,8 +426,7 @@ When you want to forcefully reload, for example to reset the state of your app, 
 ## Documentation
 
 ### Architecture & Database
-- [Unified Architecture](./ARCHITECTURE_UNIFIED.md) - Complete unified architecture documentation
-- [Architecture Documentation](./ARCHITECTURE.md) - Detailed technical architecture overview
+- [Architecture Documentation](./ARCHITECTURE_UNIFIED.md) - Complete unified architecture documentation (single source of truth)
 - [Database Schema](./DATABASE.md) - Complete database schema documentation
 
 ### Testing Documentation (v1.3 - NEW)
@@ -436,11 +435,12 @@ When you want to forcefully reload, for example to reset the state of your app, 
 - [Testing Session Checklist](./TESTING_SESSION_CHECKLIST.md) - Manual testing checklist
 - [Admin Test Plan](./ADMIN_TEST_PLAN.md) - Admin features testing guide (v1.2)
 
-### Planning Module Documentation (v1.3 - NEW)
-- [Planning Module Status](./PLANNING_MODULE_IMPLEMENTATION_STATUS.md) - Implementation status and progress
+### Planning Module Documentation
+- [Planning Master Status](./PLANNING_MASTER_STATUS.md) - Planning module master status and roadmap (v1.9.1 - CURRENT)
+- [v1.9.1 Fixes Summary](./FIXES_SUMMARY_v1.9.1.md) - Detailed fix documentation for v1.9.1
+- [Gantt Testing Quick Start](./GANTT_TESTING_QUICK_START.md) - Quick start guide for Gantt chart testing
 - [Planning Module Quick Start](./PLANNING_MODULE_QUICK_START.md) - User guide for planning features
-- [Planning Module Fixes](./PLANNING_MODULE_FIXES_v1.3.md) - UX fixes and improvements
-- [Planning Testing Plan](./PLANNING_MODULE_TESTING_PLAN.md) - Comprehensive testing plan
+- [Planning Module Status](./PLANNING_MODULE_IMPLEMENTATION_STATUS.md) - Implementation status (v1.3 baseline)
 
 ## Version History
 
