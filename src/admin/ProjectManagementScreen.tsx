@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import {
   FAB,
   Searchbar,
@@ -21,6 +21,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
 import { Q } from '@nozbe/watermelondb';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 interface ProjectFormData {
   name: string;
@@ -32,12 +34,16 @@ interface ProjectFormData {
 }
 
 const ProjectManagementScreen = () => {
+  const { showSnackbar } = useSnackbar();
   const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectModel[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectModel | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectModel | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState('');
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     client: '',
@@ -67,7 +73,7 @@ const ProjectManagementScreen = () => {
       setProjects(projectsList);
     } catch (error) {
       console.error('Error loading projects:', error);
-      Alert.alert('Error', 'Failed to load projects');
+      showSnackbar('Failed to load projects', 'error');
     } finally {
       setLoading(false);
     }
@@ -118,17 +124,20 @@ const ProjectManagementScreen = () => {
   const handleSave = async () => {
     // Validation
     if (!formData.name.trim()) {
-      Alert.alert('Validation Error', 'Project name is required');
+      setModalVisible(false);
+      showSnackbar('Project name is required', 'warning');
       return;
     }
     if (!formData.client.trim()) {
-      Alert.alert('Validation Error', 'Client name is required');
+      setModalVisible(false);
+      showSnackbar('Client name is required', 'warning');
       return;
     }
 
     const budget = parseFloat(formData.budget);
     if (isNaN(budget) || budget < 0) {
-      Alert.alert('Validation Error', 'Please enter a valid budget');
+      setModalVisible(false);
+      showSnackbar('Please enter a valid budget', 'warning');
       return;
     }
 
@@ -159,13 +168,13 @@ const ProjectManagementScreen = () => {
 
       setModalVisible(false);
       loadProjects();
-      Alert.alert(
-        'Success',
-        editingProject ? 'Project updated successfully' : 'Project created successfully'
+      showSnackbar(
+        editingProject ? 'Project updated successfully' : 'Project created successfully',
+        'success'
       );
     } catch (error) {
       console.error('Error saving project:', error);
-      Alert.alert('Error', 'Failed to save project');
+      showSnackbar('Failed to save project', 'error');
     }
   };
 
@@ -180,89 +189,96 @@ const ProjectManagementScreen = () => {
     const message =
       sitesCount > 0
         ? `This project has ${sitesCount} site(s). Deleting it will also delete all associated sites, items, and data. This action cannot be undone.`
-        : 'Are you sure you want to delete this project?';
+        : 'Are you sure you want to delete this project? This action cannot be undone.';
 
-    Alert.alert('Confirm Delete', message, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await database.write(async () => {
-              // Cascade delete: Delete all sites and their related data
-              for (const site of sites) {
-                // Get all items for this site
-                const items = await database.collections
-                  .get('items')
-                  .query(Q.where('site_id', site.id))
-                  .fetch();
+    setProjectToDelete(project);
+    setDeleteMessage(message);
+    setShowDeleteDialog(true);
+  };
 
-                // Delete all related data for each item
-                for (const item of items) {
-                  // Delete progress logs
-                  const progressLogs = await database.collections
-                    .get('progress_logs')
-                    .query(Q.where('item_id', item.id))
-                    .fetch();
-                  await Promise.all(progressLogs.map((log) => log.markAsDeleted()));
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
 
-                  // Delete hindrances
-                  const hindrances = await database.collections
-                    .get('hindrances')
-                    .query(Q.where('item_id', item.id))
-                    .fetch();
-                  await Promise.all(hindrances.map((h) => h.markAsDeleted()));
+    setShowDeleteDialog(false);
+    try {
+      // Get sites count for this project
+      const sites = await database.collections
+        .get('sites')
+        .query(Q.where('project_id', projectToDelete.id))
+        .fetch();
 
-                  // Delete materials
-                  const materials = await database.collections
-                    .get('materials')
-                    .query(Q.where('item_id', item.id))
-                    .fetch();
-                  await Promise.all(materials.map((m) => m.markAsDeleted()));
+      await database.write(async () => {
+        // Cascade delete: Delete all sites and their related data
+        for (const site of sites) {
+          // Get all items for this site
+          const items = await database.collections
+            .get('items')
+            .query(Q.where('site_id', site.id))
+            .fetch();
 
-                  // Delete the item
-                  await item.markAsDeleted();
-                }
+          // Delete all related data for each item
+          for (const item of items) {
+            // Delete progress logs
+            const progressLogs = await database.collections
+              .get('progress_logs')
+              .query(Q.where('item_id', item.id))
+              .fetch();
+            await Promise.all(progressLogs.map((log) => log.markAsDeleted()));
 
-                // Delete site-level hindrances
-                const siteHindrances = await database.collections
-                  .get('hindrances')
-                  .query(Q.where('site_id', site.id))
-                  .fetch();
-                await Promise.all(siteHindrances.map((h) => h.markAsDeleted()));
+            // Delete hindrances
+            const hindrances = await database.collections
+              .get('hindrances')
+              .query(Q.where('item_id', item.id))
+              .fetch();
+            await Promise.all(hindrances.map((h) => h.markAsDeleted()));
 
-                // Delete daily reports
-                const dailyReports = await database.collections
-                  .get('daily_reports')
-                  .query(Q.where('site_id', site.id))
-                  .fetch();
-                await Promise.all(dailyReports.map((r) => r.markAsDeleted()));
+            // Delete materials
+            const materials = await database.collections
+              .get('materials')
+              .query(Q.where('item_id', item.id))
+              .fetch();
+            await Promise.all(materials.map((m) => m.markAsDeleted()));
 
-                // Delete site inspections
-                const inspections = await database.collections
-                  .get('site_inspections')
-                  .query(Q.where('site_id', site.id))
-                  .fetch();
-                await Promise.all(inspections.map((i) => i.markAsDeleted()));
-
-                // Delete the site
-                await site.markAsDeleted();
-              }
-
-              // Finally, delete the project
-              await project.markAsDeleted();
-            });
-
-            loadProjects();
-            Alert.alert('Success', 'Project and all related data deleted successfully');
-          } catch (error) {
-            console.error('Error deleting project:', error);
-            Alert.alert('Error', 'Failed to delete project');
+            // Delete the item
+            await item.markAsDeleted();
           }
-        },
-      },
-    ]);
+
+          // Delete site-level hindrances
+          const siteHindrances = await database.collections
+            .get('hindrances')
+            .query(Q.where('site_id', site.id))
+            .fetch();
+          await Promise.all(siteHindrances.map((h) => h.markAsDeleted()));
+
+          // Delete daily reports
+          const dailyReports = await database.collections
+            .get('daily_reports')
+            .query(Q.where('site_id', site.id))
+            .fetch();
+          await Promise.all(dailyReports.map((r) => r.markAsDeleted()));
+
+          // Delete site inspections
+          const inspections = await database.collections
+            .get('site_inspections')
+            .query(Q.where('site_id', site.id))
+            .fetch();
+          await Promise.all(inspections.map((i) => i.markAsDeleted()));
+
+          // Delete the site
+          await site.markAsDeleted();
+        }
+
+        // Finally, delete the project
+        await projectToDelete.markAsDeleted();
+      });
+
+      loadProjects();
+      showSnackbar('Project and all related data deleted successfully', 'success');
+      setProjectToDelete(null);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      showSnackbar('Failed to delete project', 'error');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -468,6 +484,21 @@ const ProjectManagementScreen = () => {
           </ScrollView>
         </Modal>
       </Portal>
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Project"
+        message={deleteMessage}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setProjectToDelete(null);
+          setDeleteMessage('');
+        }}
+        destructive={true}
+      />
     </View>
   );
 };
