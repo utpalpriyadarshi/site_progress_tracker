@@ -155,6 +155,6 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
 
 const styles = StyleSheet.create({
   snackbar: {
-    marginBottom: 20,
+    marginBottom: 60, // Increased from 20 to avoid covering bottom navigation tabs
   },
 });
