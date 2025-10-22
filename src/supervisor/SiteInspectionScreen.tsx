@@ -394,12 +394,14 @@ const SiteInspectionScreen = () => {
 
   const handleSave = async () => {
     if (!selectedSiteId || selectedSiteId === 'all') {
+      setDialogVisible(false);
       showSnackbar('Please select a site', 'warning');
       return;
     }
 
     // Validate follow-up
     if (followUpRequired && !followUpDate) {
+      setDialogVisible(false);
       showSnackbar('Please select a follow-up date', 'warning');
       return;
     }

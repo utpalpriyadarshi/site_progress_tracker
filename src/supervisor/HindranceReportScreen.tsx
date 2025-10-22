@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
   Image,
   TouchableOpacity,
   PermissionsAndroid,
@@ -35,6 +34,8 @@ import SiteModel from '../../models/SiteModel';
 import ItemModel from '../../models/ItemModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 interface HindranceWithDetails {
   hindrance: HindranceModel;
@@ -57,11 +58,14 @@ const PhotoThumbnail = React.memo(({ uri, index, onRemove }: { uri: string; inde
 ));
 
 const HindranceReportScreen = () => {
+  const { showSnackbar } = useSnackbar();
   const { selectedSiteId, supervisorId } = useSiteContext();
   const [refreshing, setRefreshing] = useState(false);
   const [hindrances, setHindrances] = useState<HindranceWithDetails[]>([]);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingHindrance, setEditingHindrance] = useState<HindranceModel | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [hindranceToDelete, setHindranceToDelete] = useState<HindranceModel | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -116,7 +120,7 @@ const HindranceReportScreen = () => {
       setHindrances(hindrancesWithDetails);
     } catch (error) {
       console.error('Error loading hindrances:', error);
-      Alert.alert('Error', 'Failed to load hindrances');
+      showSnackbar('Failed to load hindrances', 'error');
     }
   };
 
@@ -181,7 +185,7 @@ const HindranceReportScreen = () => {
 
   const handleAdd = () => {
     if (selectedSiteId === 'all') {
-      Alert.alert('Select a Site', 'Please select a specific site to add a hindrance');
+      showSnackbar('Please select a specific site to add a hindrance', 'warning');
       return;
     }
 
@@ -211,29 +215,25 @@ const HindranceReportScreen = () => {
   };
 
   const handleDelete = (hindrance: HindranceModel) => {
-    Alert.alert(
-      'Delete Hindrance',
-      'Are you sure you want to delete this hindrance?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await hindrance.markAsDeleted();
-              });
-              Alert.alert('Success', 'Hindrance deleted');
-              loadHindrances();
-            } catch (error) {
-              console.error('Error deleting hindrance:', error);
-              Alert.alert('Error', 'Failed to delete hindrance');
-            }
-          },
-        },
-      ]
-    );
+    setHindranceToDelete(hindrance);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!hindranceToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await hindranceToDelete.markAsDeleted();
+      });
+      showSnackbar('Hindrance deleted successfully', 'success');
+      loadHindrances();
+      setHindranceToDelete(null);
+    } catch (error) {
+      console.error('Error deleting hindrance:', error);
+      showSnackbar('Failed to delete hindrance', 'error');
+    }
   };
 
   // Photo handling functions
@@ -264,7 +264,7 @@ const HindranceReportScreen = () => {
 
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Camera permission is required to take photos');
+      showSnackbar('Camera permission is required to take photos', 'warning');
       return;
     }
 
@@ -279,7 +279,7 @@ const HindranceReportScreen = () => {
     }
 
     if (result.errorCode) {
-      Alert.alert('Error', result.errorMessage || 'Failed to take photo');
+      showSnackbar(result.errorMessage || 'Failed to take photo', 'error');
       return;
     }
 
@@ -305,7 +305,7 @@ const HindranceReportScreen = () => {
     }
 
     if (result.errorCode) {
-      Alert.alert('Error', result.errorMessage || 'Failed to select photo');
+      showSnackbar(result.errorMessage || 'Failed to select photo', 'error');
       return;
     }
 
@@ -327,12 +327,14 @@ const HindranceReportScreen = () => {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Validation Error', 'Please enter a title');
+      setDialogVisible(false);
+      showSnackbar('Please enter a title', 'warning');
       return;
     }
 
     if (!selectedSiteId || selectedSiteId === 'all') {
-      Alert.alert('Validation Error', 'Please select a site');
+      setDialogVisible(false);
+      showSnackbar('Please select a site', 'warning');
       return;
     }
 
@@ -371,7 +373,7 @@ const HindranceReportScreen = () => {
         }
       });
 
-      Alert.alert('Success', editingHindrance ? 'Hindrance updated' : 'Hindrance created');
+      showSnackbar(editingHindrance ? 'Hindrance updated successfully' : 'Hindrance created successfully', 'success');
       setDialogVisible(false);
       resetForm();
       loadHindrances();
@@ -400,7 +402,7 @@ const HindranceReportScreen = () => {
       }
     } catch (error) {
       console.error('Error saving hindrance:', error);
-      Alert.alert('Error', 'Failed to save hindrance');
+      showSnackbar('Failed to save hindrance', 'error');
     }
   };
 
@@ -704,6 +706,21 @@ const HindranceReportScreen = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Hindrance"
+        message="Are you sure you want to delete this hindrance? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setHindranceToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };
