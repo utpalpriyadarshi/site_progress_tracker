@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import {
   Card,
@@ -27,6 +26,7 @@ import ItemModel from '../../models/ItemModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
+import { useSnackbar } from '../components/Snackbar';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -36,6 +36,7 @@ interface ReportWithDetails {
 
 const ReportsHistoryScreen = () => {
   const { selectedSiteId, supervisorId } = useSiteContext();
+  const { showSnackbar } = useSnackbar();
   const [refreshing, setRefreshing] = useState(false);
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [filteredReports, setFilteredReports] = useState<ReportWithDetails[]>([]);
@@ -105,7 +106,7 @@ const ReportsHistoryScreen = () => {
       applyFilters(reportsWithDetails, dateFilter, searchQuery);
     } catch (error) {
       console.error('Error loading reports:', error);
-      Alert.alert('Error', 'Failed to load reports');
+      showSnackbar('Failed to load reports', 'error');
     }
   };
 
@@ -188,13 +189,9 @@ const ReportsHistoryScreen = () => {
 
   const handleShare = (report: DailyReportModel) => {
     // Placeholder for future PDF sharing
-    Alert.alert(
-      'Share Report',
-      'PDF sharing will be available soon!\n\nReport details:\n' +
-      `Date: ${formatDate(report.reportDate)}\n` +
-      `Items: ${report.totalItems}\n` +
-      `Progress: ${report.totalProgress.toFixed(1)}%`,
-      [{ text: 'OK' }]
+    showSnackbar(
+      `PDF sharing coming soon! Report: ${formatDate(report.reportDate)} - ${report.totalItems} items`,
+      'info'
     );
   };
 
