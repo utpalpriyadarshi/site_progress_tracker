@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import {
@@ -29,6 +28,8 @@ import SiteModel from '../../models/SiteModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { ReportPdfService } from '../../services/pdf/ReportPdfService';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 interface ItemWithSite {
   item: ItemModel;
@@ -43,6 +44,7 @@ const DailyReportsScreenComponent = ({
   items: ItemModel[];
 }) => {
   const { selectedSiteId, supervisorId } = useSiteContext();
+  const { showSnackbar } = useSnackbar();
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,6 +53,9 @@ const DailyReportsScreenComponent = ({
   const [notesInput, setNotesInput] = useState('');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [itemsWithSites, setItemsWithSites] = useState<ItemWithSite[]>([]);
+  const [showExceedsWarning, setShowExceedsWarning] = useState(false);
+  const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
+  const [pendingQuantity, setPendingQuantity] = useState(0);
 
   // Debug logging
   useEffect(() => {
@@ -146,14 +151,8 @@ const DailyReportsScreenComponent = ({
     const newQuantity = parseFloat(quantityInput) || 0;
 
     if (newQuantity > selectedItem.plannedQuantity) {
-      Alert.alert(
-        'Warning',
-        'Completed quantity exceeds planned quantity. Continue?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Continue', onPress: () => saveProgress(newQuantity) },
-        ],
-      );
+      setPendingQuantity(newQuantity);
+      setShowExceedsWarning(true);
     } else {
       await saveProgress(newQuantity);
     }
@@ -207,31 +206,24 @@ const DailyReportsScreenComponent = ({
         }
       });
 
-      Alert.alert(
-        'Success',
-        'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report.',
+      showSnackbar(
+        'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report',
+        'success'
       );
       closeDialog();
     } catch (error) {
       console.error('Error updating progress (outer):', error);
       console.error('Error stack:', (error as any).stack);
-      Alert.alert(
-        'Error',
+      showSnackbar(
         'Failed to update progress: ' + (error as Error).message,
+        'error'
       );
     }
   };
 
   const handleSubmitAllReports = async () => {
     if (!isOnline) {
-      Alert.alert(
-        'Offline Mode',
-        'Reports will be saved locally and synced when connection is restored.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Save Offline', onPress: () => submitReports() },
-        ],
-      );
+      setShowOfflineConfirm(true);
     } else {
       await submitReports();
     }
@@ -258,9 +250,9 @@ const DailyReportsScreenComponent = ({
         .fetch();
 
       if (progressLogs.length === 0) {
-        Alert.alert(
-          'No Updates',
-          'No pending progress updates to submit for today. Update some items first.'
+        showSnackbar(
+          'No pending progress updates to submit for today. Update some items first',
+          'warning'
         );
         setIsSyncing(false);
         return;
@@ -335,7 +327,7 @@ const DailyReportsScreenComponent = ({
             report.totalProgress = totalProgress;
             report.pdfPath = pdfPath;
             report.notes = `${siteLogs.length} items updated`;
-            report.syncStatus = isOnline ? 'synced' : 'pending';
+            report.syncStatusField = isOnline ? 'synced' : 'pending';
           });
 
           totalReportsGenerated++;
@@ -352,25 +344,18 @@ const DailyReportsScreenComponent = ({
       });
 
       const reportDate = new Date().toLocaleDateString();
-      Alert.alert(
-        'Report Submitted Successfully! ✅',
-        isOnline
-          ? `${totalReportsGenerated} daily report(s) submitted\n${progressLogs.length} progress update(s) for ${reportDate}\n\n✓ Reports saved to database\n✓ Reports synced with server\n\nNote: PDF generation coming soon`
-          : `${totalReportsGenerated} daily report(s) submitted\n${progressLogs.length} progress update(s) for ${reportDate}\n\n✓ Reports saved locally\n⏳ Will sync when connection is restored\n\nNote: PDF generation coming soon`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (reportPaths.length > 0) {
-                console.log('PDF Reports generated at:', reportPaths);
-              }
-            },
-          },
-        ]
-      );
+      const message = isOnline
+        ? `${totalReportsGenerated} daily report(s) submitted - ${progressLogs.length} updates for ${reportDate}`
+        : `${totalReportsGenerated} report(s) saved locally - ${progressLogs.length} updates for ${reportDate}`;
+
+      showSnackbar(message, 'success');
+
+      if (reportPaths.length > 0) {
+        console.log('PDF Reports generated at:', reportPaths);
+      }
     } catch (error) {
       console.error('Error submitting reports:', error);
-      Alert.alert('Error', 'Failed to submit reports: ' + (error as Error).message);
+      showSnackbar('Failed to submit reports: ' + (error as Error).message, 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -559,6 +544,39 @@ const DailyReportsScreenComponent = ({
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={showExceedsWarning}
+        title="Warning"
+        message="Completed quantity exceeds planned quantity. Continue?"
+        confirmText="Continue"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setShowExceedsWarning(false);
+          saveProgress(pendingQuantity);
+        }}
+        onCancel={() => {
+          setShowExceedsWarning(false);
+          setPendingQuantity(0);
+        }}
+        destructive={false}
+      />
+
+      <ConfirmDialog
+        visible={showOfflineConfirm}
+        title="Offline Mode"
+        message="Reports will be saved locally and synced when connection is restored."
+        confirmText="Save Offline"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setShowOfflineConfirm(false);
+          submitReports();
+        }}
+        onCancel={() => {
+          setShowOfflineConfirm(false);
+        }}
+        destructive={false}
+      />
     </View>
   );
 };
