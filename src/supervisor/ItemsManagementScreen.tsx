@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import {
   Card,
@@ -26,6 +25,8 @@ import SiteModel from '../../models/SiteModel';
 import CategoryModel from '../../models/CategoryModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 const ItemsManagementScreenComponent = ({
   items,
@@ -37,9 +38,12 @@ const ItemsManagementScreenComponent = ({
   categories: CategoryModel[];
 }) => {
   const { selectedSiteId } = useSiteContext();
+  const { showSnackbar } = useSnackbar();
   const [filteredItems, setFilteredItems] = useState<ItemModel[]>([]);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemModel | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
   // Form fields
   const [itemName, setItemName] = useState('');
@@ -77,7 +81,7 @@ const ItemsManagementScreenComponent = ({
 
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
-      Alert.alert('Select a Site', 'Please select a specific site to add items to.');
+      showSnackbar('Please select a specific site to add items to', 'warning');
       return;
     }
 
@@ -115,7 +119,8 @@ const ItemsManagementScreenComponent = ({
 
   const handleSave = async () => {
     if (!itemName.trim() || !plannedQuantity || !selectedCategoryId) {
-      Alert.alert('Error', 'Please fill in all required fields (Name, Quantity, Category)');
+      setDialogVisible(false);
+      showSnackbar('Please fill in all required fields (Name, Quantity, Category)', 'warning');
       return;
     }
 
@@ -124,7 +129,8 @@ const ItemsManagementScreenComponent = ({
     const itemWeightage = parseFloat(weightage) || 0;
 
     if (isNaN(plannedQty) || plannedQty <= 0) {
-      Alert.alert('Error', 'Please enter a valid planned quantity');
+      setDialogVisible(false);
+      showSnackbar('Please enter a valid planned quantity', 'warning');
       return;
     }
 
@@ -148,7 +154,7 @@ const ItemsManagementScreenComponent = ({
               item.plannedEndDate = new Date(plannedEndDate).getTime();
             }
           });
-          Alert.alert('Success', 'Item updated successfully');
+          showSnackbar('Item updated successfully', 'success');
         } else {
           // Create new item
           await database.collections.get('items').create((item: any) => {
@@ -167,39 +173,35 @@ const ItemsManagementScreenComponent = ({
             item.status = status;
             item.weightage = itemWeightage;
           });
-          Alert.alert('Success', 'Item created successfully');
+          showSnackbar('Item created successfully', 'success');
         }
       });
       closeDialog();
     } catch (error) {
       console.error('Error saving item:', error);
-      Alert.alert('Error', 'Failed to save item: ' + (error as Error).message);
+      showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
     }
   };
 
   const handleDelete = (item: ItemModel) => {
-    Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete "${item.name}"? This will also delete all associated progress logs and materials.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await item.markAsDeleted();
-              });
-              Alert.alert('Success', 'Item deleted successfully');
-            } catch (error) {
-              console.error('Error deleting item:', error);
-              Alert.alert('Error', 'Failed to delete item: ' + (error as Error).message);
-            }
-          },
-        },
-      ]
-    );
+    setItemToDelete(item);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await itemToDelete.markAsDeleted();
+      });
+      showSnackbar('Item deleted successfully', 'success');
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
+    }
   };
 
   const getStatusColor = (status: string): string => {
@@ -415,6 +417,20 @@ const ItemsManagementScreenComponent = ({
           </Dialog.ScrollArea>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${itemToDelete?.name}"? This will also delete all associated progress logs and materials.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setItemToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };

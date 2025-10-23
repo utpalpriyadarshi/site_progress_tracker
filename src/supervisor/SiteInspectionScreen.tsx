@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   RefreshControl,
   Image,
   TouchableOpacity,
@@ -36,6 +35,8 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SyncService } from '../../services/sync/SyncService';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 interface InspectionWithSite {
   inspection: SiteInspectionModel;
@@ -73,11 +74,14 @@ const AccordionRightIcon = ({ passCount, total }: { passCount: number; total: nu
 );
 
 const SiteInspectionScreen = () => {
+  const { showSnackbar } = useSnackbar();
   const { selectedSiteId, supervisorId } = useSiteContext();
   const [refreshing, setRefreshing] = useState(false);
   const [inspections, setInspections] = useState<InspectionWithSite[]>([]);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingInspection, setEditingInspection] = useState<SiteInspectionModel | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [inspectionToDelete, setInspectionToDelete] = useState<SiteInspectionModel | null>(null);
 
   // Form state
   const [inspectionType, setInspectionType] = useState<'daily' | 'weekly' | 'safety' | 'quality'>('daily');
@@ -160,7 +164,7 @@ const SiteInspectionScreen = () => {
       setInspections(inspectionsWithSites);
     } catch (error) {
       console.error('Error loading inspections:', error);
-      Alert.alert('Error', 'Failed to load inspections');
+      showSnackbar('Failed to load inspections', 'error');
     }
   };
 
@@ -201,18 +205,18 @@ const SiteInspectionScreen = () => {
       await loadInspections();
 
       if (syncResult.success && syncResult.syncedRecords > 0) {
-        Alert.alert('Sync Complete', `${syncResult.syncedRecords} records synced successfully`);
+        showSnackbar(`${syncResult.syncedRecords} records synced successfully`, 'success');
       }
     } catch (error) {
       console.error('Error during refresh:', error);
-      Alert.alert('Sync Error', 'Failed to sync data');
+      showSnackbar('Failed to sync data', 'error');
     }
     setRefreshing(false);
   };
 
   const handleAdd = () => {
     if (selectedSiteId === 'all') {
-      Alert.alert('Select a Site', 'Please select a specific site to create an inspection');
+      showSnackbar('Please select a specific site to create an inspection', 'warning');
       return;
     }
 
@@ -260,29 +264,25 @@ const SiteInspectionScreen = () => {
   };
 
   const handleDelete = (inspection: SiteInspectionModel) => {
-    Alert.alert(
-      'Delete Inspection',
-      'Are you sure you want to delete this inspection?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await inspection.markAsDeleted();
-              });
-              Alert.alert('Success', 'Inspection deleted');
-              loadInspections();
-            } catch (error) {
-              console.error('Error deleting inspection:', error);
-              Alert.alert('Error', 'Failed to delete inspection');
-            }
-          },
-        },
-      ]
-    );
+    setInspectionToDelete(inspection);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!inspectionToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await inspectionToDelete.markAsDeleted();
+      });
+      showSnackbar('Inspection deleted successfully', 'success');
+      loadInspections();
+      setInspectionToDelete(null);
+    } catch (error) {
+      console.error('Error deleting inspection:', error);
+      showSnackbar('Failed to delete inspection', 'error');
+    }
   };
 
   // Photo handling functions
@@ -313,7 +313,7 @@ const SiteInspectionScreen = () => {
 
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Camera permission is required to take photos');
+      showSnackbar('Camera permission is required to take photos', 'warning');
       return;
     }
 
@@ -325,7 +325,7 @@ const SiteInspectionScreen = () => {
 
     if (result.didCancel) return;
     if (result.errorCode) {
-      Alert.alert('Error', result.errorMessage || 'Failed to take photo');
+      showSnackbar(result.errorMessage || 'Failed to take photo', 'error');
       return;
     }
 
@@ -348,7 +348,7 @@ const SiteInspectionScreen = () => {
 
     if (result.didCancel) return;
     if (result.errorCode) {
-      Alert.alert('Error', result.errorMessage || 'Failed to select photo');
+      showSnackbar(result.errorMessage || 'Failed to select photo', 'error');
       return;
     }
 
@@ -394,13 +394,15 @@ const SiteInspectionScreen = () => {
 
   const handleSave = async () => {
     if (!selectedSiteId || selectedSiteId === 'all') {
-      Alert.alert('Validation Error', 'Please select a site');
+      setDialogVisible(false);
+      showSnackbar('Please select a site', 'warning');
       return;
     }
 
     // Validate follow-up
     if (followUpRequired && !followUpDate) {
-      Alert.alert('Validation Error', 'Please select a follow-up date');
+      setDialogVisible(false);
+      showSnackbar('Please select a follow-up date', 'warning');
       return;
     }
 
@@ -443,13 +445,13 @@ const SiteInspectionScreen = () => {
         }
       });
 
-      Alert.alert('Success', editingInspection ? 'Inspection updated' : 'Inspection created');
+      showSnackbar(editingInspection ? 'Inspection updated successfully' : 'Inspection created successfully', 'success');
       setDialogVisible(false);
       resetForm();
       loadInspections();
     } catch (error) {
       console.error('Error saving inspection:', error);
-      Alert.alert('Error', 'Failed to save inspection');
+      showSnackbar('Failed to save inspection', 'error');
     }
   };
 
@@ -930,6 +932,21 @@ const SiteInspectionScreen = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Inspection"
+        message="Are you sure you want to delete this inspection? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setInspectionToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };

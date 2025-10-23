@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   FAB,
   Searchbar,
@@ -19,6 +19,8 @@ import { database } from '../../models/database';
 import UserModel from '../../models/UserModel';
 import RoleModel from '../../models/RoleModel';
 import { Q } from '@nozbe/watermelondb';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 interface UserFormData {
   username: string;
@@ -31,6 +33,7 @@ interface UserFormData {
 }
 
 const RoleManagementScreen = () => {
+  const { showSnackbar } = useSnackbar();
   const [users, setUsers] = useState<UserModel[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserModel[]>([]);
   const [roles, setRoles] = useState<RoleModel[]>([]);
@@ -39,6 +42,8 @@ const RoleManagementScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserModel | null>(null);
   const [roleMenuVisible, setRoleMenuVisible] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserModel | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     password: '',
@@ -68,7 +73,7 @@ const RoleManagementScreen = () => {
       setRoles(rolesList);
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('Error', 'Failed to load data');
+      showSnackbar('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
@@ -121,19 +126,23 @@ const RoleManagementScreen = () => {
   const handleSave = async () => {
     // Validation
     if (!formData.username.trim()) {
-      Alert.alert('Validation Error', 'Username is required');
+      setModalVisible(false);
+      showSnackbar('Username is required', 'warning');
       return;
     }
     if (!editingUser && !formData.password.trim()) {
-      Alert.alert('Validation Error', 'Password is required for new users');
+      setModalVisible(false);
+      showSnackbar('Password is required for new users', 'warning');
       return;
     }
     if (!formData.fullName.trim()) {
-      Alert.alert('Validation Error', 'Full name is required');
+      setModalVisible(false);
+      showSnackbar('Full name is required', 'warning');
       return;
     }
     if (!formData.roleId) {
-      Alert.alert('Validation Error', 'Please select a role');
+      setModalVisible(false);
+      showSnackbar('Please select a role', 'warning');
       return;
     }
 
@@ -144,7 +153,8 @@ const RoleManagementScreen = () => {
         .query(Q.where('username', formData.username))
         .fetch();
       if (existingUser.length > 0) {
-        Alert.alert('Validation Error', 'Username already exists');
+        setModalVisible(false);
+        showSnackbar('Username already exists', 'warning');
         return;
       }
     }
@@ -180,41 +190,37 @@ const RoleManagementScreen = () => {
 
       setModalVisible(false);
       loadData();
-      Alert.alert(
-        'Success',
-        editingUser ? 'User updated successfully' : 'User created successfully'
+      showSnackbar(
+        editingUser ? 'User updated successfully' : 'User created successfully',
+        'success'
       );
     } catch (error) {
       console.error('Error saving user:', error);
-      Alert.alert('Error', 'Failed to save user');
+      showSnackbar('Failed to save user', 'error');
     }
   };
 
   const handleDelete = async (user: UserModel) => {
-    Alert.alert(
-      'Confirm Delete',
-      `Are you sure you want to delete user "${user.username}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await user.markAsDeleted();
-              });
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
 
-              loadData();
-              Alert.alert('Success', 'User deleted successfully');
-            } catch (error) {
-              console.error('Error deleting user:', error);
-              Alert.alert('Error', 'Failed to delete user');
-            }
-          },
-        },
-      ]
-    );
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await userToDelete.markAsDeleted();
+      });
+
+      loadData();
+      showSnackbar('User deleted successfully', 'success');
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      showSnackbar('Failed to delete user', 'error');
+    }
   };
 
   const toggleUserStatus = async (user: UserModel) => {
@@ -225,9 +231,13 @@ const RoleManagementScreen = () => {
         });
       });
       loadData();
+      showSnackbar(
+        `User ${user.isActive ? 'deactivated' : 'activated'} successfully`,
+        'success'
+      );
     } catch (error) {
       console.error('Error toggling user status:', error);
-      Alert.alert('Error', 'Failed to update user status');
+      showSnackbar('Failed to update user status', 'error');
     }
   };
 
@@ -440,6 +450,20 @@ const RoleManagementScreen = () => {
           </ScrollView>
         </Modal>
       </Portal>
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete User"
+        message={`Are you sure you want to delete ${userToDelete?.fullName}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setUserToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };

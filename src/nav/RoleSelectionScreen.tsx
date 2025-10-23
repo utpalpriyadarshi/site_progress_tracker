@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { AuthStackParamList, RootStackParamList } from './types';
 import { useAuth, UserRole } from '../auth/AuthContext';
+import { useSnackbar } from '../components/Snackbar';
 
 type RoleSelectionScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,
@@ -24,6 +25,7 @@ type Props = {
 };
 
 const RoleSelectionScreen = ({ navigation, route }: Props) => {
+  const { showSnackbar } = useSnackbar();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { user, selectRole, logout, getLastSelectedRole } = useAuth();
@@ -52,7 +54,7 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
 
   const handleRoleSelection = async () => {
     if (!selectedRole) {
-      Alert.alert('Error', 'Please select a role');
+      showSnackbar('Please select a role', 'warning');
       return;
     }
 
@@ -78,7 +80,7 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
         routes: [{ name: roleMap[selectedRole] }],
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to navigate to dashboard');
+      showSnackbar('Failed to navigate to dashboard', 'error');
       setIsLoading(false);
     }
   };
@@ -91,7 +93,7 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
         routes: [{ name: 'Login' }],
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      showSnackbar('Failed to logout', 'error');
     }
   };
 

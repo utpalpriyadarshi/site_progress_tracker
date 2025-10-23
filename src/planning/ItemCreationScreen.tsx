@@ -11,7 +11,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import {
   Text,
@@ -22,8 +21,8 @@ import {
   HelperText,
   Chip,
   ActivityIndicator,
-  Snackbar,
 } from 'react-native-paper';
+import { useSnackbar } from '../components/Snackbar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
 import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
@@ -53,6 +52,8 @@ interface FormData {
 }
 
 const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { showSnackbar } = useSnackbar();
+
   // Get siteId from route params (passed from WBSManagementScreen)
   const siteId = route.params?.siteId || '';
   const parentWbsCode = route.params?.parentWbsCode || null;
@@ -88,11 +89,6 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   // Code generation loading
   const [generatingCode, setGeneratingCode] = useState(false);
 
-  // Snackbar state
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
-
   // Generate WBS code when screen loads
   useEffect(() => {
     const generateCode = async () => {
@@ -113,7 +109,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
         setGeneratedWbsCode(code);
       } catch (error) {
         console.error('Error generating WBS code:', error);
-        Alert.alert('Error', 'Failed to generate WBS code');
+        showSnackbar('Failed to generate WBS code', 'error');
       } finally {
         setGeneratingCode(false);
       }
@@ -261,9 +257,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
       });
 
       // Success - show snackbar and navigate back
-      setSnackbarMessage('WBS item created successfully');
-      setSnackbarType('success');
-      setSnackbarVisible(true);
+      showSnackbar('WBS item created successfully', 'success');
 
       // Navigate back after a short delay to show snackbar
       setTimeout(() => {
@@ -271,9 +265,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
       }, 1500);
     } catch (error) {
       console.error('Error saving item:', error);
-      setSnackbarMessage('Failed to create item. Please try again.');
-      setSnackbarType('error');
-      setSnackbarVisible(true);
+      showSnackbar('Failed to create item. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -549,18 +541,6 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Snackbar for feedback */}
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        style={{
-          backgroundColor: snackbarType === 'success' ? '#4CAF50' : '#F44336',
-        }}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </View>
   );
 };

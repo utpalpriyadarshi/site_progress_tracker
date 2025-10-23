@@ -9,6 +9,7 @@ import ProjectManagementScreen from '../admin/ProjectManagementScreen';
 import RoleManagementScreen from '../admin/RoleManagementScreen';
 import { AdminProvider } from '../admin/context/AdminContext';
 import { useAuth } from '../auth/AuthContext';
+import SnackbarTestScreen from '../test/SnackbarTestScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -23,6 +24,7 @@ export type AdminTabParamList = {
   AdminDashboard: undefined;
   ProjectManagement: undefined;
   RoleManagement: undefined;
+  SnackbarTest: undefined;
 };
 
 type AdminNavigatorProps = {
@@ -57,6 +59,8 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
               iconSymbol = '📁';
             } else if (route.name === 'RoleManagement') {
               iconSymbol = '👥';
+            } else if (route.name === 'SnackbarTest') {
+              iconSymbol = '🧪';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -97,6 +101,15 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
             title: 'Users',
             headerShown: true,
             headerTitle: 'User & Role Management',
+          }}
+        />
+        <Tab.Screen
+          name="SnackbarTest"
+          component={SnackbarTestScreen}
+          options={{
+            title: 'Test',
+            headerShown: true,
+            headerTitle: 'Snackbar & Dialog Tests',
           }}
         />
       </Tab.Navigator>

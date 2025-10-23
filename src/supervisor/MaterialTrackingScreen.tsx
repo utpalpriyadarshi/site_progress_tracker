@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -8,6 +8,8 @@ import SiteSelector from './components/SiteSelector';
 import MaterialModel from '../../models/MaterialModel';
 import ItemModel from '../../models/ItemModel';
 import { Portal, Dialog, Button, TextInput, Menu, IconButton } from 'react-native-paper';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -18,11 +20,14 @@ const MaterialTrackingScreenComponent = ({
   items: ItemModel[];
 }) => {
   const { selectedSiteId } = useSiteContext();
+  const { showSnackbar } = useSnackbar();
   const [filteredMaterials, setFilteredMaterials] = useState<MaterialModel[]>([]);
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<MaterialModel | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<MaterialModel | null>(null);
 
   // Form state
   const [materialName, setMaterialName] = useState('');
@@ -81,12 +86,12 @@ const MaterialTrackingScreenComponent = ({
   // Open dialog for adding
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
-      Alert.alert('Select a Site', 'Please select a specific site to add materials.');
+      showSnackbar('Please select a specific site to add materials', 'warning');
       return;
     }
     const siteItems = getSiteItems();
     if (siteItems.length === 0) {
-      Alert.alert('No Items', 'Please create items for this site first before adding materials.');
+      showSnackbar('Please create items for this site first before adding materials', 'warning');
       return;
     }
     resetForm();
@@ -116,7 +121,8 @@ const MaterialTrackingScreenComponent = ({
   // Create material
   const handleCreateMaterial = async () => {
     if (!materialName.trim() || !selectedItemId || !quantityRequired || !unit) {
-      Alert.alert('Validation Error', 'Please fill in all required fields.');
+      setDialogVisible(false);
+      showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
 
@@ -134,18 +140,19 @@ const MaterialTrackingScreenComponent = ({
           material.procurementManagerId = 'procurement-1'; // Default
         });
       });
-      Alert.alert('Success', 'Material created successfully!');
+      showSnackbar('Material created successfully', 'success');
       closeDialog();
     } catch (error) {
       console.error('Error creating material:', error);
-      Alert.alert('Error', 'Failed to create material.');
+      showSnackbar('Failed to create material', 'error');
     }
   };
 
   // Update material
   const handleUpdateMaterial = async () => {
     if (!editingMaterial || !materialName.trim() || !selectedItemId || !quantityRequired || !unit) {
-      Alert.alert('Validation Error', 'Please fill in all required fields.');
+      setDialogVisible(false);
+      showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
 
@@ -162,38 +169,34 @@ const MaterialTrackingScreenComponent = ({
           material.supplier = supplier.trim();
         });
       });
-      Alert.alert('Success', 'Material updated successfully!');
+      showSnackbar('Material updated successfully', 'success');
       closeDialog();
     } catch (error) {
       console.error('Error updating material:', error);
-      Alert.alert('Error', 'Failed to update material.');
+      showSnackbar('Failed to update material', 'error');
     }
   };
 
   // Delete material
   const handleDeleteMaterial = (material: MaterialModel) => {
-    Alert.alert(
-      'Delete Material',
-      `Are you sure you want to delete "${material.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await material.markAsDeleted();
-              });
-              Alert.alert('Success', 'Material deleted successfully.');
-            } catch (error) {
-              console.error('Error deleting material:', error);
-              Alert.alert('Error', 'Failed to delete material.');
-            }
-          },
-        },
-      ]
-    );
+    setMaterialToDelete(material);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!materialToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await materialToDelete.markAsDeleted();
+      });
+      showSnackbar('Material deleted successfully', 'success');
+      setMaterialToDelete(null);
+    } catch (error) {
+      console.error('Error deleting material:', error);
+      showSnackbar('Failed to delete material', 'error');
+    }
   };
 
   const getStatusColor = (material: MaterialModel): string => {
@@ -405,6 +408,20 @@ const MaterialTrackingScreenComponent = ({
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Material"
+        message={`Are you sure you want to delete "${materialToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setMaterialToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };

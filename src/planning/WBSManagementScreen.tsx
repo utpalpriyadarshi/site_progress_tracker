@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { Card, Text, FAB, Chip } from 'react-native-paper';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -9,14 +9,19 @@ import WBSItemCard from './components/WBSItemCard';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'WBSManagement'>;
 
 const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
+  const { showSnackbar } = useSnackbar();
   const [selectedSite, setSelectedSite] = useState<SiteModel | null>(null);
   const [items, setItems] = useState<ItemModel[]>([]);
   const [selectedPhase, setSelectedPhase] = useState<ProjectPhase | 'all'>('all');
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
   const loadItems = React.useCallback(async () => {
     if (!selectedSite) return;
@@ -64,7 +69,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       setItems(siteItems);
     } catch (error) {
       console.error('Error loading items:', error);
-      Alert.alert('Error', 'Failed to load items');
+      showSnackbar('Failed to load items', 'error');
     } finally {
       setLoading(false);
     }
@@ -92,7 +97,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleAddItem = () => {
     if (!selectedSite) {
-      Alert.alert('No Site Selected', 'Please select a site first.');
+      showSnackbar('Please select a site first', 'warning');
       return;
     }
 
@@ -103,20 +108,12 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleAddChildItem = (parentItem: ItemModel) => {
     if (parentItem.isBaselineLocked) {
-      Alert.alert(
-        'Baseline Locked',
-        'Cannot add child items after baseline is locked.',
-        [{ text: 'OK' }]
-      );
+      showSnackbar('Cannot add child items after baseline is locked', 'warning');
       return;
     }
 
     if (parentItem.wbsLevel >= 4) {
-      Alert.alert(
-        'Maximum Level Reached',
-        'Cannot create child items beyond level 4.',
-        [{ text: 'OK' }]
-      );
+      showSnackbar('Cannot create child items beyond level 4', 'warning');
       return;
     }
 
@@ -128,11 +125,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleEditItem = (item: ItemModel) => {
     if (item.isBaselineLocked) {
-      Alert.alert(
-        'Baseline Locked',
-        'Cannot edit items after baseline is locked.',
-        [{ text: 'OK' }]
-      );
+      showSnackbar('Cannot edit items after baseline is locked', 'warning');
       return;
     }
 
@@ -143,37 +136,29 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleDeleteItem = async (item: ItemModel) => {
     if (item.isBaselineLocked) {
-      Alert.alert(
-        'Baseline Locked',
-        'Cannot delete items after baseline is locked.',
-        [{ text: 'OK' }]
-      );
+      showSnackbar('Cannot delete items after baseline is locked', 'warning');
       return;
     }
 
-    Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await item.destroyPermanently();
-              });
-              loadItems();
-              Alert.alert('Success', 'Item deleted successfully');
-            } catch (error) {
-              console.error('Error deleting item:', error);
-              Alert.alert('Error', 'Failed to delete item');
-            }
-          },
-        },
-      ]
-    );
+    setItemToDelete(item);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await itemToDelete.destroyPermanently();
+      });
+      loadItems();
+      showSnackbar(`"${itemToDelete.name}" deleted successfully`, 'success');
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      showSnackbar('Failed to delete item', 'error');
+    }
   };
 
   const phases: Array<{ key: ProjectPhase | 'all'; label: string }> = [
@@ -285,6 +270,20 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         </View>
       )}
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setItemToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };

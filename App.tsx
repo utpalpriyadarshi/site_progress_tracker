@@ -14,6 +14,9 @@ import MainNavigator from './src/nav/MainNavigator';
 // Import database service
 import { SimpleDatabaseService } from './services/db/SimpleDatabaseService';
 
+// Import Snackbar provider
+import { SnackbarProvider } from './src/components/Snackbar';
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 
@@ -39,8 +42,10 @@ function App() {
   return (
     <PaperProvider>
       <SafeAreaProvider>
-        <StatusBar barStyle="dark-content" />
-        <MainNavigator />
+        <SnackbarProvider>
+          <StatusBar barStyle="dark-content" />
+          <MainNavigator />
+        </SnackbarProvider>
       </SafeAreaProvider>
     </PaperProvider>
   );

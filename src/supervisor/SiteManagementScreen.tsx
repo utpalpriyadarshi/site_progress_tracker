@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import {
   Card,
@@ -22,6 +21,8 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import { useSiteContext } from './context/SiteContext';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -31,11 +32,14 @@ const SiteManagementScreenComponent = ({
   projects: any[];
 }) => {
   const { supervisorId, setSelectedSiteId } = useSiteContext();
+  const { showSnackbar } = useSnackbar();
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingSite, setEditingSite] = useState<SiteModel | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [siteToDelete, setSiteToDelete] = useState<SiteModel | null>(null);
 
   const openAddDialog = () => {
     setEditingSite(null);
@@ -63,7 +67,8 @@ const SiteManagementScreenComponent = ({
 
   const handleSave = async () => {
     if (!siteName.trim() || !siteLocation.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setDialogVisible(false);
+      showSnackbar('Please fill in all fields', 'warning');
       return;
     }
 
@@ -76,7 +81,7 @@ const SiteManagementScreenComponent = ({
             site.location = siteLocation.trim();
             site.projectId = selectedProjectId;
           });
-          Alert.alert('Success', 'Site updated successfully');
+          showSnackbar('Site updated successfully', 'success');
         } else {
           // Create new site (auto-assign to current supervisor)
           const newSite = await database.collections.get('sites').create((site: any) => {
@@ -85,7 +90,7 @@ const SiteManagementScreenComponent = ({
             site.projectId = selectedProjectId;
             site.supervisorId = supervisorId || null;
           });
-          Alert.alert('Success', 'Site created successfully');
+          showSnackbar('Site created successfully', 'success');
 
           // Optionally auto-select the new site
           setSelectedSiteId(newSite.id);
@@ -94,34 +99,30 @@ const SiteManagementScreenComponent = ({
       closeDialog();
     } catch (error) {
       console.error('Error saving site:', error);
-      Alert.alert('Error', 'Failed to save site: ' + (error as Error).message);
+      showSnackbar('Failed to save site: ' + (error as Error).message, 'error');
     }
   };
 
   const handleDelete = (site: SiteModel) => {
-    Alert.alert(
-      'Delete Site',
-      `Are you sure you want to delete "${site.name}"? This will also delete all associated items and data.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                // Note: In production, you should also delete related items, materials, etc.
-                await site.markAsDeleted();
-              });
-              Alert.alert('Success', 'Site deleted successfully');
-            } catch (error) {
-              console.error('Error deleting site:', error);
-              Alert.alert('Error', 'Failed to delete site: ' + (error as Error).message);
-            }
-          },
-        },
-      ]
-    );
+    setSiteToDelete(site);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!siteToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        // Note: In production, you should also delete related items, materials, etc.
+        await siteToDelete.markAsDeleted();
+      });
+      showSnackbar('Site deleted successfully', 'success');
+      setSiteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting site:', error);
+      showSnackbar('Failed to delete site: ' + (error as Error).message, 'error');
+    }
   };
 
   return (
@@ -240,6 +241,20 @@ const SiteManagementScreenComponent = ({
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Site"
+        message={`Are you sure you want to delete "${siteToDelete?.name}"? This will also delete all associated items and data.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setSiteToDelete(null);
+        }}
+        destructive={true}
+      />
     </View>
   );
 };
