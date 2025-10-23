@@ -3,10 +3,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Button, Card, Text, FAB } from 'react-native-paper';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../models/database';
@@ -22,6 +23,7 @@ interface BaselineScreenProps {
 }
 
 const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) => {
+  const { showSnackbar } = useSnackbar();
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null);
   const [items, setItems] = useState<ItemModel[]>([]);
   const [criticalPathItems, setCriticalPathItems] = useState<string[]>([]);
@@ -29,6 +31,8 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
   const [selectedItem, setSelectedItem] = useState<ItemModel | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLockBaselineDialog, setShowLockBaselineDialog] = useState(false);
+  const [criticalPathResult, setCriticalPathResult] = useState<{itemCount: number, durationDays: number} | null>(null);
 
   // Load items when project changes
   useEffect(() => {
@@ -59,7 +63,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
       setCriticalPathItems(criticalItems);
     } catch (error) {
       console.error('Error loading items:', error);
-      Alert.alert('Error', 'Failed to load items');
+      showSnackbar('Failed to load items', 'error');
     } finally {
       setLoading(false);
     }
@@ -75,45 +79,41 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
 
       const durationDays = Math.floor(result.totalDuration / (1000 * 60 * 60 * 24));
 
-      Alert.alert(
-        'Critical Path Calculated',
-        `Found ${result.criticalPathItems.length} critical items.\nTotal project duration: ${durationDays} days`,
-        [{ text: 'OK' }]
+      setCriticalPathResult({
+        itemCount: result.criticalPathItems.length,
+        durationDays
+      });
+      showSnackbar(
+        `Critical Path: ${result.criticalPathItems.length} items, ${durationDays} days duration`,
+        'success'
       );
 
       await loadItems(); // Reload to show updated flags
     } catch (error) {
       console.error('Error calculating critical path:', error);
-      Alert.alert('Error', 'Failed to calculate critical path');
+      showSnackbar('Failed to calculate critical path', 'error');
     } finally {
       setIsCalculating(false);
     }
   };
 
-  const handleLockBaseline = async () => {
+  const handleLockBaseline = () => {
+    if (!selectedProject) return;
+    setShowLockBaselineDialog(true);
+  };
+
+  const confirmLockBaseline = async () => {
     if (!selectedProject) return;
 
-    Alert.alert(
-      'Lock Baseline',
-      'This will save current planned dates as the baseline. This action cannot be easily undone. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Lock Baseline',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await PlanningService.lockBaseline(selectedProject.id);
-              Alert.alert('Success', 'Baseline locked successfully');
-              await loadItems();
-            } catch (error) {
-              console.error('Error locking baseline:', error);
-              Alert.alert('Error', 'Failed to lock baseline');
-            }
-          },
-        },
-      ]
-    );
+    setShowLockBaselineDialog(false);
+    try {
+      await PlanningService.lockBaseline(selectedProject.id);
+      showSnackbar('Baseline locked successfully', 'success');
+      await loadItems();
+    } catch (error) {
+      console.error('Error locking baseline:', error);
+      showSnackbar('Failed to lock baseline', 'error');
+    }
   };
 
   const handleManageDependencies = (item: ItemModel) => {
@@ -243,6 +243,17 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
           onSave={loadItems}
         />
       )}
+
+      <ConfirmDialog
+        visible={showLockBaselineDialog}
+        title="Lock Baseline"
+        message="This will save current planned dates as the baseline. This action cannot be easily undone. Continue?"
+        confirmText="Lock Baseline"
+        cancelText="Cancel"
+        onConfirm={confirmLockBaseline}
+        onCancel={() => setShowLockBaselineDialog(false)}
+        destructive={true}
+      />
     </View>
   );
 };

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Modal, Portal, Button, Text, Checkbox, Searchbar } from 'react-native-paper';
 import ItemModel from '../../../models/ItemModel';
 import { database } from '../../../models/database';
 import PlanningService from '../../../services/planning/PlanningService';
+import { useSnackbar } from '../../components/Snackbar';
 
 interface DependencyModalProps {
   visible: boolean;
@@ -20,6 +21,7 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { showSnackbar } = useSnackbar();
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(
     new Set(item.getDependencies())
   );
@@ -68,11 +70,7 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
 
       if (!validation.valid) {
         console.log('[DependencyModal] Validation failed:', validation.errors);
-        Alert.alert(
-          'Invalid Dependencies',
-          `Cannot save: ${validation.errors.join(', ')}`,
-          [{ text: 'OK' }]
-        );
+        showSnackbar(`Cannot save: ${validation.errors.join(', ')}`, 'error');
         return;
       }
 
@@ -89,10 +87,10 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
       onSave();
       onClose();
 
-      Alert.alert('Success', `Dependencies saved for ${item.name}`);
+      showSnackbar(`Dependencies saved for ${item.name}`, 'success');
     } catch (error) {
       console.error('[DependencyModal] Error saving dependencies:', error);
-      Alert.alert('Error', `Failed to save dependencies: ${error.message || error}`);
+      showSnackbar(`Failed to save dependencies: ${error.message || error}`, 'error');
     } finally {
       setIsSaving(false);
     }

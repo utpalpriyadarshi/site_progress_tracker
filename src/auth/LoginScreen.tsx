@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth, UserRole } from './AuthContext';
 import { database } from '../../models/database';
 import UserModel from '../../models/UserModel';
 import { Q } from '@nozbe/watermelondb';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -26,9 +28,11 @@ type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'RoleSe
   StackNavigationProp<RootStackParamList>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
+  const { showSnackbar } = useSnackbar();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
   const { login, selectRole, getLastSelectedRole } = useAuth();
 
   const navigateToScreen = (screenName: keyof RootStackParamList) => {
@@ -40,7 +44,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('Error', 'Please enter both username and password');
+      showSnackbar('Please enter both username and password', 'warning');
       return;
     }
 
@@ -54,7 +58,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         .fetch();
 
       if (users.length === 0) {
-        Alert.alert('Login Failed', 'Invalid username or password');
+        showSnackbar('Invalid username or password', 'error');
         setIsLoading(false);
         return;
       }
@@ -63,14 +67,14 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
       // Check password (in production, compare hashed password)
       if (user.password !== password) {
-        Alert.alert('Login Failed', 'Invalid username or password');
+        showSnackbar('Invalid username or password', 'error');
         setIsLoading(false);
         return;
       }
 
       // Check if user is active
       if (!user.isActive) {
-        Alert.alert('Account Disabled', 'Your account has been deactivated. Please contact an administrator.');
+        showSnackbar('Your account has been deactivated. Please contact an administrator.', 'error');
         setIsLoading(false);
         return;
       }
@@ -78,7 +82,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       // Get user's role
       const role = await user.role.fetch();
       if (!role) {
-        Alert.alert('Error', 'Unable to determine user role');
+        showSnackbar('Unable to determine user role', 'error');
         setIsLoading(false);
         return;
       }
@@ -101,12 +105,12 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       } else if (role.name === 'Logistics') {
         navigateToScreen('Logistics');
       } else {
-        Alert.alert('Error', 'Unknown role type');
+        showSnackbar('Unknown role type', 'error');
         setIsLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Login Failed', 'An error occurred during login');
+      showSnackbar('An error occurred during login', 'error');
       setIsLoading(false);
     }
   };
@@ -192,10 +196,24 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       </View>
       
       <View style={styles.footer}>
-        <TouchableOpacity onPress={() => Alert.alert('Info', 'Default test accounts:\\n\\n- supervisor / supervisor123\\n- manager / manager123\\n- planner / planner123\\n- logistics / logistics123')}>
+        <TouchableOpacity onPress={() => setShowCredentialsDialog(true)}>
           <Text style={styles.linkText}>Show Default Credentials</Text>
         </TouchableOpacity>
       </View>
+
+      <ConfirmDialog
+        visible={showCredentialsDialog}
+        title="Default Test Accounts"
+        message="• admin / admin123
+• supervisor / supervisor123
+• manager / manager123
+• planner / planner123
+• logistics / logistics123"
+        confirmText="OK"
+        onConfirm={() => setShowCredentialsDialog(false)}
+        onCancel={() => setShowCredentialsDialog(false)}
+        destructive={false}
+      />
     </ScrollView>
   );
 };
