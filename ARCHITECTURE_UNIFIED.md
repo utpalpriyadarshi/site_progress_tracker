@@ -970,6 +970,17 @@ item.site_id = 'site-123';  // Will save empty value!
 
 - **react-native-paper**: Material Design components (Cards, Dialogs, Chips, TextInput)
 - **react-native-vector-icons**: Icon system (MaterialCommunityIcons)
+- **Custom Snackbar System** (v2.0): Non-blocking notification system
+  - Location: `src/components/Snackbar.tsx`
+  - Features: Color-coded feedback, auto-dismiss, swipe-to-dismiss
+  - Types: success (green), error (red), warning (orange), info (blue)
+  - Context-based: `SnackbarProvider` wraps app root
+  - Hook: `useSnackbar()` provides `showSnackbar(message, type)` function
+- **Custom ConfirmDialog** (v2.0): Confirmation dialog component
+  - Location: `src/components/Dialog.tsx`
+  - Features: Destructive/non-destructive modes, customizable buttons
+  - Props: `visible`, `title`, `message`, `confirmText`, `cancelText`, `onConfirm`, `onCancel`, `destructive`
+  - Used for: Delete confirmations, lock operations, important decisions
 
 ### Device Features
 
@@ -1074,6 +1085,104 @@ const takePhoto = async () => {
   });
 };
 ```
+
+### Snackbar/Dialog Pattern (v2.0)
+
+**Usage Pattern for Snackbar Notifications:**
+
+```typescript
+import { useSnackbar } from '../components/Snackbar';
+
+const MyScreen = () => {
+  const { showSnackbar } = useSnackbar();
+
+  const handleSuccess = () => {
+    showSnackbar('Item saved successfully', 'success'); // Green
+  };
+
+  const handleError = () => {
+    showSnackbar('Failed to save item', 'error'); // Red
+  };
+
+  const handleWarning = () => {
+    showSnackbar('Please fill all required fields', 'warning'); // Orange
+  };
+
+  const handleInfo = () => {
+    showSnackbar('PDF sharing coming soon', 'info'); // Blue
+  };
+
+  return (
+    // Your component JSX
+  );
+};
+```
+
+**Usage Pattern for Confirmation Dialogs:**
+
+```typescript
+import { useState } from 'react';
+import { ConfirmDialog } from '../components/Dialog';
+import { useSnackbar } from '../components/Snackbar';
+
+const MyScreen = () => {
+  const { showSnackbar } = useSnackbar();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const handleDeleteClick = (item) => {
+    setItemToDelete(item);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteDialog(false);
+    try {
+      await database.write(async () => {
+        await itemToDelete.destroyPermanently();
+      });
+      showSnackbar('Item deleted successfully', 'success');
+    } catch (error) {
+      showSnackbar('Failed to delete item', 'error');
+    }
+  };
+
+  return (
+    <View>
+      {/* Your component JSX */}
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Delete Item"
+        message={`Are you sure you want to delete ${itemToDelete?.name}?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setItemToDelete(null);
+        }}
+        destructive={true}
+      />
+    </View>
+  );
+};
+```
+
+**Important Pattern: Dialog-Close-Before-Snackbar (for validation in modals)**
+
+```typescript
+const handleSave = async () => {
+  if (!fieldValue.trim()) {
+    setModalVisible(false); // Close modal FIRST!
+    showSnackbar('Field is required', 'warning'); // Then show snackbar
+    return;
+  }
+  // Save logic...
+};
+```
+
+**Migration Note:** As of v2.0, all `Alert.alert()` calls have been migrated to this system. **Never use Alert.alert** - always use `showSnackbar()` for notifications and `ConfirmDialog` for confirmations.
 
 ### Context Provider Pattern
 
