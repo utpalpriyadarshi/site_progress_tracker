@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,13 +20,45 @@ import {
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
-import ItemModel from '../../models/ItemModel';
+import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
 import CategoryModel from '../../models/CategoryModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+
+// Status filter options
+const STATUS_FILTERS: FilterOption[] = [
+  { id: 'all', label: 'All Status' },
+  { id: 'not_started', label: 'Not Started', icon: 'circle-outline' },
+  { id: 'in_progress', label: 'In Progress', icon: 'progress-clock' },
+  { id: 'completed', label: 'Completed', icon: 'check-circle' },
+];
+
+// Phase filter options (11 phases)
+const PHASE_FILTERS: FilterOption[] = [
+  { id: 'all', label: 'All Phases' },
+  { id: 'design', label: 'Design', icon: 'pencil-ruler', color: '#9C27B0' },
+  { id: 'approvals', label: 'Approvals', icon: 'file-document-check', color: '#FF9800' },
+  { id: 'mobilization', label: 'Mobilization', icon: 'truck', color: '#795548' },
+  { id: 'procurement', label: 'Procurement', icon: 'cart', color: '#FF9800' },
+  { id: 'interface', label: 'Interface', icon: 'transit-connection-variant', color: '#00BCD4' },
+  { id: 'site_prep', label: 'Site Prep', icon: 'bulldozer', color: '#8BC34A' },
+  { id: 'construction', label: 'Construction', icon: 'hammer', color: '#4CAF50' },
+  { id: 'testing', label: 'Testing', icon: 'test-tube', color: '#2196F3' },
+  { id: 'commissioning', label: 'Commissioning', icon: 'power-plug', color: '#3F51B5' },
+  { id: 'sat', label: 'SAT', icon: 'clipboard-check', color: '#673AB7' },
+  { id: 'handover', label: 'Handover', icon: 'handshake', color: '#009688' },
+];
+
+// Sort options
+const SORT_OPTIONS: SortOption[] = [
+  { id: 'name', label: 'Name', icon: 'format-letter-case' },
+  { id: 'date', label: 'Start Date', icon: 'calendar' },
+  { id: 'progress', label: 'Progress', icon: 'chart-line' },
+];
 
 const ItemsManagementScreenComponent = ({
   items,
@@ -39,6 +71,15 @@ const ItemsManagementScreenComponent = ({
 }) => {
   const { selectedSiteId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
+
+  // Search, filter, sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(['all']);
+  const [selectedPhases, setSelectedPhases] = useState<string[]>(['all']);
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'progress'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Existing state
   const [filteredItems, setFilteredItems] = useState<ItemModel[]>([]);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemModel | null>(null);
@@ -69,15 +110,101 @@ const ItemsManagementScreenComponent = ({
     { value: 'numbers', label: 'nos' },
   ];
 
-  // Filter items by selected site
-  useEffect(() => {
-    if (selectedSiteId === 'all') {
-      setFilteredItems(items);
-    } else {
-      const siteItems = items.filter(item => item.siteId === selectedSiteId);
-      setFilteredItems(siteItems);
+  // Combined filtering and sorting logic
+  const displayedItems = useMemo(() => {
+    let result = items;
+
+    // 1. Filter by selected site (existing logic)
+    if (selectedSiteId !== 'all') {
+      result = result.filter(item => item.siteId === selectedSiteId);
     }
-  }, [items, selectedSiteId]);
+
+    // 2. Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(item =>
+        item.name.toLowerCase().includes(query)
+      );
+    }
+
+    // 3. Status filter
+    if (!selectedStatus.includes('all')) {
+      result = result.filter(item => selectedStatus.includes(item.status));
+    }
+
+    // 4. Phase filter
+    if (!selectedPhases.includes('all')) {
+      result = result.filter(item => {
+        const itemPhase = item.projectPhase || '';
+        return selectedPhases.includes(itemPhase);
+      });
+    }
+
+    // 5. Sort
+    result = [...result].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'date') {
+        const dateA = a.plannedStartDate || 0;
+        const dateB = b.plannedStartDate || 0;
+        comparison = dateA - dateB;
+      } else if (sortBy === 'progress') {
+        const progressA = getProgressPercentage(a);
+        const progressB = getProgressPercentage(b);
+        comparison = progressA - progressB;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [items, selectedSiteId, searchQuery, selectedStatus, selectedPhases, sortBy, sortDirection]);
+
+  // Update filteredItems when displayedItems changes
+  useEffect(() => {
+    setFilteredItems(displayedItems);
+  }, [displayedItems]);
+
+  // Filter toggle handlers
+  const handleStatusToggle = (id: string) => {
+    if (id === 'all') {
+      setSelectedStatus(['all']);
+    } else {
+      const newFilters = selectedStatus.includes(id)
+        ? selectedStatus.filter(f => f !== id && f !== 'all')
+        : [...selectedStatus.filter(f => f !== 'all'), id];
+      setSelectedStatus(newFilters.length === 0 ? ['all'] : newFilters);
+    }
+  };
+
+  const handlePhaseToggle = (id: string) => {
+    if (id === 'all') {
+      setSelectedPhases(['all']);
+    } else {
+      const newFilters = selectedPhases.includes(id)
+        ? selectedPhases.filter(f => f !== id && f !== 'all')
+        : [...selectedPhases.filter(f => f !== 'all'), id];
+      setSelectedPhases(newFilters.length === 0 ? ['all'] : newFilters);
+    }
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus(['all']);
+    setSelectedPhases(['all']);
+    setSortBy('name');
+    setSortDirection('asc');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return searchQuery.trim() !== '' ||
+           !selectedStatus.includes('all') ||
+           !selectedPhases.includes('all');
+  }, [searchQuery, selectedStatus, selectedPhases]);
 
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
@@ -105,32 +232,21 @@ const ItemsManagementScreenComponent = ({
     setCompletedQuantity(item.completedQuantity.toString());
     setUnitOfMeasurement(item.unitOfMeasurement);
     setSelectedCategoryId(item.categoryId);
-    setPlannedStartDate('');
-    setPlannedEndDate('');
-    setWeightage(item.weightage.toString());
+    setPlannedStartDate(item.plannedStartDate?.toString() || '');
+    setPlannedEndDate(item.plannedEndDate?.toString() || '');
+    setWeightage(item.weightage?.toString() || '');
     setStatus(item.status);
     setDialogVisible(true);
   };
 
-  const closeDialog = () => {
-    setDialogVisible(false);
-    setEditingItem(null);
-  };
-
-  const handleSave = async () => {
-    if (!itemName.trim() || !plannedQuantity || !selectedCategoryId) {
-      setDialogVisible(false);
-      showSnackbar('Please fill in all required fields (Name, Quantity, Category)', 'warning');
+  const saveItem = async () => {
+    if (!itemName.trim()) {
+      showSnackbar('Please enter item name', 'warning');
       return;
     }
 
-    const plannedQty = parseFloat(plannedQuantity);
-    const completedQty = parseFloat(completedQuantity) || 0;
-    const itemWeightage = parseFloat(weightage) || 0;
-
-    if (isNaN(plannedQty) || plannedQty <= 0) {
-      setDialogVisible(false);
-      showSnackbar('Please enter a valid planned quantity', 'warning');
+    if (!selectedCategoryId) {
+      showSnackbar('Please select a category', 'warning');
       return;
     }
 
@@ -138,45 +254,47 @@ const ItemsManagementScreenComponent = ({
       await database.write(async () => {
         if (editingItem) {
           // Update existing item
-          await editingItem.update((item: any) => {
+          await editingItem.update(item => {
             item.name = itemName.trim();
-            item.plannedQuantity = plannedQty;
-            item.completedQuantity = completedQty;
+            item.plannedQuantity = parseFloat(plannedQuantity) || 0;
+            item.completedQuantity = parseFloat(completedQuantity) || 0;
             item.unitOfMeasurement = unitOfMeasurement;
             item.categoryId = selectedCategoryId;
-            item.weightage = itemWeightage;
+            item.weightage = parseFloat(weightage) || 0;
             item.status = status;
-            // Update dates if needed
+
             if (plannedStartDate) {
-              item.plannedStartDate = new Date(plannedStartDate).getTime();
+              item.plannedStartDate = parseInt(plannedStartDate, 10);
             }
             if (plannedEndDate) {
-              item.plannedEndDate = new Date(plannedEndDate).getTime();
+              item.plannedEndDate = parseInt(plannedEndDate, 10);
             }
           });
           showSnackbar('Item updated successfully', 'success');
         } else {
           // Create new item
-          await database.collections.get('items').create((item: any) => {
+          await database.collections.get('items').create(item => {
             item.name = itemName.trim();
-            item.categoryId = selectedCategoryId;
             item.siteId = selectedSiteId;
-            item.plannedQuantity = plannedQty;
-            item.completedQuantity = completedQty;
+            item.categoryId = selectedCategoryId;
+            item.plannedQuantity = parseFloat(plannedQuantity) || 0;
+            item.completedQuantity = parseFloat(completedQuantity) || 0;
             item.unitOfMeasurement = unitOfMeasurement;
-            item.plannedStartDate = plannedStartDate
-              ? new Date(plannedStartDate).getTime()
-              : new Date().getTime();
-            item.plannedEndDate = plannedEndDate
-              ? new Date(plannedEndDate).getTime()
-              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).getTime(); // 30 days from now
+            item.weightage = parseFloat(weightage) || 0;
             item.status = status;
-            item.weightage = itemWeightage;
+
+            if (plannedStartDate) {
+              item.plannedStartDate = parseInt(plannedStartDate, 10);
+            }
+            if (plannedEndDate) {
+              item.plannedEndDate = parseInt(plannedEndDate, 10);
+            }
           });
           showSnackbar('Item created successfully', 'success');
         }
       });
-      closeDialog();
+
+      setDialogVisible(false);
     } catch (error) {
       console.error('Error saving item:', error);
       showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
@@ -191,12 +309,13 @@ const ItemsManagementScreenComponent = ({
   const confirmDelete = async () => {
     if (!itemToDelete) return;
 
-    setShowDeleteDialog(false);
     try {
       await database.write(async () => {
         await itemToDelete.markAsDeleted();
       });
+
       showSnackbar('Item deleted successfully', 'success');
+      setShowDeleteDialog(false);
       setItemToDelete(null);
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -246,12 +365,56 @@ const ItemsManagementScreenComponent = ({
         <SiteSelector />
       </View>
 
+      {/* Search Bar */}
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Search items by name..."
+      />
+
+      {/* Status Filter Chips */}
+      <FilterChips
+        filters={STATUS_FILTERS}
+        selectedFilters={selectedStatus}
+        onFilterToggle={handleStatusToggle}
+      />
+
+      {/* Phase Filter Chips */}
+      <FilterChips
+        filters={PHASE_FILTERS}
+        selectedFilters={selectedPhases}
+        onFilterToggle={handlePhaseToggle}
+      />
+
+      {/* Results Row with Sort and Clear All */}
+      <View style={styles.resultsRow}>
+        <Text variant="bodySmall" style={styles.resultCount}>
+          Showing {filteredItems.length} of {items.filter(item => selectedSiteId === 'all' || item.siteId === selectedSiteId).length} items
+        </Text>
+
+        {hasActiveFilters && (
+          <Button mode="text" onPress={clearAllFilters} compact>
+            Clear All
+          </Button>
+        )}
+
+        <SortMenu
+          sortOptions={SORT_OPTIONS}
+          currentSort={sortBy}
+          onSortChange={(id) => setSortBy(id as any)}
+          sortDirection={sortDirection}
+          onDirectionChange={setSortDirection}
+        />
+      </View>
+
       <ScrollView style={styles.scrollView}>
         {filteredItems.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
               <Text>
-                {selectedSiteId === 'all'
+                {hasActiveFilters
+                  ? 'No items match your filters. Try adjusting the search or filters.'
+                  : selectedSiteId === 'all'
                   ? 'No items found. Select a site and create your first item!'
                   : 'No items for this site. Add your first work item!'}
               </Text>
@@ -307,121 +470,116 @@ const ItemsManagementScreenComponent = ({
         )}
       </ScrollView>
 
-      {/* Add/Edit Item Dialog */}
+      {/* Add/Edit Dialog */}
       <Portal>
-        <Dialog visible={dialogVisible} onDismiss={closeDialog} style={styles.dialog}>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={() => setDialogVisible(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title>{editingItem ? 'Edit Item' : 'Add New Item'}</Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
-              <Dialog.Title>
-                {editingItem ? 'Edit Item' : 'Add New Item'}
-              </Dialog.Title>
-              <Dialog.Content>
-                <TextInput
-                  label="Item Name *"
-                  value={itemName}
-                  onChangeText={setItemName}
-                  mode="outlined"
-                  style={styles.input}
-                />
+              <TextInput
+                label="Item Name *"
+                value={itemName}
+                onChangeText={setItemName}
+                mode="outlined"
+                style={styles.input}
+              />
 
-                <TextInput
-                  label="Planned Quantity *"
-                  value={plannedQuantity}
-                  onChangeText={setPlannedQuantity}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                />
+              <Text style={styles.label}>Category *</Text>
+              <View style={styles.categoryButtons}>
+                {categories.map((category) => (
+                  <Chip
+                    key={category.id}
+                    selected={selectedCategoryId === category.id}
+                    onPress={() => setSelectedCategoryId(category.id)}
+                    style={styles.categoryChip}
+                  >
+                    {category.name}
+                  </Chip>
+                ))}
+              </View>
 
-                <TextInput
-                  label="Completed Quantity"
-                  value={completedQuantity}
-                  onChangeText={setCompletedQuantity}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                />
+              <TextInput
+                label="Planned Quantity"
+                value={plannedQuantity}
+                onChangeText={setPlannedQuantity}
+                mode="outlined"
+                keyboardType="numeric"
+                style={styles.input}
+              />
 
-                <Text style={styles.label}>Unit of Measurement *</Text>
-                <Menu
-                  visible={unitMenuVisible}
-                  onDismiss={() => setUnitMenuVisible(false)}
-                  anchor={
-                    <Button
-                      mode="outlined"
-                      onPress={() => setUnitMenuVisible(true)}
-                      icon="chevron-down"
-                      contentStyle={styles.dropdownButton}
-                    >
-                      {commonUnits.find(u => u.value === unitOfMeasurement)?.label || 'Select Unit'}
-                    </Button>
-                  }
-                >
-                  {commonUnits.map((unit) => (
-                    <Menu.Item
-                      key={unit.value}
-                      onPress={() => {
-                        setUnitOfMeasurement(unit.value);
-                        setUnitMenuVisible(false);
-                      }}
-                      title={unit.label}
-                      leadingIcon={unitOfMeasurement === unit.value ? 'check' : undefined}
-                    />
-                  ))}
-                </Menu>
+              <TextInput
+                label="Completed Quantity"
+                value={completedQuantity}
+                onChangeText={setCompletedQuantity}
+                mode="outlined"
+                keyboardType="numeric"
+                style={styles.input}
+              />
 
-                <Text style={styles.label}>Category *</Text>
-                <View style={styles.categoryButtons}>
-                  {categories.map((category) => (
-                    <Chip
-                      key={category.id}
-                      selected={selectedCategoryId === category.id}
-                      onPress={() => setSelectedCategoryId(category.id)}
-                      style={styles.categoryChip}
-                      mode={selectedCategoryId === category.id ? 'flat' : 'outlined'}
-                    >
-                      {category.name}
-                    </Chip>
-                  ))}
-                </View>
+              <Text style={styles.label}>Unit of Measurement</Text>
+              <Menu
+                visible={unitMenuVisible}
+                onDismiss={() => setUnitMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    onPress={() => setUnitMenuVisible(true)}
+                    style={styles.dropdownButton}
+                  >
+                    {commonUnits.find(u => u.value === unitOfMeasurement)?.label || unitOfMeasurement}
+                  </Button>
+                }
+              >
+                {commonUnits.map((unit) => (
+                  <Menu.Item
+                    key={unit.value}
+                    title={unit.label}
+                    onPress={() => {
+                      setUnitOfMeasurement(unit.value);
+                      setUnitMenuVisible(false);
+                    }}
+                  />
+                ))}
+              </Menu>
 
-                <TextInput
-                  label="Weightage (%)"
-                  value={weightage}
-                  onChangeText={setWeightage}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  placeholder="e.g., 15"
-                />
+              <TextInput
+                label="Weightage (%)"
+                value={weightage}
+                onChangeText={setWeightage}
+                mode="outlined"
+                keyboardType="numeric"
+                style={styles.input}
+              />
 
-                <Text style={styles.label}>Status</Text>
-                <SegmentedButtons
-                  value={status}
-                  onValueChange={setStatus}
-                  buttons={[
-                    { value: 'not_started', label: 'Not Started' },
-                    { value: 'in_progress', label: 'In Progress' },
-                    { value: 'completed', label: 'Completed' },
-                  ]}
-                  style={styles.segmentedButtons}
-                />
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={closeDialog}>Cancel</Button>
-                <Button onPress={handleSave}>
-                  {editingItem ? 'Update' : 'Create'}
-                </Button>
-              </Dialog.Actions>
+              <Text style={styles.label}>Status</Text>
+              <SegmentedButtons
+                value={status}
+                onValueChange={setStatus}
+                buttons={[
+                  { value: 'not_started', label: 'Not Started' },
+                  { value: 'in_progress', label: 'In Progress' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+                style={styles.segmentedButtons}
+              />
             </ScrollView>
           </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+            <Button onPress={saveItem}>Save</Button>
+          </Dialog.Actions>
         </Dialog>
       </Portal>
 
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         visible={showDeleteDialog}
         title="Delete Item"
-        message={`Are you sure you want to delete "${itemToDelete?.name}"? This will also delete all associated progress logs and materials.`}
+        message={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDelete}
@@ -473,6 +631,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     elevation: 1,
+  },
+  resultsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+  },
+  resultCount: {
+    flex: 1,
+    color: '#666',
   },
   scrollView: {
     flex: 1,
