@@ -293,7 +293,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       </Card>
 
       {selectedSite && (
-        <>
+        <View style={styles.contentWrapper}>
           {/* Search Bar */}
           <SearchBar
             value={searchQuery}
@@ -396,7 +396,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             }
             style={styles.itemsList}
-            contentContainerStyle={displayedItems.length === 0 ? styles.emptyList : undefined}
+            contentContainerStyle={displayedItems.length === 0 ? styles.emptyList : styles.itemsListContent}
           />
 
           {/* FAB */}
@@ -406,7 +406,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
             onPress={handleAddItem}
             label="Add Item"
           />
-        </>
+        </View>
       )}
 
       {!selectedSite && (
@@ -442,25 +442,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  contentWrapper: {
+    flex: 1,
+  },
   selectorCard: {
-    margin: 16,
-    marginBottom: 8,
+    margin: 12,
+    marginBottom: 6,
     elevation: 2,
   },
   phaseFilter: {
-    maxHeight: 60,
+    maxHeight: 50,
   },
   phaseFilterContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    paddingVertical: 4,
+    gap: 6,
   },
   phaseChip: {
-    marginRight: 8,
+    marginRight: 6,
   },
   criticalPathFilter: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   criticalPathChip: {
     alignSelf: 'flex-start',
@@ -477,7 +480,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 4,
     backgroundColor: 'white',
   },
   resultCount: {
@@ -486,6 +489,9 @@ const styles = StyleSheet.create({
   },
   itemsList: {
     flex: 1,
+  },
+  itemsListContent: {
+    paddingBottom: 100, // Extra padding for bottom tab bar + FAB
   },
   emptyList: {
     flexGrow: 1,

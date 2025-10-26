@@ -31,7 +31,7 @@ Project Name: Mumbai Metro Line 3 - Underground Railway
 Description: Construction of 33.5 km underground metro line with 27 stations
 Start Date: January 1, 2024
 End Date: December 31, 2026
-Budget: ₹23,136 Crores
+Budget: ₹23,136 Crores, Obs:- Can take only $
 Status: In Progress
 ```
 
@@ -47,7 +47,7 @@ Status: In Progress
 Site Name: Colaba Station - South Terminal
 Location: Mumbai, Colaba, Near Regal Cinema
 Project: Mumbai Metro Line 3 - Underground Railway
-Supervisor: [Your Supervisor ID]
+Supervisor: [Your Supervisor ID]' Obs: I have one supervisor at the moment but ID I am not sure.
 ```
 
 ### Site 2: BKC Station
@@ -71,7 +71,7 @@ Supervisor: [Your Supervisor ID]
 ## 📂 Step 3: Create Categories
 
 **Navigation:** Admin → Category Management → Add Category
-
+Obs: There is no Category Management in Admin
 ### Category 1: Civil Works
 ```
 Category Name: Civil Works
@@ -117,7 +117,7 @@ Unit: cubic_meters
 Start Date: Jan 1, 2024
 End Date: Mar 31, 2024
 Duration: 90 days
-Weightage: 10
+Weightage: 10, Obs:-Not in WBS add item, should be available
 Is Critical Path: Yes
 Dependencies: None
 ```
@@ -614,7 +614,7 @@ Category: MEP
 Phase: Procurement
 Status: In Progress
 Planned Quantity: 1
-Completed Quantity: 0.3
+Completed Quantity: 0.3 // observation: decimal value input error
 Unit: numbers (system)
 Start Date: Jun 1, 2024
 End Date: Feb 28, 2025
@@ -768,24 +768,24 @@ Dependencies: 2.0.0.0, 2.1.0.0, 2.2.0.0
 ## ✅ Data Creation Checklist
 
 ### Pre-Testing Setup
-- [ ] 1 Project created (Mumbai Metro Line 3)
-- [ ] 3 Sites created (Colaba, BKC, SEEPZ)
-- [ ] 3 Categories created (Civil Works, MEP, Architectural Finishes)
-- [ ] 30 Items created across all sites
-  - [ ] Site 1: 10 items (Colaba Station)
-  - [ ] Site 2: 10 items (BKC Station)
-  - [ ] Site 3: 10 items (SEEPZ Station)
-- [ ] Critical path items marked (14 total)
-- [ ] Status variety confirmed (5 completed, 13 in progress, 12 not started)
-- [ ] Phase variety confirmed (all 11 phases represented)
+- [ok ] 1 Project created (Mumbai Metro Line 3)
+- [ok ] 3 Sites created (Colaba, BKC, SEEPZ)
+- [No, at this time ] 3 Categories created (Civil Works, MEP, Architectural Finishes)
+- [ok ] 30 Items created across all sites
+  - [ok ] Site 1: 10 items (Colaba Station)
+  - [ok ] Site 2: 10 items (BKC Station)
+  - [ok ] Site 3: 10 items (SEEPZ Station)
+- [ok ] Critical path items marked (14 total)
+- [ok ] Status variety confirmed (5 completed, 13 in progress, 12 not started)
+- [ok ] Phase variety confirmed (all 11 phases represented)
 
 ### Quick Verification
-- [ ] Can see all 3 sites in Site Management screen
-- [ ] Can see items when selecting each site in Items Management
-- [ ] Can see items in WBS Management for each site
-- [ ] Search "foundation" returns results
-- [ ] Filter by "In Progress" shows 13 items
-- [ ] Sort by WBS Code shows hierarchical order
+- [ok, one site at a time ] Can see all 3 sites in Site Management screen
+- [ok ] Can see items when selecting each site in Items Management
+- [ok ] Can see items in WBS Management for each site
+- [ok ] Search "foundation" returns results
+- [ok ] Filter by "In Progress" shows 13 items
+- [ok ] Sort by WBS Code shows hierarchical order
 
 ---
 

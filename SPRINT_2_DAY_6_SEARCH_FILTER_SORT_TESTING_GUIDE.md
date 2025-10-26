@@ -108,13 +108,13 @@ Sites (SiteManagementScreen):
 | 4 | Clear search (X button) | All items return to list | ☐ | |
 | 5 | Search "xyz123nonexistent" | Empty state shows "No items match your filters" | ☐ | |
 | 6 | Clear search | All items return | ☐ | |
-
+All Passed
 **Edge Cases:**
 - [ ] Search with special characters (e.g., "Item #1")
 - [ ] Search with partial word (e.g., "found" matches "foundation")
 - [ ] Search is case-insensitive (e.g., "FOUNDATION" matches "Foundation")
 - [ ] Rapid typing doesn't cause lag (debouncing works)
-
+All Passed
 ---
 
 ### Test Case 1.2: Status Filter
@@ -129,13 +129,13 @@ Sites (SiteManagementScreen):
 | 4 | Tap "Not Started" chip again (deselect) | Only in_progress items show | ☐ | |
 | 5 | Tap "All Status" chip | All items return, other status chips deselect | ☐ | |
 | 6 | Deselect all status chips | Defaults to "All Status" | ☐ | |
-
+All Passed
 **Edge Cases:**
-- [ ] Multiple status chips selected simultaneously
-- [ ] Status filter persists when navigating away and back
-- [ ] Status filter works with search active
-- [ ] "Clear All" button resets status to "All"
-
+- [ok ] Multiple status chips selected simultaneously
+- [ok ] Status filter persists when navigating away and back
+- [ok ] Status filter works with search active
+- [ok ] "Clear All" button resets status to "All"
+All Passed
 ---
 
 ### Test Case 1.3: Phase Filter
@@ -150,14 +150,14 @@ Sites (SiteManagementScreen):
 | 4 | Tap "Construction" chip (multi-select) | Both design AND construction items show | ☐ | |
 | 5 | Tap "All Phases" chip | All items return, other phase chips deselect | ☐ | |
 | 6 | Select 3-4 phase chips | Only items in those phases show | ☐ | |
-
+All Passed
 **Edge Cases:**
-- [ ] Scrolling through 12 phase chips works smoothly
-- [ ] Phase chip colors are visible and distinct
-- [ ] Phase icons display correctly
-- [ ] Phase filter works with status filter active
-- [ ] "Clear All" button resets phases to "All"
-
+- [ok ] Scrolling through 12 phase chips works smoothly
+- [ok ] Phase chip colors are visible and distinct
+- [ok ] Phase icons display correctly
+- [ok ] Phase filter works with status filter active
+- [ok ] "Clear All" button resets phases to "All"
+All passed 
 ---
 
 ### Test Case 1.4: Sort Functionality
@@ -173,13 +173,14 @@ Sites (SiteManagementScreen):
 | 5 | Toggle to "Descending" | Items sorted by latest date first | ☐ | |
 | 6 | Select "Progress" | Items sorted 0% → 100% | ☐ | |
 | 7 | Toggle to "Descending" | Items sorted 100% → 0% | ☐ | Completed items first |
+Sorting function working is not smooth, sometimes works, sometime not
 
 **Edge Cases:**
 - [ ] Sort persists when applying filters
 - [ ] Sort menu closes after selection
 - [ ] Sort icon changes based on direction (ascending/descending)
 - [ ] Default sort is "Name" ascending
-
+Once sorting is done, 2nd sorting is done only after logout.
 ---
 
 ### Test Case 1.5: Combined Filters
@@ -194,12 +195,12 @@ Sites (SiteManagementScreen):
 | 4 | Sort by "Progress" descending | Results sorted highest progress first | ☐ | All filters + Sort |
 | 5 | Check result count | Count accurate (e.g., "Showing 2 of 20 items") | ☐ | |
 | 6 | Tap "Clear All" button | All filters reset, all items return, sort resets | ☐ | |
-
+ok but issue with sorting
 **Edge Cases:**
-- [ ] "Clear All" button appears when any filter is active
-- [ ] "Clear All" resets search, status, phase, and sort
-- [ ] Empty state shows correct message when filters have no results
-- [ ] Complex filter combinations work without errors
+- [Sometimes works ] "Clear All" button appears when any filter is active
+- [Sometime works ] "Clear All" resets search, status, phase, and sort
+- [ok ] Empty state shows correct message when filters have no results
+- [ok ] Complex filter combinations work without errors
 
 ---
 
@@ -220,6 +221,7 @@ Sites (SiteManagementScreen):
 - ScrollView used (not FlatList) - performance may degrade with 500+ items
 - FlatList migration planned for Sprint 4
 - Current performance acceptable for <200 items
+All ok
 
 ---
 
@@ -237,11 +239,11 @@ Sites (SiteManagementScreen):
 | 6 | Check empty state | Shows appropriate message based on context | ☐ | |
 
 **UI Checklist:**
-- [ ] All text is readable (good contrast)
-- [ ] Buttons are large enough to tap easily
-- [ ] Spacing is consistent
-- [ ] Icons are clear and meaningful
-- [ ] Colors are consistent with app theme
+- [ok ] All text is readable (good contrast)
+- [ok ] Buttons are large enough to tap easily
+- [ok ] Spacing is consistent
+- [ok ] Icons are clear and meaningful
+- [ok ] Colors are consistent with app theme
 
 ---
 
@@ -259,9 +261,9 @@ Sites (SiteManagementScreen):
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|----------------|-----------|-------|
-| 1 | Navigate to WBS Management screen | Screen loads with WBS items | ☐ | |
-| 2 | Type "foundation" in search | Items with "foundation" in name appear | ☐ | |
-| 3 | Clear search | All items return | ☐ | |
+| 1 | Navigate to WBS Management screen | Screen loads with WBS items | ☐ | |, // Screen loads to select sites
+| 2 | Type "foundation" in search | Items with "foundation" in name appear | ☐ | |// obs:-After selecting one site search works
+| 3 | Clear search | All items return | ☐ | |// obs:- ok
 
 ---
 
@@ -273,14 +275,14 @@ Sites (SiteManagementScreen):
 |------|--------|----------------|-----------|-------|
 | 1 | Search "1.2" | All items under WBS 1.2.x.x show (e.g., 1.2.0.0, 1.2.1.0, 1.2.2.0) | ☐ | Hierarchical search |
 | 2 | Search "1.2.1" | Only items under 1.2.1.x show | ☐ | More specific |
-| 3 | Search "2" | All items under WBS 2.x.x.x show | ☐ | Top-level search |
-| 4 | Clear search | All items return | ☐ | |
+| 3 | Search "2" | All items under WBS 2.x.x.x show | ☐ | Top-level search |// observation:- all carrying no 2 in WBS
+| 4 | Clear search | All items return | ☐ | |//ok
 
 **This is a POWERFUL feature for planners!**
-- [ ] Search "1" finds all items in phase 1
-- [ ] Search "1.2.1.0" finds exact item
-- [ ] Partial WBS codes work (e.g., "1.2" matches "1.2.0.0", "1.2.1.0", etc.)
-- [ ] WBS search is case-insensitive
+- [ok ] Search "1" finds all items in phase 1
+- [ok ] Search "1.2.1.0" finds exact item
+- [ok ] Partial WBS codes work (e.g., "1.2" matches "1.2.0.0", "1.2.1.0", etc.)
+- [ok ] WBS search is case-insensitive
 
 ---
 
@@ -293,7 +295,7 @@ Sites (SiteManagementScreen):
 | 1 | Tap "Design" phase chip | Only design items show | ☐ | Existing feature |
 | 2 | Tap "Construction" phase chip | Only construction items show | ☐ | |
 | 3 | Tap "All Phases" chip | All items return | ☐ | |
-
+All ok
 ---
 
 ### Test Case 2.4: Status Filter
@@ -305,7 +307,7 @@ Sites (SiteManagementScreen):
 | 1 | Tap "In Progress" status chip | Only in_progress items show | ☐ | New feature |
 | 2 | Tap "Completed" chip (multi-select) | Both in_progress AND completed show | ☐ | |
 | 3 | Tap "All Status" | All items return | ☐ | |
-
+All ok
 ---
 
 ### Test Case 2.5: Critical Path Filter ⭐ UNIQUE FEATURE
@@ -314,18 +316,18 @@ Sites (SiteManagementScreen):
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|----------------|-----------|-------|
-| 1 | Tap "Critical Path Only" chip | Only items where isCriticalPath=true show | ☐ | |
-| 2 | Check chip color | Chip turns RED (#F44336) when active | ☐ | Visual importance |
-| 3 | Check icon | Icon changes from "alert" to "check" when active | ☐ | |
-| 4 | Tap again to deselect | All items return, chip returns to default color | ☐ | |
-| 5 | Combine with phase filter | Critical path items in selected phase show | ☐ | Works with other filters |
+| 1 | Tap "Critical Path Only" chip | Only items where isCriticalPath=true show | ☐ | |//ok
+| 2 | Check chip color | Chip turns RED (#F44336) when active | ☐ | Visual importance |//ok
+| 3 | Check icon | Icon changes from "alert" to "check" when active | ☐ | |// could not verify
+| 4 | Tap again to deselect | All items return, chip returns to default color | ☐ | |//ok
+| 5 | Combine with phase filter | Critical path items in selected phase show | ☐ | Works with other filters |//ok
 
 **This is UNIQUE to WBSManagementScreen:**
-- [ ] Red color (#F44336) is visible and stands out
-- [ ] Filter works correctly (only critical path items)
-- [ ] Works in combination with other filters
-- [ ] Icon changes appropriately
-
+- [ok ] Red color (#F44336) is visible and stands out
+- [ok ] Filter works correctly (only critical path items)
+- [ok ] Works in combination with other filters
+- [ok ] Icon changes appropriately
+obs:- Sorting fuction is not smooth, please refer screenshots in folder @prompts\wbs1.png & wbs2.png, wbs items are not clearly visible.
 ---
 
 ### Test Case 2.6: Sort Functionality (4 Options)
@@ -342,10 +344,10 @@ Sites (SiteManagementScreen):
 | 6 | Sort by "Progress" descending | 100% → 0% (completed first) | ☐ | |
 
 **Edge Cases:**
-- [ ] WBS Code sort maintains hierarchical structure
-- [ ] Duration calculated correctly (days between start and end dates)
-- [ ] Default sort is WBS Code ascending
-- [ ] Sort persists with filters
+- [ok but sorting not working after first sorting ] WBS Code sort maintains hierarchical structure
+- [no sorting available ] Duration calculated correctly (days between start and end dates)
+- [ok ] Default sort is WBS Code ascending
+- [cannot be verified ] Sort persists with filters
 
 ---
 
@@ -368,7 +370,7 @@ Sites (SiteManagementScreen):
 - [ ] No errors or crashes
 - [ ] Result count is accurate
 - [ ] "Clear All" resets everything including Critical Path filter
-
+cannot verified due to sorting issue
 ---
 
 ### Test Case 2.8: Performance with FlatList
@@ -384,6 +386,7 @@ Sites (SiteManagementScreen):
 
 **Note:** WBSManagementScreen already uses FlatList (best performance of the 3 screens)
 
+not verified
 ---
 
 ## 📱 Screen 3: SiteManagementScreen Testing
@@ -403,7 +406,7 @@ Sites (SiteManagementScreen):
 | 1 | Navigate to Site Management screen | Screen loads with sites list | ☐ | |
 | 2 | Search "Main" | Sites with "Main" in name show | ☐ | |
 | 3 | Clear search | All sites return | ☐ | |
-
+ passed
 ---
 
 ### Test Case 3.2: Search by Location ⭐ BONUS FEATURE
@@ -418,9 +421,9 @@ Sites (SiteManagementScreen):
 | 4 | Clear search | All sites return | ☐ | |
 
 **This is MORE than planned (bonus):**
-- [ ] Searches both name AND location fields
-- [ ] Location search is case-insensitive
-- [ ] Partial location matches work (e.g., "Mum" matches "Mumbai")
+- [ok, site name not working] Searches both name AND location fields
+- [ok ] Location search is case-insensitive
+- [ok ] Partial location matches work (e.g., "Mum" matches "Mumbai")
 
 ---
 
@@ -448,7 +451,7 @@ Sites (SiteManagementScreen):
 | 2 | Sort by "Name" descending | Sites sorted Z-A | ☐ | |
 | 3 | Sort by "Creation Date" ascending | Oldest sites first | ☐ | |
 | 4 | Sort by "Creation Date" descending | Newest sites first | ☐ | |
-
+Issue in sort button
 ---
 
 ### Test Case 3.5: Combined Filters
@@ -461,7 +464,7 @@ Sites (SiteManagementScreen):
 | 2 | Sort by "Creation Date" descending | Results sorted newest first | ☐ | |
 | 3 | Check result count | Accurate count displayed | ☐ | |
 | 4 | Tap "Clear All" | All resets to defaults | ☐ | |
-
+Issue in sort
 ---
 
 ### Test Case 3.6: Performance
@@ -475,7 +478,8 @@ Sites (SiteManagementScreen):
 | 3 | Apply filters | Instant updates | ☐ | |
 
 **Note:** Site count typically low (<20) so performance should be excellent even with ScrollView.
-
+I see only 2 items in itemscreen, 2 sites and one partial in site screen for supervisor
+Can see 3 sites in in sitescreen, 1 wbs partially in wbs screen, 1 wbs item in baseline screen
 ---
 
 ## 🔍 Cross-Screen Testing
@@ -490,20 +494,22 @@ Sites (SiteManagementScreen):
 **Objective:** Ensure all 3 screens have consistent UX
 
 | Feature | ItemsManagement | WBSManagement | SiteManagement | Pass/Fail |
+There is no itemsmanagement screen in planner however we can add items in WBS tab, itemsscreen is in supervisor
+
 |---------|----------------|---------------|----------------|-----------|
-| SearchBar at top | ✓ | ✓ | ✓ | ☐ |
-| Filter chips below search | ✓ | ✓ | ✓ | ☐ |
-| Result count row | ✓ | ✓ | ✓ | ☐ |
-| "Clear All" button | ✓ | ✓ | ✓ | ☐ |
-| Sort menu icon | ✓ | ✓ | ✓ | ☐ |
-| Empty state messages | ✓ | ✓ | ✓ | ☐ |
+| SearchBar at top | ✓ | ✓ | ✓ | ☐ | ok
+| Filter chips below search | ✓ | ✓ | ✓ | ☐ |ok
+| Result count row | ✓ | ✓ | ✓ | ☐ |ok
+| "Clear All" button | ✓ | ✓ | ✓ | ☐ |ok
+| Sort menu icon | ✓ | ✓ | ✓ | ☐ |ok
+| Empty state messages | ✓ | ✓ | ✓ | ☐ |ok
 
 **Visual Consistency:**
-- [ ] SearchBar styling identical across all screens
-- [ ] FilterChips styling identical
-- [ ] SortMenu styling identical
-- [ ] Result count format identical
-- [ ] "Clear All" button behavior identical
+- [ok ] SearchBar styling identical across all screens
+- [ok ] FilterChips styling identical
+- [ok ] SortMenu styling identical
+- [ok ] Result count format identical
+- [ok ] "Clear All" button behavior identical
 
 ---
 
@@ -513,15 +519,15 @@ Sites (SiteManagementScreen):
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|----------------|-----------|-------|
-| 1 | In ItemsManagement, search "foundation" | Results filter | ☐ | |
-| 2 | Navigate to a different screen | - | ☐ | |
+| 1 | In ItemsManagement, search "foundation" | Results filter | ☐ | |ok
+| 2 | Navigate to a different screen | - | ☐ | |ok
 | 3 | Navigate back to ItemsManagement | Search "foundation" still active | ☐ | State persists |
-| 4 | Clear filters | Filters reset | ☐ | |
+| 4 | Clear filters | Filters reset | ☐ | |ok
 
 **Test for all 3 screens:**
-- [ ] ItemsManagementScreen filter state persists
-- [ ] WBSManagementScreen filter state persists
-- [ ] SiteManagementScreen filter state persists
+- [ok ] ItemsManagementScreen filter state persists
+- [ok ] WBSManagementScreen filter state persists
+- [ok ] SiteManagementScreen filter state persists
 
 ---
 
@@ -535,7 +541,7 @@ Sites (SiteManagementScreen):
 | 2 | Apply filters on all screens | No memory warnings | ☐ | |
 | 3 | Leave app idle with filters active for 5 minutes | No crashes on resume | ☐ | |
 | 4 | Rotate device (if applicable) | Filters and state preserved | ☐ | Android |
-
+ok, 4 not checked
 ---
 
 ## 🐛 Bug Tracking
@@ -581,38 +587,38 @@ Notes:
 ## ✅ Testing Checklist Summary
 
 ### ItemsManagementScreen
-- [ ] Search by name works
-- [ ] Status filter (4 options) works
-- [ ] Phase filter (12 options) works
-- [ ] Sort (3 options) works
-- [ ] Combined filters work
-- [ ] Performance acceptable (<200 items)
-- [ ] UI/UX polished
+- [ok ] Search by name works
+- [ok ] Status filter (4 options) works
+- [ok ] Phase filter (12 options) works
+- [not smooth ] Sort (3 options) works
+- [ok ] Combined filters work
+- [not verified ] Performance acceptable (<200 items)
+- [ok ] UI/UX polished
 
 ### WBSManagementScreen
-- [ ] Search by name works
-- [ ] Search by WBS code works (unique feature)
-- [ ] Phase filter (12 options) works
-- [ ] Status filter (4 options) works
-- [ ] Critical Path filter works (unique red chip)
-- [ ] Sort (4 options) works
-- [ ] Combined filters (5 total) work
-- [ ] Performance excellent (FlatList)
-- [ ] UI/UX polished
+- [ok ] Search by name works
+- [ok ] Search by WBS code works (unique feature)
+- [ok ] Phase filter (12 options) works
+- [ok ] Status filter (4 options) works
+- [ok ] Critical Path filter works (unique red chip)
+- [ok ] Sort (4 options) works
+- [ok ] Combined filters (5 total) work
+- [not verified ] Performance excellent (FlatList)
+- [ok but visibilty is clipped ] UI/UX polished
 
 ### SiteManagementScreen
-- [ ] Search by name works
-- [ ] Search by location works (bonus feature)
-- [ ] Activity filter prepared (not fully functional - by design)
-- [ ] Sort (2 options) works
-- [ ] Combined filters work
-- [ ] Performance good
-- [ ] UI/UX polished
+- [ok ] Search by name works
+- [ok ] Search by location works (bonus feature)
+- [ok ] Activity filter prepared (not fully functional - by design)
+- [ok ] Sort (2 options) works
+- [ok ] Combined filters work
+- [ok ] Performance good
+- [ok ] UI/UX polished
 
 ### Cross-Screen
-- [ ] UX consistent across all 3 screens
-- [ ] Filter state persists during navigation
-- [ ] No memory leaks or crashes
+- [ok ] UX consistent across all 3 screens
+- [ok ] Filter state persists during navigation
+- [ok ] No memory leaks or crashes
 
 ---
 
@@ -680,8 +686,8 @@ Notes:
 **Add notes here during testing:**
 
 ```
-Date: __________
-Tester: __________
+Date: _24,25 & 26th October 25_________
+Tester: _Utpal_________
 
 General Observations:
 
