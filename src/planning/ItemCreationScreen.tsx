@@ -44,6 +44,7 @@ interface FormData {
   unit: string;
   quantity: string;
   completedQuantity: string;
+  weightage: string;
   isMilestone: boolean;
   isCriticalPath: boolean;
   floatDays: string;
@@ -70,6 +71,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
     unit: 'Set',
     quantity: '1',
     completedQuantity: '0',
+    weightage: '0',
     isMilestone: false,
     isCriticalPath: false,
     floatDays: '0',
@@ -230,7 +232,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           item.plannedStartDate = plannedStartDate;
           item.plannedEndDate = plannedEndDate;
           item.status = itemStatus; // Auto-calculated from progress
-          item.weightage = 0; // Can be calculated later based on hierarchy
+          item.weightage = parseFloat(formData.weightage) || 0;
 
           // Planning fields
           item.baselineStartDate = plannedStartDate;
@@ -435,6 +437,16 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
                 onChangeText={(text) => updateField('unit', text)}
                 mode="outlined"
                 placeholder="e.g., Set, Meter, Cubic Meter"
+                style={styles.marginTop}
+              />
+
+              <TextInput
+                label="Weightage (%)"
+                value={formData.weightage}
+                onChangeText={(text) => updateNumericField('weightage', text)}
+                mode="outlined"
+                keyboardType="number-pad"
+                placeholder="e.g., 10, 15, 20"
                 style={styles.marginTop}
               />
 

@@ -214,7 +214,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    marginVertical: 6,
+    marginVertical: 4,
     marginRight: 16,
     elevation: 2,
   },

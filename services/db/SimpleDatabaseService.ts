@@ -183,6 +183,28 @@ export class SimpleDatabaseService {
         });
       });
 
+      // ✅ Create categories for Mumbai Metro test data
+      const civilWorksCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Civil Works';
+          category.description = 'Foundation, excavation, concrete works';
+        });
+      });
+
+      const mepCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'MEP (Mechanical, Electrical, Plumbing)';
+          category.description = 'HVAC, electrical systems, plumbing';
+        });
+      });
+
+      const architecturalFinishesCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Architectural Finishes';
+          category.description = 'Flooring, wall finishes, ceiling, painting';
+        });
+      });
+
       // ✅ Create sample items (construction work items)
       const foundationItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
