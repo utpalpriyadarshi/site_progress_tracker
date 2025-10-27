@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 13, // Incremented for password hashing (v2.2 - Activity 1, Day 1)
+  version: 14, // Incremented to remove plaintext password field (v2.2 - Activity 1, Day 4)
   tables: [
     tableSchema({
       name: 'projects',
@@ -142,8 +142,7 @@ export default appSchema({
       name: 'users',
       columns: [
         { name: 'username', type: 'string', isIndexed: true }, // unique username for login
-        { name: 'password', type: 'string' }, // plaintext password (to be migrated)
-        { name: 'password_hash', type: 'string', isOptional: true }, // bcrypt hashed password (v2.2)
+        { name: 'password_hash', type: 'string' }, // bcrypt hashed password (v2.2 - required after migration)
         { name: 'full_name', type: 'string' }, // display name
         { name: 'email', type: 'string', isOptional: true }, // optional email
         { name: 'phone', type: 'string', isOptional: true }, // optional phone

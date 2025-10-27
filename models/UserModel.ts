@@ -11,7 +11,6 @@ export default class UserModel extends Model {
   };
 
   @field('username') username!: string;
-  @field('password') password!: string; // Plaintext password (to be migrated - v2.2)
   @field('password_hash') passwordHash!: string; // Bcrypt hashed password (v2.2)
   @field('full_name') fullName!: string;
   @field('email') email!: string;

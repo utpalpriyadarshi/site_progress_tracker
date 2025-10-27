@@ -67,23 +67,16 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       const user = users[0];
 
       // Check password using bcrypt (v2.2)
-      // First check if user has migrated to hashed password
-      const passwordToCheck = user.passwordHash || user.password;
+      // All users now have hashed passwords after migration
       const isPasswordValid = await new Promise<boolean>((resolve) => {
-        if (user.passwordHash) {
-          // User has hashed password - use bcrypt.compare
-          bcrypt.compare(password, user.passwordHash, (err: Error | undefined, result: boolean) => {
-            if (err) {
-              console.error('Bcrypt compare error:', err);
-              resolve(false);
-            } else {
-              resolve(result);
-            }
-          });
-        } else {
-          // Fallback to plaintext comparison (for users not yet migrated)
-          resolve(user.password === password);
-        }
+        bcrypt.compare(password, user.passwordHash, (err: Error | undefined, result: boolean) => {
+          if (err) {
+            console.error('Bcrypt compare error:', err);
+            resolve(false);
+          } else {
+            resolve(result);
+          }
+        });
       });
 
       if (!isPasswordValid) {

@@ -1,4 +1,4 @@
-import { schemaMigrations, createTable, addColumns } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, createTable, addColumns, dropColumns } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
@@ -196,6 +196,16 @@ export default schemaMigrations({
           columns: [
             { name: 'password_hash', type: 'string', isOptional: true },
           ],
+        }),
+      ],
+    },
+    {
+      toVersion: 14,
+      steps: [
+        // v2.2 - Activity 1, Day 4: Remove plaintext password field (migration complete)
+        dropColumns({
+          table: 'users',
+          columns: ['password'],
         }),
       ],
     },

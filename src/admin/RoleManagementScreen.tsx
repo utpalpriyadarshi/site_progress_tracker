@@ -208,7 +208,6 @@ const RoleManagementScreen = () => {
           // Create new user
           await database.collections.get('users').create((user: any) => {
             user.username = formData.username;
-            user.password = formData.password; // Keep for migration compatibility
             user._raw.password_hash = passwordHash; // Store hashed password (v2.2)
             user.fullName = formData.fullName;
             user.email = formData.email;
