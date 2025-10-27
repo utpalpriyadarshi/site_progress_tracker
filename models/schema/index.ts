@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 12, // Incremented for WBS management, critical path, and modular templates (v1.4)
+  version: 13, // Incremented for password hashing (v2.2 - Activity 1, Day 1)
   tables: [
     tableSchema({
       name: 'projects',
@@ -142,7 +142,8 @@ export default appSchema({
       name: 'users',
       columns: [
         { name: 'username', type: 'string', isIndexed: true }, // unique username for login
-        { name: 'password', type: 'string' }, // hashed password (for mock auth)
+        { name: 'password', type: 'string' }, // plaintext password (to be migrated)
+        { name: 'password_hash', type: 'string', isOptional: true }, // bcrypt hashed password (v2.2)
         { name: 'full_name', type: 'string' }, // display name
         { name: 'email', type: 'string', isOptional: true }, // optional email
         { name: 'phone', type: 'string', isOptional: true }, // optional phone

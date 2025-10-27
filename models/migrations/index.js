@@ -187,5 +187,17 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 13,
+      steps: [
+        // v2.2 - Activity 1, Day 1: Add password_hash field for bcrypt hashed passwords
+        addColumns({
+          table: 'users',
+          columns: [
+            { name: 'password_hash', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
