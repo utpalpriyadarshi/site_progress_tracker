@@ -21,6 +21,8 @@ import RoleModel from '../../models/RoleModel';
 import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import bcrypt from 'react-native-bcrypt';
+import PasswordValidator from '../../services/auth/PasswordValidator';
 
 interface UserFormData {
   username: string;
@@ -160,13 +162,41 @@ const RoleManagementScreen = () => {
     }
 
     try {
+      // Validate password if provided (v2.2)
+      if (formData.password.trim()) {
+        const validation = PasswordValidator.validate(formData.password);
+        if (!validation.isValid) {
+          showSnackbar(validation.errors[0], 'warning');
+          return;
+        }
+      } else if (!editingUser) {
+        // Password required for new users
+        showSnackbar('Password is required for new users', 'warning');
+        return;
+      }
+
+      // Hash password if provided (v2.2)
+      let passwordHash: string | null = null;
+      if (formData.password.trim()) {
+        passwordHash = await new Promise<string>((resolve, reject) => {
+          bcrypt.hash(formData.password, 12, (err: Error | undefined, hash: string) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(hash);
+            }
+          });
+        });
+      }
+
       await database.write(async () => {
         if (editingUser) {
           // Update existing user
           await editingUser.update((user: any) => {
             user.username = formData.username;
-            if (formData.password.trim()) {
-              user.password = formData.password; // In production, hash this
+            if (passwordHash) {
+              // Store hashed password (v2.2)
+              user._raw.password_hash = passwordHash;
             }
             user.fullName = formData.fullName;
             user.email = formData.email;
@@ -178,7 +208,8 @@ const RoleManagementScreen = () => {
           // Create new user
           await database.collections.get('users').create((user: any) => {
             user.username = formData.username;
-            user.password = formData.password; // In production, hash this
+            user.password = formData.password; // Keep for migration compatibility
+            user._raw.password_hash = passwordHash; // Store hashed password (v2.2)
             user.fullName = formData.fullName;
             user.email = formData.email;
             user.phone = formData.phone;

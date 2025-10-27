@@ -7,6 +7,7 @@ import UserModel from '../../models/UserModel';
 import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import bcrypt from 'react-native-bcrypt';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -65,8 +66,27 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
       const user = users[0];
 
-      // Check password (in production, compare hashed password)
-      if (user.password !== password) {
+      // Check password using bcrypt (v2.2)
+      // First check if user has migrated to hashed password
+      const passwordToCheck = user.passwordHash || user.password;
+      const isPasswordValid = await new Promise<boolean>((resolve) => {
+        if (user.passwordHash) {
+          // User has hashed password - use bcrypt.compare
+          bcrypt.compare(password, user.passwordHash, (err: Error | undefined, result: boolean) => {
+            if (err) {
+              console.error('Bcrypt compare error:', err);
+              resolve(false);
+            } else {
+              resolve(result);
+            }
+          });
+        } else {
+          // Fallback to plaintext comparison (for users not yet migrated)
+          resolve(user.password === password);
+        }
+      });
+
+      if (!isPasswordValid) {
         showSnackbar('Invalid username or password', 'error');
         setIsLoading(false);
         return;
