@@ -61,9 +61,6 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
     setIsLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));
-
       // Save selected role to context
       await selectRole(selectedRole);
 

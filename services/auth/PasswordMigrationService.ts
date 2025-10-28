@@ -14,7 +14,7 @@ import UserModel from '../../models/UserModel';
  * - Rollback capability if needed
  */
 
-const SALT_ROUNDS = 12; // bcrypt salt rounds (recommended: 12)
+const SALT_ROUNDS = 8; // bcrypt salt rounds (mobile optimized: 8-10, provides good security with better performance)
 
 export interface MigrationResult {
   success: boolean;
@@ -317,6 +317,97 @@ class PasswordMigrationService {
         pendingUsers: 0,
         percentComplete: 0,
       };
+    }
+  }
+
+  /**
+   * Re-hash all passwords with current SALT_ROUNDS setting
+   *
+   * This is useful when you need to update password hashes with different salt rounds
+   * for performance optimization (e.g., reducing from 12 to 8 rounds for mobile)
+   *
+   * NOTE: This requires knowing the plaintext passwords. If you don't have them,
+   * users will need to reset their passwords.
+   *
+   * @param plaintextPasswords - Map of userId to plaintext password
+   * @returns MigrationResult with success status and statistics
+   */
+  async rehashAllPasswords(plaintextPasswords: Map<string, string>): Promise<MigrationResult> {
+    const startTime = Date.now();
+    const result: MigrationResult = {
+      success: true,
+      migratedCount: 0,
+      failedCount: 0,
+      errors: [],
+      duration: 0,
+    };
+
+    try {
+      console.log('PasswordMigrationService: Starting password re-hashing...');
+      console.log(`PasswordMigrationService: Using SALT_ROUNDS = ${SALT_ROUNDS}`);
+
+      // Fetch all users
+      const users = await database.collections
+        .get<UserModel>('users')
+        .query()
+        .fetch();
+
+      console.log(`PasswordMigrationService: Found ${users.length} users to re-hash`);
+
+      // Re-hash each user's password
+      for (const user of users) {
+        try {
+          const plaintextPassword = plaintextPasswords.get(user.id);
+
+          if (!plaintextPassword) {
+            const error = `No plaintext password provided for user ${user.username}`;
+            console.error(`PasswordMigrationService: ${error}`);
+            result.errors.push(error);
+            result.failedCount++;
+            continue;
+          }
+
+          console.log(`PasswordMigrationService: Re-hashing password for user ${user.username}...`);
+
+          // Generate new bcrypt hash with current SALT_ROUNDS
+          const hash = await new Promise<string>((resolve, reject) => {
+            bcrypt.hash(plaintextPassword, SALT_ROUNDS, (err: Error | undefined, hash: string) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(hash);
+              }
+            });
+          });
+
+          // Update password hash
+          await user.update(() => {
+            (user as any)._raw.password_hash = hash;
+          });
+
+          console.log(`PasswordMigrationService: Successfully re-hashed user ${user.username}`);
+          result.migratedCount++;
+        } catch (error) {
+          const errorMessage = `Failed to re-hash user ${user.username}: ${error}`;
+          console.error(`PasswordMigrationService: ${errorMessage}`);
+          result.errors.push(errorMessage);
+          result.failedCount++;
+          result.success = false;
+        }
+      }
+
+      result.duration = Date.now() - startTime;
+
+      console.log(`PasswordMigrationService: Re-hashing complete in ${result.duration}ms`);
+      console.log(`PasswordMigrationService: Re-hashed: ${result.migratedCount}, Failed: ${result.failedCount}`);
+
+      return result;
+    } catch (error) {
+      result.success = false;
+      result.errors.push(`Re-hashing failed: ${error}`);
+      result.duration = Date.now() - startTime;
+      console.error('PasswordMigrationService: Re-hashing failed:', error);
+      return result;
     }
   }
 }

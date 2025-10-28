@@ -100,9 +100,6 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         return;
       }
 
-      // Simulate API call delay
-      await new Promise<void>(resolve => setTimeout(resolve, 500));
-
       // Save user data to context (still using old auth system for compatibility)
       await login(user.id, user.username, [role.name.toLowerCase() as UserRole]);
 

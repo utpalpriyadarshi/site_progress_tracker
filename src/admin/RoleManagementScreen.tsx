@@ -179,7 +179,7 @@ const RoleManagementScreen = () => {
       let passwordHash: string | null = null;
       if (formData.password.trim()) {
         passwordHash = await new Promise<string>((resolve, reject) => {
-          bcrypt.hash(formData.password, 12, (err: Error | undefined, hash: string) => {
+          bcrypt.hash(formData.password, 8, (err: Error | undefined, hash: string) => {
             if (err) {
               reject(err);
             } else {

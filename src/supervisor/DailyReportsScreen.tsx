@@ -101,7 +101,8 @@ const DailyReportsScreenComponent = ({
   const onRefresh = async () => {
     setRefreshing(true);
     // In a real app, this would trigger a sync with the server
-    setTimeout(() => setRefreshing(false), 1000);
+    // Removed artificial delay for better UX
+    setRefreshing(false);
   };
 
   const getProgressPercentage = (item: ItemModel): number => {
