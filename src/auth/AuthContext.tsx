@@ -1,22 +1,37 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthService from '../../services/auth/AuthService';
+import TokenStorage from '../../services/storage/TokenStorage';
 
-export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics';
+export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'admin';
 
 interface User {
   userId: string;
   username: string;
+  fullName?: string;
+  email?: string;
   availableRoles: UserRole[];
+}
+
+interface Tokens {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiry: number;
+  refreshTokenExpiry: number;
 }
 
 interface AuthContextType {
   user: User | null;
   currentRole: UserRole | null;
+  tokens: Tokens | null;
   isLoading: boolean;
-  login: (userId: string, username: string, availableRoles: UserRole[]) => Promise<void>;
+  isAuthenticated: boolean;
+  login: (userId: string, username: string, availableRoles: UserRole[], tokens?: Tokens) => Promise<void>;
   logout: () => Promise<void>;
   selectRole: (role: UserRole) => Promise<void>;
   getLastSelectedRole: () => Promise<UserRole | null>;
+  refreshAccessToken: () => Promise<boolean>;
+  getAccessToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,34 +45,63 @@ const STORAGE_KEYS = {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const [tokens, setTokens] = useState<Tokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load persisted auth state on mount
+  // Load persisted auth state on mount (restore session with JWT)
   useEffect(() => {
     loadAuthState();
   }, []);
 
   const loadAuthState = async () => {
     try {
-      const [userJson, roleJson] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.USER),
-        AsyncStorage.getItem(STORAGE_KEYS.CURRENT_ROLE),
-      ]);
+      console.log('AuthContext: Restoring session...');
 
-      if (userJson) {
-        setUser(JSON.parse(userJson));
-      }
-      if (roleJson) {
-        setCurrentRole(JSON.parse(roleJson) as UserRole);
+      // Try to restore JWT session first
+      const session = await AuthService.restoreSession();
+
+      if (session) {
+        console.log('AuthContext: JWT session restored');
+        setUser({
+          userId: session.user.userId,
+          username: session.user.username,
+          availableRoles: [session.user.role as UserRole],
+        });
+        setCurrentRole(session.user.role as UserRole);
+
+        // Load tokens
+        const storedTokens = await TokenStorage.getTokens();
+        if (storedTokens) {
+          setTokens(storedTokens);
+        }
+      } else {
+        // Fallback: Try old storage format for backward compatibility
+        console.log('AuthContext: No JWT session, trying legacy storage...');
+        const [userJson, roleJson] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.USER),
+          AsyncStorage.getItem(STORAGE_KEYS.CURRENT_ROLE),
+        ]);
+
+        if (userJson) {
+          setUser(JSON.parse(userJson));
+        }
+        if (roleJson) {
+          setCurrentRole(JSON.parse(roleJson) as UserRole);
+        }
       }
     } catch (error) {
-      console.error('Failed to load auth state:', error);
+      console.error('AuthContext: Failed to load auth state:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (userId: string, username: string, availableRoles: UserRole[]) => {
+  const login = async (
+    userId: string,
+    username: string,
+    availableRoles: UserRole[],
+    jwtTokens?: Tokens
+  ) => {
     try {
       const userData: User = {
         userId,
@@ -65,24 +109,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         availableRoles,
       };
 
+      // Store user data (legacy format for compatibility)
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       setUser(userData);
+
+      // Store JWT tokens if provided
+      if (jwtTokens) {
+        console.log('AuthContext: Storing JWT tokens');
+        setTokens(jwtTokens);
+        // Tokens are already stored by AuthService, but we update state
+      }
     } catch (error) {
-      console.error('Failed to save user data:', error);
+      console.error('AuthContext: Failed to save user data:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
+      console.log('AuthContext: Logging out...');
+
+      // Use AuthService to clear JWT tokens
+      await AuthService.logout();
+
+      // Clear legacy storage
       await Promise.all([
         AsyncStorage.removeItem(STORAGE_KEYS.USER),
         AsyncStorage.removeItem(STORAGE_KEYS.CURRENT_ROLE),
+        AsyncStorage.removeItem(STORAGE_KEYS.LAST_ROLE),
       ]);
+
+      // Clear state
       setUser(null);
       setCurrentRole(null);
+      setTokens(null);
+
+      console.log('AuthContext: Logout complete');
     } catch (error) {
-      console.error('Failed to logout:', error);
+      console.error('AuthContext: Failed to logout:', error);
       throw error;
     }
   };
@@ -110,16 +174,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshAccessToken = async (): Promise<boolean> => {
+    try {
+      console.log('AuthContext: Refreshing access token...');
+
+      if (!tokens?.refreshToken) {
+        console.log('AuthContext: No refresh token available');
+        return false;
+      }
+
+      const result = await AuthService.refreshAccessToken(tokens.refreshToken);
+
+      if (result.success && result.accessToken && result.accessTokenExpiry) {
+        // Update tokens in state
+        setTokens({
+          ...tokens,
+          accessToken: result.accessToken,
+          accessTokenExpiry: result.accessTokenExpiry,
+        });
+        console.log('AuthContext: Access token refreshed');
+        return true;
+      }
+
+      console.log('AuthContext: Failed to refresh token');
+      return false;
+    } catch (error) {
+      console.error('AuthContext: Error refreshing token:', error);
+      return false;
+    }
+  };
+
+  const getAccessToken = async (): Promise<string | null> => {
+    try {
+      // Use AuthService which handles automatic refresh
+      return await AuthService.getAccessToken();
+    } catch (error) {
+      console.error('AuthContext: Error getting access token:', error);
+      return null;
+    }
+  };
+
+  const isAuthenticated = !!user && !!tokens;
+
   return (
     <AuthContext.Provider
       value={{
         user,
         currentRole,
+        tokens,
         isLoading,
+        isAuthenticated,
         login,
         logout,
         selectRole,
         getLastSelectedRole,
+        refreshAccessToken,
+        getAccessToken,
       }}
     >
       {children}

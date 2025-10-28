@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth, UserRole } from './AuthContext';
-import { database } from '../../models/database';
-import UserModel from '../../models/UserModel';
-import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
-import bcrypt from 'react-native-bcrypt';
+import AuthService from '../../services/auth/AuthService';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -52,74 +49,57 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     setIsLoading(true);
 
     try {
-      // Query user from database
-      const users = await database.collections
-        .get<UserModel>('users')
-        .query(Q.where('username', username))
-        .fetch();
+      console.log('LoginScreen: Attempting login with AuthService...');
 
-      if (users.length === 0) {
-        showSnackbar('Invalid username or password', 'error');
+      // Use AuthService for JWT-based authentication
+      const result = await AuthService.login(username, password);
+
+      if (!result.success) {
+        showSnackbar(result.error || 'Login failed', 'error');
         setIsLoading(false);
         return;
       }
 
-      const user = users[0];
-
-      // Check password using bcrypt (v2.2)
-      // All users now have hashed passwords after migration
-      const isPasswordValid = await new Promise<boolean>((resolve) => {
-        bcrypt.compare(password, user.passwordHash, (err: Error | undefined, result: boolean) => {
-          if (err) {
-            console.error('Bcrypt compare error:', err);
-            resolve(false);
-          } else {
-            resolve(result);
-          }
-        });
-      });
-
-      if (!isPasswordValid) {
-        showSnackbar('Invalid username or password', 'error');
+      if (!result.user || !result.tokens) {
+        showSnackbar('Invalid login response', 'error');
         setIsLoading(false);
         return;
       }
 
-      // Check if user is active
-      if (!user.isActive) {
-        showSnackbar('Your account has been deactivated. Please contact an administrator.', 'error');
-        setIsLoading(false);
-        return;
-      }
+      console.log('LoginScreen: Login successful, updating context...');
 
-      // Get user's role
-      const role = await user.role.fetch();
-      if (!role) {
-        showSnackbar('Unable to determine user role', 'error');
-        setIsLoading(false);
-        return;
-      }
-
-      // Save user data to context (still using old auth system for compatibility)
-      await login(user.id, user.username, [role.name.toLowerCase() as UserRole]);
+      // Save user data and JWT tokens to context
+      await login(
+        result.user.id,
+        result.user.username,
+        [result.user.role as UserRole],
+        {
+          accessToken: result.tokens.accessToken,
+          refreshToken: result.tokens.refreshToken,
+          accessTokenExpiry: result.tokens.accessTokenExpiry,
+          refreshTokenExpiry: result.tokens.refreshTokenExpiry,
+        }
+      );
 
       // Navigate based on role
-      if (role.name === 'Admin') {
-        navigateToScreen('Admin');
-      } else if (role.name === 'Supervisor') {
-        navigateToScreen('Supervisor');
-      } else if (role.name === 'Manager') {
-        navigateToScreen('Manager');
-      } else if (role.name === 'Planner') {
-        navigateToScreen('Planning');
-      } else if (role.name === 'Logistics') {
-        navigateToScreen('Logistics');
+      const roleMap: Record<string, keyof RootStackParamList> = {
+        admin: 'Admin',
+        supervisor: 'Supervisor',
+        manager: 'Manager',
+        planner: 'Planning',
+        logistics: 'Logistics',
+      };
+
+      const screenName = roleMap[result.user.role];
+      if (screenName) {
+        console.log('LoginScreen: Navigating to', screenName);
+        navigateToScreen(screenName);
       } else {
         showSnackbar('Unknown role type', 'error');
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('LoginScreen: Login error:', error);
       showSnackbar('An error occurred during login', 'error');
       setIsLoading(false);
     }
