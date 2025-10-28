@@ -1,4 +1,4 @@
-import * as jwt from 'react-native-pure-jwt';
+import * as KJUR from 'jsrsasign';
 import { JWT_CONFIG, AccessTokenPayload, RefreshTokenPayload } from '../../config/jwt.config';
 
 /**
@@ -38,12 +38,12 @@ class TokenService {
    * @param sessionId - Optional session ID (will be added in Week 3)
    * @returns JWT access token string
    */
-  async generateAccessToken(
+  generateAccessToken(
     userId: string,
     username: string,
     role: string,
     sessionId?: string
-  ): Promise<string> {
+  ): string {
     const now = Math.floor(Date.now() / 1000);
     const exp = now + (15 * 60); // 15 minutes
 
@@ -59,9 +59,11 @@ class TokenService {
     };
 
     try {
-      const token = await jwt.sign(payload, JWT_CONFIG.ACCESS_TOKEN_SECRET, {
-        alg: 'HS256',
-      });
+      // Create JWT header
+      const header = { alg: 'HS256', typ: 'JWT' };
+
+      // Sign the token
+      const token = KJUR.jws.JWS.sign('HS256', JSON.stringify(header), JSON.stringify(payload), JWT_CONFIG.ACCESS_TOKEN_SECRET);
       return token;
     } catch (error) {
       console.error('TokenService: Error generating access token:', error);
@@ -76,7 +78,7 @@ class TokenService {
    * @param sessionId - Optional session ID (will be added in Week 3)
    * @returns JWT refresh token string
    */
-  async generateRefreshToken(userId: string, sessionId?: string): Promise<string> {
+  generateRefreshToken(userId: string, sessionId?: string): string {
     const now = Math.floor(Date.now() / 1000);
     const exp = now + (7 * 24 * 60 * 60); // 7 days
 
@@ -90,9 +92,11 @@ class TokenService {
     };
 
     try {
-      const token = await jwt.sign(payload, JWT_CONFIG.REFRESH_TOKEN_SECRET, {
-        alg: 'HS256',
-      });
+      // Create JWT header
+      const header = { alg: 'HS256', typ: 'JWT' };
+
+      // Sign the token
+      const token = KJUR.jws.JWS.sign('HS256', JSON.stringify(header), JSON.stringify(payload), JWT_CONFIG.REFRESH_TOKEN_SECRET);
       return token;
     } catch (error) {
       console.error('TokenService: Error generating refresh token:', error);
@@ -109,14 +113,14 @@ class TokenService {
    * @param sessionId - Optional session ID
    * @returns Object containing both tokens and their expiry times
    */
-  async generateTokenPair(
+  generateTokenPair(
     userId: string,
     username: string,
     role: string,
     sessionId?: string
-  ): Promise<TokenGenerationResult> {
-    const accessToken = await this.generateAccessToken(userId, username, role, sessionId);
-    const refreshToken = await this.generateRefreshToken(userId, sessionId);
+  ): TokenGenerationResult {
+    const accessToken = this.generateAccessToken(userId, username, role, sessionId);
+    const refreshToken = this.generateRefreshToken(userId, sessionId);
 
     // Calculate expiry timestamps
     const now = Date.now();
@@ -137,10 +141,24 @@ class TokenService {
    * @param token - JWT access token string
    * @returns Verification result with payload or error
    */
-  async verifyAccessToken(token: string): Promise<TokenVerificationResult> {
+  verifyAccessToken(token: string): TokenVerificationResult {
     try {
-      const decoded = await jwt.decode(token, JWT_CONFIG.ACCESS_TOKEN_SECRET);
-      const payload = decoded.payload as AccessTokenPayload;
+      // Verify the token signature
+      const isValid = KJUR.jws.JWS.verifyJWT(token, JWT_CONFIG.ACCESS_TOKEN_SECRET, {
+        alg: ['HS256'],
+      });
+
+      if (!isValid) {
+        return {
+          valid: false,
+          expired: false,
+          error: 'Invalid token signature',
+        };
+      }
+
+      // Parse the payload
+      const payloadObj = KJUR.jws.JWS.readSafeJSONString(KJUR.b64utoutf8(token.split('.')[1]));
+      const payload = payloadObj as AccessTokenPayload;
 
       // Check expiry
       const now = Math.floor(Date.now() / 1000);
@@ -171,10 +189,24 @@ class TokenService {
    * @param token - JWT refresh token string
    * @returns Verification result with payload or error
    */
-  async verifyRefreshToken(token: string): Promise<TokenVerificationResult> {
+  verifyRefreshToken(token: string): TokenVerificationResult {
     try {
-      const decoded = await jwt.decode(token, JWT_CONFIG.REFRESH_TOKEN_SECRET);
-      const payload = decoded.payload as RefreshTokenPayload;
+      // Verify the token signature
+      const isValid = KJUR.jws.JWS.verifyJWT(token, JWT_CONFIG.REFRESH_TOKEN_SECRET, {
+        alg: ['HS256'],
+      });
+
+      if (!isValid) {
+        return {
+          valid: false,
+          expired: false,
+          error: 'Invalid token signature',
+        };
+      }
+
+      // Parse the payload
+      const payloadObj = KJUR.jws.JWS.readSafeJSONString(KJUR.b64utoutf8(token.split('.')[1]));
+      const payload = payloadObj as RefreshTokenPayload;
 
       // Check expiry
       const now = Math.floor(Date.now() / 1000);
@@ -208,13 +240,11 @@ class TokenService {
    * @param token - JWT token string
    * @returns Decoded payload or null if invalid
    */
-  async decodeToken(token: string): Promise<AccessTokenPayload | RefreshTokenPayload | null> {
+  decodeToken(token: string): AccessTokenPayload | RefreshTokenPayload | null {
     try {
-      // Decode with skipValidation - use access token secret
-      const decoded = await jwt.decode(token, JWT_CONFIG.ACCESS_TOKEN_SECRET, {
-        skipValidation: true,
-      });
-      return decoded.payload as AccessTokenPayload | RefreshTokenPayload;
+      // Parse the payload without verification
+      const payloadObj = KJUR.jws.JWS.readSafeJSONString(KJUR.b64utoutf8(token.split('.')[1]));
+      return payloadObj as AccessTokenPayload | RefreshTokenPayload;
     } catch (error) {
       console.error('TokenService: Failed to decode token:', error);
       return null;
@@ -227,8 +257,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns True if expired, false if valid or invalid format
    */
-  async isTokenExpired(token: string): Promise<boolean> {
-    const decoded = await this.decodeToken(token);
+  isTokenExpired(token: string): boolean {
+    const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) {
       return true;
     }
@@ -243,8 +273,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns Expiry timestamp in milliseconds, or null if invalid
    */
-  async getTokenExpiry(token: string): Promise<number | null> {
-    const decoded = await this.decodeToken(token);
+  getTokenExpiry(token: string): number | null {
+    const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) {
       return null;
     }
@@ -258,8 +288,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns Milliseconds until expiry, or 0 if expired/invalid
    */
-  async getTimeUntilExpiry(token: string): Promise<number> {
-    const expiry = await this.getTokenExpiry(token);
+  getTimeUntilExpiry(token: string): number {
+    const expiry = this.getTokenExpiry(token);
     if (!expiry) {
       return 0;
     }
@@ -276,8 +306,8 @@ class TokenService {
    * @param token - JWT access token string
    * @returns True if should refresh, false otherwise
    */
-  async shouldRefreshToken(token: string): Promise<boolean> {
-    const remaining = await this.getTimeUntilExpiry(token);
+  shouldRefreshToken(token: string): boolean {
+    const remaining = this.getTimeUntilExpiry(token);
     const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
     return remaining < fiveMinutes && remaining > 0;
   }
