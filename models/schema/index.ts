@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 14, // Incremented to remove plaintext password field (v2.2 - Activity 1, Day 4)
+  version: 15, // Added sessions table for JWT session management (v2.2 - Activity 1, Day 11)
   tables: [
     tableSchema({
       name: 'projects',
@@ -156,6 +156,19 @@ export default appSchema({
         { name: 'name', type: 'string', isIndexed: true }, // role name (Admin, Supervisor, Manager, etc.)
         { name: 'description', type: 'string', isOptional: true }, // role description
         { name: 'permissions', type: 'string' }, // JSON string of permissions array
+      ],
+    }),
+    tableSchema({
+      name: 'sessions',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true }, // belongs to user (foreign key)
+        { name: 'access_token', type: 'string' }, // JWT access token
+        { name: 'refresh_token', type: 'string' }, // JWT refresh token
+        { name: 'device_info', type: 'string', isOptional: true }, // JSON string with device info (optional, keep simple)
+        { name: 'ip_address', type: 'string', isOptional: true }, // IP address (optional, keep simple)
+        { name: 'expires_at', type: 'number' }, // timestamp when session expires
+        { name: 'revoked_at', type: 'number', isOptional: true }, // timestamp when revoked (nullable)
+        { name: 'is_active', type: 'boolean' }, // session active status
       ],
     }),
     tableSchema({

@@ -23,5 +23,24 @@ export default schemaMigrations({
         // The password field will be ignored in the schema and eventually cleaned up
       ],
     },
+    // v15: Add sessions table for JWT session management (v2.2 - Day 11)
+    {
+      toVersion: 15,
+      steps: [
+        createTable({
+          name: 'sessions',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'access_token', type: 'string' },
+            { name: 'refresh_token', type: 'string' },
+            { name: 'device_info', type: 'string', isOptional: true },
+            { name: 'ip_address', type: 'string', isOptional: true },
+            { name: 'expires_at', type: 'number' },
+            { name: 'revoked_at', type: 'number', isOptional: true },
+            { name: 'is_active', type: 'boolean' },
+          ],
+        }),
+      ],
+    },
   ],
 });
