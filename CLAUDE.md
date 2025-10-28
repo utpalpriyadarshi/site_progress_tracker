@@ -273,10 +273,11 @@ For screens that need photo capture (e.g., HindranceReportScreen):
 
 ### Testing Credentials
 Default test users (defined in DATABASE.md):
-- Manager: `manager` / `manager123`
-- Supervisor: `supervisor` / `supervisor123`
-- Planner: `planner` / `planner123`
-- Admin: `admin` / `admin123`
+- Admin: `admin` / `Admin@2025`
+- Manager: `manager` / `Manager@2025`
+- Supervisor: `supervisor` / `Supervisor@2025`
+- Planner: `planner` / `Planner@2025`
+- Logistics: `logistics` / `Logistics@2025`
 
 ## References
 

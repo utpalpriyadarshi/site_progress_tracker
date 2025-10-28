@@ -1,3 +1,4 @@
+
 # Activity 1: Security Implementation
 
 **Phase:** Phase 1 - Critical Path

@@ -416,12 +416,14 @@ The supervisor role has the most complete implementation with 7 screens:
 The app comes with 5 pre-configured test accounts (seeded on first launch):
 
 ```
-Admin:      admin      / admin123
-Supervisor: supervisor / supervisor123
-Manager:    manager    / manager123
-Planner:    planner    / planner123
-Logistics:  logistics  / logistics123
+Admin:      admin      / Admin@2025
+Supervisor: supervisor / Supervisor@2025
+Manager:    manager    / Manager@2025
+Planner:    planner    / Planner@2025
+Logistics:  logistics  / Logistics@2025
 ```
+
+All passwords are securely hashed with bcrypt (salt rounds: 8) for mobile-optimized performance.
 
 ### Quick Login
 Use the **Demo Users** buttons on the login screen to quickly fill credentials and test different roles.

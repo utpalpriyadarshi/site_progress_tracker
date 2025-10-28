@@ -121,23 +121,28 @@ The application will include the following default users for testing different r
 
 ### Admin User
 - Username: `admin`
-- Password: `admin123`
+- Password: `Admin@2025`
 - Role: Administrator (full access)
 
 ### Manager User
 - Username: `manager`
-- Password: `manager123`
+- Password: `Manager@2025`
 - Role: Project Manager (can view and manage all projects, budgets, and team performance)
 
 ### Supervisor User
 - Username: `supervisor`
-- Password: `supervisor123`
+- Password: `Supervisor@2025`
 - Role: Site Supervisor (can create reports, track materials, update task status)
 
 ### Planner User
 - Username: `planner`
-- Password: `planner123`
+- Password: `Planner@2025`
 - Role: Planning Specialist (can manage schedules, Gantt charts, and resources)
+
+### Logistics User
+- Username: `logistics`
+- Password: `Logistics@2025`
+- Role: Logistics Coordinator (can manage materials and suppliers)
 
 ## Database Relationships
 
@@ -209,9 +214,10 @@ For development and testing, use the following credentials:
 
 | Role | Username | Password |
 |------|----------|----------|
-| Manager | `manager` | `manager123` |
-| Supervisor | `supervisor` | `supervisor123` |
-| Planner | `planner` | `planner123` |
-| Admin | `admin` | `admin123` |
+| Admin | `admin` | `Admin@2025` |
+| Manager | `manager` | `Manager@2025` |
+| Supervisor | `supervisor` | `Supervisor@2025` |
+| Planner | `planner` | `Planner@2025` |
+| Logistics | `logistics` | `Logistics@2025` |
 
-These users will be created during the initial database setup.
+These users will be created during the initial database setup with bcrypt-hashed passwords (salt rounds: 8).

@@ -149,21 +149,21 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         <View style={styles.demoButtons}>
           <TouchableOpacity
             style={[styles.demoButton, styles.adminButton]}
-            onPress={() => handleDefaultLogin('admin', 'admin123')}
+            onPress={() => handleDefaultLogin('admin', 'Admin@2025')}
           >
             <Text style={styles.demoButtonText}>Admin</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('supervisor', 'supervisor123')}
+            onPress={() => handleDefaultLogin('supervisor', 'Supervisor@2025')}
           >
             <Text style={styles.demoButtonText}>Supervisor</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('manager', 'manager123')}
+            onPress={() => handleDefaultLogin('manager', 'Manager@2025')}
           >
             <Text style={styles.demoButtonText}>Manager</Text>
           </TouchableOpacity>
@@ -171,14 +171,14 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         <View style={[styles.demoButtons, styles.demoButtonsSecondRow]}>
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('planner', 'planner123')}
+            onPress={() => handleDefaultLogin('planner', 'Planner@2025')}
           >
             <Text style={styles.demoButtonText}>Planner</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('logistics', 'logistics123')}
+            onPress={() => handleDefaultLogin('logistics', 'Logistics@2025')}
           >
             <Text style={styles.demoButtonText}>Logistics</Text>
           </TouchableOpacity>
@@ -194,11 +194,11 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       <ConfirmDialog
         visible={showCredentialsDialog}
         title="Default Test Accounts"
-        message="• admin / admin123
-• supervisor / supervisor123
-• manager / manager123
-• planner / planner123
-• logistics / logistics123"
+        message="• admin / Admin@2025
+• supervisor / Supervisor@2025
+• manager / Manager@2025
+• planner / Planner@2025
+• logistics / Logistics@2025"
         confirmText="OK"
         onConfirm={() => setShowCredentialsDialog(false)}
         onCancel={() => setShowCredentialsDialog(false)}
