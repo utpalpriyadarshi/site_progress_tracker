@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import * as jwt from 'react-native-pure-jwt';
 import { JWT_CONFIG, AccessTokenPayload, RefreshTokenPayload } from '../../config/jwt.config';
 
 /**
@@ -38,30 +38,35 @@ class TokenService {
    * @param sessionId - Optional session ID (will be added in Week 3)
    * @returns JWT access token string
    */
-  generateAccessToken(
+  async generateAccessToken(
     userId: string,
     username: string,
     role: string,
     sessionId?: string
-  ): string {
-    const payload: Omit<AccessTokenPayload, 'iat' | 'exp' | 'iss' | 'aud'> = {
+  ): Promise<string> {
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (15 * 60); // 15 minutes
+
+    const payload = {
       userId,
       username,
       role,
       sessionId,
+      iss: JWT_CONFIG.ISSUER,
+      aud: JWT_CONFIG.AUDIENCE,
+      iat: now,
+      exp,
     };
 
-    const token = jwt.sign(
-      payload,
-      JWT_CONFIG.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRY,
-        issuer: JWT_CONFIG.ISSUER,
-        audience: JWT_CONFIG.AUDIENCE,
-      }
-    );
-
-    return token;
+    try {
+      const token = await jwt.sign(payload, JWT_CONFIG.ACCESS_TOKEN_SECRET, {
+        alg: 'HS256',
+      });
+      return token;
+    } catch (error) {
+      console.error('TokenService: Error generating access token:', error);
+      throw new Error('Failed to generate access token');
+    }
   }
 
   /**
@@ -71,23 +76,28 @@ class TokenService {
    * @param sessionId - Optional session ID (will be added in Week 3)
    * @returns JWT refresh token string
    */
-  generateRefreshToken(userId: string, sessionId?: string): string {
-    const payload: Omit<RefreshTokenPayload, 'iat' | 'exp' | 'iss' | 'aud'> = {
+  async generateRefreshToken(userId: string, sessionId?: string): Promise<string> {
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (7 * 24 * 60 * 60); // 7 days
+
+    const payload = {
       userId,
       sessionId,
+      iss: JWT_CONFIG.ISSUER,
+      aud: JWT_CONFIG.AUDIENCE,
+      iat: now,
+      exp,
     };
 
-    const token = jwt.sign(
-      payload,
-      JWT_CONFIG.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: JWT_CONFIG.REFRESH_TOKEN_EXPIRY,
-        issuer: JWT_CONFIG.ISSUER,
-        audience: JWT_CONFIG.AUDIENCE,
-      }
-    );
-
-    return token;
+    try {
+      const token = await jwt.sign(payload, JWT_CONFIG.REFRESH_TOKEN_SECRET, {
+        alg: 'HS256',
+      });
+      return token;
+    } catch (error) {
+      console.error('TokenService: Error generating refresh token:', error);
+      throw new Error('Failed to generate refresh token');
+    }
   }
 
   /**
@@ -99,14 +109,14 @@ class TokenService {
    * @param sessionId - Optional session ID
    * @returns Object containing both tokens and their expiry times
    */
-  generateTokenPair(
+  async generateTokenPair(
     userId: string,
     username: string,
     role: string,
     sessionId?: string
-  ): TokenGenerationResult {
-    const accessToken = this.generateAccessToken(userId, username, role, sessionId);
-    const refreshToken = this.generateRefreshToken(userId, sessionId);
+  ): Promise<TokenGenerationResult> {
+    const accessToken = await this.generateAccessToken(userId, username, role, sessionId);
+    const refreshToken = await this.generateRefreshToken(userId, sessionId);
 
     // Calculate expiry timestamps
     const now = Date.now();
@@ -127,41 +137,31 @@ class TokenService {
    * @param token - JWT access token string
    * @returns Verification result with payload or error
    */
-  verifyAccessToken(token: string): TokenVerificationResult {
+  async verifyAccessToken(token: string): Promise<TokenVerificationResult> {
     try {
-      const payload = jwt.verify(
-        token,
-        JWT_CONFIG.ACCESS_TOKEN_SECRET,
-        {
-          issuer: JWT_CONFIG.ISSUER,
-          audience: JWT_CONFIG.AUDIENCE,
-        }
-      ) as AccessTokenPayload;
+      const decoded = await jwt.decode(token, JWT_CONFIG.ACCESS_TOKEN_SECRET);
+      const payload = decoded.payload as AccessTokenPayload;
+
+      // Check expiry
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        return {
+          valid: false,
+          expired: true,
+          error: 'Access token has expired',
+        };
+      }
 
       return {
         valid: true,
         payload,
       };
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        return {
-          valid: false,
-          expired: true,
-          error: 'Access token has expired',
-        };
-      } else if (error instanceof jwt.JsonWebTokenError) {
-        return {
-          valid: false,
-          expired: false,
-          error: 'Invalid access token',
-        };
-      } else {
-        return {
-          valid: false,
-          expired: false,
-          error: `Token verification failed: ${error}`,
-        };
-      }
+      return {
+        valid: false,
+        expired: false,
+        error: `Invalid access token: ${error}`,
+      };
     }
   }
 
@@ -171,41 +171,31 @@ class TokenService {
    * @param token - JWT refresh token string
    * @returns Verification result with payload or error
    */
-  verifyRefreshToken(token: string): TokenVerificationResult {
+  async verifyRefreshToken(token: string): Promise<TokenVerificationResult> {
     try {
-      const payload = jwt.verify(
-        token,
-        JWT_CONFIG.REFRESH_TOKEN_SECRET,
-        {
-          issuer: JWT_CONFIG.ISSUER,
-          audience: JWT_CONFIG.AUDIENCE,
-        }
-      ) as RefreshTokenPayload;
+      const decoded = await jwt.decode(token, JWT_CONFIG.REFRESH_TOKEN_SECRET);
+      const payload = decoded.payload as RefreshTokenPayload;
+
+      // Check expiry
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        return {
+          valid: false,
+          expired: true,
+          error: 'Refresh token has expired',
+        };
+      }
 
       return {
         valid: true,
         payload,
       };
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        return {
-          valid: false,
-          expired: true,
-          error: 'Refresh token has expired',
-        };
-      } else if (error instanceof jwt.JsonWebTokenError) {
-        return {
-          valid: false,
-          expired: false,
-          error: 'Invalid refresh token',
-        };
-      } else {
-        return {
-          valid: false,
-          expired: false,
-          error: `Token verification failed: ${error}`,
-        };
-      }
+      return {
+        valid: false,
+        expired: false,
+        error: `Invalid refresh token: ${error}`,
+      };
     }
   }
 
@@ -218,10 +208,13 @@ class TokenService {
    * @param token - JWT token string
    * @returns Decoded payload or null if invalid
    */
-  decodeToken(token: string): AccessTokenPayload | RefreshTokenPayload | null {
+  async decodeToken(token: string): Promise<AccessTokenPayload | RefreshTokenPayload | null> {
     try {
-      const decoded = jwt.decode(token) as AccessTokenPayload | RefreshTokenPayload;
-      return decoded;
+      // Decode with skipValidation - use access token secret
+      const decoded = await jwt.decode(token, JWT_CONFIG.ACCESS_TOKEN_SECRET, {
+        skipValidation: true,
+      });
+      return decoded.payload as AccessTokenPayload | RefreshTokenPayload;
     } catch (error) {
       console.error('TokenService: Failed to decode token:', error);
       return null;
@@ -234,8 +227,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns True if expired, false if valid or invalid format
    */
-  isTokenExpired(token: string): boolean {
-    const decoded = this.decodeToken(token);
+  async isTokenExpired(token: string): Promise<boolean> {
+    const decoded = await this.decodeToken(token);
     if (!decoded || !decoded.exp) {
       return true;
     }
@@ -250,8 +243,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns Expiry timestamp in milliseconds, or null if invalid
    */
-  getTokenExpiry(token: string): number | null {
-    const decoded = this.decodeToken(token);
+  async getTokenExpiry(token: string): Promise<number | null> {
+    const decoded = await this.decodeToken(token);
     if (!decoded || !decoded.exp) {
       return null;
     }
@@ -265,8 +258,8 @@ class TokenService {
    * @param token - JWT token string
    * @returns Milliseconds until expiry, or 0 if expired/invalid
    */
-  getTimeUntilExpiry(token: string): number {
-    const expiry = this.getTokenExpiry(token);
+  async getTimeUntilExpiry(token: string): Promise<number> {
+    const expiry = await this.getTokenExpiry(token);
     if (!expiry) {
       return 0;
     }
@@ -283,8 +276,8 @@ class TokenService {
    * @param token - JWT access token string
    * @returns True if should refresh, false otherwise
    */
-  shouldRefreshToken(token: string): boolean {
-    const remaining = this.getTimeUntilExpiry(token);
+  async shouldRefreshToken(token: string): Promise<boolean> {
+    const remaining = await this.getTimeUntilExpiry(token);
     const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
     return remaining < fiveMinutes && remaining > 0;
   }
