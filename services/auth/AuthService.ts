@@ -4,19 +4,21 @@ import UserModel from '../../models/UserModel';
 import { Q } from '@nozbe/watermelondb';
 import TokenService from './TokenService';
 import TokenStorage from '../storage/TokenStorage';
+import { SessionService } from './SessionService';
 
 /**
  * AuthService
  *
  * Service for user authentication with JWT tokens
- * v2.2 - Activity 1, Week 2, Day 8
+ * v2.2 - Activity 1, Week 2-3, Days 8-13
  *
  * Features:
  * - Login with bcrypt password verification
  * - JWT token generation (access + refresh)
+ * - Session management (create, track, revoke)
  * - Token storage in AsyncStorage
  * - Token refresh logic
- * - Logout with token cleanup
+ * - Logout with token cleanup and session revocation
  */
 
 export interface LoginResult {
@@ -34,6 +36,7 @@ export interface LoginResult {
     accessTokenExpiry: number;
     refreshTokenExpiry: number;
   };
+  sessionId?: string; // v2.2: Session ID for session management
   error?: string;
 }
 
@@ -137,7 +140,21 @@ class AuthService {
       // Store user info in AsyncStorage
       await TokenStorage.storeUserInfo(user.id, user.username, role.name.toLowerCase());
 
-      console.log('AuthService: Login successful, tokens stored');
+      // Create session in database (v2.2: Week 3, Day 13)
+      console.log('AuthService: Creating session in database...');
+      const session = await SessionService.createSession({
+        userId: user.id,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.refreshTokenExpiry, // Session expires with refresh token
+        deviceInfo: '', // Keep simple for now
+        ipAddress: '', // Keep simple for now
+      });
+
+      // Store session ID in AsyncStorage
+      await TokenStorage.storeSessionId(session.id);
+
+      console.log('AuthService: Login successful, tokens and session stored');
 
       return {
         success: true,
@@ -154,6 +171,7 @@ class AuthService {
           accessTokenExpiry: tokens.accessTokenExpiry,
           refreshTokenExpiry: tokens.refreshTokenExpiry,
         },
+        sessionId: session.id, // v2.2: Return session ID
       };
     } catch (error) {
       console.error('AuthService: Login error:', error);
@@ -239,12 +257,24 @@ class AuthService {
 
   /**
    * Logout user and clear all authentication data
+   * v2.2: Now revokes session in database
    *
    * @returns Logout result
    */
   async logout(): Promise<LogoutResult> {
     try {
       console.log('AuthService: Logging out user...');
+
+      // Get session ID from storage (v2.2: Week 3, Day 13)
+      const sessionId = await TokenStorage.getSessionId();
+
+      // Revoke session in database if it exists
+      if (sessionId) {
+        console.log('AuthService: Revoking session:', sessionId);
+        await SessionService.revokeSession(sessionId);
+      } else {
+        console.log('AuthService: No session ID found, skipping session revocation');
+      }
 
       // Clear all tokens and user info from storage
       await TokenStorage.clearAll();

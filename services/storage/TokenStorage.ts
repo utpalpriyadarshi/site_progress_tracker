@@ -4,12 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * TokenStorage
  *
  * Service for storing and retrieving JWT tokens in AsyncStorage
- * v2.2 - Activity 1, Week 2, Day 8
+ * v2.2 - Activity 1, Week 2-3, Days 8-13
  *
  * Security Notes:
  * - AsyncStorage is secure for React Native apps (sandboxed per app)
  * - Tokens are stored encrypted on device
  * - For additional security, consider using react-native-keychain in production
+ *
+ * v2.2 Updates:
+ * - Added session ID storage for session management
  */
 
 // Storage keys
@@ -21,6 +24,7 @@ const STORAGE_KEYS = {
   USER_ID: '@auth/user_id',
   USERNAME: '@auth/username',
   ROLE: '@auth/role',
+  SESSION_ID: '@auth/session_id', // v2.2: Week 3, Day 13
 } as const;
 
 export interface StoredTokens {
@@ -231,13 +235,58 @@ class TokenStorage {
   }
 
   /**
-   * Clear all authentication data (tokens + user info)
+   * Store session ID (v2.2: Week 3, Day 13)
+   *
+   * @param sessionId - Session ID from database
+   */
+  async storeSessionId(sessionId: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.SESSION_ID, sessionId);
+      console.log('TokenStorage: Session ID stored successfully');
+    } catch (error) {
+      console.error('TokenStorage: Failed to store session ID:', error);
+      throw new Error('Failed to store session ID');
+    }
+  }
+
+  /**
+   * Get session ID (v2.2: Week 3, Day 13)
+   *
+   * @returns Session ID or null if not found
+   */
+  async getSessionId(): Promise<string | null> {
+    try {
+      const sessionId = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_ID);
+      return sessionId;
+    } catch (error) {
+      console.error('TokenStorage: Failed to get session ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear session ID (v2.2: Week 3, Day 13)
+   *
+   * Used during logout
+   */
+  async clearSessionId(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+      console.log('TokenStorage: Session ID cleared successfully');
+    } catch (error) {
+      console.error('TokenStorage: Failed to clear session ID:', error);
+      throw new Error('Failed to clear session ID');
+    }
+  }
+
+  /**
+   * Clear all authentication data (tokens + user info + session)
    *
    * Used during logout
    */
   async clearAll(): Promise<void> {
     try {
-      await Promise.all([this.clearTokens(), this.clearUserInfo()]);
+      await Promise.all([this.clearTokens(), this.clearUserInfo(), this.clearSessionId()]);
       console.log('TokenStorage: All authentication data cleared');
     } catch (error) {
       console.error('TokenStorage: Failed to clear all data:', error);
