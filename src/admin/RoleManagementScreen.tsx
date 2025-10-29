@@ -23,6 +23,13 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import bcrypt from 'react-native-bcrypt';
 import PasswordValidator from '../../services/auth/PasswordValidator';
+import { PasswordResetService } from '../../services/auth/PasswordResetService';
+import {
+  validatePasswordStrength,
+  calculatePasswordStrength,
+  getPasswordRequirements,
+} from '../../utils/passwordValidator';
+import { useAuth } from '../auth/AuthContext';
 
 interface UserFormData {
   username: string;
@@ -36,6 +43,7 @@ interface UserFormData {
 
 const RoleManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserModel[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserModel[]>([]);
   const [roles, setRoles] = useState<RoleModel[]>([]);
@@ -55,6 +63,14 @@ const RoleManagementScreen = () => {
     roleId: '',
     isActive: true,
   });
+
+  // Password reset state
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [userToReset, setUserToReset] = useState<UserModel | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -253,6 +269,62 @@ const RoleManagementScreen = () => {
     }
   };
 
+  // Password Reset Functions
+  const openResetPasswordDialog = (user: UserModel) => {
+    setUserToReset(user);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowResetPasswordDialog(true);
+  };
+
+  const closeResetPasswordDialog = () => {
+    setShowResetPasswordDialog(false);
+    setUserToReset(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!userToReset || !currentUser) return;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      showSnackbar('Passwords do not match', 'error');
+      return;
+    }
+
+    // Validate password strength
+    const validation = validatePasswordStrength(newPassword);
+    if (!validation.isValid) {
+      showSnackbar(`Password validation failed:\n${validation.errors.join('\n')}`, 'error');
+      return;
+    }
+
+    setResetPasswordLoading(true);
+
+    try {
+      const result = await PasswordResetService.resetPasswordByAdmin(
+        userToReset.id,
+        newPassword,
+        currentUser.userId
+      );
+
+      if (result.success) {
+        showSnackbar(`Password reset successful for ${userToReset.username}`, 'success');
+        closeResetPasswordDialog();
+      } else {
+        showSnackbar(result.details || result.error || 'Failed to reset password', 'error');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showSnackbar('Failed to reset password', 'error');
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
   const toggleUserStatus = async (user: UserModel) => {
     try {
       await database.write(async () => {
@@ -357,6 +429,13 @@ const RoleManagementScreen = () => {
                   {user.isActive ? 'Deactivate' : 'Activate'}
                 </Button>
                 <Button onPress={() => openEditModal(user)}>Edit</Button>
+                <Button
+                  mode="outlined"
+                  onPress={() => openResetPasswordDialog(user)}
+                  icon="lock-reset"
+                >
+                  Reset Password
+                </Button>
                 <Button textColor="#F44336" onPress={() => handleDelete(user)}>
                   Delete
                 </Button>
@@ -475,6 +554,94 @@ const RoleManagementScreen = () => {
               <Button onPress={() => setModalVisible(false)}>Cancel</Button>
               <Button mode="contained" onPress={handleSave}>
                 {editingUser ? 'Update' : 'Create'}
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
+
+      {/* Password Reset Dialog */}
+      <Portal>
+        <Modal
+          visible={showResetPasswordDialog}
+          onDismiss={closeResetPasswordDialog}
+          contentContainerStyle={styles.modalContent}
+        >
+          <ScrollView>
+            <Title style={styles.modalTitle}>Reset Password</Title>
+            <Paragraph style={styles.modalSubtitle}>
+              Reset password for: {userToReset?.fullName} ({userToReset?.username})
+            </Paragraph>
+            <Divider style={{ marginVertical: 16 }} />
+
+            <Paragraph style={styles.requirementsTitle}>Password Requirements:</Paragraph>
+            {getPasswordRequirements().map((req, index) => (
+              <Paragraph key={index} style={styles.requirement}>
+                • {req}
+              </Paragraph>
+            ))}
+
+            <TextInput
+              label="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              style={styles.input}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+
+            {newPassword.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <Paragraph style={styles.strengthLabel}>
+                  Password Strength: {calculatePasswordStrength(newPassword).label}
+                </Paragraph>
+                <View
+                  style={[
+                    styles.strengthBar,
+                    {
+                      width: `${(calculatePasswordStrength(newPassword).score / 6) * 100}%`,
+                      backgroundColor: calculatePasswordStrength(newPassword).color,
+                    },
+                  ]}
+                />
+              </View>
+            )}
+
+            <TextInput
+              label="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              style={styles.input}
+            />
+
+            {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+              <Paragraph style={styles.errorText}>Passwords do not match</Paragraph>
+            )}
+
+            <View style={styles.dialogActions}>
+              <Button onPress={closeResetPasswordDialog} disabled={resetPasswordLoading}>
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleResetPassword}
+                loading={resetPasswordLoading}
+                disabled={
+                  resetPasswordLoading ||
+                  !newPassword ||
+                  !confirmPassword ||
+                  newPassword !== confirmPassword
+                }
+              >
+                Reset Password
               </Button>
             </View>
           </ScrollView>
@@ -604,6 +771,47 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 20,
+  },
+  // Password Reset Dialog Styles
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  requirementsTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  requirement: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    marginBottom: 4,
+  },
+  strengthContainer: {
+    marginBottom: 15,
+  },
+  strengthLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  strengthBar: {
+    height: 4,
+    borderRadius: 2,
+    marginTop: 4,
+  },
+  errorText: {
+    color: '#F44336',
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 10,
+  },
+  dialogActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 10,
