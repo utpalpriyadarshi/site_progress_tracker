@@ -42,5 +42,18 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v16: Add password_history table for password reuse prevention (v2.2 - Day 14)
+    {
+      toVersion: 16,
+      steps: [
+        createTable({
+          name: 'password_history',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'password_hash', type: 'string' },
+          ],
+        }),
+      ],
+    },
   ],
 });

@@ -15,6 +15,7 @@ import SiteInspectionModel from './SiteInspectionModel';
 import RoleModel from './RoleModel';
 import UserModel from './UserModel';
 import SessionModel from './SessionModel';
+import PasswordHistoryModel from './PasswordHistoryModel';
 import ScheduleRevisionModel from './ScheduleRevisionModel';
 import TemplateModuleModel from './TemplateModuleModel';
 import InterfacePointModel from './InterfacePointModel';
@@ -40,6 +41,7 @@ export const database = new Database({
     RoleModel,
     UserModel,
     SessionModel,
+    PasswordHistoryModel,
     ScheduleRevisionModel,
     TemplateModuleModel,
     InterfacePointModel,

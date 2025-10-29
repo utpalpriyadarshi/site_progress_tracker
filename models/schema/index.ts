@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 15, // Added sessions table for JWT session management (v2.2 - Activity 1, Day 11)
+  version: 16, // Added password_history table for password reset (v2.2 - Activity 1, Day 14)
   tables: [
     tableSchema({
       name: 'projects',
@@ -169,6 +169,13 @@ export default appSchema({
         { name: 'expires_at', type: 'number' }, // timestamp when session expires
         { name: 'revoked_at', type: 'number', isOptional: true }, // timestamp when revoked (nullable)
         { name: 'is_active', type: 'boolean' }, // session active status
+      ],
+    }),
+    tableSchema({
+      name: 'password_history',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true }, // belongs to user (foreign key)
+        { name: 'password_hash', type: 'string' }, // old password hash for reuse prevention
       ],
     }),
     tableSchema({
