@@ -73,8 +73,8 @@ class PasswordMigrationService {
             continue;
           }
 
-          // Read plaintext password
-          const plaintextPassword = user.password;
+          // Read plaintext password (LEGACY - password field no longer exists in schema v14+)
+          const plaintextPassword = (user as any).password;
 
           if (!plaintextPassword || plaintextPassword.length === 0) {
             const error = `User ${user.username} has no password`;
@@ -161,7 +161,7 @@ class PasswordMigrationService {
       // Verify each user's password hash
       for (const user of users) {
         try {
-          const plaintextPassword = user.password;
+          const plaintextPassword = (user as any).password; // LEGACY field
           const passwordHash = user.passwordHash;
 
           // Check if both fields exist
