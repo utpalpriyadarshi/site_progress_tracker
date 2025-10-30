@@ -21,6 +21,7 @@ export default class ScheduleRevisionModel extends Model {
   @field('approval_status') approvalStatus!: string; // pending, approved, rejected
   @field('impact_summary') impactSummary?: string; // JSON string
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 
   // Helper method to get impacted items from JSON
   getImpactedItems(): string[] {

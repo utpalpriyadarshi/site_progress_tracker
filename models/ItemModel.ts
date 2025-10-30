@@ -68,6 +68,7 @@ export default class ItemModel extends Model {
 
   // Sync Management (v18 - Activity 2 prep)
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 
   // Helper methods for dependencies
   getDependencies(): string[] {

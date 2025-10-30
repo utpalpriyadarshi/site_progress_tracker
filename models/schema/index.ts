@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 18, // Added sync_status to projects, sites, items, categories, materials (Activity 2 prep)
+  version: 20, // Added _version field for conflict resolution (Week 7, Day 1)
   tables: [
     tableSchema({
       name: 'projects',
@@ -13,6 +13,7 @@ export default appSchema({
         { name: 'status', type: 'string' }, // active, completed, on_hold, cancelled
         { name: 'budget', type: 'number' },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -23,6 +24,7 @@ export default appSchema({
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -31,6 +33,7 @@ export default appSchema({
         { name: 'name', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -67,6 +70,7 @@ export default appSchema({
         { name: 'dependency_risk', type: 'string', isOptional: true }, // low, medium, high
         { name: 'risk_notes', type: 'string', isOptional: true }, // risk description
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -79,6 +83,7 @@ export default appSchema({
         { name: 'photos', type: 'string' }, // JSON string of photo paths
         { name: 'notes', type: 'string', isOptional: true },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -95,6 +100,7 @@ export default appSchema({
         { name: 'reported_at', type: 'number' }, // timestamp when reported
         { name: 'photos', type: 'string' }, // JSON string of photo paths
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -110,6 +116,7 @@ export default appSchema({
         { name: 'supplier', type: 'string', isOptional: true },
         { name: 'procurement_manager_id', type: 'string', isIndexed: true }, // managed by
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -124,6 +131,7 @@ export default appSchema({
         { name: 'pdf_path', type: 'string', isOptional: true }, // local path to PDF
         { name: 'notes', type: 'string', isOptional: true }, // overall report notes
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -141,6 +149,7 @@ export default appSchema({
         { name: 'follow_up_notes', type: 'string', isOptional: true }, // follow-up action notes
         { name: 'notes', type: 'string', isOptional: true }, // overall inspection notes
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -202,6 +211,7 @@ export default appSchema({
         { name: 'approval_status', type: 'string' }, // pending, approved, rejected
         { name: 'impact_summary', type: 'string', isOptional: true }, // JSON: affected items
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
+        { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
     }),
     tableSchema({
@@ -227,6 +237,18 @@ export default appSchema({
         { name: 'target_date', type: 'number', isOptional: true }, // target completion timestamp
         { name: 'actual_date', type: 'number', isOptional: true }, // actual completion timestamp
         { name: 'notes', type: 'string', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'sync_queue',
+      columns: [
+        { name: 'table_name', type: 'string', isIndexed: true }, // which table (projects, sites, items, etc.)
+        { name: 'record_id', type: 'string', isIndexed: true }, // ID of the record to sync
+        { name: 'action', type: 'string' }, // create, update, delete
+        { name: 'data', type: 'string' }, // JSON string of the record data
+        { name: 'synced_at', type: 'number', isOptional: true }, // timestamp when synced (null if pending)
+        { name: 'retry_count', type: 'number' }, // number of retry attempts
+        { name: 'last_error', type: 'string', isOptional: true }, // last error message if sync failed
       ],
     }),
   ],

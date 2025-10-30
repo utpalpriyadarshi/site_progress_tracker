@@ -21,4 +21,5 @@ export default class SiteInspectionModel extends Model {
   @field('follow_up_notes') followUpNotes!: string; // notes for follow-up actions
   @field('notes') notes!: string; // overall inspection notes
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }

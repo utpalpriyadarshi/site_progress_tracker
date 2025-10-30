@@ -19,6 +19,7 @@ import PasswordHistoryModel from './PasswordHistoryModel';
 import ScheduleRevisionModel from './ScheduleRevisionModel';
 import TemplateModuleModel from './TemplateModuleModel';
 import InterfacePointModel from './InterfacePointModel';
+import SyncQueueModel from './SyncQueueModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -45,5 +46,6 @@ export const database = new Database({
     ScheduleRevisionModel,
     TemplateModuleModel,
     InterfacePointModel,
+    SyncQueueModel,
   ],
 });

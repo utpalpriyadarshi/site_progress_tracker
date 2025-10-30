@@ -20,4 +20,5 @@ export default class MaterialModel extends Model {
   @field('supplier') supplier!: string;
   @field('procurement_manager_id') procurementManagerId!: string; // managed by
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }

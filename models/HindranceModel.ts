@@ -22,4 +22,5 @@ export default class HindranceModel extends Model {
   @field('reported_at') reportedAt!: number; // timestamp when reported
   @field('photos') photos!: string; // JSON string of photo paths
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }

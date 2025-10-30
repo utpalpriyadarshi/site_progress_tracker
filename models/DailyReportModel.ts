@@ -19,4 +19,5 @@ export default class DailyReportModel extends Model {
   @field('pdf_path') pdfPath!: string; // local path to generated PDF
   @field('notes') notes!: string; // overall report notes/summary
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }

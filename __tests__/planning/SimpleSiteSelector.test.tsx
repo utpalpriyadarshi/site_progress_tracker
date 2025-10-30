@@ -34,6 +34,8 @@ describe('SimpleSiteSelector', () => {
         project.endDate = Date.now() + 86400000 * 365;
         project.status = 'active';
         project.budget = 1000000;
+        project.syncStatus = 'pending';
+        project.version = 1;
       });
     });
   });
@@ -46,6 +48,8 @@ describe('SimpleSiteSelector', () => {
         site.location = 'New York, NY';
         site.projectId = testProject.id;
         site.supervisorId = 'supervisor-1';
+        site.syncStatus = 'pending';
+        site.version = 1;
       });
 
       testSite2 = await database.collections.get<SiteModel>('sites').create((site: any) => {
@@ -53,6 +57,8 @@ describe('SimpleSiteSelector', () => {
         site.location = 'Los Angeles, CA';
         site.projectId = testProject.id;
         site.supervisorId = null; // Unassigned
+        site.syncStatus = 'pending';
+        site.version = 1;
       });
 
       testSite3 = await database.collections.get<SiteModel>('sites').create((site: any) => {
@@ -60,6 +66,8 @@ describe('SimpleSiteSelector', () => {
         site.location = 'Chicago, IL';
         site.projectId = testProject.id;
         site.supervisorId = 'supervisor-2';
+        site.syncStatus = 'pending';
+        site.version = 1;
       });
     });
   });
@@ -349,6 +357,8 @@ describe('SimpleSiteSelector', () => {
             site.location = 'Seattle, WA';
             site.projectId = testProject.id;
             site.supervisorId = null;
+            site.syncStatus = 'pending';
+            site.version = 1;
           });
         });
       });
@@ -539,6 +549,8 @@ describe('SimpleSiteSelector', () => {
               site.location = 'Temp Location';
               site.projectId = testProject.id;
               site.supervisorId = null;
+              site.syncStatus = 'pending';
+              site.version = 1;
             });
             // Immediately delete
             await tempSite.destroyPermanently();

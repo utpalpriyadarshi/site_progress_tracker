@@ -111,5 +111,69 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v19: Add sync_queue table for tracking local changes (Week 6, Day 1)
+    {
+      toVersion: 19,
+      steps: [
+        createTable({
+          name: 'sync_queue',
+          columns: [
+            { name: 'table_name', type: 'string', isIndexed: true },
+            { name: 'record_id', type: 'string', isIndexed: true },
+            { name: 'action', type: 'string' },
+            { name: 'data', type: 'string' },
+            { name: 'synced_at', type: 'number', isOptional: true },
+            { name: 'retry_count', type: 'number' },
+            { name: 'last_error', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // v20: Add _version field to all syncable models for conflict resolution (Week 7, Day 2)
+    {
+      toVersion: 20,
+      steps: [
+        addColumns({
+          table: 'projects',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'sites',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'categories',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'items',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'materials',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'progress_logs',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'hindrances',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'daily_reports',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'site_inspections',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'schedule_revisions',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+      ],
+    },
   ],
 });

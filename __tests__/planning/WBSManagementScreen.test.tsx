@@ -43,9 +43,13 @@ describe('WBSManagementScreen', () => {
       // Create test project
       testProject = await database.collections.get<ProjectModel>('projects').create((p) => {
         p.name = 'Test Project';
-        p.description = 'Test project for WBS';
+        p.client = 'Test Client';
         p.startDate = Date.now();
         p.endDate = Date.now() + 86400000 * 180;
+        p.status = 'active';
+        p.budget = 1000000;
+        p.syncStatus = 'pending';
+        p.version = 1;
       });
 
       // Create test site
@@ -54,14 +58,16 @@ describe('WBSManagementScreen', () => {
         s.location = 'Test Location';
         s.projectId = testProject.id;
         s.supervisorId = 'supervisor-1';
-        s.plannerId = 'planner-1';
+        s.syncStatus = 'pending';
+        s.version = 1;
       });
 
       // Create test category
       testCategory = await database.collections.get<CategoryModel>('categories').create((c) => {
         c.name = 'Electrical';
-        c.color = '#2196F3';
-        c.iconName = 'flash';
+        c.description = 'Electrical work category';
+        c.syncStatus = 'pending';
+        c.version = 1;
       });
     });
   });
@@ -144,6 +150,8 @@ describe('WBSManagementScreen', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.syncStatus = 'pending';
+        item.version = 1;
       });
 
       await database.collections.get<ItemModel>('items').create((item) => {
@@ -165,6 +173,8 @@ describe('WBSManagementScreen', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.syncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -201,6 +211,8 @@ describe('WBSManagementScreen', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.syncStatus = 'pending';
+        item.version = 1;
       });
 
       await database.collections.get<ItemModel>('items').create((item) => {
@@ -221,6 +233,8 @@ describe('WBSManagementScreen', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.syncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -284,6 +298,8 @@ describe('WBSManagementScreen', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.syncStatus = 'pending';
+          item.version = 1;
         });
       }
     });

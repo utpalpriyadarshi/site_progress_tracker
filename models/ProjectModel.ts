@@ -16,4 +16,5 @@ export default class ProjectModel extends Model {
   @field('status') status!: string; // active, completed, on_hold, cancelled
   @field('budget') budget!: number;
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }

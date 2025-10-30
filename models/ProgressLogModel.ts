@@ -17,4 +17,5 @@ export default class ProgressLogModel extends Model {
   @field('photos') photos!: string; // JSON string of photo paths
   @field('notes') notes!: string;
   @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('_version') version!: number; // conflict resolution version tracking
 }
