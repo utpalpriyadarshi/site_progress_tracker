@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 16, // Added password_history table for password reset (v2.2 - Activity 1, Day 14)
+  version: 17, // Added created_at/updated_at to sessions and password_history tables (v2.2 - Week 3 Fix)
   tables: [
     tableSchema({
       name: 'projects',
@@ -169,6 +169,8 @@ export default appSchema({
         { name: 'expires_at', type: 'number' }, // timestamp when session expires
         { name: 'revoked_at', type: 'number', isOptional: true }, // timestamp when revoked (nullable)
         { name: 'is_active', type: 'boolean' }, // session active status
+        { name: 'created_at', type: 'number' }, // auto-managed by WatermelonDB
+        { name: 'updated_at', type: 'number' }, // auto-managed by WatermelonDB
       ],
     }),
     tableSchema({
@@ -176,6 +178,8 @@ export default appSchema({
       columns: [
         { name: 'user_id', type: 'string', isIndexed: true }, // belongs to user (foreign key)
         { name: 'password_hash', type: 'string' }, // old password hash for reuse prevention
+        { name: 'created_at', type: 'number' }, // auto-managed by WatermelonDB
+        { name: 'updated_at', type: 'number' }, // auto-managed by WatermelonDB
       ],
     }),
     tableSchema({

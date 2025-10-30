@@ -55,5 +55,25 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v17: Add created_at/updated_at to sessions and password_history tables (v2.2 - Week 3 Fix)
+    {
+      toVersion: 17,
+      steps: [
+        addColumns({
+          table: 'sessions',
+          columns: [
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        addColumns({
+          table: 'password_history',
+          columns: [
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

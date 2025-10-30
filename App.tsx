@@ -17,6 +17,9 @@ import { SimpleDatabaseService } from './services/db/SimpleDatabaseService';
 // Import Snackbar provider
 import { SnackbarProvider } from './src/components/Snackbar';
 
+// Import test script for session checking (Week 3 Testing)
+import { checkLatestSession } from './scripts/testCheckSessions';
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 

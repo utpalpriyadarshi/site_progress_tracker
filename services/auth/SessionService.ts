@@ -54,6 +54,12 @@ export class SessionService {
         session.ipAddress = ipAddress || '';
         session.isActive = true;
         session.revokedAt = 0; // 0 means not revoked (null not supported for number type)
+
+        // Manually set timestamps since they were added via migration (not auto-managed)
+        // @ts-ignore - accessing internal _raw to set timestamps
+        const now = Date.now();
+        session._raw.created_at = now;
+        session._raw.updated_at = now;
       });
     });
 

@@ -424,21 +424,38 @@ const RoleManagementScreen = () => {
                   </Chip>
                 </View>
               </Card.Content>
-              <Card.Actions>
-                <Button onPress={() => toggleUserStatus(user)}>
-                  {user.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-                <Button onPress={() => openEditModal(user)}>Edit</Button>
-                <Button
-                  mode="outlined"
-                  onPress={() => openResetPasswordDialog(user)}
-                  icon="lock-reset"
-                >
-                  Reset Password
-                </Button>
-                <Button textColor="#F44336" onPress={() => handleDelete(user)}>
-                  Delete
-                </Button>
+              <Card.Actions style={styles.cardActions}>
+                <View style={styles.buttonRow}>
+                  <Button
+                    onPress={() => toggleUserStatus(user)}
+                    style={styles.actionButton}
+                  >
+                    {user.isActive ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button
+                    onPress={() => openEditModal(user)}
+                    style={styles.actionButton}
+                  >
+                    Edit
+                  </Button>
+                </View>
+                <View style={styles.buttonRow}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => openResetPasswordDialog(user)}
+                    icon="lock-reset"
+                    style={styles.actionButton}
+                  >
+                    Reset Password
+                  </Button>
+                  <Button
+                    textColor="#F44336"
+                    onPress={() => handleDelete(user)}
+                    style={styles.actionButton}
+                  >
+                    Delete
+                  </Button>
+                </View>
               </Card.Actions>
             </Card>
           ))
@@ -816,6 +833,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 20,
+  },
+  cardActions: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginVertical: 4,
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 4,
   },
 });
 

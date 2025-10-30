@@ -5,6 +5,7 @@ import { useAuth, UserRole } from './AuthContext';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import AuthService from '../../services/auth/AuthService';
+import { checkLatestSession } from '../../scripts/testCheckSessions';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -80,6 +81,10 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
           refreshTokenExpiry: result.tokens.refreshTokenExpiry,
         }
       );
+
+      // Debug: Check session in database (Week 3 Testing)
+      console.log('LoginScreen: Checking session in database...');
+      await checkLatestSession();
 
       // Navigate based on role
       const roleMap: Record<string, keyof RootStackParamList> = {

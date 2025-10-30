@@ -83,6 +83,12 @@ export class PasswordResetService {
           .create((record) => {
             record.userId = userId;
             record.passwordHash = passwordHash;
+
+            // Manually set timestamps since they were added via migration (not auto-managed)
+            // @ts-ignore - accessing internal _raw to set timestamps
+            const now = Date.now();
+            record._raw.created_at = now;
+            record._raw.updated_at = now;
           });
       });
 
