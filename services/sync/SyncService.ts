@@ -366,9 +366,12 @@ export class SyncService {
           }
         }
 
-        // Apply item changes
+        // Apply item changes in dependency order (Week 7, Day 4: Kahn's algorithm)
         if (changes.items) {
-          for (const itemData of changes.items) {
+          // Sort items using topological sort to respect dependencies
+          const sortedItems = this.topologicalSortItems(changes.items);
+
+          for (const itemData of sortedItems) {
             try {
               await this.applyItemChange(itemData);
               syncedCount++;
@@ -459,6 +462,117 @@ export class SyncService {
     // Local version is higher
     console.warn(`⚠️ ${tableName}/${recordId}: local v${localVersion} > server v${serverVersion}`);
     return false;
+  }
+
+  /**
+   * Topological sort using Kahn's algorithm (Week 7, Day 4)
+   *
+   * Sorts items in dependency order to ensure dependencies are synced before dependents.
+   * This prevents orphaned dependencies and maintains referential integrity.
+   *
+   * Algorithm:
+   * 1. Build adjacency list and calculate in-degrees
+   * 2. Start with items that have no dependencies (in-degree 0)
+   * 3. Process items in order, removing edges as we go
+   * 4. Items with circular dependencies are added at the end
+   *
+   * @param items - Array of item data from server
+   * @returns Sorted array where dependencies come before dependents
+   */
+  private static topologicalSortItems(items: any[]): any[] {
+    if (!items || items.length === 0) {
+      return [];
+    }
+
+    console.log(`📊 Kahn's Algorithm: Sorting ${items.length} items by dependency...`);
+
+    // Build ID to item map for quick lookup
+    const itemMap = new Map<string, any>();
+    items.forEach(item => itemMap.set(item.id, item));
+
+    // Build adjacency list and in-degree map
+    const adjacencyList = new Map<string, string[]>(); // item_id -> [dependent_item_ids]
+    const inDegree = new Map<string, number>(); // item_id -> count of dependencies
+
+    // Initialize all items
+    items.forEach(item => {
+      adjacencyList.set(item.id, []);
+      inDegree.set(item.id, 0);
+    });
+
+    // Build graph
+    items.forEach(item => {
+      const dependencies = this.parseDependencies(item.dependencies);
+
+      dependencies.forEach(depId => {
+        // Only consider dependencies that are in the current sync batch
+        if (itemMap.has(depId)) {
+          // depId -> item.id (dependency points to dependent)
+          adjacencyList.get(depId)!.push(item.id);
+          inDegree.set(item.id, (inDegree.get(item.id) || 0) + 1);
+        }
+      });
+    });
+
+    // Kahn's algorithm: Start with items that have no dependencies
+    const queue: string[] = [];
+    const sorted: any[] = [];
+
+    inDegree.forEach((degree, itemId) => {
+      if (degree === 0) {
+        queue.push(itemId);
+      }
+    });
+
+    console.log(`📝 Found ${queue.length} items with no dependencies (starting points)`);
+
+    // Process queue
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const currentItem = itemMap.get(currentId)!;
+      sorted.push(currentItem);
+
+      // Process all dependents of current item
+      const dependents = adjacencyList.get(currentId) || [];
+      dependents.forEach(dependentId => {
+        const newDegree = (inDegree.get(dependentId) || 0) - 1;
+        inDegree.set(dependentId, newDegree);
+
+        // If all dependencies are satisfied, add to queue
+        if (newDegree === 0) {
+          queue.push(dependentId);
+        }
+      });
+    }
+
+    // Check for circular dependencies
+    if (sorted.length < items.length) {
+      const remaining = items.filter(item => !sorted.find(s => s.id === item.id));
+      console.warn(
+        `⚠️ Circular dependencies detected! ${remaining.length} items have cycles.`
+      );
+      console.warn(`Items with cycles:`, remaining.map(r => r.id).join(', '));
+
+      // Add remaining items at the end (they have circular dependencies)
+      sorted.push(...remaining);
+    }
+
+    console.log(`✅ Kahn's Algorithm complete: ${sorted.length} items sorted`);
+    return sorted;
+  }
+
+  /**
+   * Parse dependencies from JSON string
+   * Helper for Kahn's algorithm
+   */
+  private static parseDependencies(dependencies: string | null | undefined): string[] {
+    if (!dependencies) return [];
+    try {
+      const parsed = JSON.parse(dependencies);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 
   /**
