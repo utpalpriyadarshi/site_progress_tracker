@@ -289,7 +289,50 @@ Screens are organized by user role for clear separation of concerns:
 
 ### 3. Service Layer (`services/`)
 
-**Purpose**: Business logic, database operations, offline/sync management
+**Purpose**: Business logic, database operations, offline/sync management, authentication & security
+
+#### Authentication Services (`services/auth/`) - Activity 1 Complete
+Complete security implementation with password hashing, JWT tokens, and session management.
+
+**AuthService.ts** - User authentication
+- `login()`: Validate credentials with bcrypt comparison
+- `logout()`: Clear tokens and revoke session
+- `refreshToken()`: Generate new access token from refresh token
+- **Integration**: JWT tokens, session management, bcrypt password comparison
+
+**TokenService.ts** - JWT token management
+- `generateAccessToken()`: Create access token (15min expiry)
+- `generateRefreshToken()`: Create refresh token (7 days expiry)
+- `validateToken()`: Verify JWT signature and expiry
+- **Token Payload**: userId, username, role, sessionId, iat, exp
+- **Secrets**: Strong 256-bit secrets stored in config/jwt.config.ts
+
+**SessionService.ts** - Session tracking
+- `createSession()`: Create new session on login
+- `validateSession()`: Check if session is active and not expired
+- `revokeSession()`: Invalidate session (logout or password reset)
+- `cleanupExpiredSessions()`: Automatic cleanup job
+- **Tracking**: Device info, IP address, created_at, expires_at, revoked_at
+
+**PasswordResetService.ts** - Password management
+- `resetPassword()`: Admin-assisted password reset
+- `changePassword()`: User-initiated password change
+- `validatePasswordStrength()`: Enforce password policy
+- `checkPasswordHistory()`: Prevent reuse of last 5 passwords
+- **Policy**: 8+ chars, uppercase, lowercase, number, special char
+
+**PasswordMigrationService.ts** - One-time migration (Activity 1)
+- `migrateAllPasswords()`: Hash all plaintext passwords
+- `verifyMigration()`: Validate bcrypt comparison works
+- **Status**: Migration complete, service no longer needed
+
+**Security Score: 9/10** (up from 1/10)
+- ✅ Zero plaintext passwords
+- ✅ Bcrypt hashing (salt rounds: 12)
+- ✅ JWT authentication with refresh tokens
+- ✅ Session tracking and revocation
+- ✅ Password strength enforcement
+- ✅ Password reuse prevention
 
 #### Database Services (`services/db/`)
 - **SimpleDatabaseService.ts**: Basic initialization and default data setup
@@ -430,7 +473,11 @@ MainNavigator (Stack)
 - **v10**: Added `users` and `roles` tables for Admin role implementation (v1.2)
 - **v11**: Added 7 planning fields to `items` table and `schedule_revisions` table (v1.3)
 - **v12**: Added WBS fields to `items`, new `interface_points` and `template_modules` tables (v1.4)
-- **v13-v17**: Reserved for future features
+- **v13**: Added `password_hash` field to users table (Activity 1, Week 1, Day 2)
+- **v14**: Removed plaintext `password` field from users table (Activity 1, Week 1, Day 5)
+- **v15**: Added `sessions` table for session management (Activity 1, Week 3, Day 11)
+- **v16**: Added `password_history` table for password reuse prevention (Activity 1, Week 3, Day 13)
+- **v17**: Added timestamps to sessions and password_history tables (Activity 1, Week 3, Day 15)
 - **v18**: Added `sync_status` field to 5 core models for sync tracking (Activity 2, Week 6, Day 1)
 - **v19**: Added `sync_queue` table for local change tracking (Activity 2, Week 6, Day 3)
 - **v20**: Current version - Added `_version` field to 10 syncable models for conflict resolution (Activity 2, Week 7, Day 1)
@@ -504,11 +551,27 @@ MainNavigator (Stack)
 - **Relationships**: belongs_to item
 - **Purpose**: Track schedule changes, analyze impact, maintain revision history
 
-#### users (v1.2)
+#### users (v1.2, updated v2.2 Activity 1)
 - User accounts with authentication
-- Fields: username, password, full_name, email, phone, is_active, role_id
-- **Relationships**: belongs_to role
-- **Note**: Passwords currently stored as plaintext (TODO: implement bcrypt hashing)
+- Fields: username, password_hash, full_name, email, phone, is_active, role_id
+- **Relationships**: belongs_to role, has_many sessions, has_many password_history
+- **Security (v2.2)**: Passwords hashed with bcrypt (salt rounds: 12), JWT token authentication
+- **Note**: Plaintext password field removed in Activity 1 (schema v14)
+
+#### sessions (v2.2 - Activity 1, Week 3, Day 11)
+- Active session tracking for JWT authentication
+- Fields: user_id, access_token, refresh_token, device_info (JSON), ip_address, created_at, expires_at, revoked_at, is_active
+- **Relationships**: belongs_to user
+- **Purpose**: Track active user sessions with JWT tokens
+- **Features**: Session expiry (7 days), device tracking, IP tracking, revocation support
+- **Cleanup**: Automatic cleanup of expired sessions
+
+#### password_history (v2.2 - Activity 1, Week 3, Day 13)
+- Password reuse prevention
+- Fields: user_id, password_hash, created_at
+- **Relationships**: belongs_to user
+- **Purpose**: Prevent password reuse (stores last 5 password hashes)
+- **Security**: Enforces password rotation policy
 
 #### roles (v1.2)
 - User roles and permissions
@@ -1536,7 +1599,21 @@ Based on the current structure, these areas are prepared for future development:
   - **Testing**: 100% test pass rate, 24+ test cases, zero issues found
   - **UX Score**: 5.5/10 → 7.0/10 (+27% improvement)
   - **Production Ready**: Approved for production release
-- **v2.2**: Activity 2 - Offline-First Sync System Complete (Schema v20 - CURRENT)
+- **v2.2 - Activity 1**: Security Implementation Complete (Schema v13-v17)
+  - **Password Hashing**: Migrated all passwords from plaintext to bcrypt (salt rounds: 12)
+  - **Schema Evolution**: v13 (password_hash), v14 (remove plaintext), v15 (sessions), v16 (password_history), v17 (timestamps)
+  - **JWT Authentication**: Access tokens (15min) + Refresh tokens (7 days)
+  - **Session Management**: Active session tracking with device info, IP address, expiry, revocation
+  - **Password Reset**: Admin-assisted reset with password strength validation
+  - **Password History**: Prevent reuse of last 5 passwords
+  - **Services Added**: AuthService, TokenService, SessionService, PasswordResetService, PasswordMigrationService
+  - **Models Added**: SessionModel, PasswordHistoryModel
+  - **Config Added**: config/jwt.config.ts (JWT secrets and expiry)
+  - **Security Score**: 1/10 → 9/10 (production-ready)
+  - **Lines of Code Added**: ~600 lines (services + models + migrations)
+  - **Implementation**: 3 weeks (Week 1: Password Hashing, Week 2: JWT Tokens, Week 3: Sessions & Reset)
+  - **Documentation**: docs/implementation/ACTIVITY_1_SECURITY_IMPLEMENTATION.md
+- **v2.2 - Activity 2**: Offline-First Sync System (Schema v18-v20 - IN PROGRESS)
   - **Schema Evolution**: v18 (sync_status), v19 (sync_queue table), v20 (_version field)
   - **Backend API**: Node.js/Express RESTful API with JWT authentication (Weeks 4-5)
   - **Mobile Sync**: Complete bidirectional sync with SyncService.ts (675 lines) (Week 6)
