@@ -15,4 +15,5 @@ export default class SiteModel extends Model {
   @field('location') location!: string;
   @field('project_id') projectId!: string; // belongs to project
   @field('supervisor_id') supervisorId?: string; // assigned supervisor (optional, can be null)
+  @field('sync_status') syncStatus!: string; // pending, synced, failed
 }

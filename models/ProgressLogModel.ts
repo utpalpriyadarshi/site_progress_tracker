@@ -16,5 +16,5 @@ export default class ProgressLogModel extends Model {
   @field('reported_by') reportedBy!: string; // user ID
   @field('photos') photos!: string; // JSON string of photo paths
   @field('notes') notes!: string;
-  @field('sync_status') syncStatusField!: string; // pending, synced, failed
+  @field('sync_status') syncStatus!: string; // pending, synced, failed
 }

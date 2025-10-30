@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 17, // Added created_at/updated_at to sessions and password_history tables (v2.2 - Week 3 Fix)
+  version: 18, // Added sync_status to projects, sites, items, categories, materials (Activity 2 prep)
   tables: [
     tableSchema({
       name: 'projects',
@@ -12,6 +12,7 @@ export default appSchema({
         { name: 'end_date', type: 'number' }, // timestamp
         { name: 'status', type: 'string' }, // active, completed, on_hold, cancelled
         { name: 'budget', type: 'number' },
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({
@@ -21,6 +22,7 @@ export default appSchema({
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({
@@ -28,6 +30,7 @@ export default appSchema({
       columns: [
         { name: 'name', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({
@@ -63,6 +66,7 @@ export default appSchema({
         { name: 'float_days', type: 'number', isOptional: true }, // total float
         { name: 'dependency_risk', type: 'string', isOptional: true }, // low, medium, high
         { name: 'risk_notes', type: 'string', isOptional: true }, // risk description
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({
@@ -105,6 +109,7 @@ export default appSchema({
         { name: 'status', type: 'string' }, // ordered, delivered, in_use, shortage
         { name: 'supplier', type: 'string', isOptional: true },
         { name: 'procurement_manager_id', type: 'string', isIndexed: true }, // managed by
+        { name: 'sync_status', type: 'string' }, // pending, synced, failed
       ],
     }),
     tableSchema({

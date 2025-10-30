@@ -20,7 +20,7 @@ export default class ScheduleRevisionModel extends Model {
   @field('approved_by') approvedBy?: string;
   @field('approval_status') approvalStatus!: string; // pending, approved, rejected
   @field('impact_summary') impactSummary?: string; // JSON string
-  @field('sync_status') syncStatusField!: string; // pending, synced, failed
+  @field('sync_status') syncStatus!: string; // pending, synced, failed
 
   // Helper method to get impacted items from JSON
   getImpactedItems(): string[] {

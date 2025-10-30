@@ -75,5 +75,41 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v18: Add sync_status to core syncable models (Activity 2 prep)
+    {
+      toVersion: 18,
+      steps: [
+        addColumns({
+          table: 'projects',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'sites',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'items',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'categories',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'materials',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+      ],
+    },
   ],
 });

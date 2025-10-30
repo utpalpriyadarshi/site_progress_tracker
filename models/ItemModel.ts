@@ -66,6 +66,9 @@ export default class ItemModel extends Model {
   @field('dependency_risk') dependencyRisk?: DependencyRisk;
   @field('risk_notes') riskNotes?: string;
 
+  // Sync Management (v18 - Activity 2 prep)
+  @field('sync_status') syncStatus!: string; // pending, synced, failed
+
   // Helper methods for dependencies
   getDependencies(): string[] {
     if (!this.dependencies) return [];

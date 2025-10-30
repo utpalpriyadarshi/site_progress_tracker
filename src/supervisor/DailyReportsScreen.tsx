@@ -198,7 +198,7 @@ const DailyReportsScreenComponent = ({
               log.reportedBy = supervisorId; // Use actual supervisor ID from context
               log.photos = '[]';
               log.notes = notesInput || '';
-              log.syncStatusField = 'pending'; // Always pending until submitted as report
+              log.syncStatus = 'pending'; // Always pending until submitted as report
             });
           console.log('Progress log created successfully');
         } catch (logError) {
@@ -328,7 +328,7 @@ const DailyReportsScreenComponent = ({
             report.totalProgress = totalProgress;
             report.pdfPath = pdfPath;
             report.notes = `${siteLogs.length} items updated`;
-            report.syncStatusField = isOnline ? 'synced' : 'pending';
+            report.syncStatus = isOnline ? 'synced' : 'pending';
           });
 
           totalReportsGenerated++;
@@ -338,7 +338,7 @@ const DailyReportsScreenComponent = ({
         if (isOnline) {
           for (const log of progressLogs) {
             await log.update((l: any) => {
-              l.syncStatusField = 'synced';
+              l.syncStatus = 'synced';
             });
           }
         }
