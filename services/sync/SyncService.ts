@@ -805,4 +805,306 @@ export class SyncService {
       lastPushAt: lastPushAt ? parseInt(lastPushAt, 10) : 0,
     };
   }
+
+  // ============================================================================
+  // Week 8, Days 1-2: Exponential Backoff Retry Logic
+  // ============================================================================
+
+  /**
+   * Retry configuration for exponential backoff
+   */
+  private static readonly RETRY_CONFIG = {
+    MAX_RETRIES: 5,
+    INITIAL_DELAY: 1000, // 1 second
+    MAX_DELAY: 60000, // 60 seconds (1 minute)
+    BACKOFF_FACTOR: 2, // Double the delay each time
+    DEAD_LETTER_THRESHOLD: 10, // Move to dead letter queue after 10 failures
+  };
+
+  /**
+   * Calculate exponential backoff delay
+   * Formula: min(initial_delay * (backoff_factor ^ retry_count), max_delay)
+   */
+  private static calculateBackoffDelay(retryCount: number): number {
+    const delay = Math.min(
+      this.RETRY_CONFIG.INITIAL_DELAY * Math.pow(this.RETRY_CONFIG.BACKOFF_FACTOR, retryCount),
+      this.RETRY_CONFIG.MAX_DELAY
+    );
+    // Add jitter to prevent thundering herd (randomize ±25%)
+    const jitter = delay * 0.25 * (Math.random() * 2 - 1);
+    return Math.floor(delay + jitter);
+  }
+
+  /**
+   * Retry a sync operation with exponential backoff
+   * Week 8, Day 1: Exponential backoff implementation
+   */
+  static async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    retryCount: number = 0
+  ): Promise<T> {
+    try {
+      console.log(`🔄 Attempting ${operationName} (attempt ${retryCount + 1}/${this.RETRY_CONFIG.MAX_RETRIES + 1})`);
+      return await operation();
+    } catch (error) {
+      const isLastAttempt = retryCount >= this.RETRY_CONFIG.MAX_RETRIES;
+
+      if (isLastAttempt) {
+        console.error(`❌ ${operationName} failed after ${retryCount + 1} attempts:`, error);
+        throw new Error(`Max retries (${this.RETRY_CONFIG.MAX_RETRIES}) exceeded for ${operationName}`);
+      }
+
+      const delay = this.calculateBackoffDelay(retryCount);
+      console.warn(`⚠️  ${operationName} failed (attempt ${retryCount + 1}). Retrying in ${delay}ms...`);
+
+      // Wait for exponential backoff delay
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Recursive retry with incremented count
+      return this.retryWithBackoff(operation, operationName, retryCount + 1);
+    }
+  }
+
+  /**
+   * Process sync queue with retry logic
+   * Week 8, Day 1-2: Enhanced queue processing with exponential backoff
+   */
+  static async processSyncQueue(): Promise<SyncResult> {
+    console.log('📦 Processing sync queue with retry logic...');
+
+    const syncedCount = {
+      success: 0,
+      failed: 0,
+      deadLetter: 0,
+    };
+
+    const errors: string[] = [];
+
+    try {
+      // Get all pending sync queue items
+      const queueItems = await database.collections
+        .get<SyncQueueModel>('sync_queue')
+        .query(Q.where('synced_at', null))
+        .fetch();
+
+      if (queueItems.length === 0) {
+        console.log('✅ Sync queue is empty');
+        return {
+          success: true,
+          message: 'Sync queue is empty',
+          syncedRecords: 0,
+        };
+      }
+
+      console.log(`📊 Found ${queueItems.length} items in sync queue`);
+
+      for (const item of queueItems) {
+        try {
+          // Check if item should be moved to dead letter queue
+          if (item.retryCount >= this.RETRY_CONFIG.DEAD_LETTER_THRESHOLD) {
+            await this.moveToDeadLetterQueue(item);
+            syncedCount.deadLetter++;
+            console.log(`☠️  Moved to dead letter queue: ${item.tableName}/${item.recordId} (${item.retryCount} failures)`);
+            continue;
+          }
+
+          // Retry the sync operation with exponential backoff
+          await this.retryWithBackoff(
+            async () => await this.syncQueueItem(item),
+            `Sync ${item.tableName}/${item.recordId}`,
+            item.retryCount
+          );
+
+          // Mark as synced
+          await database.write(async () => {
+            await item.update((record: any) => {
+              record.syncedAt = Date.now();
+            });
+          });
+
+          syncedCount.success++;
+          console.log(`✅ Synced: ${item.tableName}/${item.recordId}`);
+        } catch (error: any) {
+          // Increment retry count and update last error
+          await database.write(async () => {
+            await item.update((record: any) => {
+              record.retryCount = item.retryCount + 1;
+              record.lastError = error.message || String(error);
+            });
+          });
+
+          syncedCount.failed++;
+          errors.push(`${item.tableName}/${item.recordId}: ${error.message}`);
+          console.error(`❌ Failed to sync: ${item.tableName}/${item.recordId}`, error);
+        }
+      }
+
+      console.log(`\n📊 Sync Queue Summary:`);
+      console.log(`   ✅ Success: ${syncedCount.success}`);
+      console.log(`   ❌ Failed: ${syncedCount.failed}`);
+      console.log(`   ☠️  Dead Letter: ${syncedCount.deadLetter}`);
+
+      return {
+        success: syncedCount.failed === 0,
+        message: `Synced ${syncedCount.success} items${syncedCount.failed > 0 ? `, ${syncedCount.failed} failed` : ''}`,
+        syncedRecords: syncedCount.success,
+        errors: errors.length > 0 ? errors : undefined,
+      };
+    } catch (error: any) {
+      console.error('❌ Sync queue processing error:', error);
+      return {
+        success: false,
+        message: `Sync queue error: ${error.message}`,
+        syncedRecords: 0,
+        errors: [error.message],
+      };
+    }
+  }
+
+  /**
+   * Sync a single queue item (called by processSyncQueue)
+   */
+  private static async syncQueueItem(queueItem: SyncQueueModel): Promise<void> {
+    const { tableName, recordId, action, data } = queueItem;
+
+    // Parse data JSON
+    const recordData = typeof data === 'string' ? JSON.parse(data) : data;
+
+    // Make API request based on action
+    const endpoint = `/api/${tableName}`;
+
+    switch (action) {
+      case 'create':
+        await this.apiRequest(endpoint, 'POST', recordData);
+        break;
+      case 'update':
+        await this.apiRequest(`${endpoint}/${recordId}`, 'PUT', recordData);
+        break;
+      case 'delete':
+        await this.apiRequest(`${endpoint}/${recordId}`, 'DELETE');
+        break;
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
+  // ============================================================================
+  // Week 8, Day 2: Dead Letter Queue
+  // ============================================================================
+
+  /**
+   * Move failed sync item to dead letter queue
+   * Week 8, Day 2: Dead letter queue for items that fail repeatedly
+   */
+  private static async moveToDeadLetterQueue(queueItem: SyncQueueModel): Promise<void> {
+    try {
+      // Store in AsyncStorage as dead letter queue (persistent)
+      const deadLetterKey = `@sync/dead_letter/${queueItem.tableName}/${queueItem.recordId}`;
+      const deadLetterItem = {
+        tableName: queueItem.tableName,
+        recordId: queueItem.recordId,
+        action: queueItem.action,
+        data: queueItem.data,
+        retryCount: queueItem.retryCount,
+        lastError: queueItem.lastError,
+        failedAt: Date.now(),
+        originalCreatedAt: queueItem.createdAt,
+      };
+
+      await AsyncStorage.setItem(deadLetterKey, JSON.stringify(deadLetterItem));
+
+      // Remove from sync queue
+      await database.write(async () => {
+        await queueItem.destroyPermanently();
+      });
+
+      console.log(`☠️  Moved to dead letter queue: ${queueItem.tableName}/${queueItem.recordId}`);
+    } catch (error) {
+      console.error('Failed to move to dead letter queue:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all dead letter queue items
+   * Week 8, Day 2: Retrieve dead letter queue for admin monitoring
+   */
+  static async getDeadLetterQueue(): Promise<any[]> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const deadLetterKeys = allKeys.filter(key => key.startsWith('@sync/dead_letter/'));
+
+      const deadLetterItems = await Promise.all(
+        deadLetterKeys.map(async key => {
+          const item = await AsyncStorage.getItem(key);
+          return item ? JSON.parse(item) : null;
+        })
+      );
+
+      return deadLetterItems.filter(item => item !== null);
+    } catch (error) {
+      console.error('Failed to get dead letter queue:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Retry a dead letter queue item manually
+   * Week 8, Day 2: Admin can manually retry failed items
+   */
+  static async retryDeadLetterItem(tableName: string, recordId: string): Promise<boolean> {
+    try {
+      const deadLetterKey = `@sync/dead_letter/${tableName}/${recordId}`;
+      const itemStr = await AsyncStorage.getItem(deadLetterKey);
+
+      if (!itemStr) {
+        console.error('Dead letter item not found');
+        return false;
+      }
+
+      const item = JSON.parse(itemStr);
+
+      // Move back to sync queue with reset retry count
+      await database.write(async () => {
+        await database.collections.get<SyncQueueModel>('sync_queue').create((record: any) => {
+          record.tableName = item.tableName;
+          record.recordId = item.recordId;
+          record.action = item.action;
+          record.data = typeof item.data === 'string' ? item.data : JSON.stringify(item.data);
+          record.syncedAt = null;
+          record.retryCount = 0; // Reset retry count
+          record.lastError = 'Retry from dead letter queue';
+        });
+      });
+
+      // Remove from dead letter queue
+      await AsyncStorage.removeItem(deadLetterKey);
+
+      console.log(`♻️  Moved back to sync queue: ${tableName}/${recordId}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to retry dead letter item:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear dead letter queue (admin action)
+   * Week 8, Day 2: Admin can clear dead letter queue
+   */
+  static async clearDeadLetterQueue(): Promise<number> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const deadLetterKeys = allKeys.filter(key => key.startsWith('@sync/dead_letter/'));
+
+      await AsyncStorage.multiRemove(deadLetterKeys);
+
+      console.log(`🗑️  Cleared ${deadLetterKeys.length} items from dead letter queue`);
+      return deadLetterKeys.length;
+    } catch (error) {
+      console.error('Failed to clear dead letter queue:', error);
+      return 0;
+    }
+  }
 }
