@@ -20,6 +20,7 @@ export class NetworkMonitor {
   private static currentState: NetInfoState | null = null;
   private static unsubscribe: (() => void) | null = null;
   private static autoSyncEnabled: boolean = true;
+  private static isInitialized: boolean = false;
 
   /**
    * Initialize network monitoring
@@ -36,6 +37,7 @@ export class NetworkMonitor {
     // Get initial network state
     NetInfo.fetch().then((state: NetInfoState) => {
       this.currentState = state;
+      this.isInitialized = true; // Mark as initialized after getting first state
       console.log(`📡 Initial network state: ${this.getConnectionInfo(state)}`);
     });
   }
@@ -43,6 +45,7 @@ export class NetworkMonitor {
   /**
    * Handle network state changes
    * Week 8, Day 3: Trigger sync when network is restored
+   * Fix: Week 8, Day 5 - Don't trigger sync on initial network state
    */
   private static handleNetworkChange(state: NetInfoState): void {
     const wasConnected = this.currentState?.isConnected || false;
@@ -55,7 +58,8 @@ export class NetworkMonitor {
     this.notifyListeners(isConnected, state.type);
 
     // Trigger auto-sync when network is restored (offline → online)
-    if (!wasConnected && isConnected && this.autoSyncEnabled) {
+    // BUT: Skip if this is the initial state during app initialization
+    if (!wasConnected && isConnected && this.autoSyncEnabled && this.isInitialized) {
       console.log('🔄 Network restored! Triggering auto-sync...');
       this.triggerAutoSync();
     }
@@ -194,6 +198,7 @@ export class NetworkMonitor {
 
     this.listeners = [];
     this.currentState = null;
+    this.isInitialized = false;
 
     console.log('📡 Network monitor cleaned up');
   }

@@ -319,6 +319,7 @@ export class SyncService {
 
       // Fix: Week 8, Day 5 - Check authentication before syncing
       const accessToken = await TokenStorage.getAccessToken();
+      console.log('🔐 SyncDown auth check - Token exists:', !!accessToken);
       if (!accessToken) {
         console.log('⚠️  SyncDown skipped: Not authenticated');
         return {
