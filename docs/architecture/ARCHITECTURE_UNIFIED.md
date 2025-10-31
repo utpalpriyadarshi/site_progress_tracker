@@ -68,12 +68,17 @@ site_progress_tracker/
 │   ├── db/                       # Database services
 │   │   ├── SimpleDatabaseService.ts  # Basic database service & initialization
 │   │   └── DatabaseService.ts        # Enhanced database service with queries
+│   ├── network/                  # Network monitoring (Week 8 - NEW)
+│   │   └── NetworkMonitor.ts     # Real-time network state monitoring (240 lines)
 │   ├── offline/                  # Offline functionality
 │   │   └── OfflineService.ts     # Network status & offline management
 │   ├── pdf/                      # PDF generation services
 │   │   └── ReportPdfService.ts   # Report PDF generation (disabled)
-│   └── sync/                     # Sync functionality
-│       └── SyncService.ts        # Data synchronization & conflict resolution
+│   ├── storage/                  # Secure storage services
+│   │   └── TokenStorage.ts       # JWT token management (AsyncStorage)
+│   └── sync/                     # Sync functionality (Activity 2 - Complete)
+│       ├── SyncService.ts        # Core sync engine with retry & DLQ (1,132 lines)
+│       └── AutoSyncManager.ts    # Auto-sync triggers & state management (398 lines)
 ├── src/                          # Application source code (ACTIVE)
 │   ├── auth/                     # Authentication screens
 │   │   └── LoginScreen.tsx       # User login screen
@@ -105,16 +110,19 @@ site_progress_tracker/
 │   │       ├── WBSItemCard.tsx         # WBS item display card (v1.4)
 │   │       ├── CategorySelector.tsx    # Category dropdown (v1.4)
 │   │       └── PhaseSelector.tsx       # Phase dropdown (v1.4)
-│   ├── admin/                    # Admin-specific screens (3 screens - v1.2)
+│   ├── admin/                    # Admin-specific screens (4 screens - v2.2)
 │   │   ├── AdminDashboardScreen.tsx      # Admin dashboard with statistics
 │   │   ├── ProjectManagementScreen.tsx   # Project CRUD with cascade delete
 │   │   ├── RoleManagementScreen.tsx      # User & role management
+│   │   ├── SyncMonitoringScreen.tsx      # Sync monitoring & DLQ management (Week 8 - NEW)
 │   │   ├── context/
 │   │   │   └── AdminContext.tsx          # Admin role switching context
 │   │   └── components/
 │   │       ├── ProjectCard.tsx           # Project display card
 │   │       ├── UserCard.tsx              # User display card
 │   │       └── StatisticsCard.tsx        # Dashboard statistics
+│   ├── components/               # Shared UI components (Week 8 - NEW)
+│   │   └── SyncIndicator.tsx     # Real-time sync status indicator (200 lines)
 │   ├── supervisor/               # Supervisor-specific screens (7 screens)
 │   │   ├── DailyReportsScreen.tsx        # Submit daily progress reports
 │   │   ├── ReportsHistoryScreen.tsx      # View submitted reports history
@@ -853,7 +861,159 @@ Output (sorted): Site-Prep → Foundation → Structure → [Electrical, Plumbin
 - **Backend**: Node.js/Express RESTful API
 - **Authentication**: JWT tokens with refresh
 - **Endpoints**: CRUD for all 10 syncable models
-- **Documentation**: See construction-tracker-api/WEEK_4_5_PROGRESS_SUMMARY.md
+- **Documentation**: See docs/api/API_DOCUMENTATION.md
+
+#### Queue Management & Retry Logic (Week 8, Days 1-3)
+
+**E. Exponential Backoff Retry**
+```
+Retry Delay = min(1000ms × 2^retry_count, 60000ms) ± jitter
+```
+
+**Features:**
+- **Max Retries**: 5 attempts before failure
+- **Jitter**: ±25% randomization to prevent thundering herd
+- **Backoff Schedule**: 1s → 2s → 4s → 8s → 16s → 60s (capped)
+- **Auto-Recovery**: Retry automatically on network errors
+
+**Implementation:**
+```typescript
+// In SyncService.ts (Week 8, Day 2)
+private static async retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 5
+): Promise<T>
+```
+
+**F. Dead Letter Queue (DLQ)**
+
+**Purpose:** Capture items that fail repeatedly (10+ attempts) for manual intervention
+
+**Storage:** Persistent in AsyncStorage (`@sync/dead_letter/`)
+
+**Features:**
+- View failed items with error messages
+- Manual retry with reset counter
+- Bulk clear operation
+- Admin UI for monitoring
+
+**Operations:**
+```typescript
+moveToDeadLetterQueue(queueItem)  // Auto after 10 failures
+getDeadLetterQueue()               // View all failed items
+retryDeadLetterItem(itemId)        // Manual retry
+clearDeadLetterQueue()             // Clear all
+```
+
+#### Network Monitoring & Auto-Sync (Week 8, Days 3-5)
+
+**G. NetworkMonitor Service** (240 lines)
+
+**Features:**
+- Real-time network state monitoring via @react-native-community/netinfo
+- Connection type detection (WiFi, Cellular, None)
+- Internet reachability testing
+- Network change listeners with callback system
+- Auto-sync trigger on network restore (offline → online)
+- 2-second stabilization delay before sync
+
+**Key Methods:**
+```typescript
+NetworkMonitor.initialize()
+NetworkMonitor.isConnected()
+NetworkMonitor.getConnectionType()
+NetworkMonitor.addListener(callback)
+```
+
+**H. AutoSyncManager Service** (398 lines)
+
+**4 Automatic Sync Triggers:**
+
+1. **App Launch Sync** (2-second delay after login)
+   - Runs after user authentication
+   - Allows app initialization to complete
+   - Ensures database is ready
+
+2. **Network Change Sync** (via NetworkMonitor)
+   - Triggers when offline → online
+   - 2-second stabilization delay
+   - Prevents sync on initial app load
+
+3. **Periodic Sync** (every 5 minutes)
+   - Background interval while app is active
+   - Skips if already syncing
+   - Configurable interval
+
+4. **App Foreground Sync** (background → foreground)
+   - 1-minute cooldown to prevent rapid syncs
+   - Ensures data freshness when app resumes
+
+**Sync State Management:**
+```typescript
+interface SyncState {
+  isSyncing: boolean;           // Currently syncing
+  lastSyncAt: number;           // Last sync timestamp
+  lastSyncSuccess: boolean;     // Last sync succeeded
+  lastSyncError: string | null; // Last error message
+  syncCount: number;            // Total syncs performed
+}
+```
+
+**Key Methods:**
+```typescript
+AutoSyncManager.initialize()              // Start auto-sync
+AutoSyncManager.startAfterLogin()         // Initial sync after login
+AutoSyncManager.triggerManualSync()       // User-initiated sync
+AutoSyncManager.addListener(callback)     // Subscribe to state changes
+```
+
+#### Sync UI Components (Week 8, Day 5)
+
+**I. SyncIndicator Component** (200 lines)
+
+**Features:**
+- Real-time sync status display
+- Network connection indicator (WiFi/Cellular/Offline)
+- Last sync timestamp with relative time ("just now", "5m ago")
+- Sync error display with messages
+- Manual sync button
+- Compact mode for header bars
+
+**Visual States:**
+- 🟢 Green cloud: All synced
+- 🟡 Yellow cloud: Currently syncing
+- 🔴 Red cloud with X: Sync failed
+
+**J. SyncMonitoringScreen** (300 lines)
+
+**Admin UI for sync monitoring:**
+- Sync status dashboard
+- Pending records count by model
+- Dead letter queue viewer
+- Manual retry controls
+- Sync statistics (success/failure rates)
+- Network status display
+- Force sync button
+- Clear queue operations
+
+**Location:** `src/admin/SyncMonitoringScreen.tsx`
+
+#### Production Readiness Features
+
+**✅ Complete Sync System (Weeks 4-8):**
+- Bidirectional sync (push/pull) with JWT authentication
+- Conflict resolution (Last-Write-Wins with version tracking)
+- Dependency-aware sync (Kahn's algorithm)
+- Queue management with retry logic (exponential backoff)
+- Dead letter queue for failed items
+- Network monitoring with auto-sync triggers
+- User feedback UI (SyncIndicator)
+- Admin monitoring (SyncMonitoringScreen)
+
+**Documentation:**
+- Architecture: `docs/sync/SYNC_ARCHITECTURE.md`
+- API Reference: `docs/api/API_DOCUMENTATION.md`
+- Troubleshooting: `docs/sync/SYNC_TROUBLESHOOTING.md`
 
 ### 3. Planning Module Features (v1.3-v1.5)
 
