@@ -11,6 +11,7 @@
 
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { SyncService } from '../sync/SyncService';
+import TokenStorage from '../storage/TokenStorage';
 
 type NetworkListener = (isConnected: boolean, connectionType: string) => void;
 
@@ -66,9 +67,17 @@ export class NetworkMonitor {
   /**
    * Trigger automatic sync when network is available
    * Week 8, Day 3: Auto-sync on network restore
+   * Fix: Week 8, Day 5 - Check authentication first
    */
   private static async triggerAutoSync(): Promise<void> {
     try {
+      // Check if user is authenticated
+      const accessToken = await TokenStorage.getAccessToken();
+      if (!accessToken) {
+        console.log('🔄 Auto-sync skipped: Not authenticated');
+        return;
+      }
+
       // Wait a moment for network to stabilize
       await new Promise(resolve => setTimeout(resolve, 2000));
 

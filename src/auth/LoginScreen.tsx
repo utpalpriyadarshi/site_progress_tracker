@@ -6,6 +6,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import AuthService from '../../services/auth/AuthService';
 import { checkLatestSession } from '../../scripts/testCheckSessions';
+import AutoSyncManager from '../../services/sync/AutoSyncManager';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -85,6 +86,10 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       // Debug: Check session in database (Week 3 Testing)
       console.log('LoginScreen: Checking session in database...');
       await checkLatestSession();
+
+      // Week 8 Fix: Start auto-sync after successful login
+      console.log('LoginScreen: Starting auto-sync after login...');
+      AutoSyncManager.startAfterLogin();
 
       // Navigate based on role
       const roleMap: Record<string, keyof RootStackParamList> = {

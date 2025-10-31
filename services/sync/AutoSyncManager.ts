@@ -13,6 +13,7 @@
 import { AppState, AppStateStatus } from 'react-native';
 import { SyncService } from './SyncService';
 import NetworkMonitor from '../network/NetworkMonitor';
+import TokenStorage from '../storage/TokenStorage';
 
 export interface SyncState {
   isSyncing: boolean;
@@ -43,14 +44,26 @@ export class AutoSyncManager {
   private static readonly SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   /**
+   * Check if user is authenticated (has access token)
+   * Fix: Week 8, Day 5 - Prevent sync before login
+   */
+  private static async isAuthenticated(): Promise<boolean> {
+    try {
+      const accessToken = await TokenStorage.getAccessToken();
+      return accessToken !== null && accessToken !== undefined;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Initialize auto-sync manager
    * Week 8, Day 4: Setup all auto-sync triggers
    */
   static initialize(): void {
     console.log('🤖 Initializing AutoSyncManager...');
 
-    // 1. Trigger: App launch sync
-    this.performAppLaunchSync();
+    // Note: App launch sync is deferred - will run after login via startAfterLogin()
 
     // 2. Trigger: Network change sync (via NetworkMonitor)
     this.setupNetworkSync();
@@ -62,6 +75,28 @@ export class AutoSyncManager {
     this.setupAppStateSync();
 
     console.log(`✅ AutoSyncManager initialized (interval: ${this.SYNC_INTERVAL / 1000}s)`);
+    console.log(`ℹ️  Note: Initial sync will run after user login`);
+  }
+
+  /**
+   * Start auto-sync after successful login
+   * Fix: Week 8, Day 5 - Only sync after authentication
+   */
+  static async startAfterLogin(): Promise<void> {
+    console.log('🔐 User logged in: Starting auto-sync...');
+
+    const isConnected = await NetworkMonitor.isConnected();
+
+    if (!isConnected) {
+      console.log('⚠️  No network connection, sync will start when online');
+      return;
+    }
+
+    // Wait a moment for auth to settle
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Perform initial sync after login
+    await this.performSync('Post-Login');
   }
 
   /**
@@ -113,6 +148,13 @@ export class AutoSyncManager {
 
     this.intervalId = setInterval(async () => {
       try {
+        // Check authentication first
+        const isAuthenticated = await this.isAuthenticated();
+        if (!isAuthenticated) {
+          console.log('⏰ Periodic sync: Not authenticated, skipping');
+          return;
+        }
+
         const isConnected = await NetworkMonitor.isConnected();
 
         if (!isConnected) {
@@ -148,6 +190,13 @@ export class AutoSyncManager {
         console.log('📱 App came to foreground: Checking sync...');
 
         try {
+          // Check authentication first
+          const isAuthenticated = await this.isAuthenticated();
+          if (!isAuthenticated) {
+            console.log('📱 App foreground: Not authenticated, skipping sync');
+            return;
+          }
+
           const isConnected = await NetworkMonitor.isConnected();
 
           if (!isConnected) {
