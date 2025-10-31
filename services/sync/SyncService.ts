@@ -137,6 +137,17 @@ export class SyncService {
     try {
       console.log('🔄 SyncService.syncUp() started...');
 
+      // Fix: Week 8, Day 5 - Check authentication before syncing
+      const accessToken = await TokenStorage.getAccessToken();
+      if (!accessToken) {
+        console.log('⚠️  SyncUp skipped: Not authenticated');
+        return {
+          success: false,
+          message: 'Not authenticated',
+          syncedRecords: 0,
+        };
+      }
+
       // Collect all pending records from syncable tables
       const pendingProjects = await database.collections
         .get<ProjectModel>('projects')
@@ -305,6 +316,17 @@ export class SyncService {
   static async syncDown(): Promise<SyncResult> {
     try {
       console.log('🔄 SyncService.syncDown() started...');
+
+      // Fix: Week 8, Day 5 - Check authentication before syncing
+      const accessToken = await TokenStorage.getAccessToken();
+      if (!accessToken) {
+        console.log('⚠️  SyncDown skipped: Not authenticated');
+        return {
+          success: false,
+          message: 'Not authenticated',
+          syncedRecords: 0,
+        };
+      }
 
       // Get last sync timestamp
       const lastSyncAt = await this.getLastSyncAt();

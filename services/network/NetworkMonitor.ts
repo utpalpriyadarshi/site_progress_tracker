@@ -201,9 +201,17 @@ export class NetworkMonitor {
   /**
    * Manually trigger sync if network is available
    * Week 8, Day 3: User-initiated sync
+   * Fix: Week 8, Day 5 - Check authentication first
    */
   static async manualSync(): Promise<boolean> {
     try {
+      // Check if user is authenticated
+      const accessToken = await TokenStorage.getAccessToken();
+      if (!accessToken) {
+        console.log('🔄 Manual sync skipped: Not authenticated');
+        return false;
+      }
+
       const isConnected = await this.isConnected();
 
       if (!isConnected) {
