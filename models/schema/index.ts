@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 20, // Added _version field for conflict resolution (Week 7, Day 1)
+  version: 21, // Added teams, team_members, resource_requests tables (Activity 3: Manager Role - Week 1)
   tables: [
     tableSchema({
       name: 'projects',
@@ -249,6 +249,52 @@ export default appSchema({
         { name: 'synced_at', type: 'number', isOptional: true }, // timestamp when synced (null if pending)
         { name: 'retry_count', type: 'number' }, // number of retry attempts
         { name: 'last_error', type: 'string', isOptional: true }, // last error message if sync failed
+      ],
+    }),
+    tableSchema({
+      name: 'teams',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'site_id', type: 'string', isIndexed: true },
+        { name: 'team_lead_id', type: 'string', isOptional: true },
+        { name: 'created_date', type: 'number' },
+        { name: 'status', type: 'string' },
+        { name: 'specialization', type: 'string', isOptional: true },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'team_members',
+      columns: [
+        { name: 'team_id', type: 'string', isIndexed: true },
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'role', type: 'string' },
+        { name: 'assigned_date', type: 'number' },
+        { name: 'end_date', type: 'number', isOptional: true },
+        { name: 'status', type: 'string' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'resource_requests',
+      columns: [
+        { name: 'requested_by', type: 'string', isIndexed: true },
+        { name: 'site_id', type: 'string', isIndexed: true },
+        { name: 'resource_type', type: 'string' },
+        { name: 'resource_name', type: 'string' },
+        { name: 'quantity', type: 'number' },
+        { name: 'priority', type: 'string' },
+        { name: 'requested_date', type: 'number' },
+        { name: 'needed_by_date', type: 'number' },
+        { name: 'approval_status', type: 'string', isIndexed: true },
+        { name: 'approved_by', type: 'string', isOptional: true },
+        { name: 'approval_date', type: 'number', isOptional: true },
+        { name: 'rejection_reason', type: 'string', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
       ],
     }),
   ],
