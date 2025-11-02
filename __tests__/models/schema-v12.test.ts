@@ -59,7 +59,7 @@ describe('Schema v12 Migration', () => {
           item.riskNotes = 'Test risk notes';
 
           // v18/v20 fields (Activity 2)
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });
@@ -151,7 +151,7 @@ describe('Schema v12 Migration', () => {
             i.wbsCode = '1.0.0.0';
             i.wbsLevel = 1;
             i.isCriticalPath = false;
-            i.syncStatus = 'pending';
+            i.appSyncStatus = 'pending';
             i.version = 1;
           });
         });
@@ -195,7 +195,7 @@ describe('Schema v12 Migration', () => {
             i.wbsLevel = 1;
             i.isCriticalPath = false;
             i.dependencyRisk = risk as any;
-            i.syncStatus = 'pending';
+            i.appSyncStatus = 'pending';
             i.version = 1;
           });
         });

@@ -477,11 +477,13 @@ database.collections.get('sites')
 - Do NOT declare them in your models with decorators
 - They are accessible but should not be set manually
 
-**Sync Status Field** (CRITICAL):
-- WatermelonDB's Model class has a built-in `syncStatus` property
-- To avoid conflicts, use `syncStatusField` as the property name
-- Decorator maps to schema: `@field('sync_status') syncStatusField!: string`
-- This applies to: ProgressLogModel, HindranceModel, DailyReportModel, SiteInspectionModel
+**Sync Status Field** (CRITICAL - RESOLVED v2.2):
+- WatermelonDB's Model class has a built-in read-only `syncStatus` property
+- To avoid conflicts, we use `appSyncStatus` as the property name in all models
+- Decorator maps to schema: `@field('sync_status') appSyncStatus!: string`
+- This applies to ALL 10 syncable models: Projects, Sites, Categories, Items, Materials, ProgressLogs, Hindrances, DailyReports, SiteInspections, ScheduleRevisions
+- Database column name remains `sync_status` (no migration needed)
+- All code references updated to use `appSyncStatus` instead of `syncStatus`
 
 ## Development Commands
 

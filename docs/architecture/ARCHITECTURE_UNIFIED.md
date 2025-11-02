@@ -289,11 +289,14 @@ Screens are organized by user role for clear separation of concerns:
 - **When creating records**: Always use camelCase property names
 - **In queries**: Use snake_case column names with `Q.where()`
 
-#### Sync Status Field (CRITICAL)
-- **Issue**: WatermelonDB's Model class has a built-in `syncStatus` property
-- **Solution**: Use `syncStatusField` as the property name to avoid conflicts
-- **Pattern**: `@field('sync_status') syncStatusField!: string`
-- **Applies to**: ProgressLogModel, HindranceModel, DailyReportModel, SiteInspectionModel
+#### Sync Status Field (CRITICAL - RESOLVED v2.2)
+- **Issue**: WatermelonDB's Model class has a built-in read-only `syncStatus` property (SyncStatus enum)
+- **Solution**: Use `appSyncStatus` as the property name to avoid conflicts with WatermelonDB's internal sync tracking
+- **Pattern**: `@field('sync_status') appSyncStatus!: string`
+- **Database Column**: Remains `sync_status` in schema (no migration needed)
+- **Values**: 'pending', 'synced', 'failed' (our application-level sync status)
+- **Applies to**: ALL 10 syncable models (Projects, Sites, Categories, Items, Materials, ProgressLogs, Hindrances, DailyReports, SiteInspections, ScheduleRevisions)
+- **Code Updated**: All references in SyncService, UI screens, and tests changed from `.syncStatus` to `.appSyncStatus`
 
 ### 3. Service Layer (`services/`)
 

@@ -223,7 +223,7 @@ export class SyncService {
         for (const project of pendingProjects) {
           try {
             await project.update(record => {
-              record.syncStatus = 'synced';
+              record.appSyncStatus = 'synced';
             });
             syncedCount++;
           } catch (error) {
@@ -235,7 +235,7 @@ export class SyncService {
         for (const site of pendingSites) {
           try {
             await site.update(record => {
-              record.syncStatus = 'synced';
+              record.appSyncStatus = 'synced';
             });
             syncedCount++;
           } catch (error) {
@@ -247,7 +247,7 @@ export class SyncService {
         for (const category of pendingCategories) {
           try {
             await category.update(record => {
-              record.syncStatus = 'synced';
+              record.appSyncStatus = 'synced';
             });
             syncedCount++;
           } catch (error) {
@@ -259,7 +259,7 @@ export class SyncService {
         for (const item of pendingItems) {
           try {
             await item.update(record => {
-              record.syncStatus = 'synced';
+              record.appSyncStatus = 'synced';
             });
             syncedCount++;
           } catch (error) {
@@ -271,7 +271,7 @@ export class SyncService {
         for (const material of pendingMaterials) {
           try {
             await material.update(record => {
-              record.syncStatus = 'synced';
+              record.appSyncStatus = 'synced';
             });
             syncedCount++;
           } catch (error) {
@@ -611,7 +611,7 @@ export class SyncService {
       if (this.shouldApplyServerData(existing, data, 'projects')) {
         await existing.update(record => {
           Object.assign(record, data);
-          record.syncStatus = 'synced';
+          record.appSyncStatus = 'synced';
           record.version = data._version || existing.version;
         });
       }
@@ -619,7 +619,7 @@ export class SyncService {
       // Record doesn't exist, create new
       await collection.create(record => {
         Object.assign(record, data);
-        record.syncStatus = 'synced';
+        record.appSyncStatus = 'synced';
         record.version = data._version || 1;
       });
     }
@@ -637,14 +637,14 @@ export class SyncService {
       if (this.shouldApplyServerData(existing, data, 'sites')) {
         await existing.update(record => {
           Object.assign(record, data);
-          record.syncStatus = 'synced';
+          record.appSyncStatus = 'synced';
           record.version = data._version || existing.version;
         });
       }
     } catch (error) {
       await collection.create(record => {
         Object.assign(record, data);
-        record.syncStatus = 'synced';
+        record.appSyncStatus = 'synced';
         record.version = data._version || 1;
       });
     }
@@ -662,14 +662,14 @@ export class SyncService {
       if (this.shouldApplyServerData(existing, data, 'categories')) {
         await existing.update(record => {
           Object.assign(record, data);
-          record.syncStatus = 'synced';
+          record.appSyncStatus = 'synced';
           record.version = data._version || existing.version;
         });
       }
     } catch (error) {
       await collection.create(record => {
         Object.assign(record, data);
-        record.syncStatus = 'synced';
+        record.appSyncStatus = 'synced';
         record.version = data._version || 1;
       });
     }
@@ -687,14 +687,14 @@ export class SyncService {
       if (this.shouldApplyServerData(existing, data, 'items')) {
         await existing.update(record => {
           Object.assign(record, data);
-          record.syncStatus = 'synced';
+          record.appSyncStatus = 'synced';
           record.version = data._version || existing.version;
         });
       }
     } catch (error) {
       await collection.create(record => {
         Object.assign(record, data);
-        record.syncStatus = 'synced';
+        record.appSyncStatus = 'synced';
         record.version = data._version || 1;
       });
     }
@@ -712,14 +712,14 @@ export class SyncService {
       if (this.shouldApplyServerData(existing, data, 'materials')) {
         await existing.update(record => {
           Object.assign(record, data);
-          record.syncStatus = 'synced';
+          record.appSyncStatus = 'synced';
           record.version = data._version || existing.version;
         });
       }
     } catch (error) {
       await collection.create(record => {
         Object.assign(record, data);
-        record.syncStatus = 'synced';
+        record.appSyncStatus = 'synced';
         record.version = data._version || 1;
       });
     }

@@ -15,6 +15,6 @@ export default class ProjectModel extends Model {
   @field('end_date') endDate!: number; // timestamp
   @field('status') status!: string; // active, completed, on_hold, cancelled
   @field('budget') budget!: number;
-  @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking
 }

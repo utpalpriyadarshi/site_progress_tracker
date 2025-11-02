@@ -322,13 +322,13 @@ const ReportsHistoryScreen = () => {
                   </View>
                   <View style={styles.headerRight}>
                     <Chip
-                      icon={getSyncStatusIcon(report.syncStatus)}
+                      icon={getSyncStatusIcon(report.appSyncStatus)}
                       style={{
-                        backgroundColor: getSyncStatusColor(report.syncStatus),
+                        backgroundColor: getSyncStatusColor(report.appSyncStatus),
                       }}
                       textStyle={{ color: 'white' }}
                     >
-                      {report.syncStatus}
+                      {report.appSyncStatus}
                     </Chip>
                   </View>
                 </View>

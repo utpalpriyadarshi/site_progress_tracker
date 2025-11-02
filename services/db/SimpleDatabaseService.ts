@@ -394,7 +394,7 @@ export class SimpleDatabaseService {
           log.reportedBy = 'supervisor-1';
           log.photos = '[]';
           log.notes = 'Initial progress report for foundation excavation';
-          log.syncStatus = 'pending';
+          log.appSyncStatus = 'pending';
         });
       });
 

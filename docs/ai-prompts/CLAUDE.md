@@ -278,11 +278,15 @@ items.forEach(item => {
 - `'synced'` - Successfully synchronized with server
 - `'failed'` - Sync operation failed (will retry)
 
-**Known TypeScript Limitation:**
-- WatermelonDB's Model has built-in `syncStatus` property (SyncStatus enum: 'synced' | 'created' | 'updated' | 'deleted' | 'disposable')
-- Our custom `sync_status` field uses different values for OUR sync system
-- This creates type incompatibility in TypeScript but works correctly at runtime
-- Accept this limitation or use type assertions in test files
+**Sync Status Field Resolution (v2.2 - FIXED):**
+- **Issue**: WatermelonDB's Model has built-in read-only `syncStatus` property (SyncStatus enum: 'synced' | 'created' | 'updated' | 'deleted' | 'disposable')
+- **Solution**: Renamed our custom field from `syncStatus` to `appSyncStatus` to avoid property name collision
+- **Pattern**: `@field('sync_status') appSyncStatus!: string`
+- **Database**: Column name remains `sync_status` (no migration needed)
+- **Values**: 'pending', 'synced', 'failed' (our application-level sync tracking)
+- **Usage**: Always use `record.appSyncStatus` in code, never `record.syncStatus`
+- **Applies to**: ALL 10 syncable models (Projects, Sites, Categories, Items, Materials, ProgressLogs, Hindrances, DailyReports, SiteInspections, ScheduleRevisions)
+- **Status**: TypeScript errors resolved, all code updated
 
 ### Code Style
 - Prettier config: single quotes, trailing commas, arrow parens avoid

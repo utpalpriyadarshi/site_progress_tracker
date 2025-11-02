@@ -425,7 +425,7 @@ class PlanningService {
         revision.revisedBy = userId;
         revision.approvalStatus = 'pending';
         revision.impactSummary = JSON.stringify({ impactedItems: impactedItemIds });
-        revision.syncStatusField = 'pending';
+        revision.appSyncStatusField = 'pending';
       });
 
       // Update item with new dates

@@ -45,7 +45,7 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.floatDays = 5;
         item.dependencyRisk = 'low';
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -153,7 +153,7 @@ describe('WBSItemCard', () => {
         item.createdByRole = 'planner';
         item.isCriticalPath = true;
         item.floatDays = 0;
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -196,7 +196,7 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.dependencyRisk = 'high';
         item.riskNotes = 'Long lead time equipment';
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -238,7 +238,7 @@ describe('WBSItemCard', () => {
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
         item.dependencyRisk = 'medium';
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -279,7 +279,7 @@ describe('WBSItemCard', () => {
         item.isMilestone = true;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -322,7 +322,7 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.dependencyRisk = 'high';
         item.riskNotes = 'Equipment requires 180 days delivery';
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -361,7 +361,7 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -386,7 +386,7 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -442,7 +442,7 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
-        item.syncStatus = 'pending';
+        item.appSyncStatus = 'pending';
         item.version = 1;
       });
     });
@@ -554,7 +554,7 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });
@@ -599,7 +599,7 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });
@@ -643,7 +643,7 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });
@@ -687,7 +687,7 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });
@@ -731,7 +731,7 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
-          item.syncStatus = 'pending';
+          item.appSyncStatus = 'pending';
           item.version = 1;
         });
       });

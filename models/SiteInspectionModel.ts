@@ -20,6 +20,6 @@ export default class SiteInspectionModel extends Model {
   @field('follow_up_date') followUpDate!: number; // timestamp for follow-up inspection (0 if none)
   @field('follow_up_notes') followUpNotes!: string; // notes for follow-up actions
   @field('notes') notes!: string; // overall inspection notes
-  @field('sync_status') syncStatus!: string; // pending, synced, failed
+  @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking
 }
