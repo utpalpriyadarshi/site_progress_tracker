@@ -154,7 +154,7 @@ const SiteInspectionScreen = () => {
 
       for (const inspection of fetchedInspections) {
         const site = await sitesCollection.find(inspection.siteId);
-        console.log('Inspection sync status:', inspection.id, inspection.syncStatus);
+        console.log('Inspection sync status:', inspection.id, inspection.appSyncStatus);
         inspectionsWithSites.push({
           inspection,
           site,
@@ -423,7 +423,7 @@ const SiteInspectionScreen = () => {
             inspection.photos = JSON.stringify(photos);
             inspection.followUpDate = followUpTimestamp;
             inspection.followUpNotes = followUpRequired ? followUpNotes : '';
-            inspection.syncStatus = 'pending';
+            inspection.appSyncStatus = 'pending';
           });
         } else {
           // Create new
@@ -440,7 +440,7 @@ const SiteInspectionScreen = () => {
             inspection.followUpDate = followUpTimestamp;
             inspection.followUpNotes = followUpRequired ? followUpNotes : '';
             inspection.notes = notes;
-            inspection.syncStatus = 'pending';
+            inspection.appSyncStatus = 'pending';
           });
         }
       });
@@ -679,18 +679,18 @@ const SiteInspectionScreen = () => {
 
                 {/* Sync Status */}
                 <View style={styles.statusRow}>
-                  {inspection.syncStatus && (
+                  {inspection.appSyncStatus && (
                     <View style={styles.syncStatusContainer}>
                       <MaterialCommunityIcons
-                        name={inspection.syncStatus === 'synced' ? 'cloud-check' : 'cloud-upload'}
+                        name={inspection.appSyncStatus === 'synced' ? 'cloud-check' : 'cloud-upload'}
                         size={16}
-                        color={inspection.syncStatus === 'synced' ? '#4CAF50' : '#FF9800'}
+                        color={inspection.appSyncStatus === 'synced' ? '#4CAF50' : '#FF9800'}
                       />
                       <Text style={[
                         styles.syncStatusText,
-                        { color: inspection.syncStatus === 'synced' ? '#4CAF50' : '#FF9800' }
+                        { color: inspection.appSyncStatus === 'synced' ? '#4CAF50' : '#FF9800' }
                       ]}>
-                        {inspection.syncStatus === 'synced' ? 'Synced' : 'Pending Sync'}
+                        {inspection.appSyncStatus === 'synced' ? 'Synced' : 'Pending Sync'}
                       </Text>
                     </View>
                   )}

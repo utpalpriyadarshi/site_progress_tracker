@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth, UserRole } from './AuthContext';
-import { database } from '../../models/database';
-import UserModel from '../../models/UserModel';
-import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import AuthService from '../../services/auth/AuthService';
+import { checkLatestSession } from '../../scripts/testCheckSessions';
+import AutoSyncManager from '../../services/sync/AutoSyncManager';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -51,65 +51,65 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     setIsLoading(true);
 
     try {
-      // Query user from database
-      const users = await database.collections
-        .get<UserModel>('users')
-        .query(Q.where('username', username))
-        .fetch();
+      console.log('LoginScreen: Attempting login with AuthService...');
 
-      if (users.length === 0) {
-        showSnackbar('Invalid username or password', 'error');
+      // Use AuthService for JWT-based authentication
+      const result = await AuthService.login(username, password);
+
+      if (!result.success) {
+        showSnackbar(result.error || 'Login failed', 'error');
         setIsLoading(false);
         return;
       }
 
-      const user = users[0];
-
-      // Check password (in production, compare hashed password)
-      if (user.password !== password) {
-        showSnackbar('Invalid username or password', 'error');
+      if (!result.user || !result.tokens) {
+        showSnackbar('Invalid login response', 'error');
         setIsLoading(false);
         return;
       }
 
-      // Check if user is active
-      if (!user.isActive) {
-        showSnackbar('Your account has been deactivated. Please contact an administrator.', 'error');
-        setIsLoading(false);
-        return;
-      }
+      console.log('LoginScreen: Login successful, updating context...');
 
-      // Get user's role
-      const role = await user.role.fetch();
-      if (!role) {
-        showSnackbar('Unable to determine user role', 'error');
-        setIsLoading(false);
-        return;
-      }
+      // Save user data and JWT tokens to context
+      await login(
+        result.user.id,
+        result.user.username,
+        [result.user.role as UserRole],
+        {
+          accessToken: result.tokens.accessToken,
+          refreshToken: result.tokens.refreshToken,
+          accessTokenExpiry: result.tokens.accessTokenExpiry,
+          refreshTokenExpiry: result.tokens.refreshTokenExpiry,
+        }
+      );
 
-      // Simulate API call delay
-      await new Promise<void>(resolve => setTimeout(resolve, 500));
+      // Debug: Check session in database (Week 3 Testing)
+      console.log('LoginScreen: Checking session in database...');
+      await checkLatestSession();
 
-      // Save user data to context (still using old auth system for compatibility)
-      await login(user.id, user.username, [role.name.toLowerCase() as UserRole]);
+      // Week 8 Fix: Start auto-sync after successful login
+      console.log('LoginScreen: Starting auto-sync after login...');
+      AutoSyncManager.startAfterLogin();
 
       // Navigate based on role
-      if (role.name === 'Admin') {
-        navigateToScreen('Admin');
-      } else if (role.name === 'Supervisor') {
-        navigateToScreen('Supervisor');
-      } else if (role.name === 'Manager') {
-        navigateToScreen('Manager');
-      } else if (role.name === 'Planner') {
-        navigateToScreen('Planning');
-      } else if (role.name === 'Logistics') {
-        navigateToScreen('Logistics');
+      const roleMap: Record<string, keyof RootStackParamList> = {
+        admin: 'Admin',
+        supervisor: 'Supervisor',
+        manager: 'Manager',
+        planner: 'Planning',
+        logistics: 'Logistics',
+      };
+
+      const screenName = roleMap[result.user.role];
+      if (screenName) {
+        console.log('LoginScreen: Navigating to', screenName);
+        navigateToScreen(screenName);
       } else {
         showSnackbar('Unknown role type', 'error');
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('LoginScreen: Login error:', error);
       showSnackbar('An error occurred during login', 'error');
       setIsLoading(false);
     }
@@ -159,21 +159,21 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         <View style={styles.demoButtons}>
           <TouchableOpacity
             style={[styles.demoButton, styles.adminButton]}
-            onPress={() => handleDefaultLogin('admin', 'admin123')}
+            onPress={() => handleDefaultLogin('admin', 'Admin@2025')}
           >
             <Text style={styles.demoButtonText}>Admin</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('supervisor', 'supervisor123')}
+            onPress={() => handleDefaultLogin('supervisor', 'Supervisor@2025')}
           >
             <Text style={styles.demoButtonText}>Supervisor</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('manager', 'manager123')}
+            onPress={() => handleDefaultLogin('manager', 'Manager@2025')}
           >
             <Text style={styles.demoButtonText}>Manager</Text>
           </TouchableOpacity>
@@ -181,14 +181,14 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         <View style={[styles.demoButtons, styles.demoButtonsSecondRow]}>
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('planner', 'planner123')}
+            onPress={() => handleDefaultLogin('planner', 'Planner@2025')}
           >
             <Text style={styles.demoButtonText}>Planner</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.demoButton}
-            onPress={() => handleDefaultLogin('logistics', 'logistics123')}
+            onPress={() => handleDefaultLogin('logistics', 'Logistics@2025')}
           >
             <Text style={styles.demoButtonText}>Logistics</Text>
           </TouchableOpacity>
@@ -204,11 +204,11 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       <ConfirmDialog
         visible={showCredentialsDialog}
         title="Default Test Accounts"
-        message="• admin / admin123
-• supervisor / supervisor123
-• manager / manager123
-• planner / planner123
-• logistics / logistics123"
+        message="• admin / Admin@2025
+• supervisor / Supervisor@2025
+• manager / Manager@2025
+• planner / Planner@2025
+• logistics / Logistics@2025"
         confirmText="OK"
         onConfirm={() => setShowCredentialsDialog(false)}
         onCancel={() => setShowCredentialsDialog(false)}

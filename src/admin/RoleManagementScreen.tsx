@@ -21,6 +21,15 @@ import RoleModel from '../../models/RoleModel';
 import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import bcrypt from 'react-native-bcrypt';
+import PasswordValidator from '../../services/auth/PasswordValidator';
+import { PasswordResetService } from '../../services/auth/PasswordResetService';
+import {
+  validatePasswordStrength,
+  calculatePasswordStrength,
+  getPasswordRequirements,
+} from '../../utils/passwordValidator';
+import { useAuth } from '../auth/AuthContext';
 
 interface UserFormData {
   username: string;
@@ -34,6 +43,7 @@ interface UserFormData {
 
 const RoleManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserModel[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserModel[]>([]);
   const [roles, setRoles] = useState<RoleModel[]>([]);
@@ -53,6 +63,14 @@ const RoleManagementScreen = () => {
     roleId: '',
     isActive: true,
   });
+
+  // Password reset state
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [userToReset, setUserToReset] = useState<UserModel | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -160,13 +178,41 @@ const RoleManagementScreen = () => {
     }
 
     try {
+      // Validate password if provided (v2.2)
+      if (formData.password.trim()) {
+        const validation = PasswordValidator.validate(formData.password);
+        if (!validation.isValid) {
+          showSnackbar(validation.errors[0], 'warning');
+          return;
+        }
+      } else if (!editingUser) {
+        // Password required for new users
+        showSnackbar('Password is required for new users', 'warning');
+        return;
+      }
+
+      // Hash password if provided (v2.2)
+      let passwordHash: string | null = null;
+      if (formData.password.trim()) {
+        passwordHash = await new Promise<string>((resolve, reject) => {
+          bcrypt.hash(formData.password, 8, (err: Error | undefined, hash: string) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(hash);
+            }
+          });
+        });
+      }
+
       await database.write(async () => {
         if (editingUser) {
           // Update existing user
           await editingUser.update((user: any) => {
             user.username = formData.username;
-            if (formData.password.trim()) {
-              user.password = formData.password; // In production, hash this
+            if (passwordHash) {
+              // Store hashed password (v2.2)
+              user._raw.password_hash = passwordHash;
             }
             user.fullName = formData.fullName;
             user.email = formData.email;
@@ -178,7 +224,7 @@ const RoleManagementScreen = () => {
           // Create new user
           await database.collections.get('users').create((user: any) => {
             user.username = formData.username;
-            user.password = formData.password; // In production, hash this
+            user._raw.password_hash = passwordHash; // Store hashed password (v2.2)
             user.fullName = formData.fullName;
             user.email = formData.email;
             user.phone = formData.phone;
@@ -220,6 +266,62 @@ const RoleManagementScreen = () => {
     } catch (error) {
       console.error('Error deleting user:', error);
       showSnackbar('Failed to delete user', 'error');
+    }
+  };
+
+  // Password Reset Functions
+  const openResetPasswordDialog = (user: UserModel) => {
+    setUserToReset(user);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowResetPasswordDialog(true);
+  };
+
+  const closeResetPasswordDialog = () => {
+    setShowResetPasswordDialog(false);
+    setUserToReset(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!userToReset || !currentUser) return;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      showSnackbar('Passwords do not match', 'error');
+      return;
+    }
+
+    // Validate password strength
+    const validation = validatePasswordStrength(newPassword);
+    if (!validation.isValid) {
+      showSnackbar(`Password validation failed:\n${validation.errors.join('\n')}`, 'error');
+      return;
+    }
+
+    setResetPasswordLoading(true);
+
+    try {
+      const result = await PasswordResetService.resetPasswordByAdmin(
+        userToReset.id,
+        newPassword,
+        currentUser.userId
+      );
+
+      if (result.success) {
+        showSnackbar(`Password reset successful for ${userToReset.username}`, 'success');
+        closeResetPasswordDialog();
+      } else {
+        showSnackbar(result.details || result.error || 'Failed to reset password', 'error');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showSnackbar('Failed to reset password', 'error');
+    } finally {
+      setResetPasswordLoading(false);
     }
   };
 
@@ -322,14 +424,38 @@ const RoleManagementScreen = () => {
                   </Chip>
                 </View>
               </Card.Content>
-              <Card.Actions>
-                <Button onPress={() => toggleUserStatus(user)}>
-                  {user.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-                <Button onPress={() => openEditModal(user)}>Edit</Button>
-                <Button textColor="#F44336" onPress={() => handleDelete(user)}>
-                  Delete
-                </Button>
+              <Card.Actions style={styles.cardActions}>
+                <View style={styles.buttonRow}>
+                  <Button
+                    onPress={() => toggleUserStatus(user)}
+                    style={styles.actionButton}
+                  >
+                    {user.isActive ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button
+                    onPress={() => openEditModal(user)}
+                    style={styles.actionButton}
+                  >
+                    Edit
+                  </Button>
+                </View>
+                <View style={styles.buttonRow}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => openResetPasswordDialog(user)}
+                    icon="lock-reset"
+                    style={styles.actionButton}
+                  >
+                    Reset Password
+                  </Button>
+                  <Button
+                    textColor="#F44336"
+                    onPress={() => handleDelete(user)}
+                    style={styles.actionButton}
+                  >
+                    Delete
+                  </Button>
+                </View>
               </Card.Actions>
             </Card>
           ))
@@ -445,6 +571,94 @@ const RoleManagementScreen = () => {
               <Button onPress={() => setModalVisible(false)}>Cancel</Button>
               <Button mode="contained" onPress={handleSave}>
                 {editingUser ? 'Update' : 'Create'}
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
+
+      {/* Password Reset Dialog */}
+      <Portal>
+        <Modal
+          visible={showResetPasswordDialog}
+          onDismiss={closeResetPasswordDialog}
+          contentContainerStyle={styles.modalContent}
+        >
+          <ScrollView>
+            <Title style={styles.modalTitle}>Reset Password</Title>
+            <Paragraph style={styles.modalSubtitle}>
+              Reset password for: {userToReset?.fullName} ({userToReset?.username})
+            </Paragraph>
+            <Divider style={{ marginVertical: 16 }} />
+
+            <Paragraph style={styles.requirementsTitle}>Password Requirements:</Paragraph>
+            {getPasswordRequirements().map((req, index) => (
+              <Paragraph key={index} style={styles.requirement}>
+                • {req}
+              </Paragraph>
+            ))}
+
+            <TextInput
+              label="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              style={styles.input}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+
+            {newPassword.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <Paragraph style={styles.strengthLabel}>
+                  Password Strength: {calculatePasswordStrength(newPassword).label}
+                </Paragraph>
+                <View
+                  style={[
+                    styles.strengthBar,
+                    {
+                      width: `${(calculatePasswordStrength(newPassword).score / 6) * 100}%`,
+                      backgroundColor: calculatePasswordStrength(newPassword).color,
+                    },
+                  ]}
+                />
+              </View>
+            )}
+
+            <TextInput
+              label="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              style={styles.input}
+            />
+
+            {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+              <Paragraph style={styles.errorText}>Passwords do not match</Paragraph>
+            )}
+
+            <View style={styles.dialogActions}>
+              <Button onPress={closeResetPasswordDialog} disabled={resetPasswordLoading}>
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleResetPassword}
+                loading={resetPasswordLoading}
+                disabled={
+                  resetPasswordLoading ||
+                  !newPassword ||
+                  !confirmPassword ||
+                  newPassword !== confirmPassword
+                }
+              >
+                Reset Password
               </Button>
             </View>
           </ScrollView>
@@ -578,6 +792,62 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 20,
+  },
+  // Password Reset Dialog Styles
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  requirementsTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  requirement: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    marginBottom: 4,
+  },
+  strengthContainer: {
+    marginBottom: 15,
+  },
+  strengthLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  strengthBar: {
+    height: 4,
+    borderRadius: 2,
+    marginTop: 4,
+  },
+  errorText: {
+    color: '#F44336',
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 10,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 20,
+  },
+  cardActions: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginVertical: 4,
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 4,
   },
 });
 

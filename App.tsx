@@ -17,6 +17,13 @@ import { SimpleDatabaseService } from './services/db/SimpleDatabaseService';
 // Import Snackbar provider
 import { SnackbarProvider } from './src/components/Snackbar';
 
+// Import test script for session checking (Week 3 Testing)
+import { checkLatestSession } from './scripts/testCheckSessions';
+
+// Week 8, Day 3-4: Import network and sync managers
+import NetworkMonitor from './services/network/NetworkMonitor';
+import AutoSyncManager from './services/sync/AutoSyncManager';
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 
@@ -33,6 +40,16 @@ function App() {
     };
 
     initializeDatabase();
+
+    // Week 8, Day 3-4: Initialize network monitoring and auto-sync
+    NetworkMonitor.initialize();
+    AutoSyncManager.initialize();
+
+    // Cleanup on unmount
+    return () => {
+      NetworkMonitor.cleanup();
+      AutoSyncManager.stop();
+    };
   }, []);
 
   if (!isReady) {

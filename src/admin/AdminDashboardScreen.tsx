@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Paragraph, Menu, Button, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Card, Title, Paragraph, Menu, Button, Divider, ActivityIndicator } from 'react-native-paper';
 import { useAdminContext, AdminRole } from './context/AdminContext';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { database } from '../../models/database';
+import PasswordMigrationService from '../../services/auth/PasswordMigrationService';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -27,10 +28,18 @@ const AdminDashboardScreen = () => {
     totalUsers: 0,
     totalItems: 0,
   });
+  const [migrationStatus, setMigrationStatus] = useState({
+    totalUsers: 0,
+    migratedUsers: 0,
+    pendingUsers: 0,
+    percentComplete: 0,
+  });
+  const [isMigrating, setIsMigrating] = useState(false);
 
   // Load statistics
   useEffect(() => {
     loadStats();
+    loadMigrationStatus();
   }, []);
 
   const loadStats = async () => {
@@ -81,6 +90,59 @@ const AdminDashboardScreen = () => {
 
   const handleManageUsers = () => {
     navigation.navigate('RoleManagement' as any);
+  };
+
+  const loadMigrationStatus = async () => {
+    try {
+      const status = await PasswordMigrationService.getMigrationStatus();
+      setMigrationStatus(status);
+    } catch (error) {
+      console.error('Error loading migration status:', error);
+    }
+  };
+
+  const handleRunMigration = async () => {
+    Alert.alert(
+      'Migrate Passwords',
+      'This will hash all plaintext passwords with bcrypt. This operation cannot be undone. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Migrate',
+          style: 'destructive',
+          onPress: async () => {
+            setIsMigrating(true);
+            try {
+              const result = await PasswordMigrationService.hashAllPasswords();
+              if (result.success) {
+                const verification = await PasswordMigrationService.verifyMigration();
+                if (verification.success) {
+                  Alert.alert(
+                    'Migration Successful',
+                    `Migrated ${result.migratedCount} users in ${result.duration}ms. All passwords verified.`
+                  );
+                } else {
+                  Alert.alert(
+                    'Migration Warning',
+                    `Migration completed but verification failed for ${verification.failedCount} users.`
+                  );
+                }
+              } else {
+                Alert.alert(
+                  'Migration Failed',
+                  `Failed to migrate ${result.failedCount} users. Errors: ${result.errors.join(', ')}`
+                );
+              }
+              await loadMigrationStatus();
+            } catch (error) {
+              Alert.alert('Migration Error', `Failed: ${error}`);
+            } finally {
+              setIsMigrating(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -197,6 +259,39 @@ const AdminDashboardScreen = () => {
           </Button>
         </Card.Content>
       </Card>
+
+      {/* Password Migration Card (v2.2) */}
+      <Card style={[styles.card, { backgroundColor: '#FFF3CD' }]}>
+        <Card.Content>
+          <Title>🔐 Password Migration (v2.2)</Title>
+          <Paragraph style={styles.cardDescription}>
+            Migrate plaintext passwords to bcrypt hashed passwords
+          </Paragraph>
+          <View style={styles.migrationStats}>
+            <Paragraph>Total Users: {migrationStatus.totalUsers}</Paragraph>
+            <Paragraph>Migrated: {migrationStatus.migratedUsers}</Paragraph>
+            <Paragraph>Pending: {migrationStatus.pendingUsers}</Paragraph>
+            <Paragraph style={{ fontWeight: 'bold', color: migrationStatus.percentComplete === 100 ? 'green' : 'orange' }}>
+              Progress: {migrationStatus.percentComplete}%
+            </Paragraph>
+          </View>
+          <Button
+            mode="contained"
+            onPress={handleRunMigration}
+            style={[styles.actionButton, { backgroundColor: '#FFC107' }]}
+            disabled={isMigrating || migrationStatus.percentComplete === 100}
+            loading={isMigrating}
+          >
+            {migrationStatus.percentComplete === 100 ? 'Migration Complete ✓' : 'Run Migration'}
+          </Button>
+          {isMigrating && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#FFC107" />
+              <Paragraph style={{ marginLeft: 10 }}>Migrating passwords...</Paragraph>
+            </View>
+          )}
+        </Card.Content>
+      </Card>
     </ScrollView>
   );
 };
@@ -250,6 +345,20 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: 10,
+  },
+  migrationStats: {
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
   },
 });
 

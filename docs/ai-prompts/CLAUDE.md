@@ -16,6 +16,23 @@ Construction Site Progress Tracker - A React Native mobile application for const
 - When creating PRs: Use `gh pr merge --merge` (without `--delete-branch` flag)
 - Keep all feature branches: `feature/v0.x`, `feature/xxx`, etc.
 
+**CRITICAL: Commit Workflow**
+1. **Complete your work** - Implement features, fix bugs, etc.
+2. **Run TypeScript check** - `npx tsc --noEmit` (REQUIRED before every commit)
+3. **Fix all TypeScript errors** - Or document why they can't be fixed
+4. **Run tests** - `npm test` (if applicable)
+5. **Stage changes** - `git add -A` or `git add <specific files>`
+6. **Commit with descriptive message** - Include context, changes, and any known issues
+7. **Repeat** - Follow this workflow for every logical unit of work
+
+**Commit Message Guidelines:**
+- Use descriptive titles (e.g., "v2.2: Add conflict resolution to SyncService")
+- Include detailed body with bullet points for major changes
+- Document schema changes, migrations, and new files
+- Note any known limitations or future work
+- Include test status and file counts
+- Add co-author attribution for AI assistance
+
 ### Running the App
 ```bash
 # Start Metro bundler
@@ -43,12 +60,21 @@ npm install --save <package-name> --legacy-peer-deps
 
 ### Code Quality
 ```bash
+# TypeScript type checking (ALWAYS run before committing)
+npx tsc --noEmit
+
 # Lint code
 npm run lint
 
 # Run tests
 npm test
 ```
+
+**CRITICAL: TypeScript Check Before Commit**
+- **ALWAYS run `npx tsc --noEmit` before committing code**
+- Fix all TypeScript errors before creating commits
+- If errors are unavoidable (e.g., type system limitations), document them in commit message
+- This ensures type safety and catches errors early
 
 ## Code Architecture
 
@@ -98,7 +124,12 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 
 **Database Location**: Database models are in `/models/`, NOT `/src/db/`. This is important for imports.
 
-**Schema**: Defined in `models/schema/index.ts` (current version: 8)
+**Schema**: Defined in `models/schema/index.ts` (current version: 20)
+
+**Recent Schema Updates:**
+- **v18:** Added sync_status to core models (projects, sites, categories, items, materials)
+- **v19:** Added sync_queue table for tracking local changes
+- **v20:** Added _version field to 10 syncable models for conflict resolution
 
 **Core Collections**:
 - `projects` - Top-level project containers
@@ -116,7 +147,12 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 - Category → has many → Items
 - Item → belongs to → Site and Category, has many → ProgressLogs, Materials, Hindrances
 
-**Schema v8 Changes**:
+**Schema v18-v20 Changes (Activity 2 - Sync Implementation)**:
+- **v18:** Added `sync_status` field to 5 core models (projects, sites, categories, items, materials)
+- **v19:** Added `sync_queue` table for tracking local changes (table_name, record_id, action, data, synced_at, retry_count, last_error)
+- **v20:** Added `_version` field to 10 syncable models for conflict resolution (projects, sites, categories, items, materials, progress_logs, hindrances, daily_reports, site_inspections, schedule_revisions)
+
+**Schema v8 Changes (Earlier)**:
 - Added `daily_reports` table for report history
 - Added `reported_at` timestamp to `hindrances`
 - Added `photos` JSON field to `hindrances` for photo storage
@@ -133,6 +169,7 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
   - `DatabaseService.ts` - Enhanced database service with query methods
   - `SimpleDatabaseService.ts` - Basic initialization service
 - `/services/sync/` - Sync functionality for offline data
+  - `SyncService.ts` - Complete bidirectional sync with conflict resolution (Activity 2)
 - `/services/offline/` - Offline capability management
 
 ### TypeScript Configuration
@@ -224,11 +261,32 @@ items.forEach(item => {
 });
 ```
 
-### Offline-First Pattern
+### Offline-First Pattern (Activity 2 Complete)
 - All database operations work offline by default
-- Use `sync_status` field in progress_logs for tracking sync state
-- SyncService handles bidirectional sync when online
+- Use `sync_status` field in models for tracking sync state ('pending', 'synced', 'failed')
+- Use `_version` field for conflict resolution (Last-Write-Wins strategy)
+- **SyncService** handles bidirectional sync when online:
+  - `syncDown()` - Pull changes from server
+  - `syncUp()` - Push local changes to server
+  - Conflict resolution with version comparison
+  - Network detection and queue management
 - Always save to local database first, sync later
+- Changes tracked in `sync_queue` table for reliable synchronization
+
+**Sync Status Values:**
+- `'pending'` - Local change not yet synced to server
+- `'synced'` - Successfully synchronized with server
+- `'failed'` - Sync operation failed (will retry)
+
+**Sync Status Field Resolution (v2.2 - FIXED):**
+- **Issue**: WatermelonDB's Model has built-in read-only `syncStatus` property (SyncStatus enum: 'synced' | 'created' | 'updated' | 'deleted' | 'disposable')
+- **Solution**: Renamed our custom field from `syncStatus` to `appSyncStatus` to avoid property name collision
+- **Pattern**: `@field('sync_status') appSyncStatus!: string`
+- **Database**: Column name remains `sync_status` (no migration needed)
+- **Values**: 'pending', 'synced', 'failed' (our application-level sync tracking)
+- **Usage**: Always use `record.appSyncStatus` in code, never `record.syncStatus`
+- **Applies to**: ALL 10 syncable models (Projects, Sites, Categories, Items, Materials, ProgressLogs, Hindrances, DailyReports, SiteInspections, ScheduleRevisions)
+- **Status**: TypeScript errors resolved, all code updated
 
 ### Code Style
 - Prettier config: single quotes, trailing commas, arrow parens avoid
@@ -237,7 +295,7 @@ items.forEach(item => {
 
 ## Key Dependencies
 
-- **@nozbe/watermelondb** - Offline-first database (Schema v8)
+- **@nozbe/watermelondb** - Offline-first database (Schema v20)
 - **@react-navigation** - Navigation (stack + bottom tabs)
 - **react-native-paper** - Material Design components (Cards, Dialogs, Chips)
 - **react-native-vector-icons** - Icon system (MaterialCommunityIcons)
@@ -273,14 +331,47 @@ For screens that need photo capture (e.g., HindranceReportScreen):
 
 ### Testing Credentials
 Default test users (defined in DATABASE.md):
-- Manager: `manager` / `manager123`
-- Supervisor: `supervisor` / `supervisor123`
-- Planner: `planner` / `planner123`
-- Admin: `admin` / `admin123`
+- Admin: `admin` / `Admin@2025`
+- Manager: `manager` / `Manager@2025`
+- Supervisor: `supervisor` / `Supervisor@2025`
+- Planner: `planner` / `Planner@2025`
+- Logistics: `logistics` / `Logistics@2025`
 
 ## References
 
+### Architecture & Documentation
 - `ARCHITECTURE_UNIFIED.md` - Complete architecture documentation (single source of truth)
 - `DATABASE.md` - Complete database schema and relationships
 - `README.md` - Setup instructions and project overview
 - `PLANNING_MASTER_STATUS.md` - Planning module status and roadmap
+
+### Activity 2 Implementation (Sync System)
+- `docs/implementation/ACTIVITY_2_KICKOFF.md` - Complete Activity 2 planning document
+- `docs/implementation/WEEK_6_SYNCSERVICE_COMPLETE.md` - Mobile sync implementation details
+- `docs/implementation/WEEK_7_CONFLICT_RESOLUTION.md` - Conflict resolution with version tracking
+- `docs/testing/WEEK_5_API_TEST_REPORT.md` - Backend API testing results
+- `construction-tracker-api/WEEK_4_5_PROGRESS_SUMMARY.md` - Backend API implementation
+
+## Development Best Practices
+
+### Before Every Commit Checklist
+1. ✅ Run `npx tsc --noEmit` - Verify no TypeScript errors
+2. ✅ Run `npm test` - Ensure tests pass (if applicable)
+3. ✅ Review `git diff` - Verify only intended changes
+4. ✅ Write descriptive commit message - Include context and changes
+5. ✅ Document known issues - Note any limitations or future work
+
+### When Adding New Features
+1. ✅ Update schema version if modifying database
+2. ✅ Create migration file for schema changes
+3. ✅ Update affected models with new fields
+4. ✅ Add sync_status and _version to new syncable models
+5. ✅ Update CLAUDE.md with new patterns or conventions
+6. ✅ Run TypeScript check before committing
+7. ✅ Document changes in commit message
+
+### TypeScript Error Resolution
+- Fix all errors before committing when possible
+- Document unavoidable errors (e.g., type system limitations) in commit message
+- Use type assertions sparingly and only when necessary
+- Prefer fixing root cause over suppressing errors

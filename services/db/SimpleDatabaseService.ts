@@ -1,8 +1,25 @@
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
+import bcrypt from 'react-native-bcrypt';
 
 // A simplified database service that matches the actual schema
 export class SimpleDatabaseService {
+  /**
+   * Helper function to hash passwords with bcrypt
+   * Salt rounds: 8 (mobile optimized for performance)
+   */
+  private static hashPassword(password: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      bcrypt.hash(password, 8, (err: Error | undefined, hash: string) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(hash);
+        }
+      });
+    });
+  }
+
   static async initializeDefaultData(): Promise<void> {
     try {
       // Check if we already have data to avoid duplicates
@@ -53,11 +70,23 @@ export class SimpleDatabaseService {
         });
       });
 
-      // ✅ Create default users
+      // ✅ Hash passwords for demo users (one-time cost during initialization)
+      // Using strong passwords with special characters for better security
+      console.log('SimpleDatabaseService: Hashing demo user passwords...');
+      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash] = await Promise.all([
+        this.hashPassword('Admin@2025'),
+        this.hashPassword('Supervisor@2025'),
+        this.hashPassword('Manager@2025'),
+        this.hashPassword('Planner@2025'),
+        this.hashPassword('Logistics@2025'),
+      ]);
+      console.log('SimpleDatabaseService: Password hashing complete');
+
+      // ✅ Create default users with hashed passwords
       await database.write(async () => {
         await database.collections.get('users').create((user: any) => {
           user.username = 'admin';
-          user.password = 'admin123'; // In production, hash this
+          user.passwordHash = adminHash;
           user.fullName = 'Admin User';
           user.email = 'admin@construction.com';
           user.phone = '+1234567890';
@@ -69,7 +98,7 @@ export class SimpleDatabaseService {
       await database.write(async () => {
         await database.collections.get('users').create((user: any) => {
           user.username = 'supervisor';
-          user.password = 'supervisor123';
+          user.passwordHash = supervisorHash;
           user.fullName = 'John Supervisor';
           user.email = 'supervisor@construction.com';
           user.phone = '+1234567891';
@@ -81,7 +110,7 @@ export class SimpleDatabaseService {
       await database.write(async () => {
         await database.collections.get('users').create((user: any) => {
           user.username = 'manager';
-          user.password = 'manager123';
+          user.passwordHash = managerHash;
           user.fullName = 'Jane Manager';
           user.email = 'manager@construction.com';
           user.phone = '+1234567892';
@@ -93,7 +122,7 @@ export class SimpleDatabaseService {
       await database.write(async () => {
         await database.collections.get('users').create((user: any) => {
           user.username = 'planner';
-          user.password = 'planner123';
+          user.passwordHash = plannerHash;
           user.fullName = 'Mike Planner';
           user.email = 'planner@construction.com';
           user.phone = '+1234567893';
@@ -105,7 +134,7 @@ export class SimpleDatabaseService {
       await database.write(async () => {
         await database.collections.get('users').create((user: any) => {
           user.username = 'logistics';
-          user.password = 'logistics123';
+          user.passwordHash = logisticsHash;
           user.fullName = 'Sarah Logistics';
           user.email = 'logistics@construction.com';
           user.phone = '+1234567894';
@@ -180,6 +209,28 @@ export class SimpleDatabaseService {
         return await database.collections.get('categories').create((category: any) => {
           category.name = 'Commissioning';
           category.description = 'Commissioning and handover tasks';
+        });
+      });
+
+      // ✅ Create categories for Mumbai Metro test data
+      const civilWorksCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Civil Works';
+          category.description = 'Foundation, excavation, concrete works';
+        });
+      });
+
+      const mepCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'MEP (Mechanical, Electrical, Plumbing)';
+          category.description = 'HVAC, electrical systems, plumbing';
+        });
+      });
+
+      const architecturalFinishesCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Architectural Finishes';
+          category.description = 'Flooring, wall finishes, ceiling, painting';
         });
       });
 
@@ -343,7 +394,7 @@ export class SimpleDatabaseService {
           log.reportedBy = 'supervisor-1';
           log.photos = '[]';
           log.notes = 'Initial progress report for foundation excavation';
-          log.syncStatusField = 'pending';
+          log.appSyncStatus = 'pending';
         });
       });
 

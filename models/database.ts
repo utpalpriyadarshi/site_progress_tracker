@@ -14,9 +14,12 @@ import DailyReportModel from './DailyReportModel';
 import SiteInspectionModel from './SiteInspectionModel';
 import RoleModel from './RoleModel';
 import UserModel from './UserModel';
+import SessionModel from './SessionModel';
+import PasswordHistoryModel from './PasswordHistoryModel';
 import ScheduleRevisionModel from './ScheduleRevisionModel';
 import TemplateModuleModel from './TemplateModuleModel';
 import InterfacePointModel from './InterfacePointModel';
+import SyncQueueModel from './SyncQueueModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -38,8 +41,11 @@ export const database = new Database({
     SiteInspectionModel,
     RoleModel,
     UserModel,
+    SessionModel,
+    PasswordHistoryModel,
     ScheduleRevisionModel,
     TemplateModuleModel,
     InterfacePointModel,
+    SyncQueueModel,
   ],
 });

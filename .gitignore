@@ -78,3 +78,9 @@ yarn-error.log
 *.png
 *.jpg
 *.jpeg
+
+# Security - JWT Secrets
+# NOTE: For production, use environment variables instead of committing secrets
+# For dev/test environment, secrets are currently in config/jwt.config.ts
+# .env
+# config/jwt.config.production.ts

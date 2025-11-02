@@ -101,7 +101,8 @@ const DailyReportsScreenComponent = ({
   const onRefresh = async () => {
     setRefreshing(true);
     // In a real app, this would trigger a sync with the server
-    setTimeout(() => setRefreshing(false), 1000);
+    // Removed artificial delay for better UX
+    setRefreshing(false);
   };
 
   const getProgressPercentage = (item: ItemModel): number => {
@@ -197,7 +198,7 @@ const DailyReportsScreenComponent = ({
               log.reportedBy = supervisorId; // Use actual supervisor ID from context
               log.photos = '[]';
               log.notes = notesInput || '';
-              log.syncStatusField = 'pending'; // Always pending until submitted as report
+              log.appSyncStatus = 'pending'; // Always pending until submitted as report
             });
           console.log('Progress log created successfully');
         } catch (logError) {
@@ -327,7 +328,7 @@ const DailyReportsScreenComponent = ({
             report.totalProgress = totalProgress;
             report.pdfPath = pdfPath;
             report.notes = `${siteLogs.length} items updated`;
-            report.syncStatusField = isOnline ? 'synced' : 'pending';
+            report.appSyncStatus = isOnline ? 'synced' : 'pending';
           });
 
           totalReportsGenerated++;
@@ -337,7 +338,7 @@ const DailyReportsScreenComponent = ({
         if (isOnline) {
           for (const log of progressLogs) {
             await log.update((l: any) => {
-              l.syncStatusField = 'synced';
+              l.appSyncStatus = 'synced';
             });
           }
         }

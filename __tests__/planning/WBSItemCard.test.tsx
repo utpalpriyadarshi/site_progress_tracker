@@ -45,6 +45,8 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.floatDays = 5;
         item.dependencyRisk = 'low';
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
   });
@@ -151,6 +153,8 @@ describe('WBSItemCard', () => {
         item.createdByRole = 'planner';
         item.isCriticalPath = true;
         item.floatDays = 0;
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -192,6 +196,8 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.dependencyRisk = 'high';
         item.riskNotes = 'Long lead time equipment';
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -232,6 +238,8 @@ describe('WBSItemCard', () => {
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
         item.dependencyRisk = 'medium';
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -271,6 +279,8 @@ describe('WBSItemCard', () => {
         item.isMilestone = true;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -312,6 +322,8 @@ describe('WBSItemCard', () => {
         item.isCriticalPath = false;
         item.dependencyRisk = 'high';
         item.riskNotes = 'Equipment requires 180 days delivery';
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -349,6 +361,8 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -372,6 +386,8 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -426,6 +442,8 @@ describe('WBSItemCard', () => {
         item.isMilestone = false;
         item.createdByRole = 'planner';
         item.isCriticalPath = false;
+        item.appSyncStatus = 'pending';
+        item.version = 1;
       });
     });
 
@@ -536,6 +554,8 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.appSyncStatus = 'pending';
+          item.version = 1;
         });
       });
 
@@ -579,6 +599,8 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.appSyncStatus = 'pending';
+          item.version = 1;
         });
       });
 
@@ -621,6 +643,8 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.appSyncStatus = 'pending';
+          item.version = 1;
         });
       });
 
@@ -663,6 +687,8 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.appSyncStatus = 'pending';
+          item.version = 1;
         });
       });
 
@@ -705,6 +731,8 @@ describe('WBSItemCard', () => {
           item.isMilestone = false;
           item.createdByRole = 'planner';
           item.isCriticalPath = false;
+          item.appSyncStatus = 'pending';
+          item.version = 1;
         });
       });
 

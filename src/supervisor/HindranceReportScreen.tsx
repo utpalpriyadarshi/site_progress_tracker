@@ -165,7 +165,7 @@ const HindranceReportScreen = () => {
       await database.write(async () => {
         for (const hindrance of pendingHindrances) {
           await hindrance.update((h) => {
-            h.syncStatus = 'synced';
+            h.appSyncStatus = 'synced';
           });
         }
       });
@@ -351,7 +351,7 @@ const HindranceReportScreen = () => {
             h.status = status;
             h.itemId = selectedItemId || '';
             h.photos = JSON.stringify(photos);
-            h.syncStatus = 'pending'; // Mark as pending when edited
+            h.appSyncStatus = 'pending'; // Mark as pending when edited
           });
           savedHindrance = editingHindrance;
         } else {
@@ -368,7 +368,7 @@ const HindranceReportScreen = () => {
             h.reportedBy = supervisorId;
             h.reportedAt = new Date().getTime();
             h.photos = JSON.stringify(photos);
-            h.syncStatus = 'pending';
+            h.appSyncStatus = 'pending';
           });
         }
       });
@@ -388,7 +388,7 @@ const HindranceReportScreen = () => {
 
             await database.write(async () => {
               await hindrance.update((h) => {
-                h.syncStatus = 'synced';
+                h.appSyncStatus = 'synced';
               });
             });
 
@@ -531,14 +531,14 @@ const HindranceReportScreen = () => {
                   >
                     {getStatusLabel(hindrance.status)}
                   </Chip>
-                  {hindrance.syncStatus && (
+                  {hindrance.appSyncStatus && (
                     <View style={styles.syncChipContainer}>
                       <MaterialCommunityIcons
-                        name={hindrance.syncStatus === 'synced' ? 'cloud-check' : 'cloud-upload'}
+                        name={hindrance.appSyncStatus === 'synced' ? 'cloud-check' : 'cloud-upload'}
                         size={16}
                         color="#1976D2"
                       />
-                      <Text style={styles.syncChipText}>{hindrance.syncStatus}</Text>
+                      <Text style={styles.syncChipText}>{hindrance.appSyncStatus}</Text>
                     </View>
                   )}
                   {(() => {

@@ -1,189 +1,177 @@
-import { schemaMigrations, createTable, addColumns } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
+    // v13: Add password_hash field to users table (v2.2 - Day 1)
     {
-      toVersion: 6,
-      steps: [
-        createTable({
-          name: 'daily_reports',
-          columns: [
-            { name: 'site_id', type: 'string', isIndexed: true },
-            { name: 'supervisor_id', type: 'string', isIndexed: true },
-            { name: 'report_date', type: 'number' },
-            { name: 'submitted_at', type: 'number' },
-            { name: 'total_items', type: 'number' },
-            { name: 'total_progress', type: 'number' },
-            { name: 'pdf_path', type: 'string', isOptional: true },
-            { name: 'notes', type: 'string', isOptional: true },
-            { name: 'sync_status', type: 'string' },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
-        }),
-      ],
-    },
-    {
-      toVersion: 7,
+      toVersion: 13,
       steps: [
         addColumns({
-          table: 'hindrances',
+          table: 'users',
           columns: [
-            { name: 'photos', type: 'string' },
-            { name: 'sync_status', type: 'string' },
+            { name: 'password_hash', type: 'string', isOptional: true }, // Optional during migration
           ],
         }),
       ],
     },
+    // v14: Remove plaintext password field from users table (v2.2 - Day 4)
     {
-      toVersion: 8,
+      toVersion: 14,
       steps: [
-        addColumns({
-          table: 'hindrances',
-          columns: [
-            { name: 'reported_at', type: 'number' },
-          ],
-        }),
+        // WatermelonDB doesn't support dropColumns directly in migrations
+        // Instead, we mark the old column as unused and handle it at the adapter level
+        // The password field will be ignored in the schema and eventually cleaned up
       ],
     },
+    // v15: Add sessions table for JWT session management (v2.2 - Day 11)
     {
-      toVersion: 9,
+      toVersion: 15,
       steps: [
         createTable({
-          name: 'site_inspections',
+          name: 'sessions',
           columns: [
-            { name: 'site_id', type: 'string', isIndexed: true },
-            { name: 'inspector_id', type: 'string', isIndexed: true },
-            { name: 'inspection_date', type: 'number' },
-            { name: 'inspection_type', type: 'string' },
-            { name: 'overall_rating', type: 'string' },
-            { name: 'checklist_data', type: 'string' },
-            { name: 'photos', type: 'string' },
-            { name: 'safety_flagged', type: 'boolean' },
-            { name: 'follow_up_date', type: 'number' },
-            { name: 'follow_up_notes', type: 'string', isOptional: true },
-            { name: 'notes', type: 'string', isOptional: true },
-            { name: 'sync_status', type: 'string' },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
-        }),
-      ],
-    },
-    {
-      toVersion: 10,
-      steps: [
-        createTable({
-          name: 'roles',
-          columns: [
-            { name: 'name', type: 'string', isIndexed: true },
-            { name: 'description', type: 'string', isOptional: true },
-            { name: 'permissions', type: 'string' },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
-        }),
-        createTable({
-          name: 'users',
-          columns: [
-            { name: 'username', type: 'string', isIndexed: true },
-            { name: 'password', type: 'string' },
-            { name: 'full_name', type: 'string' },
-            { name: 'email', type: 'string', isOptional: true },
-            { name: 'phone', type: 'string', isOptional: true },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'access_token', type: 'string' },
+            { name: 'refresh_token', type: 'string' },
+            { name: 'device_info', type: 'string', isOptional: true },
+            { name: 'ip_address', type: 'string', isOptional: true },
+            { name: 'expires_at', type: 'number' },
+            { name: 'revoked_at', type: 'number', isOptional: true },
             { name: 'is_active', type: 'boolean' },
-            { name: 'role_id', type: 'string', isIndexed: true },
+          ],
+        }),
+      ],
+    },
+    // v16: Add password_history table for password reuse prevention (v2.2 - Day 14)
+    {
+      toVersion: 16,
+      steps: [
+        createTable({
+          name: 'password_history',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'password_hash', type: 'string' },
+          ],
+        }),
+      ],
+    },
+    // v17: Add created_at/updated_at to sessions and password_history tables (v2.2 - Week 3 Fix)
+    {
+      toVersion: 17,
+      steps: [
+        addColumns({
+          table: 'sessions',
+          columns: [
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        addColumns({
+          table: 'password_history',
+          columns: [
             { name: 'created_at', type: 'number' },
             { name: 'updated_at', type: 'number' },
           ],
         }),
       ],
     },
+    // v18: Add sync_status to core syncable models (Activity 2 prep)
     {
-      toVersion: 11,
+      toVersion: 18,
       steps: [
         addColumns({
-          table: 'items',
+          table: 'projects',
           columns: [
-            { name: 'baseline_start_date', type: 'number', isOptional: true },
-            { name: 'baseline_end_date', type: 'number', isOptional: true },
-            { name: 'dependencies', type: 'string', isOptional: true },
-            { name: 'is_baseline_locked', type: 'boolean' },
-            { name: 'actual_start_date', type: 'number', isOptional: true },
-            { name: 'actual_end_date', type: 'number', isOptional: true },
-            { name: 'critical_path_flag', type: 'boolean', isOptional: true },
-          ],
-        }),
-        createTable({
-          name: 'schedule_revisions',
-          columns: [
-            { name: 'item_id', type: 'string', isIndexed: true },
-            { name: 'old_start_date', type: 'number' },
-            { name: 'old_end_date', type: 'number' },
-            { name: 'new_start_date', type: 'number' },
-            { name: 'new_end_date', type: 'number' },
-            { name: 'reason', type: 'string' },
-            { name: 'revision_version', type: 'number' },
-            { name: 'revised_by', type: 'string', isIndexed: true },
-            { name: 'approved_by', type: 'string', isOptional: true },
-            { name: 'approval_status', type: 'string' },
-            { name: 'impact_summary', type: 'string', isOptional: true },
             { name: 'sync_status', type: 'string' },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        addColumns({
+          table: 'sites',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'items',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'categories',
+          columns: [
+            { name: 'sync_status', type: 'string' },
+          ],
+        }),
+        addColumns({
+          table: 'materials',
+          columns: [
+            { name: 'sync_status', type: 'string' },
           ],
         }),
       ],
     },
+    // v19: Add sync_queue table for tracking local changes (Week 6, Day 1)
     {
-      toVersion: 12,
+      toVersion: 19,
       steps: [
-        // Add WBS & Phase Management columns to items table
+        createTable({
+          name: 'sync_queue',
+          columns: [
+            { name: 'table_name', type: 'string', isIndexed: true },
+            { name: 'record_id', type: 'string', isIndexed: true },
+            { name: 'action', type: 'string' },
+            { name: 'data', type: 'string' },
+            { name: 'synced_at', type: 'number', isOptional: true },
+            { name: 'retry_count', type: 'number' },
+            { name: 'last_error', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // v20: Add _version field to all syncable models for conflict resolution (Week 7, Day 2)
+    {
+      toVersion: 20,
+      steps: [
+        addColumns({
+          table: 'projects',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'sites',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'categories',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
         addColumns({
           table: 'items',
-          columns: [
-            { name: 'project_phase', type: 'string', isIndexed: true },
-            { name: 'is_milestone', type: 'boolean' },
-            { name: 'created_by_role', type: 'string' },
-            { name: 'wbs_code', type: 'string', isIndexed: true },
-            { name: 'wbs_level', type: 'number' },
-            { name: 'parent_wbs_code', type: 'string', isOptional: true },
-            { name: 'is_critical_path', type: 'boolean' },
-            { name: 'float_days', type: 'number', isOptional: true },
-            { name: 'dependency_risk', type: 'string', isOptional: true },
-            { name: 'risk_notes', type: 'string', isOptional: true },
-          ],
+          columns: [{ name: '_version', type: 'number' }],
         }),
-        // Create template_modules table
-        createTable({
-          name: 'template_modules',
-          columns: [
-            { name: 'name', type: 'string' },
-            { name: 'category', type: 'string', isIndexed: true },
-            { name: 'voltage_level', type: 'string', isOptional: true },
-            { name: 'items_json', type: 'string' },
-            { name: 'compatible_modules', type: 'string' },
-            { name: 'is_predefined', type: 'boolean' },
-            { name: 'description', type: 'string' },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
+        addColumns({
+          table: 'materials',
+          columns: [{ name: '_version', type: 'number' }],
         }),
-        // Create interface_points table (for v1.4)
-        createTable({
-          name: 'interface_points',
-          columns: [
-            { name: 'item_id', type: 'string', isIndexed: true },
-            { name: 'from_contractor', type: 'string' },
-            { name: 'to_contractor', type: 'string' },
-            { name: 'interface_type', type: 'string' },
-            { name: 'status', type: 'string' },
-            { name: 'target_date', type: 'number', isOptional: true },
-            { name: 'actual_date', type: 'number', isOptional: true },
-            { name: 'notes', type: 'string', isOptional: true },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
+        addColumns({
+          table: 'progress_logs',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'hindrances',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'daily_reports',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'site_inspections',
+          columns: [{ name: '_version', type: 'number' }],
+        }),
+        addColumns({
+          table: 'schedule_revisions',
+          columns: [{ name: '_version', type: 'number' }],
         }),
       ],
     },

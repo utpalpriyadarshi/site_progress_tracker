@@ -105,42 +105,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
           ),
         })}
       >
-        <Tab.Screen
-          name="DailyReports"
-          component={DailyReportsScreen}
-          options={{
-            title: 'Reports',
-            headerShown: true,
-            headerTitle: 'Daily Reports',
-          }}
-        />
-        <Tab.Screen
-          name="ReportsHistory"
-          component={ReportsHistoryScreen}
-          options={{
-            title: 'History',
-            headerShown: true,
-            headerTitle: 'Reports History',
-          }}
-        />
-        <Tab.Screen
-          name="ItemsManagement"
-          component={ItemsManagementScreen}
-          options={{
-            title: 'Items',
-            headerShown: true,
-            headerTitle: 'Manage Items',
-          }}
-        />
-        <Tab.Screen
-          name="MaterialTracking"
-          component={MaterialTrackingScreen}
-          options={{
-            title: 'Materials',
-            headerShown: true,
-            headerTitle: 'Material Tracking',
-          }}
-        />
+        {/* Tab 1: Sites - Start here, select your site */}
         <Tab.Screen
           name="SiteManagement"
           component={SiteManagementScreen}
@@ -150,6 +115,37 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
             headerTitle: 'Manage Sites',
           }}
         />
+        {/* Tab 2: Items - View/manage items for selected site */}
+        <Tab.Screen
+          name="ItemsManagement"
+          component={ItemsManagementScreen}
+          options={{
+            title: 'Items',
+            headerShown: true,
+            headerTitle: 'Manage Items',
+          }}
+        />
+        {/* Tab 3: Daily Reports - Create progress reports */}
+        <Tab.Screen
+          name="DailyReports"
+          component={DailyReportsScreen}
+          options={{
+            title: 'Reports',
+            headerShown: true,
+            headerTitle: 'Daily Reports',
+          }}
+        />
+        {/* Tab 4: Materials - Track material usage */}
+        <Tab.Screen
+          name="MaterialTracking"
+          component={MaterialTrackingScreen}
+          options={{
+            title: 'Materials',
+            headerShown: true,
+            headerTitle: 'Material Tracking',
+          }}
+        />
+        {/* Tab 5: Issues - Report hindrances/problems */}
         <Tab.Screen
           name="HindranceReport"
           component={HindranceReportScreen}
@@ -159,6 +155,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
             headerTitle: 'Hindrance Reports',
           }}
         />
+        {/* Tab 6: Inspection - Conduct site inspections */}
         <Tab.Screen
           name="SiteInspection"
           component={SiteInspectionScreen}
@@ -166,6 +163,16 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
             title: 'Inspection',
             headerShown: true,
             headerTitle: 'Site Inspections',
+          }}
+        />
+        {/* Tab 7: History - Review past reports */}
+        <Tab.Screen
+          name="ReportsHistory"
+          component={ReportsHistoryScreen}
+          options={{
+            title: 'History',
+            headerShown: true,
+            headerTitle: 'Reports History',
           }}
         />
       </Tab.Navigator>

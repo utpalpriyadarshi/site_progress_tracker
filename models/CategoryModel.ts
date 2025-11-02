@@ -11,4 +11,6 @@ export default class CategoryModel extends Model {
 
   @field('name') name!: string;
   @field('description') description!: string;
+  @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
+  @field('_version') version!: number; // conflict resolution version tracking
 }
