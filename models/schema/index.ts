@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 21, // Added teams, team_members, resource_requests tables (Activity 3: Manager Role - Week 1)
+  version: 23, // Added quantity, unit to boms table (Activity 4: BOM Management)
   tables: [
     tableSchema({
       name: 'projects',
@@ -293,6 +293,55 @@ export default appSchema({
         { name: 'approval_date', type: 'number', isOptional: true },
         { name: 'rejection_reason', type: 'string', isOptional: true },
         { name: 'notes', type: 'string', isOptional: true },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'boms',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'type', type: 'string', isIndexed: true }, // estimating | execution
+        { name: 'status', type: 'string', isIndexed: true }, // draft, submitted, won, lost, baseline, active, closed
+        { name: 'version', type: 'string' }, // v1.0, v2.0, v3.0, v3.1
+        { name: 'quantity', type: 'number' }, // e.g., 2 apartments, 5 floors
+        { name: 'unit', type: 'string' }, // e.g., nos, floors, apartments, units
+        { name: 'tender_date', type: 'number', isOptional: true },
+        { name: 'client', type: 'string', isOptional: true },
+        { name: 'contract_value', type: 'number', isOptional: true },
+        { name: 'contingency', type: 'number' }, // percentage
+        { name: 'profit_margin', type: 'number' }, // percentage
+        { name: 'total_estimated_cost', type: 'number' },
+        { name: 'total_actual_cost', type: 'number' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_date', type: 'number' },
+        { name: 'updated_date', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'bom_items',
+      columns: [
+        { name: 'bom_id', type: 'string', isIndexed: true },
+        { name: 'material_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'item_code', type: 'string' },
+        { name: 'description', type: 'string' },
+        { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, subcontractor
+        { name: 'sub_category', type: 'string', isOptional: true },
+        { name: 'quantity', type: 'number' },
+        { name: 'unit', type: 'string' },
+        { name: 'unit_cost', type: 'number' },
+        { name: 'total_cost', type: 'number' },
+        { name: 'wbs_code', type: 'string', isOptional: true },
+        { name: 'phase', type: 'string', isOptional: true },
+        { name: 'actual_quantity', type: 'number', isOptional: true },
+        { name: 'actual_cost', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'created_date', type: 'number' },
+        { name: 'updated_date', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
       ],
