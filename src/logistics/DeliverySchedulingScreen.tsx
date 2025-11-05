@@ -7,243 +7,257 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Modal,
+  RefreshControl,
 } from 'react-native';
-import { useBomData } from '../shared/hooks/useBomData';
-import BomLogisticsService, { DeliveryPriority } from '../services/BomLogisticsService';
-import { database } from '../../models/database';
-import ProjectModel from '../../models/ProjectModel';
-import MaterialModel from '../../models/MaterialModel';
+import { useLogistics } from './context/LogisticsContext';
+import DeliverySchedulingService, {
+  DeliverySchedule,
+  DeliveryStatus,
+  DeliveryPriority,
+  RouteOptimization,
+  SiteReadiness,
+  DeliveryPerformance,
+  DeliveryException,
+} from '../services/DeliverySchedulingService';
+import mockDeliverySchedules, {
+  mockRouteOptimizations,
+  mockSiteReadiness,
+  mockDeliveryExceptions,
+  mockSuppliers,
+} from '../data/mockDeliveries';
 
 /**
- * DeliverySchedulingScreen
+ * DeliverySchedulingScreen (Week 4 - Enhanced)
  *
- * Enhanced with BOM integration to show:
- * - BOM-driven delivery priorities
- * - Phase-based scheduling recommendations
- * - Critical material alerts
- * - Delivery timeline planning
+ * Smart delivery scheduling with:
+ * - Just-in-time delivery optimization
+ * - Real-time tracking and status
+ * - Route optimization
+ * - Site readiness validation
+ * - Exception management
+ * - Performance analytics
  */
 
-type PriorityFilter = 'all' | 'critical' | 'high' | 'medium' | 'low';
+type ViewMode = 'schedule' | 'tracking' | 'routes' | 'performance';
+type StatusFilter = 'all' | DeliveryStatus;
 
 const DeliverySchedulingScreen = () => {
-  const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [materials, setMaterials] = useState<MaterialModel[]>([]);
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const { selectedProjectId, projects } = useLogistics();
+
+  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Use BOM data hook
-  const {
-    boms,
-    bomItems,
-    loading: bomLoading,
-    getBomPhases,
-    refresh,
-  } = useBomData(selectedProjectId);
+  // Delivery data
+  const [deliveries, setDeliveries] = useState<DeliverySchedule[]>([]);
+  const [routes, setRoutes] = useState<RouteOptimization[]>([]);
+  const [siteReadiness, setSiteReadiness] = useState<SiteReadiness[]>([]);
+  const [exceptions, setExceptions] = useState<DeliveryException[]>([]);
+  const [performance, setPerformance] = useState<DeliveryPerformance | null>(null);
 
-  // Load projects
+  // Modal state
+  const [selectedDelivery, setSelectedDelivery] = useState<DeliverySchedule | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<RouteOptimization | null>(null);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+
+  // Load data
   useEffect(() => {
-    loadProjects();
+    loadDeliveryData();
   }, []);
 
-  // Load materials when project selected
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadMaterials();
-      refresh();
-    }
-  }, [selectedProjectId]);
-
-  const loadProjects = async () => {
+  const loadDeliveryData = () => {
+    setLoading(true);
     try {
-      const projectsList = await database.collections
-        .get<ProjectModel>('projects')
-        .query()
-        .fetch();
-      setProjects(projectsList);
-      if (projectsList.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(projectsList[0].id);
-      }
-    } catch (error) {
-      console.error('Error loading projects:', error);
-    }
-  };
+      // Load mock data
+      setDeliveries(mockDeliverySchedules);
+      setRoutes(mockRouteOptimizations);
+      setSiteReadiness(mockSiteReadiness);
+      setExceptions(mockDeliveryExceptions);
 
-  const loadMaterials = async () => {
-    try {
-      setLoading(true);
-      const materialsList = await database.collections
-        .get<MaterialModel>('materials')
-        .query()
-        .fetch();
-      setMaterials(materialsList);
+      // Calculate performance
+      const performanceMetrics = DeliverySchedulingService.calculatePerformanceMetrics(
+        mockDeliverySchedules
+      );
+      setPerformance(performanceMetrics);
     } catch (error) {
-      console.error('Error loading materials:', error);
+      console.error('Error loading delivery data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate delivery priorities
-  const deliveryPriorities = React.useMemo(() => {
-    if (!bomItems.length || !boms.length) return [];
-    return BomLogisticsService.calculateDeliveryPriorities(bomItems, boms, materials);
-  }, [bomItems, boms, materials]);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDeliveryData();
+    setRefreshing(false);
+  };
 
-  // Get BOM phases
-  const phases = React.useMemo(() => {
-    return getBomPhases();
-  }, [getBomPhases]);
+  // Filter deliveries
+  const filteredDeliveries = React.useMemo(() => {
+    let filtered = deliveries;
 
-  // Filter delivery priorities
-  const filteredPriorities = React.useMemo(() => {
-    let filtered = deliveryPriorities;
-
-    // Filter by priority
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter((p) => p.priority === priorityFilter);
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(d => d.status === statusFilter);
     }
 
-    // Filter by search query
+    // Filter by search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.itemCode.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query) ||
-          p.phase.toLowerCase().includes(query)
+      filtered = filtered.filter(d =>
+        d.deliveryNumber.toLowerCase().includes(query) ||
+        d.materialName.toLowerCase().includes(query) ||
+        d.siteName.toLowerCase().includes(query) ||
+        d.supplierName.toLowerCase().includes(query)
       );
     }
 
-    return filtered;
-  }, [deliveryPriorities, priorityFilter, searchQuery]);
+    // Filter by selected project
+    if (selectedProjectId) {
+      filtered = filtered.filter(d => d.projectId === selectedProjectId);
+    }
 
-  // Group by phase
-  const deliveriesByPhase = React.useMemo(() => {
-    const grouped = new Map<string, DeliveryPriority[]>();
+    return filtered.sort((a, b) => a.scheduledDate.getTime() - b.scheduledDate.getTime());
+  }, [deliveries, statusFilter, searchQuery, selectedProjectId]);
 
-    filteredPriorities.forEach((priority) => {
-      const phase = priority.phase || 'Unspecified';
-      if (!grouped.has(phase)) {
-        grouped.set(phase, []);
-      }
-      grouped.get(phase)!.push(priority);
-    });
-
-    return Array.from(grouped.entries()).sort((a, b) => {
-      const phaseOrder = ['Foundation', 'Structure', 'Finishing', 'MEP', 'Landscaping', 'Unspecified'];
-      return phaseOrder.indexOf(a[0]) - phaseOrder.indexOf(b[0]);
-    });
-  }, [filteredPriorities]);
-
-  // Get statistics
+  // Calculate statistics
   const stats = React.useMemo(() => {
-    const total = deliveryPriorities.length;
-    const critical = deliveryPriorities.filter((p) => p.priority === 'critical').length;
-    const high = deliveryPriorities.filter((p) => p.priority === 'high').length;
-    const upcoming7Days = deliveryPriorities.filter((p) => p.daysUntilNeeded && p.daysUntilNeeded <= 7).length;
+    const total = deliveries.length;
+    const scheduled = deliveries.filter(d => d.status === 'scheduled').length;
+    const inTransit = deliveries.filter(d => d.status === 'in_transit').length;
+    const delivered = deliveries.filter(d => d.status === 'delivered').length;
+    const delayed = deliveries.filter(d => d.status === 'delayed').length;
+    const critical = deliveries.filter(d => d.priority === 'critical').length;
 
-    return { total, critical, high, upcoming7Days };
-  }, [deliveryPriorities]);
+    return { total, scheduled, inTransit, delivered, delayed, critical };
+  }, [deliveries]);
 
-  const formatDate = (timestamp?: number) => {
-    if (!timestamp) return 'TBD';
-    const date = new Date(timestamp);
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const renderProjectSelector = () => {
-    if (projects.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No projects available</Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.selectorContainer}>
-        <Text style={styles.selectorLabel}>Project:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.projectScroll}>
-          {projects.map((project) => (
-            <TouchableOpacity
-              key={project.id}
-              style={[
-                styles.projectChip,
-                selectedProjectId === project.id && styles.projectChipActive,
-              ]}
-              onPress={() => setSelectedProjectId(project.id)}
-            >
-              <Text
-                style={[
-                  styles.projectChipText,
-                  selectedProjectId === project.id && styles.projectChipTextActive,
-                ]}
-              >
-                {project.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
+
+  const getStatusColor = (status: DeliveryStatus) => {
+    switch (status) {
+      case 'delivered': return '#10b981';
+      case 'in_transit': return '#3b82f6';
+      case 'delayed': return '#ef4444';
+      case 'scheduled': return '#f59e0b';
+      case 'confirmed': return '#8b5cf6';
+      case 'cancelled': return '#6b7280';
+      default: return '#9ca3af';
+    }
+  };
+
+  const getPriorityColor = (priority: DeliveryPriority) => {
+    switch (priority) {
+      case 'critical': return '#dc2626';
+      case 'high': return '#f59e0b';
+      case 'medium': return '#3b82f6';
+      case 'low': return '#10b981';
+      default: return '#9ca3af';
+    }
+  };
+
+  // ============================================================================
+  // RENDER: STAT CARDS
+  // ============================================================================
 
   const renderStatCards = () => {
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats.total}</Text>
-          <Text style={styles.statLabel}>Total Deliveries</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-
-        <View style={[styles.statCard, styles.statCardCritical]}>
-          <Text style={styles.statValue}>{stats.critical}</Text>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#f59e0b' }]}>{stats.scheduled}</Text>
+          <Text style={styles.statLabel}>Scheduled</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#3b82f6' }]}>{stats.inTransit}</Text>
+          <Text style={styles.statLabel}>In Transit</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#10b981' }]}>{stats.delivered}</Text>
+          <Text style={styles.statLabel}>Delivered</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#ef4444' }]}>{stats.delayed}</Text>
+          <Text style={styles.statLabel}>Delayed</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#dc2626' }]}>{stats.critical}</Text>
           <Text style={styles.statLabel}>Critical</Text>
-        </View>
-
-        <View style={[styles.statCard, styles.statCardWarning]}>
-          <Text style={styles.statValue}>{stats.high}</Text>
-          <Text style={styles.statLabel}>High Priority</Text>
-        </View>
-
-        <View style={[styles.statCard, styles.statCardUrgent]}>
-          <Text style={styles.statValue}>{stats.upcoming7Days}</Text>
-          <Text style={styles.statLabel}>Due in 7 Days</Text>
         </View>
       </ScrollView>
     );
   };
 
-  const renderPriorityFilters = () => {
-    const filters: { value: PriorityFilter; label: string; color: string }[] = [
-      { value: 'all', label: 'All', color: '#E0E0E0' },
-      { value: 'critical', label: 'Critical', color: '#F44336' },
-      { value: 'high', label: 'High', color: '#FF9800' },
-      { value: 'medium', label: 'Medium', color: '#2196F3' },
-      { value: 'low', label: 'Low', color: '#9E9E9E' },
+  // ============================================================================
+  // RENDER: VIEW MODE TABS
+  // ============================================================================
+
+  const renderViewModeTabs = () => {
+    const modes: Array<{ mode: ViewMode; label: string; badge?: number }> = [
+      { mode: 'schedule', label: 'Schedule', badge: stats.scheduled + stats.inTransit },
+      { mode: 'tracking', label: 'Tracking', badge: stats.inTransit },
+      { mode: 'routes', label: 'Routes', badge: routes.length },
+      { mode: 'performance', label: 'Analytics' },
     ];
 
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-        {filters.map((filter) => (
+      <View style={styles.viewModeContainer}>
+        {modes.map(({ mode, label, badge }) => (
           <TouchableOpacity
-            key={filter.value}
-            style={[
-              styles.filterChip,
-              priorityFilter === filter.value && { backgroundColor: filter.color },
-            ]}
-            onPress={() => setPriorityFilter(filter.value)}
+            key={mode}
+            style={[styles.viewModeTab, viewMode === mode && styles.viewModeTabActive]}
+            onPress={() => setViewMode(mode)}
           >
-            <Text
-              style={[
-                styles.filterChipText,
-                priorityFilter === filter.value && styles.filterChipTextActive,
-              ]}
-            >
-              {filter.label}
+            <Text style={[styles.viewModeText, viewMode === mode && styles.viewModeTextActive]}>
+              {label}
+            </Text>
+            {badge !== undefined && badge > 0 && (
+              <View style={styles.viewModeBadge}>
+                <Text style={styles.viewModeBadgeText}>{badge}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  // ============================================================================
+  // RENDER: STATUS FILTER
+  // ============================================================================
+
+  const renderStatusFilter = () => {
+    const statuses: Array<{ status: StatusFilter; label: string }> = [
+      { status: 'all', label: 'All' },
+      { status: 'scheduled', label: 'Scheduled' },
+      { status: 'in_transit', label: 'In Transit' },
+      { status: 'delivered', label: 'Delivered' },
+      { status: 'delayed', label: 'Delayed' },
+    ];
+
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+        {statuses.map(({ status, label }) => (
+          <TouchableOpacity
+            key={status}
+            style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}
+            onPress={() => setStatusFilter(status)}
+          >
+            <Text style={[styles.filterChipText, statusFilter === status && styles.filterChipTextActive]}>
+              {label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -251,501 +265,1086 @@ const DeliverySchedulingScreen = () => {
     );
   };
 
-  const renderSearchBar = () => {
-    return (
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search deliveries..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-    );
-  };
+  // ============================================================================
+  // RENDER: DELIVERY SCHEDULE VIEW
+  // ============================================================================
 
-  const renderDeliveryCard = (priority: DeliveryPriority) => {
-    const priorityColor = BomLogisticsService.getPriorityColor(priority.priority);
-    const urgentDays = priority.daysUntilNeeded && priority.daysUntilNeeded <= 7;
-
+  const renderDeliveryCard = (delivery: DeliverySchedule) => {
     return (
-      <View key={`${priority.itemCode}-${priority.phase}`} style={[styles.deliveryCard, { borderLeftColor: priorityColor, borderLeftWidth: 4 }]}>
+      <TouchableOpacity
+        key={delivery.id}
+        style={styles.deliveryCard}
+        onPress={() => {
+          setSelectedDelivery(delivery);
+          setShowDetailsModal(true);
+        }}
+      >
         {/* Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <Text style={styles.itemCode}>{priority.itemCode}</Text>
-            <View style={[styles.priorityBadge, { backgroundColor: priorityColor }]}>
-              <Text style={styles.priorityBadgeText}>{priority.priority.toUpperCase()}</Text>
+        <View style={styles.deliveryCardHeader}>
+          <View>
+            <Text style={styles.deliveryNumber}>{delivery.deliveryNumber}</Text>
+            <Text style={styles.deliveryMaterial}>{delivery.materialName}</Text>
+          </View>
+          <View style={styles.statusBadgeContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(delivery.status) }]}>
+              <Text style={styles.statusBadgeText}>{delivery.status.toUpperCase()}</Text>
             </View>
-            {urgentDays && (
-              <View style={styles.urgentBadge}>
-                <Text style={styles.urgentBadgeText}>URGENT</Text>
+            <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(delivery.priority) }]}>
+              <Text style={styles.priorityBadgeText}>{delivery.priority.toUpperCase()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Details */}
+        <View style={styles.deliveryCardDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Quantity:</Text>
+            <Text style={styles.detailValue}>{delivery.quantity} {delivery.unit}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Supplier:</Text>
+            <Text style={styles.detailValue}>{delivery.supplierName}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Site:</Text>
+            <Text style={styles.detailValue}>{delivery.siteName}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Scheduled:</Text>
+            <Text style={styles.detailValue}>
+              {formatDate(delivery.scheduledDate)} {formatTime(delivery.estimatedDeliveryTime)}
+            </Text>
+          </View>
+          {delivery.status === 'in_transit' && delivery.progressPercentage !== undefined && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${delivery.progressPercentage}%` }]} />
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Description */}
-        <Text style={styles.description}>{priority.description}</Text>
-
-        {/* Quantity */}
-        <View style={styles.quantityRow}>
-          <Text style={styles.quantityLabel}>Shortage:</Text>
-          <Text style={styles.quantityValue}>
-            {priority.quantity} {priority.unit}
-          </Text>
-        </View>
-
-        {/* Phase */}
-        <View style={styles.phaseRow}>
-          <Text style={styles.phaseLabel}>Phase:</Text>
-          <View style={styles.phaseChip}>
-            <Text style={styles.phaseChipText}>{priority.phase}</Text>
-          </View>
-        </View>
-
-        {/* Timeline */}
-        <View style={styles.timelineRow}>
-          <View style={styles.timelineItem}>
-            <Text style={styles.timelineLabel}>Recommended Delivery:</Text>
-            <Text style={styles.timelineValue}>{formatDate(priority.recommendedDeliveryDate)}</Text>
-          </View>
-          {priority.daysUntilNeeded !== undefined && (
-            <View style={styles.timelineItem}>
-              <Text style={styles.timelineLabel}>Days Until Needed:</Text>
-              <Text style={[styles.timelineValue, urgentDays && styles.timelineValueUrgent]}>
-                {priority.daysUntilNeeded} days
-              </Text>
+              <Text style={styles.progressText}>{delivery.progressPercentage}%</Text>
             </View>
           )}
         </View>
-      </View>
+
+        {/* Footer */}
+        <View style={styles.deliveryCardFooter}>
+          <Text style={styles.footerText}>
+            {delivery.distanceKm.toFixed(0)} km • ₹{delivery.totalCost.toFixed(0)}
+          </Text>
+          {!delivery.siteReady && (
+            <View style={styles.warningBadge}>
+              <Text style={styles.warningText}>⚠️ Site Not Ready</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
-  const renderDeliveriesByPhase = () => {
-    if (bomLoading || loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>Loading delivery priorities...</Text>
-        </View>
-      );
-    }
-
-    if (boms.length === 0) {
+  const renderScheduleView = () => {
+    if (filteredDeliveries.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No Active BOMs</Text>
-          <Text style={styles.emptyStateText}>
-            No active BOMs found for this project. Create a BOM in the Manager tab to see delivery priorities.
-          </Text>
-        </View>
-      );
-    }
-
-    if (filteredPriorities.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No Deliveries Required</Text>
-          <Text style={styles.emptyStateText}>
-            {searchQuery || priorityFilter !== 'all'
-              ? 'No deliveries match your filters'
-              : 'All materials are sufficiently stocked'}
-          </Text>
+          <Text style={styles.emptyStateText}>No deliveries found</Text>
         </View>
       );
     }
 
     return (
-      <ScrollView style={styles.deliveriesList} showsVerticalScrollIndicator={false}>
-        {deliveriesByPhase.map(([phase, priorities]) => (
-          <View key={phase} style={styles.phaseSection}>
-            <View style={styles.phaseSectionHeader}>
-              <Text style={styles.phaseSectionTitle}>{phase}</Text>
-              <View style={styles.phaseSectionBadge}>
-                <Text style={styles.phaseSectionBadgeText}>{priorities.length}</Text>
+      <ScrollView style={styles.contentScroll}>
+        {filteredDeliveries.map(delivery => renderDeliveryCard(delivery))}
+      </ScrollView>
+    );
+  };
+
+  // ============================================================================
+  // RENDER: TRACKING VIEW
+  // ============================================================================
+
+  const renderTrackingView = () => {
+    const inTransitDeliveries = deliveries.filter(d => d.status === 'in_transit');
+
+    if (inTransitDeliveries.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No deliveries in transit</Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.contentScroll}>
+        {inTransitDeliveries.map(delivery => (
+          <View key={delivery.id} style={styles.trackingCard}>
+            <View style={styles.trackingHeader}>
+              <View>
+                <Text style={styles.trackingNumber}>{delivery.deliveryNumber}</Text>
+                <Text style={styles.trackingMaterial}>{delivery.materialName}</Text>
+              </View>
+              <View style={styles.progressCircle}>
+                <Text style={styles.progressCircleText}>{delivery.progressPercentage}%</Text>
               </View>
             </View>
-            {priorities.map(renderDeliveryCard)}
+
+            <View style={styles.trackingRoute}>
+              <View style={styles.trackingPoint}>
+                <View style={[styles.trackingDot, styles.trackingDotComplete]} />
+                <View style={styles.trackingInfo}>
+                  <Text style={styles.trackingLabel}>From</Text>
+                  <Text style={styles.trackingLocation}>{delivery.supplierLocation}</Text>
+                </View>
+              </View>
+
+              <View style={styles.trackingLine} />
+
+              {delivery.currentLocation && (
+                <>
+                  <View style={styles.trackingPoint}>
+                    <View style={[styles.trackingDot, styles.trackingDotCurrent]} />
+                    <View style={styles.trackingInfo}>
+                      <Text style={styles.trackingLabel}>Current</Text>
+                      <Text style={styles.trackingLocation}>{delivery.currentLocation}</Text>
+                      <Text style={styles.trackingTime}>Updated: {formatTime(delivery.lastUpdated!)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.trackingLine} />
+                </>
+              )}
+
+              <View style={styles.trackingPoint}>
+                <View style={[styles.trackingDot, styles.trackingDotPending]} />
+                <View style={styles.trackingInfo}>
+                  <Text style={styles.trackingLabel}>To</Text>
+                  <Text style={styles.trackingLocation}>{delivery.siteAddress}</Text>
+                  <Text style={styles.trackingTime}>ETA: {formatTime(delivery.estimatedDeliveryTime)}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.trackingFooter}>
+              <Text style={styles.trackingDriver}>Driver: {delivery.driverName}</Text>
+              <Text style={styles.trackingVehicle}>Vehicle: {delivery.vehicleType}</Text>
+            </View>
           </View>
         ))}
       </ScrollView>
     );
   };
 
-  const renderBomInfo = () => {
-    if (boms.length === 0) return null;
+  // ============================================================================
+  // RENDER: ROUTES VIEW
+  // ============================================================================
 
+  const renderRouteCard = (route: RouteOptimization) => {
     return (
-      <View style={styles.bomInfoContainer}>
-        <Text style={styles.bomInfoTitle}>Active BOMs ({boms.length})</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {boms.map((bom) => (
-            <View key={bom.id} style={styles.bomChip}>
-              <Text style={styles.bomChipText}>{bom.name}</Text>
-              <Text style={styles.bomChipSubtext}>
-                {bom.type === 'estimating' ? 'Pre-Contract' : 'Post-Contract'}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
+      <TouchableOpacity
+        key={route.routeId}
+        style={styles.routeCard}
+        onPress={() => {
+          setSelectedRoute(route);
+          setShowRouteModal(true);
+        }}
+      >
+        <View style={styles.routeHeader}>
+          <View>
+            <Text style={styles.routeId}>Route #{route.routeId.split('_')[1]}</Text>
+            <Text style={styles.routeDeliveries}>{route.deliveries.length} Deliveries</Text>
+          </View>
+          <View style={[styles.routeStatusBadge, { backgroundColor: getStatusColor(route.status as any) }]}>
+            <Text style={styles.routeStatusText}>{route.status.toUpperCase()}</Text>
+          </View>
+        </View>
+
+        <View style={styles.routeMetrics}>
+          <View style={styles.routeMetric}>
+            <Text style={styles.routeMetricValue}>{route.totalDistanceKm.toFixed(0)} km</Text>
+            <Text style={styles.routeMetricLabel}>Distance</Text>
+          </View>
+          <View style={styles.routeMetric}>
+            <Text style={styles.routeMetricValue}>{route.totalDurationHours.toFixed(1)} h</Text>
+            <Text style={styles.routeMetricLabel}>Duration</Text>
+          </View>
+          <View style={styles.routeMetric}>
+            <Text style={styles.routeMetricValue}>₹{route.totalCost.toFixed(0)}</Text>
+            <Text style={styles.routeMetricLabel}>Cost</Text>
+          </View>
+          <View style={styles.routeMetric}>
+            <Text style={styles.routeMetricValue}>{route.fuelEstimate.toFixed(0)} L</Text>
+            <Text style={styles.routeMetricLabel}>Fuel</Text>
+          </View>
+        </View>
+
+        <View style={styles.routeOptimization}>
+          <View style={styles.optimizationBar}>
+            <View style={[styles.optimizationFill, { width: `${route.optimizationScore}%` }]} />
+          </View>
+          <Text style={styles.optimizationText}>
+            Score: {route.optimizationScore.toFixed(0)}/100 • Savings: {route.savingsPercentage.toFixed(0)}%
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
+
+  const renderRoutesView = () => {
+    if (routes.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No routes available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.contentScroll}>
+        {routes.map(route => renderRouteCard(route))}
+      </ScrollView>
+    );
+  };
+
+  // ============================================================================
+  // RENDER: PERFORMANCE VIEW
+  // ============================================================================
+
+  const renderPerformanceView = () => {
+    if (!performance) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No performance data</Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.contentScroll}>
+        {/* On-Time Performance */}
+        <View style={styles.performanceSection}>
+          <Text style={styles.performanceSectionTitle}>On-Time Performance</Text>
+          <View style={styles.performanceGrid}>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.onTimePercentage.toFixed(1)}%</Text>
+              <Text style={styles.performanceLabel}>On-Time Rate</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={[styles.performanceValue, { color: '#10b981' }]}>{performance.onTimeDeliveries}</Text>
+              <Text style={styles.performanceLabel}>On-Time</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={[styles.performanceValue, { color: '#ef4444' }]}>{performance.lateDeliveries}</Text>
+              <Text style={styles.performanceLabel}>Late</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.averageDelayHours.toFixed(1)} h</Text>
+              <Text style={styles.performanceLabel}>Avg Delay</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Cost Analysis */}
+        <View style={styles.performanceSection}>
+          <Text style={styles.performanceSectionTitle}>Cost Analysis</Text>
+          <View style={styles.performanceGrid}>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>₹{performance.totalCost.toFixed(0)}</Text>
+              <Text style={styles.performanceLabel}>Total Cost</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>₹{performance.averageCostPerDelivery.toFixed(0)}</Text>
+              <Text style={styles.performanceLabel}>Avg/Delivery</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>₹{performance.costPerKm.toFixed(1)}</Text>
+              <Text style={styles.performanceLabel}>Cost/km</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.utilizationRate.toFixed(0)}%</Text>
+              <Text style={styles.performanceLabel}>Utilization</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Efficiency Metrics */}
+        <View style={styles.performanceSection}>
+          <Text style={styles.performanceSectionTitle}>Efficiency Metrics</Text>
+          <View style={styles.performanceGrid}>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.averageDistanceKm.toFixed(0)} km</Text>
+              <Text style={styles.performanceLabel}>Avg Distance</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.averageDurationHours.toFixed(1)} h</Text>
+              <Text style={styles.performanceLabel}>Avg Duration</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.damageRate.toFixed(1)}%</Text>
+              <Text style={styles.performanceLabel}>Damage Rate</Text>
+            </View>
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceValue}>{performance.customerSatisfaction.toFixed(0)}</Text>
+              <Text style={styles.performanceLabel}>Satisfaction</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Exceptions */}
+        {exceptions.length > 0 && (
+          <View style={styles.performanceSection}>
+            <Text style={styles.performanceSectionTitle}>Recent Exceptions ({exceptions.length})</Text>
+            {exceptions.slice(0, 5).map(exception => (
+              <View key={exception.id} style={styles.exceptionCard}>
+                <View style={[styles.exceptionBadge, { backgroundColor: getPriorityColor(exception.severity as any) }]}>
+                  <Text style={styles.exceptionBadgeText}>{exception.severity.toUpperCase()}</Text>
+                </View>
+                <View style={styles.exceptionContent}>
+                  <Text style={styles.exceptionType}>{exception.type.replace('_', ' ').toUpperCase()}</Text>
+                  <Text style={styles.exceptionDescription}>{exception.description}</Text>
+                  {exception.resolution && (
+                    <Text style={styles.exceptionResolution}>✓ {exception.resolution}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
+  // ============================================================================
+  // RENDER: DELIVERY DETAILS MODAL
+  // ============================================================================
+
+  const renderDetailsModal = () => {
+    if (!selectedDelivery) return null;
+
+    return (
+      <Modal visible={showDetailsModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedDelivery.deliveryNumber}</Text>
+              <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <Text style={styles.modalSectionTitle}>Material</Text>
+              <Text style={styles.modalText}>{selectedDelivery.materialName}</Text>
+              <Text style={styles.modalSubtext}>
+                {selectedDelivery.quantity} {selectedDelivery.unit} • {selectedDelivery.category}
+              </Text>
+
+              <Text style={styles.modalSectionTitle}>Supplier</Text>
+              <Text style={styles.modalText}>{selectedDelivery.supplierName}</Text>
+              <Text style={styles.modalSubtext}>{selectedDelivery.supplierLocation}</Text>
+
+              <Text style={styles.modalSectionTitle}>Destination</Text>
+              <Text style={styles.modalText}>{selectedDelivery.siteName}</Text>
+              <Text style={styles.modalSubtext}>{selectedDelivery.siteAddress}</Text>
+
+              <Text style={styles.modalSectionTitle}>Schedule</Text>
+              <Text style={styles.modalText}>
+                Scheduled: {formatDate(selectedDelivery.scheduledDate)} {formatTime(selectedDelivery.estimatedDeliveryTime)}
+              </Text>
+              {selectedDelivery.actualDeliveryTime && (
+                <Text style={styles.modalSubtext}>
+                  Actual: {formatDate(selectedDelivery.actualDeliveryTime)} {formatTime(selectedDelivery.actualDeliveryTime)}
+                </Text>
+              )}
+              <Text style={styles.modalSubtext}>Lead Time: {selectedDelivery.leadTimeDays} days</Text>
+
+              <Text style={styles.modalSectionTitle}>Logistics</Text>
+              <Text style={styles.modalText}>Distance: {selectedDelivery.distanceKm.toFixed(0)} km</Text>
+              <Text style={styles.modalText}>Duration: {selectedDelivery.estimatedDurationHours.toFixed(1)} hours</Text>
+              {selectedDelivery.driverName && (
+                <Text style={styles.modalText}>Driver: {selectedDelivery.driverName}</Text>
+              )}
+              {selectedDelivery.vehicleType && (
+                <Text style={styles.modalText}>Vehicle: {selectedDelivery.vehicleType}</Text>
+              )}
+
+              <Text style={styles.modalSectionTitle}>Cost</Text>
+              <Text style={styles.modalText}>Transport: ₹{selectedDelivery.transportCost.toFixed(2)}</Text>
+              <Text style={styles.modalText}>Handling: ₹{selectedDelivery.handlingCost.toFixed(2)}</Text>
+              <Text style={styles.modalText}>Total: ₹{selectedDelivery.totalCost.toFixed(2)}</Text>
+
+              <Text style={styles.modalSectionTitle}>Site Readiness</Text>
+              <Text style={[styles.modalText, { color: selectedDelivery.siteReady ? '#10b981' : '#ef4444' }]}>
+                {selectedDelivery.siteReady ? '✓ Site Ready' : '✗ Site Not Ready'}
+              </Text>
+              <Text style={[styles.modalText, { color: selectedDelivery.storageAvailable ? '#10b981' : '#ef4444' }]}>
+                {selectedDelivery.storageAvailable ? '✓ Storage Available' : '✗ Storage Full'}
+              </Text>
+              {selectedDelivery.siteReadinessNotes && (
+                <Text style={styles.modalSubtext}>{selectedDelivery.siteReadinessNotes}</Text>
+              )}
+
+              {selectedDelivery.notes && (
+                <>
+                  <Text style={styles.modalSectionTitle}>Notes</Text>
+                  <Text style={styles.modalText}>{selectedDelivery.notes}</Text>
+                </>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.modalButton} onPress={() => setShowDetailsModal(false)}>
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Delivery Scheduling</Text>
-        <Text style={styles.subtitle}>BOM-Driven Delivery Priorities</Text>
+        <Text style={styles.subtitle}>Smart scheduling & real-time tracking</Text>
       </View>
 
-      {/* Project Selector */}
-      {renderProjectSelector()}
+      {/* Stats */}
+      {renderStatCards()}
 
-      {/* BOM Info */}
-      {renderBomInfo()}
+      {/* View Mode Tabs */}
+      {renderViewModeTabs()}
 
-      {/* Stats Cards */}
-      {stats.total > 0 && renderStatCards()}
+      {/* Search and Filter */}
+      {viewMode === 'schedule' && (
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search deliveries..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {renderStatusFilter()}
+        </View>
+      )}
 
-      {/* Priority Filters */}
-      {stats.total > 0 && renderPriorityFilters()}
+      {/* Content */}
+      <ScrollView
+        style={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
+        {viewMode === 'schedule' && renderScheduleView()}
+        {viewMode === 'tracking' && renderTrackingView()}
+        {viewMode === 'routes' && renderRoutesView()}
+        {viewMode === 'performance' && renderPerformanceView()}
+      </ScrollView>
 
-      {/* Search Bar */}
-      {stats.total > 0 && renderSearchBar()}
-
-      {/* Deliveries List */}
-      {renderDeliveriesByPhase()}
+      {/* Modals */}
+      {renderDetailsModal()}
     </View>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   header: {
-    backgroundColor: '#fff',
     padding: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a1a1a',
   },
   subtitle: {
     fontSize: 14,
     color: '#666',
     marginTop: 4,
   },
-  selectorContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  selectorLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-  projectScroll: {
-    flexDirection: 'row',
-  },
-  projectChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    marginRight: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  projectChipActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
-  },
-  projectChipText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  projectChipTextActive: {
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  bomInfoContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  bomInfoTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-  bomChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FFF3E0',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#FF9800',
-  },
-  bomChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF9800',
-  },
-  bomChipSubtext: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 2,
-  },
+
+  // Stats
   statsScroll: {
     backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   statCard: {
-    minWidth: 100,
-    padding: 16,
+    marginLeft: 16,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    marginRight: 12,
+    minWidth: 100,
     alignItems: 'center',
-  },
-  statCardCritical: {
-    backgroundColor: '#FFEBEE',
-  },
-  statCardWarning: {
-    backgroundColor: '#FFF3E0',
-  },
-  statCardUrgent: {
-    backgroundColor: '#E1F5FE',
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a1a1a',
   },
   statLabel: {
     fontSize: 12,
     color: '#666',
     marginTop: 4,
-    textAlign: 'center',
   },
-  filtersScroll: {
+
+  // View Mode Tabs
+  viewModeContainer: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  viewModeTab: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewModeTabActive: {
+    backgroundColor: '#007AFF',
+  },
+  viewModeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  viewModeTextActive: {
+    color: '#fff',
+  },
+  viewModeBadge: {
+    marginLeft: 6,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  viewModeBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+
+  // Search and Filter
+  searchContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    height: 40,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  filterScroll: {
+    flexDirection: 'row',
+  },
+  filterChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+  },
+  filterChipActive: {
+    backgroundColor: '#007AFF',
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   filterChipTextActive: {
     color: '#fff',
     fontWeight: '600',
   },
-  searchContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  searchInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#333',
-  },
-  deliveriesList: {
+
+  // Content
+  content: {
     flex: 1,
-    padding: 12,
   },
-  phaseSection: {
-    marginBottom: 20,
-  },
-  phaseSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  phaseSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  phaseSectionBadge: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  phaseSectionBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  deliveryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  itemCode: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  priorityBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  urgentBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    backgroundColor: '#F44336',
-  },
-  urgentBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  quantityLabel: {
-    fontSize: 13,
-    color: '#666',
-  },
-  quantityValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-  },
-  phaseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  phaseLabel: {
-    fontSize: 13,
-    color: '#666',
-  },
-  phaseChip: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  phaseChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2196F3',
-  },
-  timelineRow: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  timelineItem: {
-    marginBottom: 6,
-  },
-  timelineLabel: {
-    fontSize: 12,
-    color: '#999',
-  },
-  timelineValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#333',
-    marginTop: 2,
-  },
-  timelineValueUrgent: {
-    color: '#F44336',
-    fontWeight: '600',
-  },
-  loadingContainer: {
+  contentScroll: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    padding: 32,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#999',
+  },
+
+  // Delivery Card
+  deliveryCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  deliveryCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  deliveryNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  deliveryMaterial: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  statusBadgeContainer: {
+    alignItems: 'flex-end',
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  priorityBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  priorityBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  deliveryCardDetails: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#666',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  progressContainer: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+  },
+  progressText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  deliveryCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  warningBadge: {
+    backgroundColor: '#fff3cd',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  warningText: {
+    fontSize: 11,
+    color: '#856404',
+    fontWeight: '600',
+  },
+
+  // Tracking Card
+  trackingCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  trackingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  trackingNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  trackingMaterial: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  progressCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressCircleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  trackingRoute: {
+    paddingVertical: 8,
+  },
+  trackingPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  trackingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  trackingDotComplete: {
+    backgroundColor: '#10b981',
+  },
+  trackingDotCurrent: {
+    backgroundColor: '#3b82f6',
+  },
+  trackingDotPending: {
+    backgroundColor: '#d1d5db',
+  },
+  trackingLine: {
+    width: 2,
+    height: 24,
+    backgroundColor: '#d1d5db',
+    marginLeft: 5,
+  },
+  trackingInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  trackingLabel: {
+    fontSize: 11,
+    color: '#999',
+    textTransform: 'uppercase',
+  },
+  trackingLocation: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1a1a1a',
+    marginTop: 2,
+  },
+  trackingTime: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  trackingFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  trackingDriver: {
+    fontSize: 12,
+    color: '#666',
+  },
+  trackingVehicle: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // Route Card
+  routeCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  routeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  routeId: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  routeDeliveries: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  routeStatusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  routeStatusText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  routeMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  routeMetric: {
+    alignItems: 'center',
+  },
+  routeMetricValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  routeMetricLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+  },
+  routeOptimization: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  optimizationBar: {
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  optimizationFill: {
+    height: '100%',
+    backgroundColor: '#10b981',
+  },
+  optimizationText: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // Performance
+  performanceSection: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+  },
+  performanceSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 12,
+  },
+  performanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  performanceCard: {
+    width: '48%',
+    margin: '1%',
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  performanceValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  performanceLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
     textAlign: 'center',
+  },
+  exceptionCard: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  exceptionBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    height: 24,
+  },
+  exceptionBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  exceptionContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  exceptionType: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  exceptionDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  exceptionResolution: {
+    fontSize: 11,
+    color: '#10b981',
+    marginTop: 4,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  modalClose: {
+    fontSize: 24,
+    color: '#666',
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  modalSubtext: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  modalButton: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 
