@@ -54,12 +54,12 @@
 1. Navigate to **Logistics → Dashboard**
 2. Verify dashboard loads successfully
 3. Check for the following sections:
-   - Material availability status cards
-   - Equipment utilization gauges
-   - Delivery performance metrics
-   - Inventory health indicators
-   - Critical alerts panel
-   - Pending actions list
+   - Material availability status cards-ok
+   - Equipment utilization gauges-ok
+   - Delivery performance metrics-ok
+   - Inventory health indicators-ok
+   - Critical alerts panel-ok
+   - Pending actions list-ol
 
 **Expected Results**:
 - ✅ Dashboard displays without errors
@@ -71,8 +71,8 @@
 **Test Data**:
 - Project: Any active project with logistics data
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: Pass___________
+**Notes**: _From where these data are fetched, how user can insert his data and from where, refer logistics1.png in prompts folder __________________________________________
 
 ---
 
@@ -81,9 +81,9 @@
 
 **Steps**:
 1. On Logistics Dashboard, locate **Critical Alerts** panel
-2. Verify alerts are sorted by priority (Critical → High → Medium)
-3. Click on an alert to view details
-4. Verify alert actions are available (e.g., "View Details", "Take Action")
+2. Verify alerts are sorted by priority (Critical → High → Medium)-no
+3. Click on an alert to view details-nothing to work
+4. Verify alert actions are available (e.g., "View Details", "Take Action")-no
 
 **Expected Results**:
 - ✅ Alerts display with severity indicators (colors/icons)
@@ -91,7 +91,7 @@
 - ✅ Alert details modal opens on click
 - ✅ Action buttons are functional
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Fail___________
 **Notes**: ___________________________________________
 
 ---
@@ -115,7 +115,7 @@
 - ✅ Back navigation works
 - ✅ Tab state persists when switching
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Pass___________
 **Notes**: ___________________________________________
 
 ---
@@ -128,22 +128,22 @@
 **Steps**:
 1. Navigate to **Logistics → Materials Tracking**
 2. Select "Requirements" view
-3. Verify materials list displays:
+3. Verify materials list displays:-No
    - Material name and category
    - Required quantity vs. available quantity
    - Shortage amounts (if any)
    - Procurement status
-4. Check filters work (category, status, site)
+4. Check filters work (category, status, site)-No
 
 **Expected Results**:
-- ✅ Materials grouped by category
-- ✅ Shortage amounts highlighted in red
-- ✅ Available stock shown in green
-- ✅ Filters update list correctly
-- ✅ Search functionality works
+- ✅ Materials grouped by category-No
+- ✅ Shortage amounts highlighted in red-no
+- ✅ Available stock shown in green-no
+- ✅ Filters update list correctly-no
+- ✅ Search functionality works-nothing to search
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: Fail___________
+**Notes**: _refer logistics2.png in prompts folder __________________________________________
 
 ---
 
@@ -170,7 +170,7 @@
 - ✅ Cost estimates reasonable
 - ✅ Lead times calculated correctly
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Fail___________
 **Notes**: ___________________________________________
 
 ---
@@ -197,7 +197,7 @@
 - ✅ Sorting updates supplier order
 - ✅ Selection saves preference
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Fail___________
 **Notes**: ___________________________________________
 
 ---
@@ -222,7 +222,7 @@
 - ✅ Reorder point recommended
 - ✅ Data updates when date range changes
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Fail___________
 **Notes**: ___________________________________________
 
 ---
@@ -245,14 +245,14 @@
 5. Search for specific equipment
 
 **Expected Results**:
-- ✅ All equipment items displayed
-- ✅ Status badges color-coded (Green/Blue/Orange/Red)
-- ✅ Utilization bars show percentage visually
-- ✅ Health score displayed with color indicator
-- ✅ Filters and search work correctly
+- ✅ All equipment items displayed-ok
+- ✅ Status badges color-coded (Green/Blue/Orange/Red)-ok
+- ✅ Utilization bars show percentage visually-ok
+- ✅ Health score displayed with color indicator-ok
+- ✅ Filters and search work correctly-ok
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: Pass___________
+**Notes**: From where these data are fethech, how user puts his data, refer screenshot logistics3.png, cards on top are long there by details in bottom are not properly visible howver by scrolling one can see.___________________________________________
 
 ---
 
@@ -281,8 +281,8 @@
 - ✅ Priority badges displayed
 - ✅ Detail modal provides complete information
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: OK___________
+**Notes**: in construction project maintenance is not required. Example should be from Metro Railway electrification projects, power plants etc.___________________________________________
 
 ---
 
@@ -306,7 +306,7 @@
 - ✅ Timeline view shows visual allocation schedule
 - ✅ Available equipment easily identifiable
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _ok__________
 **Notes**: ___________________________________________
 
 ---
@@ -334,7 +334,7 @@
 - ✅ Trend chart shows historical performance
 - ✅ Downtime correctly attributed to maintenance vs failures
 
-**Pass/Fail**: ___________
+**Pass/Fail**: Pass___________
 **Notes**: ___________________________________________
 
 ---
@@ -363,8 +363,8 @@
 - ✅ Filters update list correctly
 - ✅ Sorting works properly
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: partial pass, schedule is not filtering___________
+**Notes**: refer screenshot logistics4.png in prompt folder___________________________________________
 
 ---
 
@@ -390,7 +390,7 @@
 - ✅ Delay warnings shown if behind schedule
 - ✅ Route visualization (if map integration available)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _Pass, very good__________
 **Notes**: ___________________________________________
 
 ---
@@ -417,7 +417,7 @@
 - ✅ Alternative routes available for comparison
 - ✅ Traffic conditions factored into ETA
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _ok__________
 **Notes**: ___________________________________________
 
 ---
@@ -444,7 +444,7 @@
 - ✅ Weather conditions assessed (safe/unsafe)
 - ✅ Recommendations provided for improvement
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _Fail, nothing to select__________
 **Notes**: ___________________________________________
 
 ---
@@ -472,7 +472,7 @@
 - ✅ Recommendations actionable
 
 **Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Notes**: _could not locate performance view__________________________________________
 
 ---
 
@@ -499,7 +499,7 @@
 - ✅ Location breakdown available
 - ✅ ABC categories shown (A: 80%, B: 15%, C: 5%)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: ok but it should meet the project construction scenario.___________
 **Notes**: ___________________________________________
 
 ---
@@ -522,7 +522,7 @@
 - ✅ Value percentages sum to 100%
 - ✅ Recommendations specific to category (e.g., tight control for A items)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: ok___________
 **Notes**: ___________________________________________
 
 ---
@@ -549,7 +549,7 @@
 - ✅ Materials list filterable by location
 - ✅ Location details complete
 
-**Pass/Fail**: ___________
+**Pass/Fail**: ok___________
 **Notes**: ___________________________________________
 
 ---
@@ -575,7 +575,7 @@
 - ✅ Transfer reasons documented
 - ✅ Approval status clear
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _ok__________
 **Notes**: ___________________________________________
 
 ---
@@ -602,7 +602,7 @@
 - ✅ Recommendations prioritized by impact
 - ✅ Problem items highlighted
 
-**Pass/Fail**: ___________
+**Pass/Fail**: ok___________
 **Notes**: ___________________________________________
 
 ---
@@ -628,7 +628,7 @@
 - ✅ Cost savings estimated
 - ✅ Service level configurable (90%, 95%, 99%)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: could not verify___________
 **Notes**: ___________________________________________
 
 ---
@@ -655,7 +655,7 @@
 - ✅ Insights sorted by severity
 - ✅ Risks and opportunities clearly separated
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _ok__________
 **Notes**: ___________________________________________
 
 ---
@@ -682,7 +682,7 @@
 - ✅ Project impacts included in forecast
 - ✅ Recommendations actionable
 
-**Pass/Fail**: ___________
+**Pass/Fail**: could not verify___________
 **Notes**: ___________________________________________
 
 ---
@@ -709,7 +709,7 @@
 - ✅ Buffer days recommended based on std deviation
 - ✅ Trend shows supplier performance over time
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _could not verify__________
 **Notes**: ___________________________________________
 
 ---
@@ -736,7 +736,7 @@
 - ✅ Budget impact shows projected increase/decrease
 - ✅ Recommendations include bulk purchase, alternatives, timing
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _could not verify__________
 **Notes**: ___________________________________________
 
 ---
@@ -765,7 +765,7 @@
 - ✅ Actions prioritized by impact
 
 **Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Notes**: _could not verify__________________________________________
 
 ---
 
@@ -789,7 +789,7 @@
 - ✅ Storage shows space optimization potential
 
 **Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Notes**: could not verify___________________________________________
 
 ---
 
@@ -816,8 +816,8 @@
 - ✅ Auto-approval works for low-cost items
 - ✅ Notifications delivered to correct recipients
 
-**Pass/Fail**: ___________
-**Notes**: ___________________________________________
+**Pass/Fail**: _could not verify__________
+**Notes**: _provide steps __________________________________________
 
 ---
 
@@ -843,7 +843,7 @@
 - ✅ Notifications scheduled properly
 - ✅ Recommendations feasible
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _could not test__________
 **Notes**: ___________________________________________
 
 ---
@@ -870,7 +870,7 @@
 - ✅ Escalation triggered for >7 day delays
 - ✅ Mitigation actions actionable
 
-**Pass/Fail**: ___________
+**Pass/Fail**: could not verify___________
 **Notes**: ___________________________________________
 
 ---
@@ -896,7 +896,7 @@
 - ✅ Auto-order only for low-risk items
 - ✅ Order ID generated
 
-**Pass/Fail**: ___________
+**Pass/Fail**: could not verify___________
 **Notes**: ___________________________________________
 
 ---
@@ -924,7 +924,7 @@
 - ✅ Actions work correctly
 - ✅ Read status tracked
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _could not verify__________
 **Notes**: ___________________________________________
 
 ---
@@ -949,7 +949,7 @@
 - ✅ Category filters work
 - ✅ Critical notifications bypass quiet hours if configured
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _fail, could not verify__________
 **Notes**: ___________________________________________
 
 ---
@@ -974,7 +974,7 @@
 - ✅ Sync status shows success
 - ✅ Last sync timestamp updated
 
-**Pass/Fail**: ___________
+**Pass/Fail**: no___________
 **Notes**: ___________________________________________
 
 ---
@@ -999,7 +999,7 @@
 - ✅ Dependencies identified (blocked/unblocked)
 - ✅ Sync status successful
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _no__________
 **Notes**: ___________________________________________
 
 ---
@@ -1025,7 +1025,7 @@
 - ✅ Safety check flags dangerous conditions
 - ✅ Recommendations provided (e.g., reschedule if severe weather)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _no__________
 **Notes**: ___________________________________________
 
 ---
@@ -1052,7 +1052,7 @@
 - ✅ Nearby suppliers sorted by distance
 - ✅ Distance calculated accurately (Haversine formula)
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _no__________
 **Notes**: ___________________________________________
 
 ---
@@ -1063,7 +1063,7 @@
 **Objective**: Test complete material lifecycle
 
 **Steps**:
-1. **Requirement**: Create BOM with material requirements
+1. **Requirement**: Create BOM with material requirements-BOM is not displaying even after creation
 2. **Shortage**: Verify shortage detected
 3. **Procurement**: Generate purchase order
 4. **Approval**: Approve purchase order
@@ -1081,7 +1081,7 @@
 - ✅ Inventory and accounting sync correctly
 - ✅ No data loss or errors
 
-**Pass/Fail**: ___________
+**Pass/Fail**: _fail__________
 **Notes**: ___________________________________________
 
 ---
@@ -1172,7 +1172,7 @@
    - Details: ___________
 
 ### Recommendations
-1. ___________
+1. _the application is for project construction progress tracker, it should align accordingly.__________
 2. ___________
 3. ___________
 

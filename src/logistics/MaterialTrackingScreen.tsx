@@ -22,6 +22,7 @@ import mockSuppliers, { generateMockConsumptionHistory } from '../data/mockSuppl
 import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
 import MaterialModel from '../../models/MaterialModel';
+import { BomDataService } from '../services/BomDataService';
 
 /**
  * MaterialTrackingScreen (Week 2 Enhanced)
@@ -37,6 +38,16 @@ import MaterialModel from '../../models/MaterialModel';
 
 type ViewMode = 'requirements' | 'shortages' | 'procurement' | 'analytics';
 
+// Metro Railway Material Categories (as per user requirements)
+const METRO_MATERIAL_CATEGORIES = [
+  { id: 'all', name: 'All', icon: '📦', color: '#2196F3' },
+  { id: 'Civil', name: 'Civil', icon: '🏗️', color: '#795548' },
+  { id: 'OCS', name: 'OCS', icon: '⚡', color: '#FF9800' },
+  { id: 'Electrical', name: 'Electrical', icon: '🔌', color: '#4CAF50' },
+  { id: 'Signaling', name: 'Signaling', icon: '🚦', color: '#F44336' },
+  { id: 'MEP', name: 'MEP', icon: '🔧', color: '#9C27B0' },
+];
+
 const MaterialTrackingScreen = () => {
   const {
     selectedProjectId,
@@ -49,6 +60,7 @@ const MaterialTrackingScreen = () => {
 
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Procurement state
@@ -122,6 +134,22 @@ const MaterialTrackingScreen = () => {
     setShowQuotesModal(true);
   };
 
+  const handleLoadSampleData = async () => {
+    try {
+      setLoading(true);
+      // Load mock BOMs into database
+      await BomDataService.loadMockBoms(selectedProjectId || undefined);
+      // Refresh BOMs to reload from database
+      await refreshBoms();
+      // Reload procurement data
+      loadProcurementData();
+    } catch (error) {
+      console.error('Error loading sample BOMs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculate material requirements
   const materialRequirements = React.useMemo(() => {
     if (!bomItems.length) return [];
@@ -135,12 +163,22 @@ const MaterialTrackingScreen = () => {
     );
   }, [materialRequirements]);
 
-  // Filter by search
+  // Filter by category and search
   const filteredRequirements = React.useMemo(() => {
     let filtered = materialRequirements;
 
     if (viewMode === 'shortages') {
       filtered = shortages;
+    }
+
+    // Category filter (Metro Railway categories)
+    if (selectedCategory && selectedCategory !== 'all') {
+      filtered = filtered.filter((req) => {
+        // Check if the requirement's category matches
+        // Category is stored in the BOM item's subCategory field
+        return req.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+               req.subCategory?.toLowerCase() === selectedCategory.toLowerCase();
+      });
     }
 
     if (searchQuery.trim()) {
@@ -153,7 +191,7 @@ const MaterialTrackingScreen = () => {
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, searchQuery]);
+  }, [materialRequirements, shortages, viewMode, searchQuery, selectedCategory]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
@@ -311,6 +349,44 @@ const MaterialTrackingScreen = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+      </View>
+    );
+  };
+
+  const renderCategoryFilters = () => {
+    return (
+      <View style={styles.categoryFiltersContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryFiltersScroll}
+          contentContainerStyle={styles.categoryFiltersContent}
+        >
+          {METRO_MATERIAL_CATEGORIES.map((category) => {
+            const isSelected = selectedCategory === category.id || (!selectedCategory && category.id === 'all');
+            return (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryChip,
+                  isSelected && styles.categoryChipActive,
+                  isSelected && { backgroundColor: category.color },
+                ]}
+                onPress={() => setSelectedCategory(category.id === 'all' ? null : category.id)}
+              >
+                <Text style={styles.categoryIcon}>{category.icon}</Text>
+                <Text
+                  style={[
+                    styles.categoryName,
+                    isSelected && styles.categoryNameActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
     );
   };
@@ -566,11 +642,34 @@ const MaterialTrackingScreen = () => {
     if (boms.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No Active BOMs</Text>
+          <Text style={styles.emptyStateIcon}>📋</Text>
+          <Text style={styles.emptyStateTitle}>No Bills of Materials (BOMs)</Text>
           <Text style={styles.emptyStateText}>
-            No active BOMs found for this project. Create a BOM in the Manager tab to see material
-            requirements.
+            To track materials, you need Bills of Materials (BOMs) from the Project Manager.
           </Text>
+          <Text style={styles.emptyStateSubtext}>
+            BOMs list all materials required for each work package. Logistics uses BOMs to place
+            orders, track deliveries, and manage inventory.
+          </Text>
+
+          <View style={styles.emptyStateActions}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleLoadSampleData}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>📊 Load Sample Metro Railway BOMs</Text>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.emptyStateHint}>
+              Sample data includes: Civil Works, OCS Installation, Traction Substation, Signaling,
+              and MEP systems for Metro Railway projects.
+            </Text>
+          </View>
         </View>
       );
     }
@@ -669,6 +768,9 @@ const MaterialTrackingScreen = () => {
 
       {/* Search Bar */}
       {(viewMode === 'requirements' || viewMode === 'shortages' || viewMode === 'procurement') && renderSearchBar()}
+
+      {/* Category Filters */}
+      {(viewMode === 'requirements' || viewMode === 'shortages') && stats.total > 0 && renderCategoryFilters()}
 
       {/* Content */}
       {renderContent()}
@@ -1177,16 +1279,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
+  emptyStateIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
   emptyStateTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  emptyStateSubtext: {
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+    maxWidth: '80%',
+  },
+  emptyStateActions: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  primaryButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 250,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyStateHint: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    maxWidth: '85%',
+    lineHeight: 18,
+  },
+  categoryFiltersContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  categoryFiltersScroll: {
+    flexGrow: 0,
+  },
+  categoryFiltersContent: {
+    paddingHorizontal: 16,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  categoryChipActive: {
+    borderColor: 'transparent',
+  },
+  categoryIcon: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  categoryNameActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
 

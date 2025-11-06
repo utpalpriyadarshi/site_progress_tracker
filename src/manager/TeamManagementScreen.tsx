@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { database } from '../../models/database';
 import TeamModel from '../../models/TeamModel';
@@ -15,6 +16,7 @@ import TeamMemberModel from '../../models/TeamMemberModel';
 import SiteModel from '../../models/SiteModel';
 import TeamManagementService from '../../services/team/TeamManagementService';
 import { Q } from '@nozbe/watermelondb';
+import TeamMemberAssignment from './components/TeamMemberAssignment';
 
 /**
  * TeamManagementScreen
@@ -34,13 +36,17 @@ const TeamManagementScreen = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterSite, setFilterSite] = useState<string | null>(null);
+  const [assignmentModalVisible, setAssignmentModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Form state for new team
+  // Form state for new/edit team
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamSite, setNewTeamSite] = useState('');
   const [newTeamSpecialization, setNewTeamSpecialization] = useState('');
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -147,6 +153,44 @@ const TeamManagementScreen = () => {
     }
   };
 
+  const handleOpenEditModal = (team: TeamModel) => {
+    setEditingTeamId(team.id);
+    setNewTeamName(team.name);
+    setNewTeamSite(team.siteId);
+    setNewTeamSpecialization(team.specialization || '');
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateTeam = async () => {
+    if (!newTeamName.trim() || !newTeamSite || !editingTeamId) {
+      Alert.alert('Validation Error', 'Please fill in team name and select a site');
+      return;
+    }
+
+    try {
+      await TeamManagementService.updateTeam(editingTeamId, {
+        name: newTeamName.trim(),
+        siteId: newTeamSite,
+        specialization: newTeamSpecialization.trim() || undefined,
+      });
+
+      // Reset form
+      setNewTeamName('');
+      setNewTeamSite('');
+      setNewTeamSpecialization('');
+      setEditingTeamId(null);
+      setEditModalVisible(false);
+
+      // Reload teams
+      loadTeams();
+
+      Alert.alert('Success', 'Team updated successfully');
+    } catch (error) {
+      console.error('Error updating team:', error);
+      Alert.alert('Error', 'Failed to update team');
+    }
+  };
+
   const handleDeleteTeam = async (teamId: string) => {
     Alert.alert(
       'Confirm Delete',
@@ -244,25 +288,32 @@ const TeamManagementScreen = () => {
 
           <Text style={styles.inputLabel}>Site *</Text>
           <ScrollView style={styles.siteSelector}>
-            {sites.map((site) => (
-              <TouchableOpacity
-                key={site.id}
-                style={[
-                  styles.siteOption,
-                  newTeamSite === site.id && styles.selectedSiteOption,
-                ]}
-                onPress={() => setNewTeamSite(site.id)}
-              >
-                <Text
+            {sites.length === 0 ? (
+              <Text style={styles.noSitesText}>
+                No sites available. Please create sites first before creating teams.
+              </Text>
+            ) : (
+              sites.map((site) => (
+                <TouchableOpacity
+                  key={site.id}
                   style={[
-                    styles.siteOptionText,
-                    newTeamSite === site.id && styles.selectedSiteOptionText,
+                    styles.siteOption,
+                    newTeamSite === site.id && styles.selectedSiteOption,
                   ]}
+                  onPress={() => setNewTeamSite(site.id)}
                 >
-                  {site.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.siteOptionText,
+                      newTeamSite === site.id && styles.selectedSiteOptionText,
+                    ]}
+                  >
+                    {site.name}
+                  </Text>
+                  <Text style={styles.siteLocationText}>{site.location}</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
 
           <View style={styles.modalActions}>
@@ -295,6 +346,17 @@ const TeamManagementScreen = () => {
         >
           <Text style={styles.addButtonText}>+ Add Team</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search teams by name or specialization..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       {/* Filters */}
@@ -332,44 +394,199 @@ const TeamManagementScreen = () => {
         {/* Teams List */}
         <ScrollView style={styles.teamsList}>
           {loading ? (
-            <Text style={styles.loadingText}>Loading teams...</Text>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2196F3" />
+              <Text style={styles.loadingText}>Loading teams...</Text>
+            </View>
           ) : teams.length === 0 ? (
-            <Text style={styles.emptyText}>No teams found. Create your first team!</Text>
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateTitle}>No teams found</Text>
+              <Text style={styles.emptyStateText}>
+                {searchQuery
+                  ? 'Try adjusting your search criteria'
+                  : 'Create your first team to get started!'}
+              </Text>
+              {!searchQuery && (
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => setAddModalVisible(true)}
+                >
+                  <Text style={styles.emptyStateButtonText}>+ Add Team</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           ) : (
-            teams.map(renderTeamCard)
+            teams
+              .filter((team) => {
+                if (!searchQuery.trim()) return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                  team.name.toLowerCase().includes(query) ||
+                  (team.specialization && team.specialization.toLowerCase().includes(query))
+                );
+              })
+              .map(renderTeamCard)
           )}
         </ScrollView>
 
         {/* Team Details Panel */}
         {selectedTeam && (
           <View style={styles.detailsPanel}>
-            <Text style={styles.detailsTitle}>{selectedTeam.name}</Text>
-
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsSectionTitle}>Team Members ({teamMembers.length})</Text>
-              {teamMembers.length === 0 ? (
-                <Text style={styles.emptyMembers}>No members assigned</Text>
-              ) : (
-                teamMembers.map((member) => (
-                  <View key={member.id} style={styles.memberItem}>
-                    <Text style={styles.memberRole}>{member.role}</Text>
-                    <Text style={styles.memberUserId}>User: {member.userId}</Text>
-                  </View>
-                ))
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteTeam(selectedTeam.id)}
+            <ScrollView
+              style={styles.detailsScrollView}
+              contentContainerStyle={styles.detailsScrollContent}
+              showsVerticalScrollIndicator={true}
             >
-              <Text style={styles.deleteButtonText}>Disband Team</Text>
-            </TouchableOpacity>
+              <Text style={styles.detailsTitle}>{selectedTeam.name}</Text>
+
+              <View style={styles.detailsSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.detailsSectionTitle}>Team Members ({teamMembers.filter(m => m.status === 'active').length})</Text>
+                  <TouchableOpacity
+                    style={styles.manageMembersButton}
+                    onPress={() => setAssignmentModalVisible(true)}
+                  >
+                    <Text style={styles.manageMembersButtonText}>Manage</Text>
+                  </TouchableOpacity>
+                </View>
+                {teamMembers.filter(m => m.status === 'active').length === 0 ? (
+                  <Text style={styles.emptyMembers}>No members assigned</Text>
+                ) : (
+                  teamMembers
+                    .filter(m => m.status === 'active')
+                    .map((member) => (
+                      <View key={member.id} style={styles.memberItem}>
+                        <Text style={styles.memberRole}>{member.role}</Text>
+                        <Text style={styles.memberUserId}>User: {member.userId}</Text>
+                      </View>
+                    ))
+                )}
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => handleOpenEditModal(selectedTeam)}
+                >
+                  <Text style={styles.editButtonText}>Edit Team</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteTeam(selectedTeam.id)}
+                >
+                  <Text style={styles.deleteButtonText}>Disband Team</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         )}
       </View>
 
       {renderAddTeamModal()}
+
+      {/* Edit Team Modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setEditModalVisible(false);
+          setEditingTeamId(null);
+          setNewTeamName('');
+          setNewTeamSite('');
+          setNewTeamSpecialization('');
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Team</Text>
+
+            <Text style={styles.inputLabel}>Team Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={newTeamName}
+              onChangeText={setNewTeamName}
+              placeholder="Enter team name"
+              placeholderTextColor="#999"
+            />
+
+            <Text style={styles.inputLabel}>Specialization</Text>
+            <TextInput
+              style={styles.input}
+              value={newTeamSpecialization}
+              onChangeText={setNewTeamSpecialization}
+              placeholder="e.g., electrical, plumbing, carpentry"
+              placeholderTextColor="#999"
+            />
+
+            <Text style={styles.inputLabel}>Site *</Text>
+            <ScrollView style={styles.siteSelector}>
+              {sites.length === 0 ? (
+                <Text style={styles.noSitesText}>
+                  No sites available.
+                </Text>
+              ) : (
+                sites.map((site) => (
+                  <TouchableOpacity
+                    key={site.id}
+                    style={[
+                      styles.siteOption,
+                      newTeamSite === site.id && styles.selectedSiteOption,
+                    ]}
+                    onPress={() => setNewTeamSite(site.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.siteOptionText,
+                        newTeamSite === site.id && styles.selectedSiteOptionText,
+                      ]}
+                    >
+                      {site.name}
+                    </Text>
+                    <Text style={styles.siteLocationText}>{site.location}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditingTeamId(null);
+                  setNewTeamName('');
+                  setNewTeamSite('');
+                  setNewTeamSpecialization('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.createButton]}
+                onPress={handleUpdateTeam}
+              >
+                <Text style={styles.createButtonText}>Update Team</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Team Member Assignment Modal */}
+      {selectedTeam && (
+        <TeamMemberAssignment
+          visible={assignmentModalVisible}
+          teamId={selectedTeam.id}
+          onClose={() => setAssignmentModalVisible(false)}
+          onAssigned={() => {
+            if (selectedTeam) {
+              loadTeamMembers(selectedTeam.id);
+            }
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -404,6 +621,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  searchContainer: {
+    padding: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
   filtersContainer: {
     padding: 12,
     backgroundColor: '#fff',
@@ -436,17 +668,46 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
   loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 20,
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  emptyStateText: {
     fontSize: 16,
-    color: '#666',
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  emptyStateButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   teamCard: {
     backgroundColor: '#fff',
@@ -498,9 +759,15 @@ const styles = StyleSheet.create({
   detailsPanel: {
     width: 300,
     backgroundColor: '#fff',
-    padding: 16,
     borderLeftWidth: 1,
     borderLeftColor: '#e0e0e0',
+  },
+  detailsScrollView: {
+    flex: 1,
+  },
+  detailsScrollContent: {
+    padding: 16,
+    paddingBottom: 24,
   },
   detailsTitle: {
     fontSize: 20,
@@ -511,11 +778,27 @@ const styles = StyleSheet.create({
   detailsSection: {
     marginBottom: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   detailsSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 12,
+  },
+  manageMembersButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  manageMembersButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyMembers: {
     fontSize: 14,
@@ -539,7 +822,25 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: '#2196F3',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   deleteButton: {
+    flex: 1,
     backgroundColor: '#F44336',
     padding: 12,
     borderRadius: 8,
@@ -604,9 +905,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  siteLocationText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
   selectedSiteOptionText: {
     fontWeight: '600',
     color: '#2196F3',
+  },
+  noSitesText: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
   modalActions: {
     flexDirection: 'row',

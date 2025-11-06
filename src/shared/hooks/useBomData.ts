@@ -3,6 +3,7 @@ import { database } from '../../../models/database';
 import BomModel from '../../../models/BomModel';
 import BomItemModel from '../../../models/BomItemModel';
 import { Q } from '@nozbe/watermelondb';
+import { BomDataService } from '../../services/BomDataService';
 
 /**
  * useBomData
@@ -71,14 +72,13 @@ export const useBomData = (projectId?: string) => {
 
     try {
       setLoading(true);
-      const bomsCollection = database.collections.get<BomModel>('boms');
 
-      const bomsList = await bomsCollection
-        .query(
-          Q.where('project_id', projectId),
-          Q.where('status', Q.oneOf(['active', 'baseline'])) // Only active BOMs
-        )
-        .fetch();
+      // Use BomDataService which automatically loads mock data if database is empty
+      const bomsList = await BomDataService.getBoms({
+        projectId,
+        useMockData: true, // Enable mock data for testing
+        status: ['active', 'baseline'],
+      });
 
       setBoms(bomsList);
     } catch (error) {
@@ -94,11 +94,9 @@ export const useBomData = (projectId?: string) => {
 
     try {
       const bomIds = boms.map((bom) => bom.id);
-      const itemsCollection = database.collections.get<BomItemModel>('bom_items');
 
-      const items = await itemsCollection
-        .query(Q.where('bom_id', Q.oneOf(bomIds)))
-        .fetch();
+      // Use BomDataService to get items
+      const items = await BomDataService.getBomItems(bomIds);
 
       setBomItems(items);
     } catch (error) {
