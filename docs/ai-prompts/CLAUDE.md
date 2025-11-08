@@ -100,6 +100,28 @@ The supervisor role has 7 dedicated screens in `src/supervisor/`:
 
 **SiteContext**: All supervisor screens share site selection via `src/supervisor/context/SiteContext.tsx`
 
+### Manager Navigation (5 Screens - Activity 4 Complete)
+The manager role has 5 dedicated screens in `src/manager/`:
+
+1. **OverviewScreen** - Project overview dashboard
+2. **BomManagementScreen** 💰 - Bill of Materials Management (Activity 4 - v2.3, 1,450+ lines)
+   - Pre-Contract BOMs (Estimating): Draft → Submitted → Won/Lost
+   - Post-Contract BOMs (Execution): Baseline → Active → Closed
+   - Site categorization (7 types: ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct)
+   - Auto-generated item codes (MAT-001, LAB-002, EQP-003, SUB-004)
+   - Variance tracking (Baseline vs Actual with color-coded indicators)
+   - Excel export functionality (2 sheets: Summary + Items)
+3. **TeamManagementScreen** - Team management
+4. **FinancialReportsScreen** - Financial reports
+5. **ResourceAllocationScreen** - Resource allocation
+
+**BOM Management Features (Activity 4)**:
+- Complete BOM lifecycle management from estimation to execution
+- Copy to Execution: One-click copy from estimating to execution BOM with baseline linking
+- Real-time cost calculations (quantity × unit cost)
+- Professional Excel reporting ready for client presentations
+- Offline-first with sync support
+
 ### Planning Navigation (7 Tabs - Logical Workflow Order)
 The planning role has 7 dedicated tabs in `src/planning/` organized in workflow sequence:
 
@@ -124,12 +146,17 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 
 **Database Location**: Database models are in `/models/`, NOT `/src/db/`. This is important for imports.
 
-**Schema**: Defined in `models/schema/index.ts` (current version: 20)
+**Schema**: Defined in `models/schema/index.ts` (current version: 25)
 
 **Recent Schema Updates:**
 - **v18:** Added sync_status to core models (projects, sites, categories, items, materials)
 - **v19:** Added sync_queue table for tracking local changes
 - **v20:** Added _version field to 10 syncable models for conflict resolution
+- **v21:** Added boms table for Bill of Materials management (Activity 4, Phase 1)
+- **v22:** Added bom_items table for BOM line items (Activity 4, Phase 1)
+- **v23:** Added quantity and unit fields to boms table (Activity 4, Phase 1)
+- **v24:** Added site_category field to boms table with indexing (Activity 4, Phase 1)
+- **v25:** Added baseline_bom_id to boms table for execution tracking (Activity 4, Phase 2) - CURRENT
 
 **Core Collections**:
 - `projects` - Top-level project containers
@@ -140,12 +167,23 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 - `hindrances` - Issues/obstacles (belongs to items/sites, includes photos and reported_at)
 - `materials` - Material tracking (belongs to items)
 - `daily_reports` - Aggregated daily reports (belongs to sites, includes sync_status)
+- `boms` - Bill of Materials (belongs to projects, Activity 4 - v2.3)
+  - Dual types: 'estimating' (Pre-Contract) and 'execution' (Post-Contract)
+  - Site categories: ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct (indexed in v24)
+  - Statuses: Draft/Submitted/Won/Lost (estimating) or Baseline/Active/Closed (execution)
+  - Links to baseline via baseline_bom_id (v25)
+- `bom_items` - BOM line items (belongs to boms, Activity 4 - v2.3)
+  - Categories: Material, Labor, Equipment, Subcontractor
+  - Auto-generated codes: MAT-001, LAB-002, EQP-003, SUB-004
+  - Fields: description, category, quantity, unit, unit_cost, total_cost
 
 **Key Relationships**:
-- Project → has many → Sites
+- Project → has many → Sites, BOMs
 - Site → belongs to → Project, has many → Items, Hindrances, DailyReports
 - Category → has many → Items
 - Item → belongs to → Site and Category, has many → ProgressLogs, Materials, Hindrances
+- BOM → belongs to → Project, has many → BOM Items, optionally links to baseline BOM
+- BOM Item → belongs to → BOM
 
 **Schema v18-v20 Changes (Activity 2 - Sync Implementation)**:
 - **v18:** Added `sync_status` field to 5 core models (projects, sites, categories, items, materials)
@@ -171,6 +209,10 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 - `/services/sync/` - Sync functionality for offline data
   - `SyncService.ts` - Complete bidirectional sync with conflict resolution (Activity 2)
 - `/services/offline/` - Offline capability management
+- `/src/services/` - Application services
+  - `BomDataService.ts` - BOM CRUD operations (Activity 4 - v2.3)
+  - `BomImportExportService.ts` - Excel export functionality (Activity 4 - v2.3, 320 lines)
+  - `ClearBomsService.ts` - BOM data management utilities (Activity 4 - v2.3)
 
 ### TypeScript Configuration
 
@@ -295,7 +337,7 @@ items.forEach(item => {
 
 ## Key Dependencies
 
-- **@nozbe/watermelondb** - Offline-first database (Schema v20)
+- **@nozbe/watermelondb** - Offline-first database (Schema v25)
 - **@react-navigation** - Navigation (stack + bottom tabs)
 - **react-native-paper** - Material Design components (Cards, Dialogs, Chips)
 - **react-native-vector-icons** - Icon system (MaterialCommunityIcons)
@@ -303,6 +345,9 @@ items.forEach(item => {
 - **@react-native-community/netinfo** - Network status monitoring
 - **react-native-html-to-pdf** - PDF generation (currently disabled, reserved for future)
 - **sqlite3** - Database backend
+- **xlsx** - Excel file generation for BOM exports (Activity 4 - v2.3)
+- **react-native-fs** - File system operations for BOM exports (Activity 4 - v2.3)
+- **react-native-base64** - Base64 encoding for BOM exports (Activity 4 - v2.3)
 
 ## Common Patterns
 
@@ -312,8 +357,9 @@ Screens are organized by role in `src/{role}/`:
 - `supervisor/` - Field supervisor screens (7 screens + shared context)
   - Includes `context/SiteContext.tsx` for shared site selection
   - Includes `components/SiteSelector.tsx` reusable component
-- `manager/` - Project manager screens (4 screens)
-- `planning/` - Planning specialist screens (4 screens)
+- `manager/` - Project manager screens (5 screens, Activity 4 complete)
+  - `BomManagementScreen.tsx` (1,450+ lines) - Complete BOM management system
+- `planning/` - Planning specialist screens (7 screens)
 - `logistics/` - Logistics coordinator screens (4 screens)
 
 ### Photo Capture Pattern
@@ -340,7 +386,7 @@ Default test users (defined in DATABASE.md):
 ## References
 
 ### Architecture & Documentation
-- `ARCHITECTURE_UNIFIED.md` - Complete architecture documentation (single source of truth)
+- `ARCHITECTURE_UNIFIED.md` - Complete architecture documentation (single source of truth) - v2.3
 - `DATABASE.md` - Complete database schema and relationships
 - `README.md` - Setup instructions and project overview
 - `PLANNING_MASTER_STATUS.md` - Planning module status and roadmap
@@ -351,6 +397,79 @@ Default test users (defined in DATABASE.md):
 - `docs/implementation/WEEK_7_CONFLICT_RESOLUTION.md` - Conflict resolution with version tracking
 - `docs/testing/WEEK_5_API_TEST_REPORT.md` - Backend API testing results
 - `construction-tracker-api/WEEK_4_5_PROGRESS_SUMMARY.md` - Backend API implementation
+
+### Activity 4 Implementation (BOM Management - v2.3)
+- `docs/implementation/activity-4-bom/BOM_MANAGEMENT_FEATURE_SUMMARY.md` - Complete feature documentation (400+ lines)
+- `docs/testing/BOM_Management_Test_Procedure.md` - Comprehensive testing guide (15+ scenarios)
+- `docs/PROJECT_STATUS_REPORT_2025_11_07.md` - Activity 4 completion status report
+- `docs/testing/Sample_BOM_Import.csv` - Sample BOM data for testing (15 items)
+
+## BOM Management Patterns (Activity 4 - v2.3)
+
+### BOM Creation and Management
+When working with BOMs:
+- **Dual BOM Types**: Always use `type` field ('estimating' or 'execution')
+- **Site Categorization**: Use one of 7 categories (ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct)
+- **Auto-Generated Codes**: Item codes are auto-generated based on category:
+  - Material: MAT-001, MAT-002, ...
+  - Labor: LAB-001, LAB-002, ...
+  - Equipment: EQP-001, EQP-002, ...
+  - Subcontractor: SUB-001, SUB-002, ...
+- **Cost Calculations**: Total cost is automatically calculated as quantity × unit_cost
+- **Baseline Linking**: Execution BOMs link to estimating BOMs via `baseline_bom_id`
+
+### BOM Status Workflow
+**Pre-Contract (Estimating)**:
+1. Draft → Initial creation state
+2. Submitted → Sent for approval/bidding
+3. Won → Tender won, ready to copy to execution
+4. Lost → Tender lost, archived
+
+**Post-Contract (Execution)**:
+1. Baseline → Initial execution BOM (copied from won estimating BOM)
+2. Active → Currently being tracked
+3. Closed → Project completed
+
+### Variance Tracking Pattern
+When copying to execution:
+```typescript
+// Execution BOM references the baseline
+executionBom.baselineBomId = estimatingBom.id;
+
+// Display variance
+const variance = executionItem.totalCost - baselineItem.totalCost;
+const variancePercent = ((variance / baselineItem.totalCost) * 100).toFixed(1);
+```
+
+### Excel Export Pattern
+Use `BomImportExportService.exportBomToExcel()`:
+- Creates 2-sheet workbook (Summary + Items)
+- Auto-sizes columns for readability
+- Saves to Downloads folder
+- Returns file path for user feedback
+
+### BOM Database Queries
+```typescript
+import { Q } from '@nozbe/watermelondb';
+
+// Get BOMs by type and project
+const estimatingBoms = await database.collections
+  .get('boms')
+  .query(
+    Q.where('project_id', projectId),
+    Q.where('type', 'estimating')
+  )
+  .fetch();
+
+// Get BOM items with category filter
+const materialItems = await database.collections
+  .get('bom_items')
+  .query(
+    Q.where('bom_id', bomId),
+    Q.where('category', 'Material')
+  )
+  .fetch();
+```
 
 ## Development Best Practices
 

@@ -20,6 +20,11 @@ import ScheduleRevisionModel from './ScheduleRevisionModel';
 import TemplateModuleModel from './TemplateModuleModel';
 import InterfacePointModel from './InterfacePointModel';
 import SyncQueueModel from './SyncQueueModel';
+import TeamModel from './TeamModel';
+import TeamMemberModel from './TeamMemberModel';
+import ResourceRequestModel from './ResourceRequestModel';
+import BomModel from './BomModel';
+import BomItemModel from './BomItemModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -47,5 +52,10 @@ export const database = new Database({
     TemplateModuleModel,
     InterfacePointModel,
     SyncQueueModel,
+    TeamModel,
+    TeamMemberModel,
+    ResourceRequestModel,
+    BomModel,
+    BomItemModel,
   ],
 });

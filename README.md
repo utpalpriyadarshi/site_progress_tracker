@@ -247,6 +247,91 @@ The application now features a complete bidirectional synchronization system:
 - docs/testing/WEEK_5_API_TEST_REPORT.md - Backend API testing results
 - construction-tracker-api/WEEK_4_5_PROGRESS_SUMMARY.md - Backend API implementation
 
+---
+
+#### Activity 4: BOM Management System Complete ✅ (November 2025)
+**Bill of Materials (BOM) for Manager Role** (Schema v23-v25)
+
+The Manager role now has a comprehensive BOM Management system for Pre-Contract (Estimating) and Post-Contract (Execution) BOMs with variance tracking.
+
+**Phase 1: Core BOM Management** ✅
+- ✅ **Site Categorization**: 7 site types (ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct)
+- ✅ **Dual BOM Types**:
+  - Pre-Contract (Estimating): Draft → Submitted → Won/Lost
+  - Post-Contract (Execution): Baseline → Active → Closed
+- ✅ **BOM CRUD Operations**: Create, Read, Update, Delete with immediate UI updates
+- ✅ **Item Management**: Auto-generated item codes (MAT-001, LAB-002, EQP-003, SUB-004)
+- ✅ **4 Item Categories**: Material, Labor, Equipment, Subcontractor
+- ✅ **Cost Calculations**: Automatic quantity × unit cost = total cost
+- ✅ **Validation**: Prevents negative quantities and costs
+- ✅ **Status Tracking**: Color-coded status chips (🟣 DRAFT, 🔵 SUBMITTED, 🟢 WON, 🔴 LOST, 🟠 BASELINE, etc.)
+- ✅ **Tab-Based Interface**: Separate tabs for Estimating vs Execution BOMs
+- ✅ **Project Dropdown**: Improved UX with dropdown selector
+- ✅ **Removed Fields**: Client field, WBS Code (simplified)
+
+**Phase 2: Copy BOM & Variance Tracking** ✅
+- ✅ **Copy to Execution**: One-click copy from Pre-Contract BOM to Post-Contract
+- ✅ **Baseline Linking**: Execution BOMs linked to original estimating BOM (`baselineBomId`)
+- ✅ **Variance Calculation**: Automatic baseline vs actual cost comparison
+- ✅ **Visual Indicators**:
+  - 🔴 Red: Cost overrun (positive variance)
+  - 🟢 Green: Cost savings (negative variance)
+  - ⚫ Gray: No change
+- ✅ **Variance Display**: Shows percentage and absolute amount (e.g., +12.2%, +₹25,000)
+- ✅ **Side-by-Side Comparison**: Baseline cost vs Actual cost in execution BOMs
+- ✅ **Change Tracking**: Links back to original estimating BOM
+
+**Phase 3: Export Functionality** ✅
+- ✅ **Export to Excel (.xlsx)**: Full BOM with professional formatting
+- ✅ **Two-Sheet Format**:
+  - Summary Sheet: BOM metadata, project info, total costs
+  - Items Sheet: All line items with columns for item code, description, category, qty, unit, costs, phase
+- ✅ **Column Formatting**: Auto-sized columns for readability
+- ✅ **File Storage**: Saves to Downloads folder with timestamp
+- ✅ **Success Notification**: Shows file path after export
+- 🔄 **Import Feature**: Temporarily disabled (compatibility issue with file picker library)
+
+**Schema Evolution (Activity 4):**
+- **v23** (Phase 1): Added `quantity` and `unit` fields to boms table
+- **v24** (Phase 1): Added `site_category` field to boms table (indexed)
+- **v25** (Phase 2): Added `baseline_bom_id` field to boms table for linking execution BOMs to estimating BOMs
+
+**Files Added:**
+- src/manager/BomManagementScreen.tsx (1,450+ lines) - Complete BOM management UI
+- src/services/BomImportExportService.ts (320 lines) - Excel export functionality
+- models/BomModel.ts - BOM data model with 20+ fields
+- models/BomItemModel.ts - BOM item model with cost tracking
+- docs/testing/Sample_BOM_Import.csv - Sample data for future import testing
+
+**Key Features:**
+- **Offline-First**: Full BOM management works offline with WatermelonDB
+- **Real-Time Updates**: Immediate UI refresh after create/edit/delete operations
+- **Cost Tracking**: Automatic aggregation of item costs to BOM total
+- **Variance Analysis**: Track budget vs actual with visual indicators
+- **Professional Export**: Excel files ready for sharing with stakeholders
+- **Search & Filter**: Filter BOMs by type (Estimating/Execution)
+- **Comprehensive Validation**: Prevents invalid data entry
+- **Status Workflow**: Clear progression from Draft → Won → Baseline → Active → Closed
+
+**Testing:**
+- ✅ Manual testing completed with BOM_Management_Test_Procedure.md
+- ✅ All CRUD operations verified
+- ✅ Cost calculations accurate
+- ✅ Copy to Execution tested
+- ✅ Variance tracking validated
+- ✅ Export to Excel working
+- ✅ Data persistence verified
+
+**Manager Role Enhancements:**
+The Manager role is now fully equipped to handle construction project estimation and execution with:
+- Complete BOM lifecycle management
+- Pre-contract estimation and tendering
+- Post-contract execution and budget tracking
+- Variance analysis for cost control
+- Professional reporting with Excel export
+
+---
+
 ### v2.0 (October 2025) - UX Improvements Sprint 1 Complete ⭐
 **Alert.alert Migration to Snackbar/Dialog System**
 - ✅ **100% Migration Complete**: All 113 Alert.alert calls replaced with custom Snackbar/ConfirmDialog system
@@ -400,6 +485,25 @@ The app uses WatermelonDB (Schema v20, updated October 2025 - Activity 2) for ro
 ### Admin & User Management (v1.2, v2.2 Week 8)
 - **Users**: User accounts with authentication credentials
 - **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
+- **Sessions** (v2.2): JWT session tracking with device info
+- **PasswordHistory** (v2.2): Password history for reuse prevention
+
+### BOM Management (v2.3 - Activity 4, November 2025)
+- **BOMs** (Schema v23-v25): Bill of Materials for estimation and execution
+  - **Basic Fields**: project_id, name, type (estimating/execution), status, version, site_category
+  - **Baseline Linking** (v25): baseline_bom_id links execution BOMs to estimating BOMs
+  - **Quantities** (v23): quantity, unit fields for BOM-level quantities
+  - **Cost Tracking**: total_estimated_cost, total_actual_cost, contingency, profit_margin
+  - **Tender Fields**: tender_date, client, contract_value
+  - **Site Category** (v24): ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct (indexed)
+  - **Workflow**: Draft → Submitted → Won/Lost (Estimating), Baseline → Active → Closed (Execution)
+- **BOM Items**: Individual line items within BOMs
+  - **Identification**: item_code (auto-generated: MAT-001, LAB-002), description
+  - **Categories**: material, labor, equipment, subcontractor
+  - **Quantities**: quantity, unit, unit_cost, total_cost (auto-calculated)
+  - **Organization**: phase, wbs_code (optional)
+  - **Execution Tracking**: actual_quantity, actual_cost for variance analysis
+  - **Foreign Key**: bom_id links to parent BOM
 
 ### Planning & WBS Fields (v1.3-v1.5 - ENHANCED)
 Items now include advanced planning and WBS management capabilities:
@@ -423,7 +527,7 @@ Items now include advanced planning and WBS management capabilities:
   - **risk_notes**: Risk description and mitigation plan
 
 ### Key Database Features
-- **Schema Version 20**: Latest schema with sync support (v2.2 - Activity 2, Week 7)
+- **Schema Version 25**: Latest schema with BOM management (v2.3 - Activity 4, November 2025)
 - **Offline-First**: All operations work without internet
 - **Bidirectional Sync** (v2.2 - Week 6): Automatic push/pull synchronization with server
 - **Conflict Resolution** (v2.2 - Week 7): Version-based Last-Write-Wins strategy

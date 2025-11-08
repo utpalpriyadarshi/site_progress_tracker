@@ -175,5 +175,147 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v21: Add team management tables (Activity 3: Manager Role - Week 1, Day 1)
+    {
+      toVersion: 21,
+      steps: [
+        createTable({
+          name: 'teams',
+          columns: [
+            { name: 'name', type: 'string' },
+            { name: 'site_id', type: 'string', isIndexed: true },
+            { name: 'team_lead_id', type: 'string', isOptional: true },
+            { name: 'created_date', type: 'number' },
+            { name: 'status', type: 'string' },
+            { name: 'specialization', type: 'string', isOptional: true },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'team_members',
+          columns: [
+            { name: 'team_id', type: 'string', isIndexed: true },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'role', type: 'string' },
+            { name: 'assigned_date', type: 'number' },
+            { name: 'end_date', type: 'number', isOptional: true },
+            { name: 'status', type: 'string' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'resource_requests',
+          columns: [
+            { name: 'requested_by', type: 'string', isIndexed: true },
+            { name: 'site_id', type: 'string', isIndexed: true },
+            { name: 'resource_type', type: 'string' },
+            { name: 'resource_name', type: 'string' },
+            { name: 'quantity', type: 'number' },
+            { name: 'priority', type: 'string' },
+            { name: 'requested_date', type: 'number' },
+            { name: 'needed_by_date', type: 'number' },
+            { name: 'approval_status', type: 'string', isIndexed: true },
+            { name: 'approved_by', type: 'string', isOptional: true },
+            { name: 'approval_date', type: 'number', isOptional: true },
+            { name: 'rejection_reason', type: 'string', isOptional: true },
+            { name: 'notes', type: 'string', isOptional: true },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // v22: Add BOM management tables (Activity 4: BOM Management - Phase 1)
+    {
+      toVersion: 22,
+      steps: [
+        createTable({
+          name: 'boms',
+          columns: [
+            { name: 'project_id', type: 'string', isIndexed: true },
+            { name: 'name', type: 'string' },
+            { name: 'type', type: 'string', isIndexed: true },
+            { name: 'status', type: 'string', isIndexed: true },
+            { name: 'version', type: 'string' },
+            { name: 'tender_date', type: 'number', isOptional: true },
+            { name: 'client', type: 'string', isOptional: true },
+            { name: 'contract_value', type: 'number', isOptional: true },
+            { name: 'contingency', type: 'number' },
+            { name: 'profit_margin', type: 'number' },
+            { name: 'total_estimated_cost', type: 'number' },
+            { name: 'total_actual_cost', type: 'number' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'created_by', type: 'string', isIndexed: true },
+            { name: 'created_date', type: 'number' },
+            { name: 'updated_date', type: 'number' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'bom_items',
+          columns: [
+            { name: 'bom_id', type: 'string', isIndexed: true },
+            { name: 'material_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'item_code', type: 'string' },
+            { name: 'description', type: 'string' },
+            { name: 'category', type: 'string', isIndexed: true },
+            { name: 'sub_category', type: 'string', isOptional: true },
+            { name: 'quantity', type: 'number' },
+            { name: 'unit', type: 'string' },
+            { name: 'unit_cost', type: 'number' },
+            { name: 'total_cost', type: 'number' },
+            { name: 'wbs_code', type: 'string', isOptional: true },
+            { name: 'phase', type: 'string', isOptional: true },
+            { name: 'actual_quantity', type: 'number', isOptional: true },
+            { name: 'actual_cost', type: 'number', isOptional: true },
+            { name: 'notes', type: 'string', isOptional: true },
+            { name: 'created_date', type: 'number' },
+            { name: 'updated_date', type: 'number' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // v23: Add quantity and unit to boms table
+    {
+      toVersion: 23,
+      steps: [
+        addColumns({
+          table: 'boms',
+          columns: [
+            { name: 'quantity', type: 'number' },
+            { name: 'unit', type: 'string' },
+          ],
+        }),
+      ],
+    },
+    // v24: Add site_category to boms table (Activity 4: BOM Management enhancements)
+    {
+      toVersion: 24,
+      steps: [
+        addColumns({
+          table: 'boms',
+          columns: [
+            { name: 'site_category', type: 'string', isIndexed: true },
+          ],
+        }),
+      ],
+    },
+    // v25: Add baseline_bom_id to boms table for copy tracking (Activity 4: Phase 2)
+    {
+      toVersion: 25,
+      steps: [
+        addColumns({
+          table: 'boms',
+          columns: [
+            { name: 'baseline_bom_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
