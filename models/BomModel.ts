@@ -29,6 +29,8 @@ export default class BomModel extends Model {
   @field('type') type!: string; // estimating | execution
   @field('status') status!: string; // draft, submitted, won, lost, baseline, active, closed
   @field('version') version!: string; // v1.0, v2.0, v3.0, v3.1
+  @field('site_category') siteCategory!: string; // ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct
+  @field('baseline_bom_id') baselineBomId?: string; // Link to original estimating BOM (for execution BOMs)
   @field('quantity') quantity!: number; // e.g., 2 apartments, 5 floors
   @field('unit') unit!: string; // e.g., nos, floors, apartments, units
 

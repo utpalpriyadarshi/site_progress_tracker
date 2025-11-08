@@ -1,0 +1,16 @@
+Description,Category,Quantity,Unit,Unit Cost,Phase
+Portland Cement OPC 53,material,100,bags,450,foundation
+Ready Mix Concrete M25,material,50,m3,5500,foundation
+Steel Bars TMT 12mm,material,500,kg,65,structure
+Steel Bars TMT 16mm,material,800,kg,68,structure
+Bricks Red Clay,material,10000,nos,8,masonry
+Mason - Skilled,labor,200,hours,500,masonry
+Mason - Helper,labor,300,hours,300,masonry
+Carpenter - Formwork,labor,150,hours,450,structure
+Concrete Mixer 10/7,equipment,30,days,2000,foundation
+Tower Crane 6T,equipment,60,days,8500,structure
+Plumbing Contractor,subcontractor,1,ls,125000,MEP
+Electrical Contractor,subcontractor,1,ls,185000,MEP
+HVAC Contractor,subcontractor,1,ls,95000,MEP
+Waterproofing Chemical,material,200,ltr,450,finishing
+Wall Putty,material,500,kg,35,finishing

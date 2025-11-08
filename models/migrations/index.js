@@ -293,5 +293,29 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v24: Add site_category to boms table (Activity 4: BOM Management enhancements)
+    {
+      toVersion: 24,
+      steps: [
+        addColumns({
+          table: 'boms',
+          columns: [
+            { name: 'site_category', type: 'string', isIndexed: true },
+          ],
+        }),
+      ],
+    },
+    // v25: Add baseline_bom_id to boms table for copy tracking (Activity 4: Phase 2)
+    {
+      toVersion: 25,
+      steps: [
+        addColumns({
+          table: 'boms',
+          columns: [
+            { name: 'baseline_bom_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

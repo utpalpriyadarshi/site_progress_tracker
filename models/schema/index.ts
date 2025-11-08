@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 23, // Added quantity, unit to boms table (Activity 4: BOM Management)
+  version: 25, // Added baseline_bom_id to boms table for copy tracking (Activity 4: Phase 2)
   tables: [
     tableSchema({
       name: 'projects',
@@ -305,6 +305,8 @@ export default appSchema({
         { name: 'type', type: 'string', isIndexed: true }, // estimating | execution
         { name: 'status', type: 'string', isIndexed: true }, // draft, submitted, won, lost, baseline, active, closed
         { name: 'version', type: 'string' }, // v1.0, v2.0, v3.0, v3.1
+        { name: 'site_category', type: 'string', isIndexed: true }, // ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct
+        { name: 'baseline_bom_id', type: 'string', isOptional: true, isIndexed: true }, // Link to original estimating BOM
         { name: 'quantity', type: 'number' }, // e.g., 2 apartments, 5 floors
         { name: 'unit', type: 'string' }, // e.g., nos, floors, apartments, units
         { name: 'tender_date', type: 'number', isOptional: true },

@@ -1,475 +1,869 @@
 import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, FlatList, Alert } from 'react-native';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
+  Card,
+  Title,
+  Button,
   TextInput,
-  Modal,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useBomContext } from './context/BomContext';
+  Portal,
+  Dialog,
+  List,
+  IconButton,
+  Text,
+  Chip,
+  Divider,
+  Menu,
+} from 'react-native-paper';
+import { database } from '../../models/database';
+import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
 import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
-import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
-import BomCostDashboard from './components/BomCostDashboard';
-import BomItemEditor from './components/BomItemEditor';
-import BomCostBreakdown from './components/BomCostBreakdown';
-import BomImport from './components/BomImport';
+import { useSnackbar } from '../components/Snackbar';
+import { ConfirmDialog } from '../components/Dialog';
+// import DocumentPicker from 'react-native-document-picker'; // Temporarily disabled - compatibility issue
+import { BomImportExportService } from '../services/BomImportExportService';
 
 /**
- * BomManagementScreen
+ * BomManagementScreen - Redesigned to match Supervisor pattern
  *
- * Main screen for managing Bills of Materials (BOMs).
- * Features:
- * - View all BOMs with filtering (Pre-Contract/Post-Contract)
- * - Create new BOMs (Estimating or Execution)
- * - Edit existing BOMs
- * - View and manage BOM items
- * - Cost tracking and analytics
+ * Simple card-based interface:
+ * - Create BOM → Shows immediately in list
+ * - Add items → Updates card immediately
+ * - Edit/Delete → Instant feedback
  */
-const BomManagementScreen = () => {
-  const {
-    selectedBom,
-    setSelectedBom,
-    filterType,
-    setFilterType,
-    filterStatus,
-    setFilterStatus,
-    createBom,
-    updateBom,
-    deleteBom,
-    getAllBoms,
-    getBomItems,
-    addBomItem,
-    updateBomItem,
-    deleteBomItem,
-    calculateCostBreakdown,
-    refreshTrigger,
-    loading,
-    setLoading,
-  } = useBomContext();
+const BomManagementScreenComponent = ({
+  boms,
+  projects,
+  allBomItems,
+}: {
+  boms: BomModel[];
+  projects: ProjectModel[];
+  allBomItems: BomItemModel[];
+}) => {
+  const { showSnackbar } = useSnackbar();
 
-  // State
-  const [boms, setBoms] = useState<BomModel[]>([]);
-  const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [bomItems, setBomItems] = useState<BomItemModel[]>([]);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [addItemModalVisible, setAddItemModalVisible] = useState(false);
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Dialog state
+  const [bomDialogVisible, setBomDialogVisible] = useState(false);
+  const [itemDialogVisible, setItemDialogVisible] = useState(false);
+  const [editingBom, setEditingBom] = useState<BomModel | null>(null);
+  const [editingItem, setEditingItem] = useState<BomItemModel | null>(null);
+  const [showDeleteBomDialog, setShowDeleteBomDialog] = useState(false);
+  const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
+  const [bomToDelete, setBomToDelete] = useState<BomModel | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<BomItemModel | null>(null);
+
+  // BOM Form state
+  const [bomName, setBomName] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [bomType, setBomType] = useState<'estimating' | 'execution'>('estimating');
+  const [siteCategory, setSiteCategory] = useState<string>('');
+  const [quantity, setQuantity] = useState('1');
+  const [unit, setUnit] = useState('nos');
+  const [description, setDescription] = useState('');
+
+  // BOM Item Form state
+  const [selectedBomId, setSelectedBomId] = useState('');
+  const [itemDescription, setItemDescription] = useState('');
+  const [itemCategory, setItemCategory] = useState<'material' | 'labor' | 'equipment' | 'subcontractor'>('material');
+  const [itemQuantity, setItemQuantity] = useState('');
+  const [itemUnit, setItemUnit] = useState('');
+  const [itemUnitCost, setItemUnitCost] = useState('');
+  const [itemPhase, setItemPhase] = useState('');
+
+  // Tab state
   const [activeTab, setActiveTab] = useState<'estimating' | 'execution'>('estimating');
 
-  // Form state for new/edit BOM
-  const [formData, setFormData] = useState({
-    name: '',
-    projectId: '',
-    type: 'estimating' as 'estimating' | 'execution',
-    status: 'draft',
-    quantity: 1,
-    unit: '',
-    client: '',
-    tenderDate: Date.now(),
-    contractValue: 0,
-    contingency: 5,
-    profitMargin: 10,
-    description: '',
-  });
+  // Dropdown menu states
+  const [projectMenuVisible, setProjectMenuVisible] = useState(false);
+  const [siteMenuVisible, setSiteMenuVisible] = useState(false);
 
-  // Form state for BOM items
-  const [itemFormData, setItemFormData] = useState({
-    itemCode: '',
-    description: '',
-    category: 'material' as 'material' | 'labor' | 'equipment' | 'subcontractor',
-    subCategory: '',
-    quantity: 0,
-    unit: '',
-    unitCost: 0,
-    wbsCode: '',
-    phase: '',
-    notes: '',
-  });
+  // Filter BOMs by type
+  const filteredBoms = boms.filter(bom => bom.type === activeTab);
 
-  // Cost breakdown state
-  const [costBreakdown, setCostBreakdown] = useState({
-    totalEstimated: 0,
-    totalActual: 0,
-    materialCost: 0,
-    laborCost: 0,
-    equipmentCost: 0,
-    subcontractorCost: 0,
-    contingencyAmount: 0,
-    profitAmount: 0,
-    grandTotal: 0,
-  });
+  // Get items for a specific BOM
+  const getBomItems = (bomId: string): BomItemModel[] => {
+    return allBomItems.filter(item => item.bomId === bomId);
+  };
 
-  // Load data
-  useEffect(() => {
-    loadBoms();
-    loadProjects();
-  }, [refreshTrigger, filterType, filterStatus, activeTab]);
+  // Calculate total cost for BOM
+  const calculateTotalCost = (bomId: string): number => {
+    const items = getBomItems(bomId);
+    return items.reduce((sum, item) => sum + item.totalCost, 0);
+  };
 
-  useEffect(() => {
-    if (selectedBom) {
-      loadBomItems();
-      loadCostBreakdown();
+  // Get baseline BOM for execution BOMs
+  const getBaselineBom = (baselineBomId: string | undefined): BomModel | undefined => {
+    if (!baselineBomId) return undefined;
+    return boms.find(b => b.id === baselineBomId);
+  };
+
+  // Calculate variance percentage
+  const calculateVariance = (baseline: number, actual: number): number => {
+    if (baseline === 0) return actual > 0 ? 100 : 0;
+    return ((actual - baseline) / baseline) * 100;
+  };
+
+  // Site categories for dropdown
+  const SITE_CATEGORIES = ['ROCS', 'FOCS', 'RSS', 'AMS', 'TSS', 'ASS', 'Viaduct'];
+
+  // Reset BOM form
+  const resetBomForm = () => {
+    setBomName('');
+    setSelectedProjectId(projects[0]?.id || '');
+    setBomType('estimating');
+    setSiteCategory(SITE_CATEGORIES[0]);
+    setQuantity('1');
+    setUnit('nos');
+    setDescription('');
+    setEditingBom(null);
+  };
+
+  // Reset Item form
+  const resetItemForm = () => {
+    setSelectedBomId('');
+    setItemDescription('');
+    setItemCategory('material');
+    setItemQuantity('');
+    setItemUnit('');
+    setItemUnitCost('');
+    setItemPhase('');
+    setEditingItem(null);
+  };
+
+  // Open BOM dialog for adding
+  const openAddBomDialog = () => {
+    if (projects.length === 0) {
+      showSnackbar('Please create a project first', 'warning');
+      return;
     }
-  }, [selectedBom, refreshTrigger]);
+    resetBomForm();
+    setBomType(activeTab);
+    setSelectedProjectId(projects[0]?.id || '');
+    setSiteCategory(SITE_CATEGORIES[0]);
+    setBomDialogVisible(true);
+  };
 
-  const loadBoms = async () => {
+  // Open BOM dialog for editing
+  const openEditBomDialog = (bom: BomModel) => {
+    setEditingBom(bom);
+    setBomName(bom.name);
+    setSelectedProjectId(bom.projectId);
+    setBomType(bom.type as 'estimating' | 'execution');
+    setSiteCategory(bom.siteCategory || SITE_CATEGORIES[0]);
+    setQuantity(bom.quantity.toString());
+    setUnit(bom.unit);
+    setDescription(bom.description || '');
+    setBomDialogVisible(true);
+  };
+
+  // Close BOM dialog
+  const closeBomDialog = () => {
+    setBomDialogVisible(false);
+    resetBomForm();
+  };
+
+  // Create or Update BOM
+  const handleSaveBom = async () => {
+    if (!bomName.trim() || !selectedProjectId || !siteCategory || !quantity || !unit.trim()) {
+      setBomDialogVisible(false);
+      showSnackbar('Please fill in all required fields', 'warning');
+      return;
+    }
+
+    const qty = parseFloat(quantity);
+    if (isNaN(qty) || qty <= 0) {
+      setBomDialogVisible(false);
+      showSnackbar('Quantity must be a positive number', 'warning');
+      return;
+    }
+
     try {
-      setLoading(true);
-      const allBoms = await getAllBoms();
+      await database.write(async () => {
+        if (editingBom) {
+          // Update existing BOM
+          await editingBom.update((bom: any) => {
+            bom.name = bomName.trim();
+            bom.siteCategory = siteCategory;
+            bom.quantity = qty;
+            bom.unit = unit.trim();
+            bom.description = description.trim();
+            bom.updatedDate = Date.now();
+          });
+          showSnackbar('BOM updated successfully', 'success');
+        } else {
+          // Create new BOM
+          await database.collections.get<BomModel>('boms').create((bom: any) => {
+            bom.projectId = selectedProjectId;
+            bom.name = bomName.trim();
+            bom.type = bomType;
+            bom.status = bomType === 'estimating' ? 'draft' : 'baseline';
+            bom.version = 'v1.0';
+            bom.siteCategory = siteCategory;
+            bom.quantity = qty;
+            bom.unit = unit.trim();
+            bom.description = description.trim();
+            bom.contingency = 5;
+            bom.profitMargin = 10;
+            bom.totalEstimatedCost = 0;
+            bom.totalActualCost = 0;
+            bom.createdBy = 'current-user'; // TODO: Get from auth
+            bom.createdDate = Date.now();
+            bom.updatedDate = Date.now();
+            bom.appSyncStatus = 'pending';
+            bom._version = 1;
+          });
+          showSnackbar('BOM created successfully', 'success');
+        }
+      });
+      closeBomDialog();
+    } catch (error) {
+      console.error('Error saving BOM:', error);
+      showSnackbar('Failed to save BOM: ' + (error as Error).message, 'error');
+    }
+  };
 
-      // Filter by active tab and additional filters
-      let filtered = allBoms.filter((bom) => bom.type === activeTab);
+  // Delete BOM
+  const handleDeleteBom = (bom: BomModel) => {
+    setBomToDelete(bom);
+    setShowDeleteBomDialog(true);
+  };
 
-      if (filterStatus) {
-        filtered = filtered.filter((bom) => bom.status === filterStatus);
+  const confirmDeleteBom = async () => {
+    if (!bomToDelete) return;
+
+    setShowDeleteBomDialog(false);
+    try {
+      await database.write(async () => {
+        // Delete all BOM items first
+        const items = getBomItems(bomToDelete.id);
+        for (const item of items) {
+          await item.markAsDeleted();
+        }
+        // Delete BOM
+        await bomToDelete.markAsDeleted();
+      });
+      showSnackbar('BOM deleted successfully', 'success');
+      setBomToDelete(null);
+    } catch (error) {
+      console.error('Error deleting BOM:', error);
+      showSnackbar('Failed to delete BOM: ' + (error as Error).message, 'error');
+    }
+  };
+
+  // Copy BOM to Execution
+  const handleCopyToExecution = async (sourceBom: BomModel) => {
+    try {
+      const sourceItems = getBomItems(sourceBom.id);
+
+      if (sourceItems.length === 0) {
+        showSnackbar('Cannot copy BOM with no items', 'warning');
+        return;
       }
 
-      // Sort by created date (newest first)
-      filtered.sort((a, b) => b.createdDate - a.createdDate);
+      await database.write(async () => {
+        // Create new execution BOM
+        const executionBom = await database.collections.get<BomModel>('boms').create((bom: any) => {
+          bom.projectId = sourceBom.projectId;
+          bom.name = sourceBom.name + ' (Execution)';
+          bom.type = 'execution';
+          bom.status = 'baseline';
+          bom.version = sourceBom.version;
+          bom.siteCategory = sourceBom.siteCategory;
+          bom.baselineBomId = sourceBom.id; // Link to original estimating BOM
+          bom.quantity = sourceBom.quantity;
+          bom.unit = sourceBom.unit;
+          bom.description = sourceBom.description || '';
+          bom.contingency = sourceBom.contingency;
+          bom.profitMargin = sourceBom.profitMargin;
+          bom.totalEstimatedCost = sourceBom.totalEstimatedCost;
+          bom.totalActualCost = 0;
+          bom.createdBy = 'current-user';
+          bom.createdDate = Date.now();
+          bom.updatedDate = Date.now();
+          bom.appSyncStatus = 'pending';
+          bom._version = 1;
+        });
 
-      setBoms(filtered);
-    } catch (error) {
-      console.error('Error loading BOMs:', error);
-      Alert.alert('Error', 'Failed to load BOMs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProjects = async () => {
-    try {
-      const allProjects = await database.collections.get<ProjectModel>('projects').query().fetch();
-      setProjects(allProjects);
-    } catch (error) {
-      console.error('Error loading projects:', error);
-    }
-  };
-
-  const loadBomItems = async () => {
-    if (!selectedBom) return;
-
-    try {
-      const items = await getBomItems(selectedBom.id);
-      setBomItems(items);
-    } catch (error) {
-      console.error('Error loading BOM items:', error);
-    }
-  };
-
-  const loadCostBreakdown = async () => {
-    if (!selectedBom) return;
-
-    try {
-      const breakdown = await calculateCostBreakdown(selectedBom.id);
-      setCostBreakdown(breakdown);
-    } catch (error) {
-      console.error('Error calculating cost breakdown:', error);
-    }
-  };
-
-  const handleCreateBom = async () => {
-    if (!formData.name.trim() || !formData.projectId) {
-      Alert.alert('Validation Error', 'Please fill in BOM name and select a project');
-      return;
-    }
-    if (!formData.unit.trim()) {
-      Alert.alert('Validation Error', 'Please enter a unit (e.g., nos, apartments, floors)');
-      return;
-    }
-
-    try {
-      await createBom({
-        name: formData.name.trim(),
-        projectId: formData.projectId,
-        type: formData.type,
-        status: formData.status as any,
-        quantity: formData.quantity,
-        unit: formData.unit.trim(),
-        client: formData.client,
-        tenderDate: formData.tenderDate,
-        contractValue: formData.contractValue,
-        contingency: formData.contingency,
-        profitMargin: formData.profitMargin,
-        description: formData.description,
-        createdBy: 'current-user-id', // TODO: Get from auth context
+        // Copy all items
+        for (const sourceItem of sourceItems) {
+          await database.collections.get<BomItemModel>('bom_items').create((item: any) => {
+            item.bomId = executionBom.id;
+            item.itemCode = sourceItem.itemCode;
+            item.description = sourceItem.description;
+            item.category = sourceItem.category;
+            item.subCategory = sourceItem.subCategory;
+            item.quantity = sourceItem.quantity;
+            item.unit = sourceItem.unit;
+            item.unitCost = sourceItem.unitCost;
+            item.totalCost = sourceItem.totalCost;
+            item.phase = sourceItem.phase;
+            item.wbsCode = sourceItem.wbsCode || '';
+            item.actualQuantity = sourceItem.quantity; // Initialize with baseline quantity
+            item.actualCost = sourceItem.totalCost; // Initialize with baseline cost
+            item.createdDate = Date.now();
+            item.updatedDate = Date.now();
+            item.appSyncStatus = 'pending';
+            item._version = 1;
+          });
+        }
       });
 
-      resetForm();
-      setAddModalVisible(false);
-      Alert.alert('Success', 'BOM created successfully');
+      showSnackbar('BOM copied to Execution successfully!', 'success');
+      // Switch to execution tab to show the new BOM
+      setActiveTab('execution');
     } catch (error) {
-      console.error('Error creating BOM:', error);
-      Alert.alert('Error', 'Failed to create BOM');
+      console.error('Error copying BOM:', error);
+      showSnackbar('Failed to copy BOM: ' + (error as Error).message, 'error');
     }
   };
 
-  const handleUpdateBom = async () => {
-    if (!selectedBom) return;
-
+  // Export BOM to Excel
+  const handleExportBom = async (bom: BomModel) => {
     try {
-      await updateBom(selectedBom.id, {
-        name: formData.name.trim(),
-        status: formData.status,
-        client: formData.client,
-        tenderDate: formData.tenderDate,
-        contractValue: formData.contractValue,
-        contingency: formData.contingency,
-        profitMargin: formData.profitMargin,
-        description: formData.description,
+      const items = getBomItems(bom.id);
+      const project = projects.find(p => p.id === bom.projectId);
+
+      showSnackbar('Exporting BOM to Excel...', 'info');
+
+      const filePath = await BomImportExportService.exportBomToExcel({
+        bom,
+        items,
+        projectName: project?.name,
       });
 
-      resetForm();
-      setEditModalVisible(false);
-      Alert.alert('Success', 'BOM updated successfully');
+      Alert.alert(
+        'Export Successful',
+        `BOM exported successfully!\n\nSaved to: ${filePath}`,
+        [{ text: 'OK' }]
+      );
     } catch (error) {
-      console.error('Error updating BOM:', error);
-      Alert.alert('Error', 'Failed to update BOM');
+      console.error('Error exporting BOM:', error);
+      showSnackbar('Failed to export BOM: ' + (error as Error).message, 'error');
     }
   };
 
-  const handleDeleteBom = async (bomId: string) => {
-    Alert.alert('Confirm Delete', 'Are you sure you want to delete this BOM? All items will be deleted.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteBom(bomId);
-            Alert.alert('Success', 'BOM deleted successfully');
-          } catch (error) {
-            console.error('Error deleting BOM:', error);
-            Alert.alert('Error', 'Failed to delete BOM');
-          }
-        },
-      },
-    ]);
+  // Import BOM from file (temporarily disabled - compatibility issue)
+  const handleImportBom = async () => {
+    Alert.alert(
+      'Import Feature',
+      'Import feature is currently being upgraded. Please use Export to Excel and manually create BOMs for now.',
+      [{ text: 'OK' }]
+    );
+    /*
+    try {
+      // Pick file
+      const result = await DocumentPicker.pick({
+        type: [DocumentPicker.types.xlsx, DocumentPicker.types.xls, DocumentPicker.types.csv],
+      });
+
+      if (!result || result.length === 0) {
+        return;
+      }
+
+      const file = Array.isArray(result) ? result[0] : result;
+
+      showSnackbar('Importing BOM...', 'info');
+
+      // Import data
+      const importResult = await BomImportExportService.importBomFromFile(file.uri);
+
+      if (!importResult.success) {
+        Alert.alert(
+          'Import Failed',
+          `Could not import BOM:\n${importResult.errors.join('\n')}`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Show import summary and create BOM
+      Alert.alert(
+        'Import Summary',
+        `Total rows: ${importResult.totalRows}\nValid items: ${importResult.validRows}\nSkipped rows: ${importResult.skippedRows}\n\nCreate a new BOM with these items?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Create BOM',
+            onPress: () => createBomFromImport(importResult),
+          },
+        ]
+      );
+    } catch (error: any) {
+      if (DocumentPicker.isCancel(error)) {
+        // User cancelled
+        return;
+      }
+      console.error('Error importing BOM:', error);
+      showSnackbar('Failed to import BOM: ' + error.message, 'error');
+    }
+    */
   };
 
-  const handleAddItem = async () => {
-    if (!selectedBom) return;
-    if (!itemFormData.itemCode.trim() || !itemFormData.description.trim()) {
-      Alert.alert('Validation Error', 'Please fill in item code and description');
+  // Create BOM from imported data
+  const createBomFromImport = async (importResult: any) => {
+    try {
+      if (projects.length === 0) {
+        showSnackbar('Please create a project first', 'warning');
+        return;
+      }
+
+      await database.write(async () => {
+        // Create new BOM
+        const newBom = await database.collections.get<BomModel>('boms').create((bom: any) => {
+          bom.projectId = projects[0].id;
+          bom.name = `Imported BOM ${new Date().toLocaleDateString('en-IN')}`;
+          bom.type = 'estimating';
+          bom.status = 'draft';
+          bom.version = 'v1.0';
+          bom.siteCategory = SITE_CATEGORIES[0];
+          bom.quantity = 1;
+          bom.unit = 'nos';
+          bom.description = `Imported on ${new Date().toLocaleString('en-IN')}`;
+          bom.contingency = 5;
+          bom.profitMargin = 10;
+          bom.totalEstimatedCost = 0;
+          bom.totalActualCost = 0;
+          bom.createdBy = 'current-user';
+          bom.createdDate = Date.now();
+          bom.updatedDate = Date.now();
+          bom.appSyncStatus = 'pending';
+          bom._version = 1;
+        });
+
+        // Create items
+        let totalCost = 0;
+        let itemNumber = 1;
+
+        for (const importedItem of importResult.items) {
+          const categoryPrefix = importedItem.category.substring(0, 3).toUpperCase();
+          const itemCode = `${categoryPrefix}-${String(itemNumber).padStart(3, '0')}`;
+          const cost = importedItem.quantity * importedItem.unitCost;
+
+          await database.collections.get<BomItemModel>('bom_items').create((item: any) => {
+            item.bomId = newBom.id;
+            item.itemCode = itemCode;
+            item.description = importedItem.description;
+            item.category = importedItem.category;
+            item.quantity = importedItem.quantity;
+            item.unit = importedItem.unit;
+            item.unitCost = importedItem.unitCost;
+            item.totalCost = cost;
+            item.phase = importedItem.phase || '';
+            item.wbsCode = '';
+            item.createdDate = Date.now();
+            item.updatedDate = Date.now();
+            item.appSyncStatus = 'pending';
+            item._version = 1;
+          });
+
+          totalCost += cost;
+          itemNumber++;
+        }
+
+        // Update BOM total cost
+        await newBom.update((b: any) => {
+          b.totalEstimatedCost = totalCost;
+        });
+      });
+
+      showSnackbar(`BOM imported successfully with ${importResult.validRows} items!`, 'success');
+    } catch (error) {
+      console.error('Error creating BOM from import:', error);
+      showSnackbar('Failed to create BOM: ' + (error as Error).message, 'error');
+    }
+  };
+
+  // Open Item dialog for adding
+  const openAddItemDialog = (bomId: string) => {
+    resetItemForm();
+    setSelectedBomId(bomId);
+    setItemDialogVisible(true);
+  };
+
+  // Open Item dialog for editing
+  const openEditItemDialog = (item: BomItemModel) => {
+    setEditingItem(item);
+    setSelectedBomId(item.bomId);
+    setItemDescription(item.description);
+    setItemCategory(item.category as any);
+    setItemQuantity(item.quantity.toString());
+    setItemUnit(item.unit);
+    setItemUnitCost(item.unitCost.toString());
+    setItemPhase(item.phase || '');
+    setItemDialogVisible(true);
+  };
+
+  // Close Item dialog
+  const closeItemDialog = () => {
+    setItemDialogVisible(false);
+    resetItemForm();
+  };
+
+  // Create or Update BOM Item
+  const handleSaveItem = async () => {
+    if (!itemDescription.trim() || !itemQuantity || !itemUnit.trim() || !itemUnitCost) {
+      setItemDialogVisible(false);
+      showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
 
     try {
-      await addBomItem(selectedBom.id, itemFormData);
-      resetItemForm();
-      setAddItemModalVisible(false);
-      Alert.alert('Success', 'Item added successfully');
+      const qty = parseFloat(itemQuantity);
+      const cost = parseFloat(itemUnitCost);
+
+      // Validate positive numbers
+      if (isNaN(qty) || qty <= 0) {
+        setItemDialogVisible(false);
+        showSnackbar('Quantity must be a positive number', 'warning');
+        return;
+      }
+
+      if (isNaN(cost) || cost < 0) {
+        setItemDialogVisible(false);
+        showSnackbar('Unit cost cannot be negative', 'warning');
+        return;
+      }
+
+      const totalCost = qty * cost;
+
+      await database.write(async () => {
+        if (editingItem) {
+          // Update existing item
+          await editingItem.update((item: any) => {
+            item.description = itemDescription.trim();
+            item.category = itemCategory;
+            item.quantity = qty;
+            item.unit = itemUnit.trim();
+            item.unitCost = cost;
+            item.totalCost = totalCost;
+            item.phase = itemPhase.trim();
+            item.updatedDate = Date.now();
+          });
+          showSnackbar('Item updated successfully', 'success');
+
+          // Recalculate BOM total
+          const bom = await database.collections.get<BomModel>('boms').find(editingItem.bomId);
+          const items = getBomItems(editingItem.bomId);
+          const total = items.reduce((sum, i) => sum + i.totalCost, 0);
+          await bom.update((b: any) => {
+            b.totalEstimatedCost = total;
+            b.updatedDate = Date.now();
+          });
+        } else {
+          // Create new item - generate item code automatically
+          const bomItems = getBomItems(selectedBomId);
+          const itemNumber = bomItems.length + 1;
+          const categoryPrefix = itemCategory.substring(0, 3).toUpperCase();
+          const generatedItemCode = `${categoryPrefix}-${String(itemNumber).padStart(3, '0')}`;
+
+          await database.collections.get<BomItemModel>('bom_items').create((item: any) => {
+            item.bomId = selectedBomId;
+            item.itemCode = generatedItemCode;
+            item.description = itemDescription.trim();
+            item.category = itemCategory;
+            item.quantity = qty;
+            item.unit = itemUnit.trim();
+            item.unitCost = cost;
+            item.totalCost = totalCost;
+            item.phase = itemPhase.trim();
+            item.wbsCode = ''; // No longer used
+            item.createdDate = Date.now();
+            item.updatedDate = Date.now();
+            item.appSyncStatus = 'pending';
+            item._version = 1;
+          });
+          showSnackbar('Item added successfully', 'success');
+
+          // Update BOM total cost
+          const bom = await database.collections.get<BomModel>('boms').find(selectedBomId);
+          const items = getBomItems(selectedBomId);
+          const total = items.reduce((sum, i) => sum + i.totalCost, 0);
+          await bom.update((b: any) => {
+            b.totalEstimatedCost = total;
+            b.updatedDate = Date.now();
+          });
+        }
+      });
+      closeItemDialog();
     } catch (error) {
-      console.error('Error adding item:', error);
-      Alert.alert('Error', 'Failed to add item');
+      console.error('Error saving item:', error);
+      showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    Alert.alert('Confirm Delete', 'Are you sure you want to delete this item?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteBomItem(itemId);
-            Alert.alert('Success', 'Item deleted successfully');
-          } catch (error) {
-            console.error('Error deleting item:', error);
-            Alert.alert('Error', 'Failed to delete item');
-          }
-        },
-      },
-    ]);
+  // Delete Item
+  const handleDeleteItem = (item: BomItemModel) => {
+    setItemToDelete(item);
+    setShowDeleteItemDialog(true);
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      projectId: '',
-      type: 'estimating',
-      status: 'draft',
-      quantity: 1,
-      unit: '',
-      client: '',
-      tenderDate: Date.now(),
-      contractValue: 0,
-      contingency: 5,
-      profitMargin: 10,
-      description: '',
-    });
+  const confirmDeleteItem = async () => {
+    if (!itemToDelete) return;
+
+    setShowDeleteItemDialog(false);
+    try {
+      const bomId = itemToDelete.bomId;
+      await database.write(async () => {
+        await itemToDelete.markAsDeleted();
+
+        // Recalculate BOM total
+        const bom = await database.collections.get<BomModel>('boms').find(bomId);
+        const items = getBomItems(bomId);
+        const total = items.reduce((sum, i) => sum + i.totalCost, 0);
+        await bom.update((b: any) => {
+          b.totalEstimatedCost = total;
+          b.updatedDate = Date.now();
+        });
+      });
+      showSnackbar('Item deleted successfully', 'success');
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
+    }
   };
 
-  const resetItemForm = () => {
-    setItemFormData({
-      itemCode: '',
-      description: '',
-      category: 'material',
-      subCategory: '',
-      quantity: 0,
-      unit: '',
-      unitCost: 0,
-      wbsCode: '',
-      phase: '',
-      notes: '',
-    });
-  };
-
-  const openEditModal = (bom: BomModel) => {
-    setFormData({
-      name: bom.name,
-      projectId: bom.projectId,
-      type: bom.type as 'estimating' | 'execution',
-      status: bom.status,
-      quantity: bom.quantity || 1,
-      unit: bom.unit || '',
-      client: bom.client || '',
-      tenderDate: bom.tenderDate || Date.now(),
-      contractValue: bom.contractValue || 0,
-      contingency: bom.contingency,
-      profitMargin: bom.profitMargin,
-      description: bom.description || '',
-    });
-    setEditModalVisible(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: '#9E9E9E',
-      submitted: '#2196F3',
-      won: '#4CAF50',
-      lost: '#F44336',
-      baseline: '#FF9800',
-      active: '#4CAF50',
-      closed: '#757575',
+  // Get status color and text color for better visibility
+  const getStatusColor = (status: string): { bg: string; text: string } => {
+    const colors: Record<string, { bg: string; text: string }> = {
+      draft: { bg: '#9C27B0', text: '#FFFFFF' },        // Purple - more appealing
+      submitted: { bg: '#2196F3', text: '#FFFFFF' },    // Blue
+      won: { bg: '#4CAF50', text: '#FFFFFF' },          // Green
+      lost: { bg: '#F44336', text: '#FFFFFF' },         // Red
+      baseline: { bg: '#FF9800', text: '#FFFFFF' },     // Orange
+      active: { bg: '#4CAF50', text: '#FFFFFF' },       // Green
+      closed: { bg: '#616161', text: '#FFFFFF' },       // Gray
     };
-    return colors[status] || '#9E9E9E';
+    return colors[status] || { bg: '#9E9E9E', text: '#FFFFFF' };
   };
 
-  const formatCurrency = (amount: number) => {
+  // Format currency
+  const formatCurrency = (amount: number): string => {
     return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
   };
 
+  // Render BOM Card
   const renderBomCard = (bom: BomModel) => {
-    const project = projects.find((p) => p.id === bom.projectId);
+    const project = projects.find(p => p.id === bom.projectId);
+    const items = getBomItems(bom.id);
+    const totalCost = calculateTotalCost(bom.id);
+    const statusColors = getStatusColor(bom.status);
+
+    // For execution BOMs, get baseline data
+    const baselineBom = bom.type === 'execution' ? getBaselineBom(bom.baselineBomId) : undefined;
+    const baselineTotalCost = baselineBom ? calculateTotalCost(baselineBom.id) : 0;
+    const variance = baselineBom ? calculateVariance(baselineTotalCost, totalCost) : 0;
 
     return (
-      <TouchableOpacity
-        key={bom.id}
-        style={[styles.bomCard, selectedBom?.id === bom.id && styles.selectedBomCard]}
-        onPress={() => setSelectedBom(bom)}
-      >
-        <View style={styles.bomHeader}>
-          <Text style={styles.bomName}>{bom.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(bom.status) }]}>
-            <Text style={styles.statusText}>{bom.status}</Text>
+      <Card key={bom.id} style={styles.bomCard}>
+        <Card.Content>
+          {/* BOM Header */}
+          <View style={styles.bomHeader}>
+            <View style={styles.bomTitleSection}>
+              <Text variant="titleMedium" style={styles.bomName}>{bom.name}</Text>
+              <Chip
+                mode="flat"
+                style={[styles.statusChip, { backgroundColor: statusColors.bg }]}
+                textStyle={[styles.statusChipText, { color: statusColors.text }]}
+              >
+                {bom.status.toUpperCase()}
+              </Chip>
+            </View>
+            <View style={styles.bomActions}>
+              <IconButton
+                icon="pencil"
+                size={20}
+                onPress={() => openEditBomDialog(bom)}
+              />
+              <IconButton
+                icon="delete"
+                size={20}
+                iconColor="#FF3B30"
+                onPress={() => handleDeleteBom(bom)}
+              />
+            </View>
           </View>
-        </View>
 
-        {project && <Text style={styles.projectName}>Project: {project.name}</Text>}
-
-        <View style={styles.bomInfo}>
-          <Text style={styles.bomInfoLabel}>Version:</Text>
-          <Text style={styles.bomInfoValue}>{bom.version}</Text>
-        </View>
-
-        <View style={styles.bomInfo}>
-          <Text style={styles.bomInfoLabel}>Estimated Cost:</Text>
-          <Text style={styles.bomInfoValue}>{formatCurrency(bom.totalEstimatedCost)}</Text>
-        </View>
-
-        {bom.type === 'execution' && (
+          {/* BOM Info */}
           <View style={styles.bomInfo}>
-            <Text style={styles.bomInfoLabel}>Actual Cost:</Text>
-            <Text style={styles.bomInfoValue}>{formatCurrency(bom.totalActualCost)}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderBomDetails = () => {
-    if (!selectedBom) return null;
-
-    const project = projects.find((p) => p.id === selectedBom.projectId);
-
-    return (
-      <View style={styles.detailsPanel}>
-        <ScrollView style={styles.detailsScrollView} contentContainerStyle={styles.detailsScrollContent}>
-          <Text style={styles.detailsTitle}>{selectedBom.name}</Text>
-
-          {/* Cost Dashboard */}
-          <View style={styles.detailsSection}>
-            <BomCostDashboard bom={selectedBom} items={bomItems} />
+            {project && (
+              <Text variant="bodySmall" style={styles.infoText}>
+                📁 Project: {project.name}
+              </Text>
+            )}
+            <Text variant="bodySmall" style={styles.infoText}>
+              🏗️ Site: {bom.siteCategory}
+            </Text>
+            <Text variant="bodySmall" style={styles.infoText}>
+              📦 Quantity: {bom.quantity} {bom.unit}
+            </Text>
+            <Text variant="bodySmall" style={styles.infoText}>
+              📋 Version: {bom.version}
+            </Text>
           </View>
 
-          {/* Cost Breakdown Visualization */}
-          <View style={styles.detailsSection}>
-            <Text style={styles.detailsSectionTitle}>Cost Breakdown</Text>
-            <BomCostBreakdown
-              materialCost={costBreakdown.materialCost}
-              laborCost={costBreakdown.laborCost}
-              equipmentCost={costBreakdown.equipmentCost}
-              subcontractorCost={costBreakdown.subcontractorCost}
-            />
-          </View>
+          <Divider style={styles.divider} />
 
-          {/* BOM Items */}
-          <View style={styles.detailsSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.detailsSectionTitle}>BOM Items ({bomItems.length})</Text>
-              <View style={styles.itemActionsContainer}>
-                <TouchableOpacity style={styles.addItemButton} onPress={() => setAddItemModalVisible(true)}>
-                  <Text style={styles.addItemButtonText}>+ Add Item</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.importButton} onPress={() => setImportModalVisible(true)}>
-                  <Text style={styles.importButtonText}>Import</Text>
-                </TouchableOpacity>
-              </View>
+          {/* BOM Items Summary */}
+          <View style={styles.itemsSection}>
+            <View style={styles.itemsHeader}>
+              <Text variant="titleSmall">Items ({items.length})</Text>
+              <Button
+                mode="outlined"
+                icon="plus"
+                onPress={() => openAddItemDialog(bom.id)}
+                compact
+                style={styles.addItemButton}
+              >
+                Add Item
+              </Button>
             </View>
 
-            {bomItems.length === 0 ? (
-              <Text style={styles.emptyItems}>No items added yet</Text>
+            {items.length === 0 ? (
+              <Text variant="bodySmall" style={styles.emptyItemsText}>
+                No items added yet. Click "Add Item" to start.
+              </Text>
             ) : (
-              bomItems.map((item) => (
-                <View key={item.id} style={styles.itemCard}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemCode}>{item.itemCode}</Text>
-                    <TouchableOpacity onPress={() => handleDeleteItem(item.id)}>
-                      <Text style={styles.deleteItemText}>Delete</Text>
-                    </TouchableOpacity>
+              <View style={styles.itemsList}>
+                {items.map((item, index) => (
+                  <View key={item.id} style={styles.itemRow}>
+                    <View style={styles.itemInfo}>
+                      <Text variant="bodyMedium" style={styles.itemCode}>
+                        {item.itemCode}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.itemDescription}>
+                        {item.description}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.itemDetails}>
+                        {item.quantity} {item.unit} × {formatCurrency(item.unitCost)} = {formatCurrency(item.totalCost)}
+                      </Text>
+                      <Chip
+                        mode="flat"
+                        style={styles.categoryChip}
+                        textStyle={styles.categoryChipText}
+                      >
+                        {item.category.toUpperCase()}
+                      </Chip>
+                    </View>
+                    <View style={styles.itemActions}>
+                      <IconButton
+                        icon="pencil"
+                        size={18}
+                        onPress={() => openEditItemDialog(item)}
+                      />
+                      <IconButton
+                        icon="delete"
+                        size={18}
+                        iconColor="#FF3B30"
+                        onPress={() => handleDeleteItem(item)}
+                      />
+                    </View>
                   </View>
-                  <Text style={styles.itemDescription}>{item.description}</Text>
-                  <View style={styles.itemDetails}>
-                    <Text style={styles.itemDetailText}>
-                      {item.quantity} {item.unit} × {formatCurrency(item.unitCost)} = {formatCurrency(item.totalCost)}
-                    </Text>
-                  </View>
-                  <Text style={styles.itemCategory}>Category: {item.category}</Text>
-                </View>
-              ))
+                ))}
+              </View>
             )}
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.editButton} onPress={() => openEditModal(selectedBom)}>
-              <Text style={styles.editButtonText}>Edit BOM</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteBom(selectedBom.id)}>
-              <Text style={styles.deleteButtonText}>Delete BOM</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
+          {/* Total Cost */}
+          {items.length > 0 && (
+            <>
+              <Divider style={styles.divider} />
+              {bom.type === 'execution' && baselineBom ? (
+                // Execution BOM with baseline comparison
+                <View style={styles.varianceSection}>
+                  <View style={styles.costRow}>
+                    <Text variant="bodySmall" style={styles.costLabel}>Baseline Cost:</Text>
+                    <Text variant="bodyMedium" style={styles.baselineCost}>
+                      {formatCurrency(baselineTotalCost)}
+                    </Text>
+                  </View>
+                  <View style={styles.costRow}>
+                    <Text variant="titleSmall">Actual Cost:</Text>
+                    <Text variant="titleMedium" style={styles.totalAmount}>
+                      {formatCurrency(totalCost)}
+                    </Text>
+                  </View>
+                  <View style={styles.costRow}>
+                    <Text variant="bodySmall" style={styles.costLabel}>Variance:</Text>
+                    <View style={styles.varianceContainer}>
+                      <Text
+                        variant="bodyMedium"
+                        style={[
+                          styles.varianceText,
+                          { color: variance > 0 ? '#F44336' : variance < 0 ? '#4CAF50' : '#666' }
+                        ]}
+                      >
+                        {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
+                      </Text>
+                      <Text
+                        variant="bodySmall"
+                        style={[
+                          styles.varianceAmount,
+                          { color: variance > 0 ? '#F44336' : variance < 0 ? '#4CAF50' : '#666' }
+                        ]}
+                      >
+                        ({variance > 0 ? '+' : ''}{formatCurrency(totalCost - baselineTotalCost)})
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                // Regular estimating BOM
+                <View style={styles.totalSection}>
+                  <Text variant="titleSmall">Total Estimated Cost:</Text>
+                  <Text variant="titleMedium" style={styles.totalAmount}>
+                    {formatCurrency(totalCost)}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* Copy to Execution Button (only for estimating BOMs) */}
+          {bom.type === 'estimating' && items.length > 0 && (
+            <>
+              <Divider style={styles.divider} />
+              <Button
+                mode="contained"
+                icon="content-copy"
+                onPress={() => handleCopyToExecution(bom)}
+                style={styles.copyButton}
+              >
+                Copy to Execution
+              </Button>
+            </>
+          )}
+
+          {/* Baseline Link (only for execution BOMs) */}
+          {bom.type === 'execution' && bom.baselineBomId && (
+            <>
+              <Divider style={styles.divider} />
+              <View style={styles.baselineLink}>
+                <Text variant="bodySmall" style={styles.baselineLinkText}>
+                  🔗 Linked to baseline estimating BOM
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Export Button (show for any BOM with items) */}
+          {items.length > 0 && (
+            <>
+              <Divider style={styles.divider} />
+              <Button
+                mode="outlined"
+                icon="download"
+                onPress={() => handleExportBom(bom)}
+                style={styles.exportButton}
+              >
+                Export to Excel
+              </Button>
+            </>
+          )}
+        </Card.Content>
+      </Card>
     );
   };
 
@@ -477,426 +871,321 @@ const BomManagementScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>BOM Management</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setAddModalVisible(true)}>
-          <Text style={styles.addButtonText}>+ Add BOM</Text>
-        </TouchableOpacity>
+        <Title>BOM Management</Title>
+        <View style={styles.headerButtons}>
+          <Button
+            mode="outlined"
+            icon="upload"
+            onPress={handleImportBom}
+            style={styles.importButton}
+            compact
+          >
+            Import
+          </Button>
+          <Button
+            mode="contained"
+            icon="plus"
+            onPress={openAddBomDialog}
+            style={styles.addButton}
+          >
+            Add BOM
+          </Button>
+        </View>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'estimating' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('estimating');
-            setSelectedBom(null);
-          }}
+        <Button
+          mode={activeTab === 'estimating' ? 'contained' : 'outlined'}
+          onPress={() => setActiveTab('estimating')}
+          style={styles.tabButton}
         >
-          <Text style={[styles.tabText, activeTab === 'estimating' && styles.activeTabText]}>
-            Pre-Contract (Estimating)
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'execution' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('execution');
-            setSelectedBom(null);
-          }}
+          Pre-Contract (Estimating)
+        </Button>
+        <Button
+          mode={activeTab === 'execution' ? 'contained' : 'outlined'}
+          onPress={() => setActiveTab('execution')}
+          style={styles.tabButton}
         >
-          <Text style={[styles.tabText, activeTab === 'execution' && styles.activeTabText]}>
-            Post-Contract (Execution)
-          </Text>
-        </TouchableOpacity>
+          Post-Contract (Execution)
+        </Button>
       </View>
 
-      {/* Main Content */}
-      <View style={styles.content}>
-        {/* BOMs List */}
-        <ScrollView style={styles.bomsList}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2196F3" />
-              <Text style={styles.loadingText}>Loading BOMs...</Text>
-            </View>
-          ) : boms.length === 0 ? (
-            <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateTitle}>No BOMs found</Text>
-              <Text style={styles.emptyStateText}>Create your first BOM to get started!</Text>
-              <TouchableOpacity style={styles.emptyStateButton} onPress={() => setAddModalVisible(true)}>
-                <Text style={styles.emptyStateButtonText}>+ Add BOM</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            boms.map(renderBomCard)
-          )}
-        </ScrollView>
+      {/* BOM List */}
+      <ScrollView style={styles.scrollView}>
+        {filteredBoms.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Card.Content>
+              <Text variant="bodyLarge" style={styles.emptyText}>
+                No {activeTab === 'estimating' ? 'Estimating' : 'Execution'} BOMs found
+              </Text>
+              <Text variant="bodySmall" style={styles.emptyHint}>
+                Click "Add BOM" to create your first BOM
+              </Text>
+            </Card.Content>
+          </Card>
+        ) : (
+          filteredBoms.map(renderBomCard)
+        )}
+      </ScrollView>
 
-        {/* BOM Details Panel */}
-        {renderBomDetails()}
-      </View>
-
-      {/* Add BOM Modal */}
-      <Modal
-        visible={addModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setAddModalVisible(false);
-          resetForm();
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+      {/* Add/Edit BOM Dialog */}
+      <Portal>
+        <Dialog visible={bomDialogVisible} onDismiss={closeBomDialog} style={styles.dialog}>
+          <Dialog.Title>{editingBom ? 'Edit BOM' : 'Add New BOM'}</Dialog.Title>
+          <Dialog.ScrollArea>
             <ScrollView>
-              <Text style={styles.modalTitle}>Create New BOM</Text>
-
-              {/* BOM Name */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  BOM Name <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                  placeholder="e.g., Main Tower BOM v1.0"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              {/* Project Selection */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  Project <Text style={styles.required}>*</Text>
-                </Text>
-                <ScrollView style={styles.projectSelector}>
-                  {projects.length === 0 ? (
-                    <Text style={styles.noProjectsText}>No projects available. Please create a project first.</Text>
-                  ) : (
-                    projects.map((project) => (
-                      <TouchableOpacity
-                        key={project.id}
-                        style={[
-                          styles.projectOption,
-                          formData.projectId === project.id && styles.selectedProjectOption,
-                        ]}
-                        onPress={() => setFormData({ ...formData, projectId: project.id })}
-                      >
-                        <Text
-                          style={[
-                            styles.projectOptionText,
-                            formData.projectId === project.id && styles.selectedProjectOptionText,
-                          ]}
-                        >
-                          {project.name}
-                        </Text>
-                        <Text style={styles.projectClientText}>{project.client}</Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-
-              {/* BOM Type */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  BOM Type <Text style={styles.required}>*</Text>
-                </Text>
-                <View style={styles.typeContainer}>
-                  <TouchableOpacity
-                    style={[styles.typeButton, formData.type === 'estimating' && styles.typeButtonActive]}
-                    onPress={() => setFormData({ ...formData, type: 'estimating' })}
-                  >
-                    <Text style={[styles.typeText, formData.type === 'estimating' && styles.typeTextActive]}>
-                      Pre-Contract (Estimating)
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, formData.type === 'execution' && styles.typeButtonActive]}
-                    onPress={() => setFormData({ ...formData, type: 'execution' })}
-                  >
-                    <Text style={[styles.typeText, formData.type === 'execution' && styles.typeTextActive]}>
-                      Post-Contract (Execution)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Quantity and Unit */}
-              <View style={styles.rowGroup}>
-                <View style={styles.formGroupHalf}>
-                  <Text style={styles.inputLabel}>
-                    Quantity <Text style={styles.required}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.quantity.toString()}
-                    onChangeText={(text) => setFormData({ ...formData, quantity: parseFloat(text) || 1 })}
-                    placeholder="1"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.formGroupHalf}>
-                  <Text style={styles.inputLabel}>
-                    Unit <Text style={styles.required}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.unit}
-                    onChangeText={(text) => setFormData({ ...formData, unit: text })}
-                    placeholder="e.g., nos, apartments, floors"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-              </View>
-
-              {/* Client (for estimating BOMs) */}
-              {formData.type === 'estimating' && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.inputLabel}>Client</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.client}
-                    onChangeText={(text) => setFormData({ ...formData, client: text })}
-                    placeholder="Client name"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-              )}
-
-              {/* Contract Value (for execution BOMs) */}
-              {formData.type === 'execution' && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.inputLabel}>Contract Value (₹)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.contractValue.toString()}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, contractValue: parseFloat(text) || 0 })
-                    }
-                    placeholder="0"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric"
-                  />
-                </View>
-              )}
-
-              {/* Description */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
-                  placeholder="BOM description"
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => {
-                    setAddModalVisible(false);
-                    resetForm();
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalButton, styles.createButton]} onPress={handleCreateBom}>
-                  <Text style={styles.createButtonText}>Create BOM</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Edit BOM Modal */}
-      <Modal
-        visible={editModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setEditModalVisible(false);
-          resetForm();
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <ScrollView>
-              <Text style={styles.modalTitle}>Edit BOM</Text>
-
-              {/* BOM Name */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  BOM Name <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                  placeholder="e.g., Main Tower BOM v1.0"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              {/* Client (for estimating BOMs) */}
-              {formData.type === 'estimating' && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.inputLabel}>Client</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.client}
-                    onChangeText={(text) => setFormData({ ...formData, client: text })}
-                    placeholder="Client name"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-              )}
-
-              {/* Contract Value (for execution BOMs) */}
-              {formData.type === 'execution' && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.inputLabel}>Contract Value (₹)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.contractValue.toString()}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, contractValue: parseFloat(text) || 0 })
-                    }
-                    placeholder="0"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric"
-                  />
-                </View>
-              )}
-
-              {/* Contingency */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Contingency (%)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.contingency.toString()}
-                  onChangeText={(text) => setFormData({ ...formData, contingency: parseFloat(text) || 0 })}
-                  placeholder="5"
-                  placeholderTextColor="#999"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              {/* Profit Margin */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Profit Margin (%)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.profitMargin.toString()}
-                  onChangeText={(text) => setFormData({ ...formData, profitMargin: parseFloat(text) || 0 })}
-                  placeholder="10"
-                  placeholderTextColor="#999"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              {/* Description */}
-              <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
-                  placeholder="BOM description"
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => {
-                    setEditModalVisible(false);
-                    resetForm();
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalButton, styles.createButton]} onPress={handleUpdateBom}>
-                  <Text style={styles.createButtonText}>Update BOM</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add BOM Item Modal */}
-      <Modal
-        visible={addItemModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setAddItemModalVisible(false);
-          resetItemForm();
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <BomItemEditor
-              mode="add"
-              onSave={handleAddItem}
-              onCancel={() => {
-                setAddItemModalVisible(false);
-                resetItemForm();
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Import BOM Items Modal */}
-      <Modal
-        visible={importModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setImportModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            {selectedBom ? (
-              <BomImport
-                bomId={selectedBom.id}
-                addBomItem={addBomItem}
-                onImportComplete={(count) => {
-                  setImportModalVisible(false);
-                  // Reload items after import
-                  loadBomItems();
-                }}
-                onCancel={() => setImportModalVisible(false)}
+              <TextInput
+                label="BOM Name *"
+                value={bomName}
+                onChangeText={setBomName}
+                mode="outlined"
+                style={styles.input}
               />
-            ) : (
-              <View>
-                <Text style={styles.placeholderText}>No BOM selected</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setImportModalVisible(false)}
+
+              {/* Project Selection - Dropdown */}
+              {projects.length > 0 && (
+                <View style={styles.dropdownContainer}>
+                  <Text variant="labelLarge" style={styles.label}>Select Project *</Text>
+                  <Menu
+                    visible={projectMenuVisible}
+                    onDismiss={() => setProjectMenuVisible(false)}
+                    anchor={
+                      <Button
+                        mode="outlined"
+                        onPress={() => setProjectMenuVisible(true)}
+                        icon="chevron-down"
+                        contentStyle={{ flexDirection: 'row-reverse' }}
+                        style={styles.dropdownButton}
+                      >
+                        {projects.find(p => p.id === selectedProjectId)?.name || 'Select Project'}
+                      </Button>
+                    }
+                  >
+                    {projects.map((project) => (
+                      <Menu.Item
+                        key={project.id}
+                        onPress={() => {
+                          setSelectedProjectId(project.id);
+                          setProjectMenuVisible(false);
+                        }}
+                        title={project.name}
+                        leadingIcon={selectedProjectId === project.id ? 'check' : undefined}
+                      />
+                    ))}
+                  </Menu>
+                </View>
+              )}
+
+              {!editingBom && (
+                <View style={styles.typeSelector}>
+                  <Text variant="labelLarge" style={styles.label}>BOM Type *</Text>
+                  <View style={styles.typeButtons}>
+                    <Button
+                      mode={bomType === 'estimating' ? 'contained' : 'outlined'}
+                      onPress={() => setBomType('estimating')}
+                      style={styles.typeButton}
+                    >
+                      Estimating
+                    </Button>
+                    <Button
+                      mode={bomType === 'execution' ? 'contained' : 'outlined'}
+                      onPress={() => setBomType('execution')}
+                      style={styles.typeButton}
+                    >
+                      Execution
+                    </Button>
+                  </View>
+                </View>
+              )}
+
+              {/* Site Category - Dropdown */}
+              <View style={styles.dropdownContainer}>
+                <Text variant="labelLarge" style={styles.label}>Site Category *</Text>
+                <Menu
+                  visible={siteMenuVisible}
+                  onDismiss={() => setSiteMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      onPress={() => setSiteMenuVisible(true)}
+                      icon="chevron-down"
+                      contentStyle={{ flexDirection: 'row-reverse' }}
+                      style={styles.dropdownButton}
+                    >
+                      {siteCategory || 'Select Site Category'}
+                    </Button>
+                  }
                 >
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
+                  {SITE_CATEGORIES.map((category) => (
+                    <Menu.Item
+                      key={category}
+                      onPress={() => {
+                        setSiteCategory(category);
+                        setSiteMenuVisible(false);
+                      }}
+                      title={category}
+                      leadingIcon={siteCategory === category ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
               </View>
-            )}
-          </View>
-        </View>
-      </Modal>
+
+              <View style={styles.row}>
+                <TextInput
+                  label="Quantity *"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={[styles.input, styles.halfInput]}
+                />
+                <TextInput
+                  label="Unit *"
+                  value={unit}
+                  onChangeText={setUnit}
+                  mode="outlined"
+                  placeholder="nos, floors, etc."
+                  style={[styles.input, styles.halfInput]}
+                />
+              </View>
+
+              <TextInput
+                label="Description"
+                value={description}
+                onChangeText={setDescription}
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+                style={styles.input}
+              />
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={closeBomDialog}>Cancel</Button>
+            <Button onPress={handleSaveBom}>
+              {editingBom ? 'Update' : 'Create'}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Add/Edit Item Dialog */}
+      <Portal>
+        <Dialog visible={itemDialogVisible} onDismiss={closeItemDialog} style={styles.dialog}>
+          <Dialog.Title>{editingItem ? 'Edit Item' : 'Add Item'}</Dialog.Title>
+          <Dialog.ScrollArea>
+            <ScrollView>
+              <TextInput
+                label="Description *"
+                value={itemDescription}
+                onChangeText={setItemDescription}
+                mode="outlined"
+                multiline
+                numberOfLines={2}
+                placeholder="e.g., Portland Cement OPC 53"
+                style={styles.input}
+              />
+
+              <View style={styles.categorySelector}>
+                <Text variant="labelLarge" style={styles.label}>Category *</Text>
+                <View style={styles.categoryButtons}>
+                  {['material', 'labor', 'equipment', 'subcontractor'].map((cat) => (
+                    <Chip
+                      key={cat}
+                      mode={itemCategory === cat ? 'flat' : 'outlined'}
+                      selected={itemCategory === cat}
+                      onPress={() => setItemCategory(cat as any)}
+                      style={styles.categoryChipButton}
+                    >
+                      {cat}
+                    </Chip>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <TextInput
+                  label="Quantity *"
+                  value={itemQuantity}
+                  onChangeText={setItemQuantity}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={[styles.input, styles.halfInput]}
+                />
+                <TextInput
+                  label="Unit *"
+                  value={itemUnit}
+                  onChangeText={setItemUnit}
+                  mode="outlined"
+                  placeholder="kg, m3, etc."
+                  style={[styles.input, styles.halfInput]}
+                />
+              </View>
+
+              <TextInput
+                label="Unit Cost *"
+                value={itemUnitCost}
+                onChangeText={setItemUnitCost}
+                keyboardType="numeric"
+                mode="outlined"
+                style={styles.input}
+              />
+
+              <TextInput
+                label="Phase (Optional)"
+                value={itemPhase}
+                onChangeText={setItemPhase}
+                mode="outlined"
+                placeholder="foundation, structure, etc."
+                style={styles.input}
+              />
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={closeItemDialog}>Cancel</Button>
+            <Button onPress={handleSaveItem}>
+              {editingItem ? 'Update' : 'Add'}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Delete BOM Confirmation */}
+      <ConfirmDialog
+        visible={showDeleteBomDialog}
+        title="Delete BOM"
+        message={`Are you sure you want to delete "${bomToDelete?.name}"? All items will be deleted.`}
+        onConfirm={confirmDeleteBom}
+        onCancel={() => {
+          setShowDeleteBomDialog(false);
+          setBomToDelete(null);
+        }}
+      />
+
+      {/* Delete Item Confirmation */}
+      <ConfirmDialog
+        visible={showDeleteItemDialog}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${itemToDelete?.itemCode}"?`}
+        onConfirm={confirmDeleteItem}
+        onCancel={() => {
+          setShowDeleteItemDialog(false);
+          setItemToDelete(null);
+        }}
+      />
     </View>
   );
 };
+
+// Wire up WatermelonDB observables
+const enhance = withObservables([], () => ({
+  boms: database.collections.get<BomModel>('boms').query().observe(),
+  projects: database.collections.get<ProjectModel>('projects').query().observe(),
+  allBomItems: database.collections.get<BomItemModel>('bom_items').query().observe(),
+}));
+
+const BomManagementScreen = enhance(BomManagementScreenComponent);
 
 const styles = StyleSheet.create({
   container: {
@@ -912,472 +1201,258 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  importButton: {
+    marginRight: 8,
   },
   addButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    marginLeft: 0,
   },
   tabsContainer: {
     flexDirection: 'row',
+    padding: 12,
+    gap: 8,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  tab: {
+  tabButton: {
     flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
   },
-  activeTab: {
-    borderBottomColor: '#2196F3',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  bomsList: {
+  scrollView: {
     flex: 1,
     padding: 12,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  emptyCard: {
+    marginTop: 40,
     alignItems: 'center',
-    paddingVertical: 40,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#999',
+  emptyText: {
     textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyStateButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    marginBottom: 8,
     fontWeight: '600',
   },
-  bomCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+  emptyHint: {
+    textAlign: 'center',
+    color: '#666',
   },
-  selectedBomCard: {
-    borderColor: '#2196F3',
+  bomCard: {
+    marginBottom: 16,
   },
   bomHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  bomTitleSection: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 8,
   },
   bomName: {
-    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
     flex: 1,
   },
-  statusBadge: {
+  statusChip: {
+    height: 28,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  statusText: {
-    color: '#fff',
+  statusChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    lineHeight: 14,
   },
-  projectName: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+  bomActions: {
+    flexDirection: 'row',
+    marginLeft: 8,
   },
   bomInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  bomInfoLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  bomInfoValue: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  detailsPanel: {
-    width: 350,
-    backgroundColor: '#fff',
-    borderLeftWidth: 1,
-    borderLeftColor: '#e0e0e0',
-  },
-  detailsScrollView: {
-    flex: 1,
-  },
-  detailsScrollContent: {
-    padding: 16,
-  },
-  detailsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  detailsSection: {
-    marginBottom: 20,
-  },
-  detailsSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
-  sectionHeader: {
+  infoText: {
+    color: '#666',
+    marginBottom: 4,
+  },
+  divider: {
+    marginVertical: 12,
+  },
+  itemsSection: {
+    marginTop: 4,
+  },
+  itemsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  itemActionsContainer: {
+  addItemButton: {
+    marginLeft: 8,
+  },
+  emptyItemsText: {
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  itemsList: {
+    marginTop: 8,
+  },
+  itemRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemCode: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  itemDescription: {
+    color: '#666',
+    marginBottom: 4,
+  },
+  itemDetails: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  categoryChip: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    backgroundColor: '#E3F2FD',
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1976D2',
+    lineHeight: 18,
+  },
+  itemActions: {
+    flexDirection: 'row',
+    marginLeft: 8,
+  },
+  totalSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  totalAmount: {
+    color: '#2196F3',
+    fontWeight: 'bold',
+  },
+  varianceSection: {
+    marginTop: 8,
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
   },
   costRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    alignItems: 'center',
+    marginBottom: 8,
   },
   costLabel: {
-    fontSize: 14,
     color: '#666',
   },
-  costValue: {
-    fontSize: 14,
-    color: '#333',
-  },
-  costLabelBold: {
-    fontSize: 14,
-    color: '#333',
+  baselineCost: {
+    color: '#666',
     fontWeight: '600',
   },
-  costValueBold: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '600',
+  varianceContainer: {
+    alignItems: 'flex-end',
   },
-  costLabelGrand: {
-    fontSize: 16,
-    color: '#333',
+  varianceText: {
     fontWeight: 'bold',
-  },
-  costValueGrand: {
     fontSize: 16,
-    color: '#2196F3',
-    fontWeight: 'bold',
   },
-  costDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
-  },
-  addItemButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  addItemButtonText: {
-    color: '#fff',
+  varianceAmount: {
     fontSize: 12,
-    fontWeight: '600',
+    marginTop: 2,
   },
-  importButton: {
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  importButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyItems: {
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  itemCard: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  itemCode: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  deleteItemText: {
-    fontSize: 12,
-    color: '#F44336',
-  },
-  itemDescription: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 6,
-  },
-  itemDetails: {
-    marginBottom: 4,
-  },
-  itemDetailText: {
-    fontSize: 12,
-    color: '#333',
-  },
-  itemCategory: {
-    fontSize: 12,
-    color: '#666',
-    textTransform: 'capitalize',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  editButton: {
-    flex: 1,
-    backgroundColor: '#2196F3',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    flex: 1,
-    backgroundColor: '#F44336',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    maxWidth: 500,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  closeButton: {
-    backgroundColor: '#2196F3',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  rowGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  formGroupHalf: {
-    flex: 1,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  required: {
-    color: '#F44336',
+  dialog: {
+    maxHeight: '90%',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333',
-    backgroundColor: '#fff',
+    marginBottom: 12,
   },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  halfInput: {
+    flex: 1,
   },
   projectSelector: {
+    marginBottom: 12,
+  },
+  label: {
+    marginBottom: 8,
+  },
+  projectList: {
     maxHeight: 150,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 4,
   },
-  noProjectsText: {
-    padding: 16,
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 14,
-    fontStyle: 'italic',
+  typeSelector: {
+    marginBottom: 12,
   },
-  projectOption: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  selectedProjectOption: {
-    backgroundColor: '#E3F2FD',
-  },
-  projectOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedProjectOptionText: {
-    fontWeight: '600',
-    color: '#2196F3',
-  },
-  projectClientText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  typeContainer: {
+  typeButtons: {
     flexDirection: 'row',
     gap: 8,
   },
   typeButton: {
     flex: 1,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  typeButtonActive: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+  categorySelector: {
+    marginBottom: 12,
   },
-  typeText: {
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
-  },
-  typeTextActive: {
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  modalActions: {
+  categoryButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 20,
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  modalButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+  categoryChipButton: {
+    marginRight: 4,
   },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
+  dropdownContainer: {
+    marginBottom: 12,
   },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
+  dropdownButton: {
+    marginTop: 4,
+    justifyContent: 'flex-start',
+  },
+  copyButton: {
+    marginTop: 8,
+  },
+  exportButton: {
+    marginTop: 8,
+  },
+  baselineLink: {
+    paddingVertical: 8,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  baselineLinkText: {
+    color: '#E65100',
     fontWeight: '600',
-  },
-  createButton: {
-    backgroundColor: '#2196F3',
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

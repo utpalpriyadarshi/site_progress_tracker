@@ -10,6 +10,7 @@ import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
 import { Q } from '@nozbe/watermelondb';
 import { mockBOMs, MockBOM, MockBOMItem } from '../data/mockBOMs';
+import { AppMode } from '../config/AppMode';
 
 export interface BomDataOptions {
   projectId?: string;
@@ -20,7 +21,9 @@ export interface BomDataOptions {
 class BomDataServiceClass {
   /**
    * Get BOMs for a project
-   * Automatically uses mock data if database is empty
+   * Behavior depends on app mode:
+   * - Demo Mode: Returns empty array if no BOMs (user must click "Load Sample BOMs")
+   * - Production Mode: Auto-loads BOMs from database (created by Project Manager)
    */
   async getBoms(options: BomDataOptions = {}): Promise<BomModel[]> {
     const { projectId, useMockData = false, status = ['active', 'baseline'] } = options;
@@ -42,12 +45,23 @@ class BomDataServiceClass {
 
       const bomsList = await query.fetch();
 
-      // If no BOMs found and mock data requested, return mock BOMs converted to models
-      if ((bomsList.length === 0 && useMockData) || __DEV__) {
-        console.log('[BomDataService] No BOMs in database, using mock data');
-        return await this.loadMockBoms(projectId);
+      // Mode-based behavior
+      const mode = AppMode.getMode();
+
+      if (bomsList.length === 0) {
+        if (mode === 'demo') {
+          // Demo Mode: Don't auto-load, show empty state with button
+          console.log('[BomDataService] Demo Mode - No BOMs found, showing empty state');
+          return [];
+        } else if (mode === 'production' && useMockData) {
+          // Production Mode: If explicitly requested and no real BOMs exist,
+          // this shouldn't normally happen (PM should create BOMs)
+          console.log('[BomDataService] Production Mode - No BOMs found for project');
+          return [];
+        }
       }
 
+      console.log(`[BomDataService] Loaded ${bomsList.length} BOMs for project ${projectId || 'all'}`);
       return bomsList;
     } catch (error) {
       console.error('[BomDataService] Error loading BOMs:', error);
@@ -81,23 +95,33 @@ class BomDataServiceClass {
    */
   async loadMockBoms(projectId?: string): Promise<BomModel[]> {
     try {
-      // Filter mock BOMs by project if specified
-      const filteredMockBoms = projectId
-        ? mockBOMs.filter(bom => bom.projectId === projectId)
-        : mockBOMs;
+      // Use all mock BOMs if projectId is specified (override projectId during creation)
+      // If no projectId specified, use mock BOMs as-is
+      const filteredMockBoms = mockBOMs;
 
       if (filteredMockBoms.length === 0) {
+        console.log('[BomDataService] No mock BOMs available');
         return [];
       }
 
-      // Check if mock BOMs already exist in database
+      // Check if mock BOMs already exist in database for this project
       const bomsCollection = database.collections.get<BomModel>('boms');
-      const existingBoms = await bomsCollection
-        .query(Q.where('id', Q.oneOf(filteredMockBoms.map(b => b.id))))
-        .fetch();
+
+      // If projectId is specified, check if BOMs exist for this project
+      // Otherwise check by mock BOM IDs
+      let existingBoms: BomModel[];
+      if (projectId) {
+        existingBoms = await bomsCollection
+          .query(Q.where('project_id', projectId))
+          .fetch();
+      } else {
+        existingBoms = await bomsCollection
+          .query(Q.where('id', Q.oneOf(filteredMockBoms.map(b => b.id))))
+          .fetch();
+      }
 
       if (existingBoms.length > 0) {
-        console.log('[BomDataService] Mock BOMs already exist in database');
+        console.log(`[BomDataService] BOMs already exist in database (${existingBoms.length} BOMs)`);
         return existingBoms;
       }
 
@@ -105,11 +129,21 @@ class BomDataServiceClass {
       const createdBoms: BomModel[] = [];
 
       await database.write(async () => {
-        for (const mockBom of filteredMockBoms) {
+        const baseTimestamp = Date.now();
+
+        for (let i = 0; i < filteredMockBoms.length; i++) {
+          const mockBom = filteredMockBoms[i];
+
+          // Generate unique IDs if projectId is specified (to avoid ID conflicts)
+          // Use baseTimestamp + index to ensure uniqueness
+          const bomId = projectId
+            ? `bom_${projectId}_${baseTimestamp + i}`
+            : mockBom.id;
+
           // Create BOM
           const bom = await bomsCollection.create((b: BomModel) => {
-            b._raw.id = mockBom.id;
-            b.projectId = mockBom.projectId;
+            b._raw.id = bomId;
+            b.projectId = projectId || mockBom.projectId; // Use provided projectId or mock projectId
             b.name = mockBom.name;
             b.type = mockBom.type;
             b.status = mockBom.status;
@@ -133,10 +167,18 @@ class BomDataServiceClass {
           // Create BOM items
           const itemsCollection = database.collections.get<BomItemModel>('bom_items');
 
-          for (const mockItem of mockBom.items) {
+          for (let j = 0; j < mockBom.items.length; j++) {
+            const mockItem = mockBom.items[j];
+
+            // Generate unique IDs for items if projectId is specified
+            // Use baseTimestamp with multiple indices for uniqueness
+            const itemId = projectId
+              ? `bom_item_${projectId}_${baseTimestamp}_${i}_${j}`
+              : mockItem.id;
+
             await itemsCollection.create((item: BomItemModel) => {
-              item._raw.id = mockItem.id;
-              item.bomId = mockItem.bomId;
+              item._raw.id = itemId;
+              item.bomId = bomId; // Use the generated bomId
               item.itemCode = mockItem.itemCode;
               item.description = mockItem.description;
               item.category = mockItem.category;
@@ -157,7 +199,7 @@ class BomDataServiceClass {
         }
       });
 
-      console.log(`[BomDataService] Created ${createdBoms.length} mock BOMs in database`);
+      console.log(`[BomDataService] Created ${createdBoms.length} mock BOMs in database for project ${projectId || 'default'}`);
       return createdBoms;
     } catch (error) {
       console.error('[BomDataService] Error loading mock BOMs:', error);
