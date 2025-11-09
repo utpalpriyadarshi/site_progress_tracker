@@ -26,6 +26,10 @@ export interface MaterialRequirement {
   unit: string;
   status: 'sufficient' | 'shortage' | 'critical' | 'surplus';
   percentage: number; // availability percentage
+  category?: string; // BOM item category
+  subCategory?: string; // BOM item subcategory
+  bomId?: string; // Source BOM ID
+  bomName?: string; // Source BOM name
 }
 
 export interface DeliveryPriority {

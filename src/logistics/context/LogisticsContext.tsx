@@ -188,10 +188,7 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         deliveriesThisWeek: 0,
         onTimeDeliveryRate: 0,
         averageDeliveryCost: 0,
-        totalInventoryValue: materials.reduce((sum, m) => {
-          const value = m.quantityAvailable * (m.unitCost || 0);
-          return sum + value;
-        }, 0),
+        totalInventoryValue: 0, // TODO: Add unitCost field to MaterialModel to calculate inventory value
         inventoryTurnover: 0,
         stockAccuracy: 100, // Placeholder
       });

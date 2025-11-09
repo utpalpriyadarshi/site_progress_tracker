@@ -693,9 +693,9 @@ const MaterialTrackingScreen = () => {
       <ScrollView style={styles.requirementsList} showsVerticalScrollIndicator={false}>
         {filteredRequirements.map((requirement) => (
           <BomRequirementCard
-            key={`${requirement.bomId}-${requirement.itemCode}`}
+            key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
             requirement={{
-              bomId: requirement.bomId,
+              bomId: requirement.bomId || '',
               bomName: requirement.bomName || 'Unknown BOM',
               bomType: 'execution',
               projectId: selectedProjectId || '',
