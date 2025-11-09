@@ -23,6 +23,8 @@ import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
 import MaterialModel from '../../models/MaterialModel';
 import { BomDataService } from '../services/BomDataService';
+import { AppMode, toggleAppMode } from '../config/AppMode';
+import { clearAllBoms } from '../services/ClearBomsService';
 
 /**
  * MaterialTrackingScreen (Week 2 Enhanced)
@@ -62,6 +64,7 @@ const MaterialTrackingScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [appMode, setAppModeState] = useState(AppMode.getMode());
 
   // Procurement state
   const [purchaseSuggestions, setPurchaseSuggestions] = useState<PurchaseSuggestion[]>([]);
@@ -135,16 +138,56 @@ const MaterialTrackingScreen = () => {
   };
 
   const handleLoadSampleData = async () => {
+    if (!selectedProjectId) {
+      console.warn('[MaterialTracking] Cannot load sample data: No project selected');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('[MaterialTracking] Loading sample BOMs for project:', selectedProjectId);
+
       // Load mock BOMs into database
-      await BomDataService.loadMockBoms(selectedProjectId || undefined);
+      const loadedBoms = await BomDataService.loadMockBoms(selectedProjectId);
+      console.log('[MaterialTracking] Loaded BOMs:', loadedBoms.length);
+
+      // Wait a moment for database to settle
+      await new Promise<void>(resolve => setTimeout(resolve, 500));
+
       // Refresh BOMs to reload from database
       await refreshBoms();
+      console.log('[MaterialTracking] Refreshed BOMs');
+
+      // Wait a moment before reloading procurement data
+      await new Promise<void>(resolve => setTimeout(resolve, 300));
+
       // Reload procurement data
       loadProcurementData();
+      console.log('[MaterialTracking] Reloaded procurement data');
     } catch (error) {
-      console.error('Error loading sample BOMs:', error);
+      console.error('[MaterialTracking] Error loading sample BOMs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleMode = () => {
+    const newMode = toggleAppMode();
+    setAppModeState(newMode);
+    console.log('[MaterialTracking] Switched to', newMode, 'mode');
+    // Refresh to apply new mode behavior
+    refreshBoms();
+  };
+
+  const handleClearBoms = async () => {
+    try {
+      setLoading(true);
+      console.log('[MaterialTracking] Clearing all BOMs...');
+      await clearAllBoms();
+      await refreshBoms();
+      console.log('[MaterialTracking] BOMs cleared, screen refreshed');
+    } catch (error) {
+      console.error('[MaterialTracking] Error clearing BOMs:', error);
     } finally {
       setLoading(false);
     }
@@ -652,24 +695,39 @@ const MaterialTrackingScreen = () => {
             orders, track deliveries, and manage inventory.
           </Text>
 
-          <View style={styles.emptyStateActions}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleLoadSampleData}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.primaryButtonText}>📊 Load Sample Metro Railway BOMs</Text>
-              )}
-            </TouchableOpacity>
+          {/* Show Load Sample button only in Demo Mode */}
+          {appMode === 'demo' && (
+            <View style={styles.emptyStateActions}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleLoadSampleData}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>📊 Load Sample Metro Railway BOMs</Text>
+                )}
+              </TouchableOpacity>
 
-            <Text style={styles.emptyStateHint}>
-              Sample data includes: Civil Works, OCS Installation, Traction Substation, Signaling,
-              and MEP systems for Metro Railway projects.
-            </Text>
-          </View>
+              <Text style={styles.emptyStateHint}>
+                Sample data includes: Civil Works, OCS Installation, Traction Substation, Signaling,
+                and MEP systems for Metro Railway projects.
+              </Text>
+            </View>
+          )}
+
+          {/* In Production Mode, show instruction to contact PM */}
+          {appMode === 'production' && (
+            <View style={styles.emptyStateActions}>
+              <Text style={styles.productionModeText}>
+                💼 Contact your Project Manager to create BOMs for this project.
+              </Text>
+              <Text style={styles.emptyStateHint}>
+                BOMs are created by the Project Manager and will automatically appear here once added.
+              </Text>
+            </View>
+          )}
         </View>
       );
     }
@@ -753,8 +811,33 @@ const MaterialTrackingScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Material Tracking</Text>
-        <Text style={styles.subtitle}>BOM Requirements & Intelligent Procurement</Text>
+        <View style={styles.headerMain}>
+          <View>
+            <Text style={styles.title}>Material Tracking</Text>
+            <Text style={styles.subtitle}>BOM Requirements & Intelligent Procurement</Text>
+          </View>
+
+          {/* Mode Indicator & Clear Button - Only show in development */}
+          {__DEV__ && (
+            <View style={styles.devTools}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleClearBoms}
+              >
+                <Text style={styles.clearButtonText}>🗑️ Clear</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modeIndicator, appMode === 'demo' ? styles.modeDemo : styles.modeProduction]}
+                onPress={handleToggleMode}
+              >
+                <Text style={styles.modeText}>
+                  {appMode === 'demo' ? '🧪 DEMO' : '🏗️ PROD'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Project Selector */}
@@ -793,6 +876,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  headerMain: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -802,6 +890,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  devTools: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  clearButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#FFEBEE',
+    borderWidth: 2,
+    borderColor: '#F44336',
+  },
+  clearButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#F44336',
+  },
+  modeIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  modeDemo: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+  },
+  modeProduction: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  modeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#333',
+  },
+  productionModeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1976D2',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 24,
   },
   selectorContainer: {
     backgroundColor: '#fff',
