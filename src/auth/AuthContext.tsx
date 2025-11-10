@@ -62,12 +62,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (session) {
         console.log('AuthContext: JWT session restored');
+
+        // In development mode, allow access to all roles for testing
+        const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'admin'];
+        const backendRole = session.user.role as UserRole;
+        const rolesToUse = __DEV__ ? allRoles : [backendRole];
+
         setUser({
           userId: session.user.userId,
           username: session.user.username,
-          availableRoles: [session.user.role as UserRole],
+          availableRoles: rolesToUse,
         });
-        setCurrentRole(session.user.role as UserRole);
+        setCurrentRole(backendRole);
 
         // Load tokens
         const storedTokens = await TokenStorage.getTokens();
@@ -103,15 +109,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     jwtTokens?: Tokens
   ) => {
     try {
+      // In development mode (__DEV__), allow access to all roles for testing
+      // In production, only use the roles assigned by backend
+      const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'admin'];
+      const rolesToUse = __DEV__ ? allRoles : availableRoles;
+
       const userData: User = {
         userId,
         username,
-        availableRoles,
+        availableRoles: rolesToUse,
       };
+
+      console.log('AuthContext: Login -', {
+        isDev: __DEV__,
+        backendRoles: availableRoles,
+        assignedRoles: rolesToUse,
+      });
 
       // Store user data (legacy format for compatibility)
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       setUser(userData);
+
+      // Automatically set currentRole to first available role if not already set
+      // This ensures RoleSwitcher has a role to display
+      if (rolesToUse.length > 0) {
+        const roleToSet = rolesToUse[0];
+        console.log('AuthContext: Setting currentRole to', roleToSet);
+        await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, JSON.stringify(roleToSet));
+        setCurrentRole(roleToSet);
+      }
 
       // Store JWT tokens if provided
       if (jwtTokens) {

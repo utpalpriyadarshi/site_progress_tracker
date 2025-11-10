@@ -66,6 +66,9 @@ const MaterialTrackingScreen = () => {
   const [loading, setLoading] = useState(false);
   const [appMode, setAppModeState] = useState(AppMode.getMode());
 
+  // BOM expansion state - track which BOMs are expanded
+  const [expandedBoms, setExpandedBoms] = useState<Set<string>>(new Set());
+
   // Procurement state
   const [purchaseSuggestions, setPurchaseSuggestions] = useState<PurchaseSuggestion[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialModel | null>(null);
@@ -193,6 +196,19 @@ const MaterialTrackingScreen = () => {
     }
   };
 
+  // Toggle BOM expansion
+  const toggleBomExpansion = (bomId: string) => {
+    setExpandedBoms(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(bomId)) {
+        newSet.delete(bomId);
+      } else {
+        newSet.add(bomId);
+      }
+      return newSet;
+    });
+  };
+
   // Calculate material requirements
   const materialRequirements = React.useMemo(() => {
     if (!bomItems.length) return [];
@@ -229,7 +245,8 @@ const MaterialTrackingScreen = () => {
       filtered = filtered.filter(
         (req) =>
           req.itemCode.toLowerCase().includes(query) ||
-          req.description.toLowerCase().includes(query)
+          req.description.toLowerCase().includes(query) ||
+          (req.bomName && req.bomName.toLowerCase().includes(query))
       );
     }
 
@@ -296,57 +313,175 @@ const MaterialTrackingScreen = () => {
     );
   };
 
+  // Compact Project Row - combines project selector with dev tools
+  const renderCompactProjectRow = () => {
+    if (projects.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No projects available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.compactProjectRow}>
+        {/* Project selector - compact */}
+        <View style={styles.compactProjectSelector}>
+          <Text style={styles.compactLabel}>Project:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.compactProjectScroll}>
+            {projects.map((project) => (
+              <TouchableOpacity
+                key={project.id}
+                style={[
+                  styles.compactProjectChip,
+                  selectedProjectId === project.id && styles.compactProjectChipActive,
+                ]}
+                onPress={() => setSelectedProjectId(project.id)}
+              >
+                <Text
+                  style={[
+                    styles.compactProjectText,
+                    selectedProjectId === project.id && styles.compactProjectTextActive,
+                  ]}
+                >
+                  {project.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Dev Tools - moved here from header */}
+        {__DEV__ && (
+          <View style={styles.compactDevTools}>
+            <TouchableOpacity
+              style={styles.compactClearButton}
+              onPress={handleClearBoms}
+            >
+              <Text style={styles.compactClearText}>🗑️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.compactModeIndicator, appMode === 'demo' ? styles.modeDemo : styles.modeProduction]}
+              onPress={handleToggleMode}
+            >
+              <Text style={styles.compactModeText}>
+                {appMode === 'demo' ? '🧪' : '🏗️'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Combined Search and Filters Row
+  const renderSearchAndFilters = () => {
+    return (
+      <View style={styles.searchFiltersRow}>
+        {/* Search bar - compact with clear button */}
+        <View style={styles.compactSearchContainer}>
+          <TextInput
+            style={styles.compactSearchInput}
+            placeholder="Search materials..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.searchClearButton}
+              onPress={() => setSearchQuery('')}
+            >
+              <Text style={styles.searchClearText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Category filters - horizontal chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.compactFiltersScroll}>
+          {METRO_MATERIAL_CATEGORIES.map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[
+                styles.compactFilterChip,
+                selectedCategory === category.id && styles.compactFilterChipActive,
+              ]}
+              onPress={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+            >
+              <Text style={styles.compactFilterIcon}>{category.icon}</Text>
+              <Text
+                style={[
+                  styles.compactFilterText,
+                  selectedCategory === category.id && styles.compactFilterTextActive,
+                ]}
+              >
+                {category.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderViewModeTabs = () => {
     return (
       <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'requirements' && styles.tabActive]}
-          onPress={() => setViewMode('requirements')}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsScrollContent}
         >
-          <Text style={[styles.tabText, viewMode === 'requirements' && styles.tabTextActive]}>
-            Requirements
-          </Text>
-          <View style={styles.tabBadge}>
-            <Text style={styles.tabBadgeText}>{stats.total}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'shortages' && styles.tabActive]}
-          onPress={() => setViewMode('shortages')}
-        >
-          <Text style={[styles.tabText, viewMode === 'shortages' && styles.tabTextActive]}>
-            Shortages
-          </Text>
-          {stats.shortageCount > 0 && (
-            <View style={[styles.tabBadge, styles.tabBadgeAlert]}>
-              <Text style={styles.tabBadgeText}>{stats.shortageCount}</Text>
+          <TouchableOpacity
+            style={[styles.tab, viewMode === 'requirements' && styles.tabActive]}
+            onPress={() => setViewMode('requirements')}
+          >
+            <Text style={[styles.tabText, viewMode === 'requirements' && styles.tabTextActive]}>
+              Requirements
+            </Text>
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{stats.total}</Text>
             </View>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'procurement' && styles.tabActive]}
-          onPress={() => setViewMode('procurement')}
-        >
-          <Text style={[styles.tabText, viewMode === 'procurement' && styles.tabTextActive]}>
-            Procurement
-          </Text>
-          {stats.procurementPending > 0 && (
-            <View style={[styles.tabBadge, styles.tabBadgeWarning]}>
-              <Text style={styles.tabBadgeText}>{stats.procurementPending}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, viewMode === 'shortages' && styles.tabActive]}
+            onPress={() => setViewMode('shortages')}
+          >
+            <Text style={[styles.tabText, viewMode === 'shortages' && styles.tabTextActive]}>
+              Shortages
+            </Text>
+            {stats.shortageCount > 0 && (
+              <View style={[styles.tabBadge, styles.tabBadgeAlert]}>
+                <Text style={styles.tabBadgeText}>{stats.shortageCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'analytics' && styles.tabActive]}
-          onPress={() => setViewMode('analytics')}
-        >
-          <Text style={[styles.tabText, viewMode === 'analytics' && styles.tabTextActive]}>
-            Analytics
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, viewMode === 'procurement' && styles.tabActive]}
+            onPress={() => setViewMode('procurement')}
+          >
+            <Text style={[styles.tabText, viewMode === 'procurement' && styles.tabTextActive]}>
+              Procurement
+            </Text>
+            {stats.procurementPending > 0 && (
+              <View style={[styles.tabBadge, styles.tabBadgeWarning]}>
+                <Text style={styles.tabBadgeText}>{stats.procurementPending}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, viewMode === 'analytics' && styles.tabActive]}
+            onPress={() => setViewMode('analytics')}
+          >
+            <Text style={[styles.tabText, viewMode === 'analytics' && styles.tabTextActive]}>
+              Analytics
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     );
   };
@@ -747,29 +882,83 @@ const MaterialTrackingScreen = () => {
       );
     }
 
+    // Group requirements by BOM
+    const groupedByBom = filteredRequirements.reduce((acc, req) => {
+      const bomId = req.bomId || 'unknown';
+      if (!acc[bomId]) {
+        acc[bomId] = {
+          bomId,
+          bomName: req.bomName || 'Unknown BOM',
+          items: [],
+        };
+      }
+      acc[bomId].items.push(req);
+      return acc;
+    }, {} as Record<string, { bomId: string; bomName: string; items: typeof filteredRequirements }>);
+
     return (
       <ScrollView style={styles.requirementsList} showsVerticalScrollIndicator={false}>
-        {filteredRequirements.map((requirement) => (
-          <BomRequirementCard
-            key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
-            requirement={{
-              bomId: requirement.bomId || '',
-              bomName: requirement.bomName || 'Unknown BOM',
-              bomType: 'execution',
-              projectId: selectedProjectId || '',
-              materialId: requirement.materialId,
-              itemCode: requirement.itemCode,
-              description: requirement.description,
-              requiredQuantity: requirement.requiredQuantity,
-              unit: requirement.unit,
-              phase: '',
-              wbsCode: '',
-              priority: 'medium',
-              status: 'active',
-            }}
-            availableQuantity={requirement.availableQuantity}
-          />
-        ))}
+        {Object.values(groupedByBom).map((bomGroup) => {
+          const isExpanded = expandedBoms.has(bomGroup.bomId);
+          const totalItems = bomGroup.items.length;
+          const criticalItems = bomGroup.items.filter(i => i.status === 'critical').length;
+          const shortageItems = bomGroup.items.filter(i => i.status === 'shortage').length;
+
+          return (
+            <View key={bomGroup.bomId} style={styles.bomGroupCard}>
+              {/* BOM Header - Clickable to expand/collapse */}
+              <TouchableOpacity
+                style={styles.bomHeader}
+                onPress={() => toggleBomExpansion(bomGroup.bomId)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.bomHeaderLeft}>
+                  <Text style={styles.bomHeaderIcon}>{isExpanded ? '▼' : '▶'}</Text>
+                  <View style={styles.bomHeaderInfo}>
+                    <Text style={styles.bomName}>{bomGroup.bomName}</Text>
+                    <Text style={styles.bomItemCount}>
+                      {totalItems} item{totalItems !== 1 ? 's' : ''}
+                      {criticalItems > 0 && ` • ${criticalItems} critical`}
+                      {shortageItems > 0 && ` • ${shortageItems} shortage`}
+                    </Text>
+                  </View>
+                </View>
+                {criticalItems > 0 && (
+                  <View style={styles.criticalBadge}>
+                    <Text style={styles.criticalBadgeText}>CRITICAL</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* BOM Items - Show only when expanded */}
+              {isExpanded && (
+                <View style={styles.bomItemsContainer}>
+                  {bomGroup.items.map((requirement) => (
+                    <BomRequirementCard
+                      key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
+                      requirement={{
+                        bomId: requirement.bomId || '',
+                        bomName: requirement.bomName || 'Unknown BOM',
+                        bomType: 'execution',
+                        projectId: selectedProjectId || '',
+                        materialId: requirement.materialId,
+                        itemCode: requirement.itemCode,
+                        description: requirement.description,
+                        requiredQuantity: requirement.requiredQuantity,
+                        unit: requirement.unit,
+                        phase: '',
+                        wbsCode: '',
+                        priority: 'medium',
+                        status: 'active',
+                      }}
+                      availableQuantity={requirement.availableQuantity}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
     );
   };
@@ -809,51 +998,14 @@ const MaterialTrackingScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerMain}>
-          <View>
-            <Text style={styles.title}>Material Tracking</Text>
-            <Text style={styles.subtitle}>BOM Requirements & Intelligent Procurement</Text>
-          </View>
-
-          {/* Mode Indicator & Clear Button - Only show in development */}
-          {__DEV__ && (
-            <View style={styles.devTools}>
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={handleClearBoms}
-              >
-                <Text style={styles.clearButtonText}>🗑️ Clear</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modeIndicator, appMode === 'demo' ? styles.modeDemo : styles.modeProduction]}
-                onPress={handleToggleMode}
-              >
-                <Text style={styles.modeText}>
-                  {appMode === 'demo' ? '🧪 DEMO' : '🏗️ PROD'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Project Selector */}
-      {renderProjectSelector()}
-
-      {/* Stats Cards */}
-      {stats.total > 0 && renderStatCards()}
+      {/* Project Selector + Dev Tools Row - Compact */}
+      {renderCompactProjectRow()}
 
       {/* View Mode Tabs */}
       {stats.total > 0 && renderViewModeTabs()}
 
-      {/* Search Bar */}
-      {(viewMode === 'requirements' || viewMode === 'shortages' || viewMode === 'procurement') && renderSearchBar()}
-
-      {/* Category Filters */}
-      {(viewMode === 'requirements' || viewMode === 'shortages') && stats.total > 0 && renderCategoryFilters()}
+      {/* Search Bar + Category Filters - Combined Row */}
+      {(viewMode === 'requirements' || viewMode === 'shortages') && stats.total > 0 && renderSearchAndFilters()}
 
       {/* Content */}
       {renderContent()}
@@ -1008,47 +1160,54 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   tabsContainer: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  tabsScrollContent: {
+    flexDirection: 'row',
+    paddingHorizontal: 4,
+  },
   tab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
-    gap: 8,
+    gap: 6,
   },
   tabActive: {
     borderBottomColor: '#2196F3',
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#666',
+    fontWeight: '500',
   },
   tabTextActive: {
     color: '#2196F3',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   tabBadge: {
-    backgroundColor: '#E0E0E0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    backgroundColor: '#666',
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabBadgeAlert: {
-    backgroundColor: '#FF9800',
+    backgroundColor: '#FF5722',
   },
   tabBadgeWarning: {
-    backgroundColor: '#FFC107',
+    backgroundColor: '#FF9800',
   },
   tabBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#fff',
   },
   searchContainer: {
@@ -1502,6 +1661,200 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   categoryNameActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  // BOM Group Card styles
+  bomGroupCard: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  bomHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  bomHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bomHeaderIcon: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 12,
+    width: 20,
+  },
+  bomHeaderInfo: {
+    flex: 1,
+  },
+  bomName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  bomItemCount: {
+    fontSize: 13,
+    color: '#666',
+  },
+  criticalBadge: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  criticalBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  bomItemsContainer: {
+    padding: 12,
+    paddingTop: 8,
+  },
+  // Compact Layout Styles (Option B)
+  compactProjectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  compactProjectSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  compactLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginRight: 8,
+  },
+  compactProjectScroll: {
+    flexGrow: 0,
+  },
+  compactProjectChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+  },
+  compactProjectChipActive: {
+    backgroundColor: '#2196F3',
+  },
+  compactProjectText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  compactProjectTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  compactDevTools: {
+    flexDirection: 'row',
+    gap: 6,
+    marginLeft: 8,
+  },
+  compactClearButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1.5,
+    borderColor: '#F44336',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactClearText: {
+    fontSize: 14,
+  },
+  compactModeIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactModeText: {
+    fontSize: 14,
+  },
+  searchFiltersRow: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  compactSearchContainer: {
+    marginBottom: 8,
+    position: 'relative',
+  },
+  compactSearchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingRight: 40,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#333',
+  },
+  searchClearButton: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchClearText: {
+    fontSize: 18,
+    color: '#999',
+    fontWeight: '600',
+  },
+  compactFiltersScroll: {
+    flexGrow: 0,
+  },
+  compactFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+  },
+  compactFilterChipActive: {
+    backgroundColor: '#2196F3',
+  },
+  compactFilterIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  compactFilterText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  compactFilterTextActive: {
     color: '#fff',
     fontWeight: '600',
   },

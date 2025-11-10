@@ -13,6 +13,7 @@ const roleDisplayNames: Record<UserRole, string> = {
   manager: 'Manager',
   planning: 'Planning',
   logistics: 'Logistics',
+  admin: 'Admin',
 };
 
 const roleIcons: Record<UserRole, string> = {
@@ -20,14 +21,26 @@ const roleIcons: Record<UserRole, string> = {
   manager: 'briefcase',
   planning: 'calendar-check',
   logistics: 'truck-delivery',
+  admin: 'shield-account',
 };
 
 export const RoleSwitcher = ({ onRoleChange }: RoleSwitcherProps) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const { user, currentRole, selectRole } = useAuth();
 
-  if (!user || user.availableRoles.length <= 1) {
-    // Don't show switcher for users with only one role
+  // Debug logging
+  console.log('[RoleSwitcher] Rendering:', {
+    hasUser: !!user,
+    username: user?.username,
+    currentRole,
+    availableRoles: user?.availableRoles,
+    roleCount: user?.availableRoles?.length
+  });
+
+  // Always show role switcher for consistency
+  // Shows current role even if user has only one role
+  if (!user || !currentRole) {
+    console.log('[RoleSwitcher] Returning null - missing user or currentRole');
     return null;
   }
 
