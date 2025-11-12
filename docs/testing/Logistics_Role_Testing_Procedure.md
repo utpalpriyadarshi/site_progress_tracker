@@ -74,8 +74,8 @@ If no logistics user exists, use Admin role to:
 - ✅ Role switcher visible in header
 - ✅ Default tab is "Dashboard"
 
-**Pass/Fail:** ______
-
+**Pass/Fail:** Partly Passed as role switcher is not properly visible.______
+Role switcher is not visible
 ---
 
 ## 📊 TEST 2: Dashboard Tab - Overview
@@ -100,7 +100,8 @@ If no logistics user exists, use Admin role to:
   - Pending Actions (may show "No pending actions")
 - ✅ No crashes or errors
 
-**Pass/Fail:** ______
+**Pass/Fail:** All expected results achieved/Passed______
+Performance metrics & Cost Analysis Sections are also avaiable.
 
 ### 2.2 Project Selection
 **Steps:**
@@ -112,7 +113,8 @@ If no logistics user exists, use Admin role to:
 - ✅ KPIs update for selected project
 - ✅ Smooth transition, no lag
 
-**Pass/Fail:** ______
+**Pass/Fail:** Passed______
+Since AEP01 project has no materials hence no change is visible.
 
 ### 2.3 Pull to Refresh
 **Steps:**
@@ -125,7 +127,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Refresh indicator disappears
 - ✅ No errors
 
-**Pass/Fail:** ______
+**Pass/Fail:** Passed______
 
 ---
 
@@ -141,7 +143,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Project selector visible
 - ✅ Screen loads without errors
 
-**Pass/Fail:** ______
+**Pass/Fail:** Passed______
 
 ### 3.2 Empty State - Demo Mode (Development Build Only)
 **Steps:**
@@ -156,7 +158,9 @@ If no logistics user exists, use Admin role to:
 - ✅ **IF Demo Mode**: "Load Sample Metro Railway BOMs" button visible
 - ✅ **IF Production Mode**: Message "Contact your Project Manager to create BOMs"
 
-**Pass/Fail:** ______
+**Pass/Fail:** All passed_However____
+Demo/Production toggle button is partial visible.
+Refer @prompts\logistics1.png
 
 ### 3.3 Load Sample BOMs (Demo Mode Only)
 **Prerequisites:** App in Demo Mode (dev builds only)
@@ -174,28 +178,29 @@ If no logistics user exists, use Admin role to:
 - ✅ Sample BOMs loaded:
   - Civil Works BOM
   - OCS Installation BOM
-  - Traction Substation BOM
+  - Traction Substation BOM--observation-It is electrical
   - Signaling System BOM
   - MEP Systems BOM
 - ✅ BOM cards show:
   - BOM name
-  - Item count (e.g., "8 items")
-  - Total cost (₹ format)
+  - Item count (e.g., "8 items")-observation-Not visible
+  - Total cost (₹ format)-observation-Not visible
   - Status badge
 - ✅ No errors or crashes
 
-**Pass/Fail:** ______
+**Pass/Fail:** All passed but visibility of details are not there.______
+The space below sample BOM button is less hence details are not clearly visible. Scroll is working but even after visibily is not good. Refer @prompts\logistics1.png
 
 ### 3.4 BOM Card Interaction
 **Prerequisites:** BOMs loaded from previous test
 
 **Steps:**
-1. Tap on a BOM card to expand/collapse
+1. Tap on a BOM card to expand/collapse-
 2. Observe BOM items list
 3. Check item details
 
 **Expected Results:**
-- ✅ Tapping BOM card toggles expansion
+- ✅ Tapping BOM card toggles expansion-Observation-Cant tap
 - ✅ Expanded view shows all BOM items
 - ✅ Each item shows:
   - Item code (e.g., MAT-001)
@@ -206,11 +211,12 @@ If no logistics user exists, use Admin role to:
 - ✅ Smooth animation
 - ✅ Multiple BOMs can be expanded simultaneously
 
-**Pass/Fail:** ______
+**Pass/Fail:** Cannot be tested, BOM card not expand/collaps____
+Refer @prompts\logistics2.png
 
 ### 3.5 Material Requirements Calculation
 **Steps:**
-1. Scroll to "Material Requirements" section
+1. Scroll to "Material Requirements" section-Observation-Cant access
 2. Observe requirement cards
 3. Check calculations
 
@@ -226,7 +232,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Sorted by shortage (critical items first)
 - ✅ Calculations are accurate
 
-**Pass/Fail:** ______
+**Pass/Fail:** Cant test, no access______
 
 ### 3.6 Procurement Recommendations
 **Steps:**
@@ -245,7 +251,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Sorted by urgency (critical first)
 - ✅ "View Details" buttons visible
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass/fail cannot be decided refer screensot @prompts\logistics3.png______
 
 ### 3.7 Category Filter (If Implemented)
 **Steps:**
@@ -259,7 +265,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Clear filter option available
 - ✅ Item count updates
 
-**Pass/Fail:** ______ (or N/A if not implemented)
+**Pass/Fail:** _N/A_____ (or N/A if not implemented)
 
 ### 3.8 Search Functionality (If Implemented)
 **Steps:**
@@ -268,12 +274,12 @@ If no logistics user exists, use Admin role to:
 3. Observe real-time filtering
 
 **Expected Results:**
-- ✅ Search bar visible
-- ✅ Results filter as you type
-- ✅ Clear button (×) appears
-- ✅ "No results" message if no matches
+- ✅ Search bar visible-Yes
+- ✅ Results filter as you type-No
+- ✅ Clear button (×) appears-No
+- ✅ "No results" message if no matches-No
 
-**Pass/Fail:** ______ (or N/A if not implemented)
+**Pass/Fail:** _Fail_____ (or N/A if not implemented)
 
 ---
 
@@ -294,7 +300,8 @@ If no logistics user exists, use Admin role to:
   - Demo: Orange border/background
   - Production: Green border/background
 
-**Pass/Fail:** ______ (or N/A if production build)
+**Pass/Fail:** Partial pass due to visibility______ (or N/A if production build)
+Mode indicator badge partial visible
 
 ### 4.2 Mode Toggle
 **Steps:**
@@ -309,7 +316,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Screen refreshes to apply new mode
 - ✅ Empty state message changes based on mode
 
-**Pass/Fail:** ______ (or N/A if production build)
+**Pass/Fail:** OK______ (or N/A if production build)
 
 ### 4.3 Clear BOMs Function
 **Prerequisites:** BOMs loaded
@@ -329,7 +336,8 @@ If no logistics user exists, use Admin role to:
 - ✅ Empty state reappears
 - ✅ No errors or crashes
 
-**Pass/Fail:** ______ (or N/A if production build)
+**Pass/Fail:** Partial pass refer screenshot______ (or N/A if production build)
+@prompts\logistics4.png
 
 ### 4.4 Reload After Clear
 **Steps:**
@@ -341,8 +349,8 @@ If no logistics user exists, use Admin role to:
 - ✅ Same 5 sample BOMs appear
 - ✅ All data intact
 
-**Pass/Fail:** ______ (or N/A if production build)
-
+**Pass/Fail:** Fail______ (or N/A if production build)
+Refer screenshot @prompts\logistics4.png
 ---
 
 ## 🔧 TEST 5: Equipment Management Tab
@@ -359,7 +367,8 @@ If no logistics user exists, use Admin role to:
 - ✅ Status filter chips visible
 - ✅ Search bar visible
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
+
 
 ### 5.2 Equipment Overview
 **Steps:**
@@ -381,7 +390,7 @@ If no logistics user exists, use Admin role to:
   - ⚫ Idle (gray)
   - 🔴 Out of Service (red)
 
-**Pass/Fail:** ______
+**Pass/Fail:** _Pass_____
 
 ### 5.3 Equipment Details Modal
 **Steps:**
@@ -395,7 +404,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Modal closes smoothly
 - ✅ No UI glitches
 
-**Pass/Fail:** ______
+**Pass/Fail:** _Pass_____
 
 ### 5.4 Status Filter
 **Steps:**
@@ -409,7 +418,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Reset works correctly
 - ✅ Smooth filtering
 
-**Pass/Fail:** ______
+**Pass/Fail:** Cannot find active status filter______
 
 ### 5.5 Maintenance View
 **Steps:**
@@ -422,8 +431,8 @@ If no logistics user exists, use Admin role to:
 - ✅ Preventive maintenance alerts visible
 - ✅ Date-based organization
 
-**Pass/Fail:** ______
-
+**Pass/Fail:** _Pass_____
+Special notes: since this is construction project tracker, euipments may be either in stock or in transit, construction related status is desirable.
 ---
 
 ## 📦 TEST 6: Delivery Scheduling Tab
@@ -435,12 +444,13 @@ If no logistics user exists, use Admin role to:
 
 **Expected Results:**
 - ✅ Header shows "Delivery Scheduling"
-- ✅ View mode tabs visible (Schedule, Tracking, Routes, Performance)
+- ✅ View mode tabs visible (Schedule, Tracking, Routes, Performance)-Analytics is there, performance not there(not required also)
 - ✅ Status filters visible
 - ✅ Screen loads without errors
 
-**Pass/Fail:** ______
-
+**Pass/Fail:** Pass______
+-Delivery should focus on delivery of materials from OEM's, -it can be in test at factory as FAT, in transit etc
+-The card size is big, the card size should be similar in all tabs like the size of Dashboard tab with different colors.
 ### 6.2 Delivery Schedule View
 **Steps:**
 1. Stay on "Schedule" view
@@ -457,7 +467,7 @@ If no logistics user exists, use Admin role to:
   - Priority indicator
 - ✅ Status color coding (Scheduled, In Transit, Delivered, Delayed)
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 6.3 Delivery Details
 **Steps:**
@@ -470,7 +480,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Information includes: supplier, route, timeline, site readiness
 - ✅ Modal closes properly
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 6.4 Route Optimization View
 **Steps:**
@@ -482,7 +492,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Route efficiency metrics shown
 - ✅ Map or route visualization (if implemented)
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 6.5 Performance Analytics
 **Steps:**
@@ -494,7 +504,7 @@ If no logistics user exists, use Admin role to:
 - ✅ On-time delivery rate shown
 - ✅ Charts/graphs visible (if implemented)
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ---
 
@@ -511,7 +521,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Filters visible (Status, Location, ABC Category)
 - ✅ Screen loads without errors
 
-**Pass/Fail:** ______
+**Pass/Fail:** _Pass_____
 
 ### 7.2 Inventory Overview
 **Steps:**
@@ -529,7 +539,7 @@ If no logistics user exists, use Admin role to:
   - Reorder point indicator
 - ✅ Status badges (In Stock, Low Stock, Out of Stock, Overstocked)
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 7.3 ABC Analysis Filter
 **Steps:**
@@ -542,7 +552,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Filter updates immediately
 - ✅ Can reset to "All"
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 7.4 Multi-Location View
 **Steps:**
@@ -554,7 +564,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Location cards/sections visible
 - ✅ Stock levels per location shown
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 7.5 Stock Transfers
 **Steps:**
@@ -566,7 +576,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Shows: from-location, to-location, quantity, date, status
 - ✅ Pending transfers highlighted
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 7.6 Analytics View
 **Steps:**
@@ -578,7 +588,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Metrics shown: inventory turnover, stock accuracy, etc.
 - ✅ Visualizations (if implemented)
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ---
 
@@ -597,7 +607,7 @@ If no logistics user exists, use Admin role to:
 - ✅ No need to reselect project on each tab
 - ✅ Context state working correctly
 
-**Pass/Fail:** ______
+**Pass/Fail:** _Pass_____
 
 ### 8.2 Data Refresh Synchronization
 **Steps:**
@@ -611,7 +621,7 @@ If no logistics user exists, use Admin role to:
 - ✅ "Materials Tracked" count increased
 - ✅ Data synchronization working
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ---
 
@@ -629,7 +639,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Smooth scroll performance
 - ✅ No flickering or visual glitches
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 9.2 Touch Targets & Accessibility
 **Steps:**
@@ -643,7 +653,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Good contrast ratios
 - ✅ No overlapping touch targets
 
-**Pass/Fail:** ______
+**Pass/Fail:** Contrast need to improve______
 
 ### 9.3 Error Handling
 **Steps:**
@@ -655,7 +665,7 @@ If no logistics user exists, use Admin role to:
 - ✅ User-friendly error messages
 - ✅ Console warnings logged appropriately
 
-**Pass/Fail:** ______
+**Pass/Fail:** Cannot test______
 
 ### 9.4 Loading States
 **Steps:**
@@ -668,7 +678,7 @@ If no logistics user exists, use Admin role to:
 - ✅ No infinite spinners
 - ✅ Clear visual feedback
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 9.5 Empty States
 **Steps:**
@@ -680,7 +690,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Messages are clear and actionable
 - ✅ Guidance provided for next steps
 
-**Pass/Fail:** ______
+**Pass/Fail:** OK______
 
 ---
 
@@ -699,7 +709,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Screen resets to appropriate role navigator
 - ✅ No data corruption
 
-**Pass/Fail:** ______
+**Pass/Fail:** No role switcher, ______
 
 ### 10.2 Logout Functionality
 **Steps:**
@@ -713,7 +723,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Returns to login screen
 - ✅ Session cleared
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ---
 
@@ -750,7 +760,7 @@ If no logistics user exists, use Admin role to:
 - ⚠️ Yellow warnings acceptable (React Native system warnings)
 - ✅ No undefined/null reference errors
 
-**Pass/Fail:** ______
+**Pass/Fail:** OK______
 
 ---
 
@@ -762,7 +772,7 @@ If no logistics user exists, use Admin role to:
 2. Go to BOM Management tab
 3. Create a new BOM (Post-Contract type)
 4. Add some items to the BOM
-5. Set status to "Active"
+5. Set status to "Active"-Cannot set active
 6. Switch back to Logistics role
 
 **Expected Results:**
@@ -770,7 +780,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Items added successfully
 - ✅ BOM saved to database
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ### 12.2 BOM Visibility in Logistics
 **Steps:**
@@ -784,7 +794,7 @@ If no logistics user exists, use Admin role to:
 - ✅ Material requirements calculated correctly
 - ✅ Cross-role integration working
 
-**Pass/Fail:** ______
+**Pass/Fail:** Pass______
 
 ---
 
@@ -818,8 +828,8 @@ List any minor UX issues or improvements:
 
 ## 🚀 Sign-Off
 
-**Tested By**: ________________
-**Date**: ________________
+**Tested By**: _Utpal_______________
+**Date**: __09/11/2025______________
 **Build Version**: v2.4
 **Branch**: feature/v2.4-logistics
 **Device/Emulator**: ________________
@@ -855,3 +865,10 @@ _____________________________________________
 ---
 
 **End of Testing Procedure**
+
+
+
+Additional observatios:-
+Generally all test as passing execpt for test where I have put my observations:
+Please note it metro electrification construction project where logistics are required to perform procurement, FAT, transport, reporting etc.
+

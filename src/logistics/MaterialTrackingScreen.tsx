@@ -20,8 +20,10 @@ import MaterialProcurementService, {
 import BomRequirementCard from './components/BomRequirementCard';
 import mockSuppliers, { generateMockConsumptionHistory } from '../data/mockSuppliers';
 import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import ProjectModel from '../../models/ProjectModel';
 import MaterialModel from '../../models/MaterialModel';
+import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { BomDataService } from '../services/BomDataService';
 import { AppMode, toggleAppMode } from '../config/AppMode';
 import { clearAllBoms } from '../services/ClearBomsService';
@@ -50,7 +52,11 @@ const METRO_MATERIAL_CATEGORIES = [
   { id: 'MEP', name: 'MEP', icon: '🔧', color: '#9C27B0' },
 ];
 
-const MaterialTrackingScreen = () => {
+interface MaterialTrackingScreenProps {
+  navigation: any;
+}
+
+const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigation }) => {
   const {
     selectedProjectId,
     setSelectedProjectId,
@@ -78,6 +84,9 @@ const MaterialTrackingScreen = () => {
   // Analytics state
   const [consumptionData, setConsumptionData] = useState<Map<string, ConsumptionData>>(new Map());
 
+  // DOORS integration state
+  const [doorsPackages, setDoorsPackages] = useState<DoorsPackageModel[]>([]);
+
   // Use BOM data hook
   const {
     boms,
@@ -91,8 +100,22 @@ const MaterialTrackingScreen = () => {
     if (selectedProjectId) {
       loadProcurementData();
       loadConsumptionData();
+      loadDoorsPackages();
     }
   }, [selectedProjectId, materials, bomItems]);
+
+  // Load DOORS packages for integration
+  const loadDoorsPackages = async () => {
+    if (!selectedProjectId) return;
+
+    try {
+      const doorsCollection = database.collections.get<DoorsPackageModel>('doors_packages');
+      const packages = await doorsCollection.query(Q.where('project_id', selectedProjectId)).fetch();
+      setDoorsPackages(packages);
+    } catch (error) {
+      console.error('[MaterialTracking] Error loading DOORS packages:', error);
+    }
+  };
 
   const loadProcurementData = () => {
     if (materials.length > 0 && bomItems.length > 0) {
@@ -214,6 +237,30 @@ const MaterialTrackingScreen = () => {
     if (!bomItems.length) return [];
     return BomLogisticsService.calculateMaterialRequirements(bomItems, materials);
   }, [bomItems, materials]);
+
+  // Create a map of itemCode → doorsId for DOORS integration
+  const doorsLinkMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    bomItems.forEach(item => {
+      if (item.doorsId) {
+        map.set(item.itemCode, item.doorsId);
+      }
+    });
+    return map;
+  }, [bomItems]);
+
+  // Create a map of doorsId → DOORS package data
+  const doorsDataMap = React.useMemo(() => {
+    const map = new Map<string, { packageId: string; doorsId: string; compliancePercentage: number }>();
+    doorsPackages.forEach(pkg => {
+      map.set(pkg.doorsId, {
+        packageId: pkg.id, // Database record ID for navigation
+        doorsId: pkg.doorsId,
+        compliancePercentage: pkg.compliancePercentage,
+      });
+    });
+    return map;
+  }, [doorsPackages]);
 
   // Get shortages
   const shortages = React.useMemo(() => {
@@ -933,27 +980,40 @@ const MaterialTrackingScreen = () => {
               {/* BOM Items - Show only when expanded */}
               {isExpanded && (
                 <View style={styles.bomItemsContainer}>
-                  {bomGroup.items.map((requirement) => (
-                    <BomRequirementCard
-                      key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
-                      requirement={{
-                        bomId: requirement.bomId || '',
-                        bomName: requirement.bomName || 'Unknown BOM',
-                        bomType: 'execution',
-                        projectId: selectedProjectId || '',
-                        materialId: requirement.materialId,
-                        itemCode: requirement.itemCode,
-                        description: requirement.description,
-                        requiredQuantity: requirement.requiredQuantity,
-                        unit: requirement.unit,
-                        phase: '',
-                        wbsCode: '',
-                        priority: 'medium',
-                        status: 'active',
-                      }}
-                      availableQuantity={requirement.availableQuantity}
-                    />
-                  ))}
+                  {bomGroup.items.map((requirement) => {
+                    // Get DOORS link for this item
+                    const doorsId = doorsLinkMap.get(requirement.itemCode);
+                    const doorsData = doorsId ? doorsDataMap.get(doorsId) : undefined;
+
+                    return (
+                      <BomRequirementCard
+                        key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
+                        requirement={{
+                          bomId: requirement.bomId || '',
+                          bomName: requirement.bomName || 'Unknown BOM',
+                          bomType: 'execution',
+                          projectId: selectedProjectId || '',
+                          materialId: requirement.materialId,
+                          itemCode: requirement.itemCode,
+                          description: requirement.description,
+                          requiredQuantity: requirement.requiredQuantity,
+                          unit: requirement.unit,
+                          phase: '',
+                          wbsCode: '',
+                          priority: 'medium',
+                          status: 'active',
+                        }}
+                        availableQuantity={requirement.availableQuantity}
+                        doorsId={doorsData?.doorsId}
+                        doorsCompliance={doorsData?.compliancePercentage}
+                        onDoorsPress={() => {
+                          if (doorsData?.packageId) {
+                            navigation.navigate('DoorsDetail', { packageId: doorsData.packageId });
+                          }
+                        }}
+                      />
+                    );
+                  })}
                 </View>
               )}
             </View>

@@ -20,12 +20,18 @@ interface BomRequirementCardProps {
   requirement: BomRequirement;
   availableQuantity?: number;
   onPress?: () => void;
+  doorsId?: string;
+  doorsCompliance?: number;
+  onDoorsPress?: () => void;
 }
 
 const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
   requirement,
   availableQuantity = 0,
   onPress,
+  doorsId,
+  doorsCompliance,
+  onDoorsPress,
 }) => {
   const shortage = Math.max(0, requirement.requiredQuantity - availableQuantity);
   const surplus = Math.max(0, availableQuantity - requirement.requiredQuantity);
@@ -130,6 +136,38 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
             </View>
           )}
         </View>
+      )}
+
+      {/* DOORS Integration */}
+      {doorsId && (
+        <TouchableOpacity
+          style={styles.doorsSection}
+          onPress={onDoorsPress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.doorsIcon}>
+            <Text style={styles.doorsIconText}>📋</Text>
+          </View>
+          <View style={styles.doorsInfo}>
+            <Text style={styles.doorsLabel}>DOORS Package</Text>
+            <Text style={styles.doorsId}>{doorsId}</Text>
+          </View>
+          {doorsCompliance != null && (
+            <View style={styles.doorsCompliance}>
+              <Text style={[
+                styles.doorsComplianceText,
+                {
+                  color: doorsCompliance >= 95 ? '#4CAF50' :
+                         doorsCompliance >= 80 ? '#FF9800' : '#F44336'
+                }
+              ]}>
+                {doorsCompliance.toFixed(1)}%
+              </Text>
+              <Text style={styles.doorsComplianceLabel}>Compliance</Text>
+            </View>
+          )}
+          <Text style={styles.doorsChevron}>›</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -297,6 +335,64 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+  },
+  doorsSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#F8F9FA',
+    marginHorizontal: -16,
+    marginBottom: -16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  doorsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  doorsIconText: {
+    fontSize: 20,
+  },
+  doorsInfo: {
+    flex: 1,
+  },
+  doorsLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 2,
+  },
+  doorsId: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1976D2',
+  },
+  doorsCompliance: {
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  doorsComplianceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  doorsComplianceLabel: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  doorsChevron: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: '300',
   },
 });
 

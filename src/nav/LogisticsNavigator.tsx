@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -10,6 +11,8 @@ import MaterialTrackingScreen from '../logistics/MaterialTrackingScreen';
 import EquipmentManagementScreen from '../logistics/EquipmentManagementScreen';
 import DeliverySchedulingScreen from '../logistics/DeliverySchedulingScreen';
 import InventoryManagementScreen from '../logistics/InventoryManagementScreen';
+import DoorsRegisterScreen from '../logistics/DoorsRegisterScreen';
+import DoorsDetailScreen from '../logistics/DoorsDetailScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole} from '../auth/AuthContext';
 
@@ -27,6 +30,12 @@ export type LogisticsTabParamList = {
   EquipmentManagement: undefined;
   DeliveryScheduling: undefined;
   InventoryManagementScreen: undefined;
+  DoorsRegister: undefined;
+};
+
+export type LogisticsStackParamList = {
+  Dashboard: undefined;
+  DoorsDetail: { packageId: string };
 };
 
 type LogisticsNavigatorProps = {
@@ -34,8 +43,10 @@ type LogisticsNavigatorProps = {
 };
 
 const Tab = createBottomTabNavigator<LogisticsTabParamList>();
+const Stack = createNativeStackNavigator<LogisticsStackParamList>();
 
-const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNavigation }) => {
+// Tab Navigator Component (all the tabs)
+const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNavigation }) => {
   const { logout } = useAuth();
 
   const handleLogout = async () => {
@@ -65,9 +76,8 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
   };
 
   return (
-    <LogisticsProvider>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconSymbol = '';
 
@@ -81,6 +91,8 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
               iconSymbol = '📦';
             } else if (route.name === 'InventoryManagementScreen') {
               iconSymbol = '📦';
+            } else if (route.name === 'DoorsRegister') {
+              iconSymbol = '📋';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -142,7 +154,33 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
             headerTitle: 'Inventory Management',
           }}
         />
+        <Tab.Screen
+          name="DoorsRegister"
+          component={DoorsRegisterScreen}
+          options={{
+            title: 'DOORS',
+            headerShown: true,
+            headerTitle: 'DOORS Register',
+          }}
+        />
       </Tab.Navigator>
+  );
+};
+
+// Main Stack Navigator with Tabs + Detail screens
+const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNavigation }) => {
+  return (
+    <LogisticsProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Dashboard">
+          {(props) => <LogisticsTabs {...props} navigation={parentNavigation} />}
+        </Stack.Screen>
+        <Stack.Screen
+          name="DoorsDetail"
+          component={DoorsDetailScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
     </LogisticsProvider>
   );
 };

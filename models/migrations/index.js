@@ -317,5 +317,110 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v26: Add DOORS system (Dynamic Object Oriented Requirements System) - Activity 4: Phase 2
+    {
+      toVersion: 26,
+      steps: [
+        // Add doors_id to bom_items for linking to DOORS packages
+        addColumns({
+          table: 'bom_items',
+          columns: [
+            { name: 'doors_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+        // Create doors_packages table (equipment-level tracking)
+        createTable({
+          name: 'doors_packages',
+          columns: [
+            // Basic Information
+            { name: 'doors_id', type: 'string', isIndexed: true },
+            { name: 'equipment_name', type: 'string' },
+            { name: 'category', type: 'string', isIndexed: true },
+            { name: 'equipment_type', type: 'string', isIndexed: true },
+            { name: 'project_id', type: 'string', isIndexed: true },
+            { name: 'specification_ref', type: 'string', isOptional: true },
+            { name: 'drawing_ref', type: 'string', isOptional: true },
+            { name: 'quantity', type: 'number' },
+            { name: 'unit', type: 'string' },
+            // Compliance Summary
+            { name: 'total_requirements', type: 'number' },
+            { name: 'compliant_requirements', type: 'number' },
+            { name: 'compliance_percentage', type: 'number' },
+            { name: 'technical_req_compliance', type: 'number' },
+            { name: 'datasheet_compliance', type: 'number' },
+            { name: 'type_test_compliance', type: 'number' },
+            { name: 'routine_test_compliance', type: 'number' },
+            { name: 'site_req_compliance', type: 'number' },
+            // Status
+            { name: 'status', type: 'string', isIndexed: true },
+            { name: 'priority', type: 'string', isIndexed: true },
+            // RFQ stage
+            { name: 'rfq_no', type: 'string', isOptional: true },
+            { name: 'rfq_issued_date', type: 'number', isOptional: true },
+            { name: 'vendors_invited', type: 'number', isOptional: true },
+            { name: 'vendors_responded', type: 'number', isOptional: true },
+            // Procurement
+            { name: 'po_no', type: 'string', isOptional: true },
+            { name: 'po_date', type: 'number', isOptional: true },
+            { name: 'selected_vendor', type: 'string', isOptional: true },
+            { name: 'po_value', type: 'number', isOptional: true },
+            // Delivery
+            { name: 'delivery_status', type: 'string', isOptional: true },
+            { name: 'expected_delivery', type: 'number', isOptional: true },
+            { name: 'actual_delivery', type: 'number', isOptional: true },
+            // Closure
+            { name: 'closure_date', type: 'number', isOptional: true },
+            { name: 'closure_remarks', type: 'string', isOptional: true },
+            // Ownership
+            { name: 'created_by', type: 'string', isIndexed: true },
+            { name: 'assigned_to', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'reviewed_by', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            // Sync
+            { name: 'app_sync_status', type: 'string' },
+            { name: 'version', type: 'number' },
+          ],
+        }),
+        // Create doors_requirements table (individual requirement tracking)
+        createTable({
+          name: 'doors_requirements',
+          columns: [
+            // Basic Information
+            { name: 'requirement_id', type: 'string', isIndexed: true },
+            { name: 'doors_package_id', type: 'string', isIndexed: true },
+            // Requirement Details
+            { name: 'category', type: 'string', isIndexed: true },
+            { name: 'requirement_code', type: 'string', isIndexed: true },
+            { name: 'requirement_text', type: 'string' },
+            { name: 'specification_clause', type: 'string', isOptional: true },
+            { name: 'acceptance_criteria', type: 'string' },
+            { name: 'is_mandatory', type: 'boolean' },
+            { name: 'sequence_no', type: 'number' },
+            // Compliance Status
+            { name: 'compliance_status', type: 'string', isIndexed: true },
+            { name: 'compliance_percentage', type: 'number', isOptional: true },
+            { name: 'vendor_response', type: 'string', isOptional: true },
+            { name: 'verification_method', type: 'string', isOptional: true },
+            { name: 'verification_status', type: 'string', isOptional: true },
+            // Engineering Review
+            { name: 'review_status', type: 'string', isIndexed: true },
+            { name: 'review_comments', type: 'string', isOptional: true },
+            { name: 'reviewed_by', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'reviewed_at', type: 'number', isOptional: true },
+            // Attachments
+            { name: 'attachment_count', type: 'number' },
+            { name: 'test_report_ref', type: 'string', isOptional: true },
+            { name: 'certificate_ref', type: 'string', isOptional: true },
+            // Timestamps
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            // Sync
+            { name: 'app_sync_status', type: 'string' },
+            { name: 'version', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

@@ -16,6 +16,10 @@ import LogisticsOptimizationService, {
   PredictiveInsight,
   CostAnalysis,
 } from '../services/LogisticsOptimizationService';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import DoorsPackageModel from '../../models/DoorsPackageModel';
+import DoorsStatisticsService, { DoorsKPIs } from '../services/DoorsStatisticsService';
 
 /**
  * LogisticsDashboardScreen
@@ -58,6 +62,39 @@ const LogisticsDashboardScreen = () => {
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
   const [predictiveInsights, setPredictiveInsights] = useState<PredictiveInsight[]>([]);
   const [costAnalysis, setCostAnalysis] = useState<CostAnalysis | null>(null);
+  const [doorsKPIs, setDoorsKPIs] = useState<DoorsKPIs | null>(null);
+  const [doorsPackages, setDoorsPackages] = useState<DoorsPackageModel[]>([]);
+
+  // Load DOORS packages
+  useEffect(() => {
+    if (selectedProjectId) {
+      const loadDoorsPackages = async () => {
+        try {
+          console.log('[Dashboard] Loading DOORS packages for project:', selectedProjectId);
+          const packagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
+          const packages = await packagesCollection.query(
+            Q.where('project_id', selectedProjectId)
+          ).fetch();
+          console.log(`[Dashboard] Found ${packages.length} DOORS packages`);
+          setDoorsPackages(packages);
+
+          // Calculate DOORS KPIs
+          if (packages.length > 0) {
+            const kpis = DoorsStatisticsService.calculateKPIs(packages);
+            console.log('[Dashboard] DOORS KPIs calculated:', kpis);
+            setDoorsKPIs(kpis);
+          } else {
+            console.log('[Dashboard] No DOORS packages found, KPIs will not display');
+            setDoorsKPIs(null);
+          }
+        } catch (error) {
+          console.error('[Dashboard] Error loading DOORS packages:', error);
+        }
+      };
+
+      loadDoorsPackages();
+    }
+  }, [selectedProjectId]);
 
   // Calculate analytics when data changes
   useEffect(() => {
@@ -213,6 +250,57 @@ const LogisticsDashboardScreen = () => {
           <Text style={styles.kpiLabel}>Stock Accuracy</Text>
         </View>
       </ScrollView>
+    );
+  };
+
+  const renderDoorsMetrics = () => {
+    if (!doorsKPIs || doorsKPIs.totalPackages === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📋 DOORS Requirements Management</Text>
+        <View style={styles.metricsGrid}>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricValue}>{doorsKPIs.totalPackages}</Text>
+            <Text style={styles.metricLabel}>DOORS Packages</Text>
+            {doorsKPIs.criticalPackages > 0 && (
+              <Text style={[styles.metricSubtext, { color: '#F44336' }]}>
+                {doorsKPIs.criticalPackages} critical
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.metricItem}>
+            <Text style={[
+              styles.metricValue,
+              {
+                color: doorsKPIs.averageCompliance >= 95 ? '#4CAF50' :
+                       doorsKPIs.averageCompliance >= 80 ? '#FF9800' : '#F44336'
+              }
+            ]}>
+              {doorsKPIs.averageCompliance.toFixed(1)}%
+            </Text>
+            <Text style={styles.metricLabel}>Avg Compliance</Text>
+            <Text style={styles.metricSubtext}>
+              {doorsKPIs.compliantRequirements}/{doorsKPIs.totalRequirements} requirements
+            </Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <Text style={styles.metricValue}>{doorsKPIs.approvedPackages}</Text>
+            <Text style={styles.metricLabel}>Approved</Text>
+            <Text style={styles.metricSubtext}>
+              {doorsKPIs.pendingReview} under review
+            </Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <Text style={styles.metricValue}>{doorsKPIs.packagesWithPO}</Text>
+            <Text style={styles.metricLabel}>With PO</Text>
+            <Text style={styles.metricSubtext}>Procurement active</Text>
+          </View>
+        </View>
+      </View>
     );
   };
 
@@ -457,6 +545,9 @@ const LogisticsDashboardScreen = () => {
       {/* KPI Cards */}
       {renderKPICards()}
 
+      {/* DOORS Metrics */}
+      {renderDoorsMetrics()}
+
       {/* Critical Alerts */}
       {renderCriticalAlerts()}
 
@@ -566,6 +657,12 @@ const styles = StyleSheet.create({
   },
   kpiCardInfo: {
     backgroundColor: '#F3E5F5',
+  },
+  kpiCardDoors: {
+    backgroundColor: '#E1F5FE',
+  },
+  kpiCardDoorsCompliance: {
+    backgroundColor: '#FFF9C4',
   },
   kpiValue: {
     fontSize: 28,
@@ -767,6 +864,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+    textAlign: 'center',
+  },
+  metricSubtext: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 2,
     textAlign: 'center',
   },
   costCard: {

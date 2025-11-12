@@ -441,6 +441,77 @@ The Logistics role is production-ready with:
 
 ---
 
+#### Activity 4.6: DOORS Requirements Management System Complete ✅ (November 12, 2025)
+**Phase 2: Requirements Tracking & BOM Integration** (v2.4)
+
+The Logistics role now includes a comprehensive DOORS (Dynamic Object Oriented Requirements System) for tracking equipment specifications and compliance requirements, seamlessly integrated with the BOM system.
+
+**DOORS Implementation** ✅
+- ✅ **DoorsRegisterScreen**: Package listing with filters, search, and KPIs
+- ✅ **DoorsDetailScreen**: Detailed requirement view with 3 tabs (Requirements, Compliance, Documents)
+- ✅ **Dashboard Integration**: DOORS KPIs displayed in 2x2 grid layout
+- ✅ **Models**: DoorsPackageModel (equipment-level), DoorsRequirementModel (requirement-level)
+- ✅ **Services**: DoorsStatisticsService, BomDoorsLinkingService (automated keyword matching)
+
+**Key Features:**
+- Track 5 requirement categories: Technical, Datasheet, Type Tests, Routine Tests, Site
+- Monitor compliance percentages by category with color-coded indicators
+- Filter by status: Draft, Under Review, Approved, Closed
+- Search requirements by code, text, or specification clause
+- View detailed requirement information with acceptance criteria and vendor responses
+
+**BOM-DOORS Integration** ✅
+- ✅ **Automated Linking**: Intelligent keyword-based matching of BOM items to DOORS packages
+- ✅ **DOORS Section on BOM Cards**: Shows compliance status and package ID
+- ✅ **Seamless Navigation**: One-tap navigation from Material Tracking → DOORS Detail
+- ✅ **Real-time Compliance**: Visibility of requirements compliance in materials management
+
+**Testing & Quality** ✅
+- ✅ **Comprehensive Testing**: 40 test cases created (95% pass rate: 38/40)
+- ✅ **Issues Resolved**: 9/11 issues fixed (3 critical, 3 medium, 3 minor)
+- ✅ **UX Polish**: Uniform filter styling, clear search buttons, clean card layouts
+- ✅ **Documentation**: 12+ comprehensive documents (implementation, testing, user guides)
+
+**Technical Highlights:**
+- Fixed height pills/chips for uniform dimensions (no size changes on tap)
+- Map-based lookups for O(1) data access performance
+- WatermelonDB observables for reactive UI updates
+- Proper navigation parameter handling (packageId vs doorsId)
+- Automated keyword matching: transformer, circuit breaker, cables, RTU, OHE mast
+
+**Demo Data:**
+- 5 DOORS packages across equipment categories (TSS, OHE, SCADA, Cables)
+- 293 total requirements with varied compliance states (13-85 per package)
+- Realistic technical specifications and test requirements
+- Pre-populated acceptance criteria and vendor responses
+
+**Files Created (7):**
+- models/DoorsPackageModel.ts
+- models/DoorsRequirementModel.ts
+- src/logistics/DoorsRegisterScreen.tsx
+- src/logistics/DoorsDetailScreen.tsx
+- src/services/DoorsStatisticsService.ts
+- src/services/BomDoorsLinkingService.ts (189 lines - intelligent keyword matching)
+- src/utils/demoData/DoorsSeeder.ts
+
+**Files Modified (8):**
+- models/BomItemModel.ts (added doors_id field)
+- src/logistics/LogisticsDashboardScreen.tsx (DOORS KPIs section)
+- src/logistics/MaterialTrackingScreen.tsx (DOORS integration)
+- src/logistics/components/BomRequirementCard.tsx (verified DOORS section)
+- models/schema/index.ts (v26 migration)
+- models/migrations/index.js (v26 migration)
+- Navigation files (DOORS tab integration)
+
+**Deferred to Phase 3:**
+- Edit functionality (edit packages, update compliance status)
+- RFQ & Vendor Management (create RFQs from DOORS)
+- Document Management (upload datasheets, test reports)
+- Manual BOM-DOORS linking UI (override automated linking)
+- Category filter on Register screen (UX enhancement)
+
+---
+
 ### v2.0 (October 2025) - UX Improvements Sprint 1 Complete ⭐
 **Alert.alert Migration to Snackbar/Dialog System**
 - ✅ **100% Migration Complete**: All 113 Alert.alert calls replaced with custom Snackbar/ConfirmDialog system
