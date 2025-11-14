@@ -422,5 +422,36 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v27: Add edit support for DOORS and manual linking metadata (Activity 4: Phase 3)
+    {
+      toVersion: 27,
+      steps: [
+        // Add edit audit columns to doors_packages
+        addColumns({
+          table: 'doors_packages',
+          columns: [
+            { name: 'last_modified_at', type: 'number', isOptional: true },
+            { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+        // Add edit audit columns to doors_requirements
+        addColumns({
+          table: 'doors_requirements',
+          columns: [
+            { name: 'last_modified_at', type: 'number', isOptional: true },
+            { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+        // Add linking metadata to bom_items for manual linking support
+        addColumns({
+          table: 'bom_items',
+          columns: [
+            { name: 'link_type', type: 'string', isOptional: true }, // 'auto', 'manual', 'override'
+            { name: 'linked_by_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'linked_at', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

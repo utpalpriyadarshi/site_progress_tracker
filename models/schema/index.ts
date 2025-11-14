@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 26, // Added DOORS system (Dynamic Object Oriented Requirements System) - Activity 4: Phase 2
+  version: 27, // Added edit support for DOORS - Activity 4: Phase 3
   tables: [
     tableSchema({
       name: 'projects',
@@ -330,6 +330,9 @@ export default appSchema({
         { name: 'bom_id', type: 'string', isIndexed: true },
         { name: 'material_id', type: 'string', isOptional: true, isIndexed: true },
         { name: 'doors_id', type: 'string', isOptional: true, isIndexed: true }, // Link to DOORS package
+        { name: 'link_type', type: 'string', isOptional: true }, // 'auto', 'manual', 'override' (Phase 3)
+        { name: 'linked_by_id', type: 'string', isOptional: true, isIndexed: true }, // User who created link (Phase 3)
+        { name: 'linked_at', type: 'number', isOptional: true }, // When link was created (Phase 3)
         { name: 'item_code', type: 'string' },
         { name: 'description', type: 'string' },
         { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, subcontractor
@@ -397,6 +400,9 @@ export default appSchema({
         { name: 'reviewed_by', type: 'string', isOptional: true, isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // Edit audit trail (Phase 3)
+        { name: 'last_modified_at', type: 'number', isOptional: true },
+        { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
         // Sync
         { name: 'app_sync_status', type: 'string' },
         { name: 'version', type: 'number' },
@@ -434,6 +440,9 @@ export default appSchema({
         // Timestamps
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // Edit audit trail (Phase 3)
+        { name: 'last_modified_at', type: 'number', isOptional: true },
+        { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
         // Sync
         { name: 'app_sync_status', type: 'string' },
         { name: 'version', type: 'number' },

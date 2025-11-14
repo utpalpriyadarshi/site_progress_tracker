@@ -42,7 +42,7 @@ export async function createDoorsDemoData(projectId: string, userId: string): Pr
       pkg.typeTestCompliance = 92.0;
       pkg.routineTestCompliance = 100.0;
       pkg.siteReqCompliance = 100.0;
-      pkg.status = 'under_review';
+      pkg.status = 'draft';
       pkg.priority = 'high';
       pkg.createdBy = userId;
       pkg.createdAt = now;
@@ -108,8 +108,8 @@ export async function createDoorsDemoData(projectId: string, userId: string): Pr
       pkg.typeTestCompliance = 90.0;
       pkg.routineTestCompliance = 92.0;
       pkg.siteReqCompliance = 100.0;
-      pkg.status = 'under_review';
-      pkg.priority = 'high';
+      pkg.status = 'draft';
+      pkg.priority = 'medium';
       pkg.createdBy = userId;
       pkg.createdAt = now - 10 * 24 * 60 * 60 * 1000; // 10 days ago
       pkg.updatedAt = now;

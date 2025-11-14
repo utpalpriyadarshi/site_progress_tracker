@@ -84,6 +84,10 @@ export default class DoorsPackageModel extends Model {
   @field('created_at') createdAt!: number;
   @field('updated_at') updatedAt!: number;
 
+  // Edit audit trail (Phase 3)
+  @field('last_modified_at') lastModifiedAt?: number; // When package was last edited
+  @field('modified_by_id') modifiedById?: string; // User who last modified
+
   // AppSync fields
   @field('app_sync_status') appSyncStatus!: string; // pending, synced, failed
   @field('version') version!: number; // Version for conflict resolution

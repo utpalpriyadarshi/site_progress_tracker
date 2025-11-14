@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { Q } from '@nozbe/watermelondb';
@@ -35,6 +36,15 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
   const [selectedStatus, setSelectedStatus] = useState<'all' | DoorsPackageStatus>('all');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh when screen comes into focus (after returning from edit)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[DoorsRegister] Screen focused, refreshing data');
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Filter packages based on search and filters
   const filteredPackages = useMemo(() => {
@@ -73,7 +83,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
     });
 
     return filtered;
-  }, [doorsPackages, searchQuery, selectedStatus, selectedCategory]);
+  }, [doorsPackages, searchQuery, selectedStatus, selectedCategory, refreshKey]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -89,7 +99,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
     const critical = doorsPackages.filter((p) => p.compliancePercentage < 80).length;
 
     return { total, draft, underReview, approved, closed, avgCompliance, critical };
-  }, [doorsPackages]);
+  }, [doorsPackages, refreshKey]);
 
   // Handle clear all DOORS data (for testing)
   const handleClearAllData = async () => {
@@ -190,6 +200,15 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
               </View>
             </View>
           </View>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent card tap
+              navigation.navigate('DoorsPackageEdit', { packageId: item.id });
+            }}
+          >
+            <Text style={styles.editIcon}>✏️</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Equipment Name */}
@@ -498,6 +517,18 @@ const styles = StyleSheet.create({
   },
   cardHeaderLeft: {
     flex: 1,
+  },
+  editButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 18,
+    marginLeft: 8,
+  },
+  editIcon: {
+    fontSize: 18,
   },
   doorsId: {
     fontSize: 14,

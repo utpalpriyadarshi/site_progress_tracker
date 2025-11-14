@@ -13,6 +13,7 @@ import DeliverySchedulingScreen from '../logistics/DeliverySchedulingScreen';
 import InventoryManagementScreen from '../logistics/InventoryManagementScreen';
 import DoorsRegisterScreen from '../logistics/DoorsRegisterScreen';
 import DoorsDetailScreen from '../logistics/DoorsDetailScreen';
+import DoorsPackageEditScreen from '../logistics/DoorsPackageEditScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole} from '../auth/AuthContext';
 
@@ -36,6 +37,7 @@ export type LogisticsTabParamList = {
 export type LogisticsStackParamList = {
   Dashboard: undefined;
   DoorsDetail: { packageId: string };
+  DoorsPackageEdit: { packageId: string };
 };
 
 type LogisticsNavigatorProps = {
@@ -178,6 +180,11 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
         <Stack.Screen
           name="DoorsDetail"
           component={DoorsDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DoorsPackageEdit"
+          component={DoorsPackageEditScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
