@@ -1,4 +1,5 @@
 import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsRequirementModel from '../../models/DoorsRequirementModel';
 
@@ -262,7 +263,8 @@ class DoorsEditService {
       const requirement = await this.doorsRequirementsCollection.find(requirementId);
 
       // Get parent package for permission check
-      const pkg = await requirement.package.fetch();
+      const pkg = await this.doorsPackagesCollection.find(requirement.doorsPackageId);
+
       if (!this.canEditPackage(userRole, pkg.status)) {
         throw new Error(
           `You don't have permission to edit requirements in this package. Package status: ${pkg.status}`
@@ -303,6 +305,7 @@ class DoorsEditService {
         await this.recalculatePackageStatistics(pkg.id);
       }
 
+      console.log('[DoorsEditService] Requirement updated successfully');
       return updatedRequirement;
     });
   }
@@ -310,80 +313,81 @@ class DoorsEditService {
   /**
    * Recalculate compliance statistics for a package
    * Called after requirement updates that affect compliance
+   * NOTE: This must be called from within a database.write() transaction
    */
   async recalculatePackageStatistics(packageId: string): Promise<void> {
-    await database.write(async () => {
-      const pkg = await this.doorsPackagesCollection.find(packageId);
-      const requirements = await pkg.requirements.fetch();
+    const pkg = await this.doorsPackagesCollection.find(packageId);
+    const requirements = await this.doorsRequirementsCollection.query(
+      Q.where('doors_package_id', packageId)
+    ).fetch();
 
-      // Count compliant requirements
-      let compliantCount = 0;
-      let technicalCompliant = 0;
-      let technicalTotal = 0;
-      let datasheetCompliant = 0;
-      let datasheetTotal = 0;
-      let typeTestCompliant = 0;
-      let typeTestTotal = 0;
-      let routineTestCompliant = 0;
-      let routineTestTotal = 0;
-      let siteReqCompliant = 0;
-      let siteReqTotal = 0;
+    // Count compliant requirements
+    let compliantCount = 0;
+    let technicalCompliant = 0;
+    let technicalTotal = 0;
+    let datasheetCompliant = 0;
+    let datasheetTotal = 0;
+    let typeTestCompliant = 0;
+    let typeTestTotal = 0;
+    let routineTestCompliant = 0;
+    let routineTestTotal = 0;
+    let siteReqCompliant = 0;
+    let siteReqTotal = 0;
 
-      for (const req of requirements) {
-        const isCompliant = req.complianceStatus === 'compliant';
-        if (isCompliant) compliantCount++;
+    for (const req of requirements) {
+      const isCompliant = req.complianceStatus === 'compliant';
+      if (isCompliant) compliantCount++;
 
-        // Category-wise compliance
-        if (req.category === 'technical') {
-          technicalTotal++;
-          if (isCompliant) technicalCompliant++;
-        } else if (req.category === 'datasheet') {
-          datasheetTotal++;
-          if (isCompliant) datasheetCompliant++;
-        } else if (req.category === 'type_test') {
-          typeTestTotal++;
-          if (isCompliant) typeTestCompliant++;
-        } else if (req.category === 'routine_test') {
-          routineTestTotal++;
-          if (isCompliant) routineTestCompliant++;
-        } else if (req.category === 'site') {
-          siteReqTotal++;
-          if (isCompliant) siteReqCompliant++;
-        }
+      // Category-wise compliance
+      if (req.category === 'technical') {
+        technicalTotal++;
+        if (isCompliant) technicalCompliant++;
+      } else if (req.category === 'datasheet') {
+        datasheetTotal++;
+        if (isCompliant) datasheetCompliant++;
+      } else if (req.category === 'type_test') {
+        typeTestTotal++;
+        if (isCompliant) typeTestCompliant++;
+      } else if (req.category === 'routine_test') {
+        routineTestTotal++;
+        if (isCompliant) routineTestCompliant++;
+      } else if (req.category === 'site') {
+        siteReqTotal++;
+        if (isCompliant) siteReqCompliant++;
       }
+    }
 
-      const totalRequirements = requirements.length;
-      const compliancePercentage = totalRequirements > 0
-        ? (compliantCount / totalRequirements) * 100
+    const totalRequirements = requirements.length;
+    const compliancePercentage = totalRequirements > 0
+      ? (compliantCount / totalRequirements) * 100
+      : 0;
+
+    // Update package statistics
+    await pkg.update(p => {
+      p.totalRequirements = totalRequirements;
+      p.compliantRequirements = compliantCount;
+      p.compliancePercentage = Math.round(compliancePercentage * 10) / 10; // Round to 1 decimal
+
+      // Update category-wise compliance
+      p.technicalReqCompliance = technicalTotal > 0
+        ? Math.round((technicalCompliant / technicalTotal) * 1000) / 10
+        : 0;
+      p.datasheetCompliance = datasheetTotal > 0
+        ? Math.round((datasheetCompliant / datasheetTotal) * 1000) / 10
+        : 0;
+      p.typeTestCompliance = typeTestTotal > 0
+        ? Math.round((typeTestCompliant / typeTestTotal) * 1000) / 10
+        : 0;
+      p.routineTestCompliance = routineTestTotal > 0
+        ? Math.round((routineTestCompliant / routineTestTotal) * 1000) / 10
+        : 0;
+      p.siteReqCompliance = siteReqTotal > 0
+        ? Math.round((siteReqCompliant / siteReqTotal) * 1000) / 10
         : 0;
 
-      // Update package statistics
-      await pkg.update(p => {
-        p.totalRequirements = totalRequirements;
-        p.compliantRequirements = compliantCount;
-        p.compliancePercentage = Math.round(compliancePercentage * 10) / 10; // Round to 1 decimal
-
-        // Update category-wise compliance
-        p.technicalReqCompliance = technicalTotal > 0
-          ? Math.round((technicalCompliant / technicalTotal) * 1000) / 10
-          : 0;
-        p.datasheetCompliance = datasheetTotal > 0
-          ? Math.round((datasheetCompliant / datasheetTotal) * 1000) / 10
-          : 0;
-        p.typeTestCompliance = typeTestTotal > 0
-          ? Math.round((typeTestCompliant / typeTestTotal) * 1000) / 10
-          : 0;
-        p.routineTestCompliance = routineTestTotal > 0
-          ? Math.round((routineTestCompliant / routineTestTotal) * 1000) / 10
-          : 0;
-        p.siteReqCompliance = siteReqTotal > 0
-          ? Math.round((siteReqCompliant / siteReqTotal) * 1000) / 10
-          : 0;
-
-        p.updatedAt = Date.now();
-        p.version = (p.version || 0) + 1;
-        p.appSyncStatus = 'pending';
-      });
+      p.updatedAt = Date.now();
+      p.version = (p.version || 0) + 1;
+      p.appSyncStatus = 'pending';
     });
   }
 

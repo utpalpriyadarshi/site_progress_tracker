@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsRequirementModel from '../../models/DoorsRequirementModel';
@@ -52,6 +53,15 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<ComplianceStatus | 'all'>('all');
   const [selectedRequirement, setSelectedRequirement] = useState<DoorsRequirementModel | null>(null);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh when screen comes into focus (after returning from edit)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[DoorsDetail] Screen focused, refreshing data');
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Filter requirements based on search and filters
   const filteredRequirements = useMemo(() => {
@@ -87,7 +97,7 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
     });
 
     return filtered;
-  }, [requirements, searchQuery, selectedCategory, selectedStatus]);
+  }, [requirements, searchQuery, selectedCategory, selectedStatus, refreshKey]);
 
   // Calculate category-wise compliance statistics
   const complianceStats = useMemo(() => {
@@ -121,7 +131,7 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
         percentage: Math.round(percentage * 10) / 10,
       };
     });
-  }, [requirements]);
+  }, [requirements, refreshKey]);
 
   // Category display names
   const categoryNames: Record<RequirementCategory, string> = {
@@ -161,10 +171,22 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
       >
         {/* Header: Code and Status Badge */}
         <View style={styles.requirementHeader}>
-          <Text style={styles.requirementCode}>{item.requirementCode}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusBadgeText}>{item.complianceStatus}</Text>
+          <View style={styles.requirementHeaderLeft}>
+            <Text style={styles.requirementCode}>{item.requirementCode}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <Text style={styles.statusBadgeText}>{item.complianceStatus}</Text>
+            </View>
           </View>
+          {/* Edit Icon */}
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent card tap
+              navigation.navigate('DoorsRequirementEdit', { requirementId: item.id });
+            }}
+          >
+            <Text style={styles.editIcon}>✏️</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Requirement Text */}
@@ -757,10 +779,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  requirementHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
   requirementCode: {
     fontSize: 14,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  editButton: {
+    padding: 8,
+    marginRight: -8, // Offset padding for alignment
+  },
+  editIcon: {
+    fontSize: 18,
   },
   statusBadge: {
     paddingVertical: 4,
