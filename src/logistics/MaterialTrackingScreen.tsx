@@ -18,6 +18,7 @@ import MaterialProcurementService, {
   ConsumptionData,
 } from '../services/MaterialProcurementService';
 import BomRequirementCard from './components/BomRequirementCard';
+import DoorsLinkingModal from './components/DoorsLinkingModal';
 import mockSuppliers, { generateMockConsumptionHistory } from '../data/mockSuppliers';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -27,6 +28,9 @@ import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { BomDataService } from '../services/BomDataService';
 import { AppMode, toggleAppMode } from '../config/AppMode';
 import { clearAllBoms } from '../services/ClearBomsService';
+import DoorsEditService from '../services/DoorsEditService';
+import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
+import { useAuth } from '../auth/AuthContext';
 
 /**
  * MaterialTrackingScreen (Week 2 Enhanced)
@@ -66,6 +70,8 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     refresh: refreshContext,
   } = useLogistics();
 
+  const { user } = useAuth();
+
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -86,6 +92,10 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   // DOORS integration state
   const [doorsPackages, setDoorsPackages] = useState<DoorsPackageModel[]>([]);
+
+  // DOORS linking modal state
+  const [showLinkingModal, setShowLinkingModal] = useState(false);
+  const [selectedBomItem, setSelectedBomItem] = useState<{id: string; name: string} | null>(null);
 
   // Use BOM data hook
   const {
@@ -219,6 +229,20 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
   };
 
+  const handleUnlinkBomItems = async () => {
+    try {
+      setLoading(true);
+      console.log('[MaterialTracking] Unlinking first 5 BOM items...');
+      await UnlinkBomItemsService.unlinkFirstNItems(5);
+      await refreshBoms();
+      console.log('[MaterialTracking] BOM items unlinked, screen refreshed');
+    } catch (error) {
+      console.error('[MaterialTracking] Error unlinking BOM items:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Toggle BOM expansion
   const toggleBomExpansion = (bomId: string) => {
     setExpandedBoms(prev => {
@@ -230,6 +254,44 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       }
       return newSet;
     });
+  };
+
+  // Handle DOORS linking
+  const handleLinkPress = async (itemCode: string, bomItemName: string) => {
+    // Find the BOM item by itemCode
+    const bomItem = bomItems.find(item => item.itemCode === itemCode);
+
+    if (!bomItem) {
+      console.error('[MaterialTracking] BOM item not found for itemCode:', itemCode);
+      return;
+    }
+
+    setSelectedBomItem({ id: bomItem.id, name: bomItemName });
+    setShowLinkingModal(true);
+  };
+
+  const handleLinkConfirm = async (doorsPackageId: string, doorsPackageName: string) => {
+    if (!selectedBomItem || !user) return;
+
+    try {
+      await DoorsEditService.createManualLink(
+        selectedBomItem.id,
+        doorsPackageId,
+        user.userId
+      );
+
+      console.log('[MaterialTracking] Linked BOM item to DOORS package:', {
+        bomItemId: selectedBomItem.id,
+        doorsPackageId,
+        doorsPackageName,
+      });
+
+      // Refresh to show the link
+      await refreshBoms();
+    } catch (error) {
+      console.error('[MaterialTracking] Error linking BOM item:', error);
+      throw error;
+    }
   };
 
   // Calculate material requirements
@@ -406,6 +468,13 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
               onPress={handleClearBoms}
             >
               <Text style={styles.compactClearText}>🗑️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.compactClearButton}
+              onPress={handleUnlinkBomItems}
+            >
+              <Text style={styles.compactClearText}>🔓</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1011,6 +1080,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
                             navigation.navigate('DoorsDetail', { packageId: doorsData.packageId });
                           }
                         }}
+                        onLinkPress={() => handleLinkPress(requirement.itemCode, requirement.description)}
                       />
                     );
                   })}
@@ -1072,6 +1142,16 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
       {/* Supplier Quotes Modal */}
       {renderSupplierQuotesModal()}
+
+      {/* DOORS Linking Modal */}
+      <DoorsLinkingModal
+        visible={showLinkingModal}
+        bomItemName={selectedBomItem?.name || ''}
+        bomItemId={selectedBomItem?.id || ''}
+        onClose={() => setShowLinkingModal(false)}
+        onLink={handleLinkConfirm}
+        doorsPackages={doorsPackages}
+      />
     </View>
   );
 };

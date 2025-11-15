@@ -2,6 +2,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsRequirementModel from '../../models/DoorsRequirementModel';
+import BomItemModel from '../../models/BomItemModel';
 
 /**
  * DoorsEditService - Service for editing DOORS packages and requirements
@@ -46,6 +47,7 @@ export interface ValidationResult {
 class DoorsEditService {
   private doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
   private doorsRequirementsCollection = database.collections.get<DoorsRequirementModel>('doors_requirements');
+  private bomItemsCollection = database.collections.get<BomItemModel>('bom_items');
 
   /**
    * Validate package edit data
@@ -422,6 +424,126 @@ class DoorsEditService {
       modifiedBy: req.modifiedById,
       version: req.version,
     };
+  }
+
+  /**
+   * Create manual link between BOM item and DOORS package
+   *
+   * @param bomItemId - BOM item ID to link
+   * @param doorsPackageId - DOORS package ID to link to
+   * @param userId - User ID creating the link
+   * @throws Error if BOM item or DOORS package not found
+   */
+  async createManualLink(
+    bomItemId: string,
+    doorsPackageId: string,
+    userId: string
+  ): Promise<void> {
+    return await database.write(async () => {
+      const bomItem = await this.bomItemsCollection.find(bomItemId);
+      const doorsPackage = await this.doorsPackagesCollection.find(doorsPackageId);
+
+      await bomItem.update(item => {
+        item.doorsId = doorsPackage.doorsId; // Store the DOORS ID string, not the record ID
+        item.linkType = 'manual';
+        item.linkedById = userId;
+        item.linkedAt = Date.now();
+      });
+
+      console.log('[DoorsEditService] Manual link created:', {
+        bomItemId,
+        doorsId: doorsPackage.doorsId,
+        doorsPackageName: doorsPackage.equipmentName,
+      });
+    });
+  }
+
+  /**
+   * Remove link between BOM item and DOORS package
+   *
+   * @param bomItemId - BOM item ID to unlink
+   */
+  async removeLink(bomItemId: string): Promise<void> {
+    return await database.write(async () => {
+      const bomItem = await this.bomItemsCollection.find(bomItemId);
+
+      await bomItem.update(item => {
+        item.doorsId = undefined;
+        item.linkType = undefined;
+        item.linkedById = undefined;
+        item.linkedAt = undefined;
+      });
+
+      console.log('[DoorsEditService] Link removed:', bomItemId);
+    });
+  }
+
+  /**
+   * Override auto-link with manual link
+   * Used when user wants to manually link a BOM item that has an auto-link
+   *
+   * @param bomItemId - BOM item ID
+   * @param doorsPackageId - New DOORS package ID
+   * @param userId - User ID creating override
+   */
+  async overrideAutoLink(
+    bomItemId: string,
+    doorsPackageId: string,
+    userId: string
+  ): Promise<void> {
+    return await database.write(async () => {
+      const bomItem = await this.bomItemsCollection.find(bomItemId);
+      const doorsPackage = await this.doorsPackagesCollection.find(doorsPackageId);
+
+      await bomItem.update(item => {
+        item.doorsId = doorsPackage.doorsId; // Store the DOORS ID string, not the record ID
+        item.linkType = 'override'; // Special type for overridden auto-links
+        item.linkedById = userId;
+        item.linkedAt = Date.now();
+      });
+
+      console.log('[DoorsEditService] Auto-link overridden:', {
+        bomItemId,
+        doorsId: doorsPackage.doorsId,
+        doorsPackageName: doorsPackage.equipmentName,
+      });
+    });
+  }
+
+  /**
+   * Get linking statistics for reporting
+   */
+  async getLinkingStatistics(): Promise<{
+    totalBomItems: number;
+    linkedItems: number;
+    autoLinked: number;
+    manualLinked: number;
+    overridden: number;
+    unlinked: number;
+  }> {
+    const allBomItems = await this.bomItemsCollection.query().fetch();
+
+    const stats = {
+      totalBomItems: allBomItems.length,
+      linkedItems: 0,
+      autoLinked: 0,
+      manualLinked: 0,
+      overridden: 0,
+      unlinked: 0,
+    };
+
+    for (const item of allBomItems) {
+      if (item.doorsId) {
+        stats.linkedItems++;
+        if (item.linkType === 'auto') stats.autoLinked++;
+        else if (item.linkType === 'manual') stats.manualLinked++;
+        else if (item.linkType === 'override') stats.overridden++;
+      } else {
+        stats.unlinked++;
+      }
+    }
+
+    return stats;
   }
 }
 

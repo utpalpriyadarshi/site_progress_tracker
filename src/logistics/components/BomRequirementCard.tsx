@@ -23,6 +23,7 @@ interface BomRequirementCardProps {
   doorsId?: string;
   doorsCompliance?: number;
   onDoorsPress?: () => void;
+  onLinkPress?: () => void; // Callback when "Link to DOORS" button is pressed
 }
 
 const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
@@ -32,6 +33,7 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
   doorsId,
   doorsCompliance,
   onDoorsPress,
+  onLinkPress,
 }) => {
   const shortage = Math.max(0, requirement.requiredQuantity - availableQuantity);
   const surplus = Math.max(0, availableQuantity - requirement.requiredQuantity);
@@ -139,7 +141,7 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
       )}
 
       {/* DOORS Integration */}
-      {doorsId && (
+      {doorsId ? (
         <TouchableOpacity
           style={styles.doorsSection}
           onPress={onDoorsPress}
@@ -168,7 +170,17 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
           )}
           <Text style={styles.doorsChevron}>›</Text>
         </TouchableOpacity>
-      )}
+      ) : onLinkPress ? (
+        <TouchableOpacity
+          style={styles.linkButton}
+          onPress={onLinkPress}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.linkIcon}>🔗</Text>
+          <Text style={styles.linkButtonText}>Link to DOORS</Text>
+          <Text style={styles.linkChevron}>›</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -392,6 +404,37 @@ const styles = StyleSheet.create({
   doorsChevron: {
     fontSize: 24,
     color: '#999',
+    fontWeight: '300',
+  },
+  // Link to DOORS button styles
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#FFF3E0',
+    marginHorizontal: -16,
+    marginBottom: -16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  linkIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  linkButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6F00',
+  },
+  linkChevron: {
+    fontSize: 24,
+    color: '#FF6F00',
     fontWeight: '300',
   },
 });
