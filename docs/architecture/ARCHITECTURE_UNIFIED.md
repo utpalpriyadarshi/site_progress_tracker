@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v2.2 (Activity 2: Offline-First Sync System Complete)
-**Database Schema Version**: 20 (Activity 2 - Sync Support)
+**Current Version**: v2.3 (Activity 4: BOM Management System Complete)
+**Database Schema Version**: 25 (Activity 4 - BOM Management)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: October 30, 2025
+**Last Updated**: November 7, 2025
 
 ---
 
@@ -47,6 +47,8 @@ site_progress_tracker/
 │   ├── CategoryModel.ts          # Item/material category model
 │   ├── InterfacePointModel.ts    # Interface coordination points (v1.4 - NEW)
 │   ├── TemplateModuleModel.ts    # Reusable work templates (v1.4 - NEW)
+│   ├── BomModel.ts               # Bill of Materials model (v2.3 - Activity 4)
+│   ├── BomItemModel.ts           # BOM line items model (v2.3 - Activity 4)
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
 │   ├── ItemModel.ts              # Construction work items model
@@ -62,6 +64,7 @@ site_progress_tracker/
 │   ├── UserModel.ts              # User accounts model (v1.2)
 │   └── database.ts               # Database initialization
 ├── services/                     # Application services
+│   ├── BomImportExportService.ts # BOM Excel export service (v2.3 - Activity 4)
 │   ├── planning/                 # Planning services (v1.3 - NEW)
 │   │   ├── PlanningService.ts    # Critical path, metrics, forecasting
 │   │   └── WBSCodeGenerator.ts   # WBS code generation (v1.4 - NEW)
@@ -87,7 +90,8 @@ site_progress_tracker/
 │   │   ├── EquipmentManagementScreen.tsx
 │   │   ├── DeliverySchedulingScreen.tsx
 │   │   └── InventoryManagementScreen.tsx
-│   ├── manager/                  # Manager-specific screens (4 screens)
+│   ├── manager/                  # Manager-specific screens (5 screens)
+│   │   ├── BomManagementScreen.tsx      # BOM Management (v2.3 - Activity 4, 1,450+ lines)
 │   │   ├── ProjectOverviewScreen.tsx
 │   │   ├── TeamManagementScreen.tsx
 │   │   ├── FinancialReportsScreen.tsx
@@ -491,7 +495,12 @@ MainNavigator (Stack)
 - **v17**: Added timestamps to sessions and password_history tables (Activity 1, Week 3, Day 15)
 - **v18**: Added `sync_status` field to 5 core models for sync tracking (Activity 2, Week 6, Day 1)
 - **v19**: Added `sync_queue` table for local change tracking (Activity 2, Week 6, Day 3)
-- **v20**: Current version - Added `_version` field to 10 syncable models for conflict resolution (Activity 2, Week 7, Day 1)
+- **v20**: Added `_version` field to 10 syncable models for conflict resolution (Activity 2, Week 7, Day 1)
+- **v21**: Added `boms` table for Bill of Materials management (Activity 4, Phase 1, Day 1)
+- **v22**: Added `bom_items` table for BOM line items (Activity 4, Phase 1, Day 1)
+- **v23**: Added `quantity` and `unit` fields to boms table (Activity 4, Phase 1, Day 2)
+- **v24**: Added `site_category` field to boms table (Activity 4, Phase 1, Day 3)
+- **v25**: Current version - Added `baseline_bom_id` to boms table for execution tracking (Activity 4, Phase 2)
 
 ### Core Collections
 
@@ -589,6 +598,34 @@ MainNavigator (Stack)
 - Fields: name, description, permissions (JSON)
 - **Relationships**: has_many users
 - **System Roles**: Admin, Supervisor, Manager, Planner, Logistics
+
+#### boms (v2.3 - Activity 4, November 2025)
+- Bill of Materials for Pre-Contract (Estimating) and Post-Contract (Execution)
+- **Core Fields**:
+  - project_id, name, type (estimating/execution), status, version
+  - site_category (ROCS, FOCS, RSS, AMS, TSS, ASS, Viaduct) - indexed (v24)
+  - baseline_bom_id (links execution BOMs to original estimating BOMs) (v25)
+  - quantity, unit (v23)
+- **Cost Fields**: total_estimated_cost, total_actual_cost, contingency, profit_margin
+- **Tender Fields**: tender_date, client, contract_value
+- **Status Workflow**:
+  - Estimating: draft → submitted → won/lost
+  - Execution: baseline → active → closed
+- **Relationships**:
+  - belongs_to project
+  - has_many bom_items
+  - belongs_to baseline_bom (self-referential for execution BOMs)
+- **Purpose**: Manage project costs from estimation through execution with variance tracking
+
+#### bom_items (v2.3 - Activity 4)
+- Individual line items within BOMs
+- **Identification**: item_code (auto-generated: MAT-001, LAB-002, EQP-003, SUB-004), description
+- **Categories**: material, labor, equipment, subcontractor
+- **Quantities**: quantity, unit, unit_cost, total_cost (auto-calculated: quantity × unit_cost)
+- **Organization**: phase, wbs_code (optional)
+- **Execution Tracking**: actual_quantity, actual_cost (for variance analysis)
+- **Relationships**: belongs_to bom
+- **Purpose**: Detailed cost breakdown for BOMs with automatic cost calculations
 
 #### interface_points (v1.4 - NEW)
 - Interface coordination points between contractors/phases

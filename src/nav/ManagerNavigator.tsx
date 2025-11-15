@@ -7,12 +7,16 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import ProjectOverviewScreen from '../manager/ProjectOverviewScreen';
 import TeamManagementScreen from '../manager/TeamManagementScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
-import ResourceAllocationScreen from '../manager/ResourceAllocationScreen';
+import ResourceRequestsScreen from '../manager/ResourceRequestsScreen';
+import BomManagementScreen from '../manager/BomManagementScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
+import { ManagerProvider } from '../manager/context/ManagerContext';
+import { BomProvider } from '../manager/context/BomContext';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
@@ -23,7 +27,8 @@ export type ManagerTabParamList = {
   ProjectOverview: undefined;
   TeamManagement: undefined;
   FinancialReports: undefined;
-  ResourceAllocation: undefined;
+  ResourceRequests: undefined;
+  BomManagement: undefined;
 };
 
 type ManagerNavigatorProps = {
@@ -47,6 +52,7 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
 
   const handleRoleChange = (newRole: UserRole) => {
     const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      admin: 'Admin',
       supervisor: 'Supervisor',
       manager: 'Manager',
       planning: 'Planning',
@@ -62,23 +68,27 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
   };
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconSymbol = '';
+    <ManagerProvider>
+      <BomProvider>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconSymbol = '';
 
-          if (route.name === 'ProjectOverview') {
-            iconSymbol = '📊';
-          } else if (route.name === 'TeamManagement') {
-            iconSymbol = '👥';
-          } else if (route.name === 'FinancialReports') {
-            iconSymbol = '💰';
-          } else if (route.name === 'ResourceAllocation') {
-            iconSymbol = '👷';
-          }
+            if (route.name === 'ProjectOverview') {
+              iconSymbol = '📊';
+            } else if (route.name === 'TeamManagement') {
+              iconSymbol = '👥';
+            } else if (route.name === 'FinancialReports') {
+              iconSymbol = '💰';
+            } else if (route.name === 'ResourceRequests') {
+              iconSymbol = '👷';
+            } else if (route.name === 'BomManagement') {
+              iconSymbol = '📋';
+            }
 
-          return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
-        },
+            return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
+          },
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
         headerRight: () => (
@@ -118,16 +128,27 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
           headerTitle: 'Financial Reports',
         }} 
       />
-      <Tab.Screen 
-        name="ResourceAllocation" 
-        component={ResourceAllocationScreen} 
-        options={{ 
-          title: 'Resources',
+      <Tab.Screen
+        name="ResourceRequests"
+        component={ResourceRequestsScreen}
+        options={{
+          title: 'Requests',
           headerShown: true,
-          headerTitle: 'Resource Allocation',
-        }} 
+          headerTitle: 'Resource Requests',
+        }}
       />
-    </Tab.Navigator>
+      <Tab.Screen
+        name="BomManagement"
+        component={BomManagementScreen}
+        options={{
+          title: 'BOM',
+          headerShown: true,
+          headerTitle: 'BOM Management',
+        }}
+      />
+        </Tab.Navigator>
+      </BomProvider>
+    </ManagerProvider>
   );
 };
 

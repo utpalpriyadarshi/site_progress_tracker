@@ -1,0 +1,870 @@
+/**
+ * Mock BOM Data - Metro Railway Construction Project
+ *
+ * Provides sample Bills of Materials (BOMs) for Metro Railway projects
+ * Based on CMRL (Chennai Metro Rail Limited) project requirements
+ *
+ * Categories:
+ * 1. Civil Materials - Cement, Steel, Sand, Aggregate, Concrete
+ * 2. OCS (Overhead Catenary System) - Contact Wire, Catenary Wire, Masts, Insulators
+ * 3. Electrical (Traction Power) - Transformers, Switchgears, Cables
+ * 4. Signaling & Telecom - ATP/ATO, Interlocking, Axle Counters, CCTV
+ * 5. MEP (Station Facilities) - HVAC, Lifts, Escalators, Fire Systems
+ *
+ * Note: Equipment (cranes, mixers, etc.) are RENTED/ALLOCATED, not procured
+ */
+
+export interface MockBOM {
+  id: string;
+  projectId: string;
+  name: string;
+  type: 'execution' | 'estimating';
+  status: 'draft' | 'submitted' | 'baseline' | 'active' | 'closed';
+  version: string;
+  quantity: number;
+  unit: string;
+  description: string;
+  totalEstimatedCost: number;
+  totalActualCost: number;
+  contingency: number;
+  profitMargin: number;
+  createdBy: string;
+  createdDate: number;
+  updatedDate: number;
+  syncStatus: string;
+  _version: number;
+  items: MockBOMItem[];
+}
+
+export interface MockBOMItem {
+  id: string;
+  bomId: string;
+  itemCode: string;
+  description: string;
+  category: string; // material | labor | equipment
+  subCategory: string; // Civil, OCS, Electrical, Signaling, MEP
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  wbsCode?: string;
+  phase?: string;
+  notes?: string;
+  createdDate: number;
+  updatedDate: number;
+  syncStatus: string;
+  _version: number;
+}
+
+/**
+ * BOM 1: Station A - Civil Works
+ * Focus: Foundation and structural work for elevated metro station
+ */
+export const mockBOM_StationCivil: MockBOM = {
+  id: 'bom_station_a_civil',
+  projectId: 'project_1',
+  name: 'Station A - Civil Works (Foundation & Structure)',
+  type: 'execution',
+  status: 'active',
+  version: 'v1.0',
+  quantity: 1,
+  unit: 'Station',
+  description: 'Civil construction materials for Station A - elevated station with 2 platforms, 200m length',
+  totalEstimatedCost: 45000000, // ₹4.5 Crores
+  totalActualCost: 0,
+  contingency: 5,
+  profitMargin: 10,
+  createdBy: 'user_pm_001',
+  createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
+  updatedDate: Date.now() - 2 * 24 * 60 * 60 * 1000, // 2 days ago
+  syncStatus: 'synced',
+  _version: 1,
+  items: [
+    {
+      id: 'bom_item_civil_001',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-CEM-001',
+      description: 'Cement OPC 53 Grade (UltraTech/ACC)',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 500,
+      unit: 'MT',
+      unitCost: 6500,
+      totalCost: 3250000,
+      wbsCode: 'STN-A-CIV-01',
+      phase: 'Foundation',
+      notes: 'For foundation and pier construction',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_002',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-STL-001',
+      description: 'TMT Steel Bars Fe 500D - 12mm',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 80,
+      unit: 'MT',
+      unitCost: 55000,
+      totalCost: 4400000,
+      wbsCode: 'STN-A-CIV-01',
+      phase: 'Foundation',
+      notes: 'For reinforcement in foundation and piers',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_003',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-STL-002',
+      description: 'TMT Steel Bars Fe 500D - 16mm',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 120,
+      unit: 'MT',
+      unitCost: 55000,
+      totalCost: 6600000,
+      wbsCode: 'STN-A-CIV-02',
+      phase: 'Structure',
+      notes: 'For station deck and platform slab',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_004',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-AGG-001',
+      description: 'Coarse Aggregate 20mm',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 800,
+      unit: 'MT',
+      unitCost: 1200,
+      totalCost: 960000,
+      wbsCode: 'STN-A-CIV-01',
+      phase: 'Foundation',
+      notes: 'For M40 grade concrete',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_005',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-SND-001',
+      description: 'River Sand (M-Sand)',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 1200,
+      unit: 'MT',
+      unitCost: 1500,
+      totalCost: 1800000,
+      wbsCode: 'STN-A-CIV-01',
+      phase: 'Foundation',
+      notes: 'For concrete and masonry work',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_006',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-RMC-001',
+      description: 'Ready Mix Concrete M40 Grade',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 2500,
+      unit: 'm³',
+      unitCost: 6500,
+      totalCost: 16250000,
+      wbsCode: 'STN-A-CIV-02',
+      phase: 'Structure',
+      notes: 'For station deck and platform construction',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_civil_007',
+      bomId: 'bom_station_a_civil',
+      itemCode: 'CIV-BLK-001',
+      description: 'AAC Blocks 600x200x100mm',
+      category: 'material',
+      subCategory: 'Civil',
+      quantity: 15000,
+      unit: 'Nos',
+      unitCost: 65,
+      totalCost: 975000,
+      wbsCode: 'STN-A-CIV-03',
+      phase: 'Finishing',
+      notes: 'For station building walls',
+      createdDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+  ],
+};
+
+/**
+ * BOM 2: OCS Installation - Section 1 (5km elevated viaduct)
+ * Focus: Overhead Catenary System for 25kV AC traction
+ */
+export const mockBOM_OCS_Section1: MockBOM = {
+  id: 'bom_ocs_section_1',
+  projectId: 'project_1',
+  name: 'OCS - Section 1 (5km Elevated Viaduct)',
+  type: 'execution',
+  status: 'active',
+  version: 'v1.0',
+  quantity: 5,
+  unit: 'km',
+  description: 'Overhead Catenary System materials for 5km elevated section with 25kV AC traction',
+  totalEstimatedCost: 85000000, // ₹8.5 Crores
+  totalActualCost: 0,
+  contingency: 5,
+  profitMargin: 10,
+  createdBy: 'user_pm_001',
+  createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000, // 10 days ago
+  updatedDate: Date.now() - 3 * 24 * 60 * 60 * 1000, // 3 days ago
+  syncStatus: 'synced',
+  _version: 1,
+  items: [
+    {
+      id: 'bom_item_ocs_001',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-CW-107',
+      description: 'Contact Wire - Copper Alloy 107mm² (Grooved)',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 10,
+      unit: 'km',
+      unitCost: 450000,
+      totalCost: 4500000,
+      wbsCode: 'OCS-SEC1-01',
+      phase: 'OCS Installation',
+      notes: 'Double track - 5km × 2 = 10km. High tensile copper alloy for current collection',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_002',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-CAT-95',
+      description: 'Catenary Wire - Copper Alloy 95mm²',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 10,
+      unit: 'km',
+      unitCost: 380000,
+      totalCost: 3800000,
+      wbsCode: 'OCS-SEC1-01',
+      phase: 'OCS Installation',
+      notes: 'Messenger wire for supporting contact wire',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_003',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-MAST-001',
+      description: 'Steel Mast for OCS - Height 8m (Galvanized)',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 250,
+      unit: 'Nos',
+      unitCost: 85000,
+      totalCost: 21250000,
+      wbsCode: 'OCS-SEC1-02',
+      phase: 'OCS Installation',
+      notes: 'Spacing ~40m for double track elevated section',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_004',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-CANT-001',
+      description: 'Cantilever Assembly (Bracket Arm) - 4.5m',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 250,
+      unit: 'Nos',
+      unitCost: 45000,
+      totalCost: 11250000,
+      wbsCode: 'OCS-SEC1-02',
+      phase: 'OCS Installation',
+      notes: 'For supporting catenary system from masts',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_005',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-INS-001',
+      description: 'Insulator - Porcelain 25kV (String Type)',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 500,
+      unit: 'Nos',
+      unitCost: 3500,
+      totalCost: 1750000,
+      wbsCode: 'OCS-SEC1-03',
+      phase: 'OCS Installation',
+      notes: '2 insulators per mast location',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_006',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-DROP-001',
+      description: 'Dropper - Copper Wire 25mm² (Various Lengths)',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 1500,
+      unit: 'Nos',
+      unitCost: 850,
+      totalCost: 1275000,
+      wbsCode: 'OCS-SEC1-03',
+      phase: 'OCS Installation',
+      notes: 'Connects catenary wire to contact wire, spacing ~5m',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_ocs_007',
+      bomId: 'bom_ocs_section_1',
+      itemCode: 'OCS-REG-001',
+      description: 'Registration Assembly (Pull-Off)',
+      category: 'material',
+      subCategory: 'OCS',
+      quantity: 100,
+      unit: 'Sets',
+      unitCost: 12500,
+      totalCost: 1250000,
+      wbsCode: 'OCS-SEC1-03',
+      phase: 'OCS Installation',
+      notes: 'For controlling lateral position of contact wire',
+      createdDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+  ],
+};
+
+/**
+ * BOM 3: Traction Substation Equipment
+ * Focus: 33kV/25kV transformer and switchgear for powering OCS
+ */
+export const mockBOM_Traction_Substation: MockBOM = {
+  id: 'bom_traction_ss_001',
+  projectId: 'project_1',
+  name: 'Traction Substation - TSS-01 Equipment',
+  type: 'execution',
+  status: 'active',
+  version: 'v1.0',
+  quantity: 1,
+  unit: 'Substation',
+  description: 'Traction power equipment for TSS-01 substation (33kV input / 25kV output)',
+  totalEstimatedCost: 125000000, // ₹12.5 Crores
+  totalActualCost: 0,
+  contingency: 5,
+  profitMargin: 10,
+  createdBy: 'user_pm_001',
+  createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
+  updatedDate: Date.now() - 5 * 24 * 60 * 60 * 1000, // 5 days ago
+  syncStatus: 'synced',
+  _version: 1,
+  items: [
+    {
+      id: 'bom_item_elec_001',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-TRF-001',
+      description: 'Traction Transformer 33kV/25kV - 10MVA',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 2,
+      unit: 'Nos',
+      unitCost: 35000000,
+      totalCost: 70000000,
+      wbsCode: 'TSS-01-TRF',
+      phase: 'Equipment Installation',
+      notes: 'Main traction transformer - N+1 redundancy',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_002',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-SWG-001',
+      description: '33kV Gas Insulated Switchgear (GIS)',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 1,
+      unit: 'Panel',
+      unitCost: 18000000,
+      totalCost: 18000000,
+      wbsCode: 'TSS-01-SWG',
+      phase: 'Equipment Installation',
+      notes: 'Incoming 33kV switchgear with circuit breaker',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_003',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-SWG-002',
+      description: '25kV Vacuum Circuit Breaker (VCB) Panel',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 4,
+      unit: 'Nos',
+      unitCost: 2500000,
+      totalCost: 10000000,
+      wbsCode: 'TSS-01-SWG',
+      phase: 'Equipment Installation',
+      notes: 'Outgoing 25kV feeders to OCS (4 feeders)',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_004',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-CBL-001',
+      description: 'Power Cable 33kV XLPE - 3C×300 sqmm',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 500,
+      unit: 'm',
+      unitCost: 8500,
+      totalCost: 4250000,
+      wbsCode: 'TSS-01-CBL',
+      phase: 'Cabling',
+      notes: 'Incoming 33kV power cable from grid',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_005',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-CBL-002',
+      description: 'Power Cable 25kV XLPE - 1C×240 sqmm',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 2000,
+      unit: 'm',
+      unitCost: 4500,
+      totalCost: 9000000,
+      wbsCode: 'TSS-01-CBL',
+      phase: 'Cabling',
+      notes: 'Outgoing 25kV cables to OCS connection points',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_006',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-CTL-001',
+      description: 'Control Cable - Multicore 2.5 sqmm',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 5000,
+      unit: 'm',
+      unitCost: 250,
+      totalCost: 1250000,
+      wbsCode: 'TSS-01-CTL',
+      phase: 'Cabling',
+      notes: 'For control and monitoring circuits',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_elec_007',
+      bomId: 'bom_traction_ss_001',
+      itemCode: 'ELEC-TRY-001',
+      description: 'Cable Tray - Galvanized Steel 300mm',
+      category: 'material',
+      subCategory: 'Electrical',
+      quantity: 800,
+      unit: 'm',
+      unitCost: 1800,
+      totalCost: 1440000,
+      wbsCode: 'TSS-01-CBL',
+      phase: 'Cabling',
+      notes: 'For power and control cable routing',
+      createdDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+  ],
+};
+
+/**
+ * BOM 4: Signaling & Telecom - Station A
+ * Focus: Communication-Based Train Control (CBTC) and station systems
+ */
+export const mockBOM_Signaling_StationA: MockBOM = {
+  id: 'bom_signaling_stn_a',
+  projectId: 'project_1',
+  name: 'Signaling & Telecom - Station A',
+  type: 'execution',
+  status: 'baseline',
+  version: 'v1.0',
+  quantity: 1,
+  unit: 'Station',
+  description: 'Signaling and telecommunication equipment for Station A',
+  totalEstimatedCost: 35000000, // ₹3.5 Crores
+  totalActualCost: 0,
+  contingency: 5,
+  profitMargin: 10,
+  createdBy: 'user_pm_002',
+  createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000, // 20 days ago
+  updatedDate: Date.now() - 10 * 24 * 60 * 60 * 1000, // 10 days ago
+  syncStatus: 'synced',
+  _version: 1,
+  items: [
+    {
+      id: 'bom_item_sig_001',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'SIG-AXL-001',
+      description: 'Axle Counter System - Trackside Unit',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 4,
+      unit: 'Sets',
+      unitCost: 850000,
+      totalCost: 3400000,
+      wbsCode: 'SIG-STN-A-01',
+      phase: 'Signaling Installation',
+      notes: '2 sets per track (entry/exit) for train detection',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_sig_002',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'SIG-CBTC-001',
+      description: 'CBTC Wayside Equipment (Zone Controller)',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 2,
+      unit: 'Sets',
+      unitCost: 5500000,
+      totalCost: 11000000,
+      wbsCode: 'SIG-STN-A-02',
+      phase: 'Signaling Installation',
+      notes: 'Communication-Based Train Control system',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_sig_003',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'TEL-FO-001',
+      description: 'Fiber Optic Cable - 12 Core Single Mode',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 3000,
+      unit: 'm',
+      unitCost: 180,
+      totalCost: 540000,
+      wbsCode: 'TEL-STN-A-01',
+      phase: 'Telecom Installation',
+      notes: 'For CBTC communication and data network',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_sig_004',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'TEL-CCTV-001',
+      description: 'IP CCTV Camera - 4MP PTZ (Outdoor)',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 20,
+      unit: 'Nos',
+      unitCost: 85000,
+      totalCost: 1700000,
+      wbsCode: 'TEL-STN-A-02',
+      phase: 'Telecom Installation',
+      notes: 'For platform and station area surveillance',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_sig_005',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'TEL-PA-001',
+      description: 'Public Address System - Complete Set',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 1,
+      unit: 'System',
+      unitCost: 2500000,
+      totalCost: 2500000,
+      wbsCode: 'TEL-STN-A-03',
+      phase: 'Telecom Installation',
+      notes: 'Includes amplifiers, speakers, microphones, control panel',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_sig_006',
+      bomId: 'bom_signaling_stn_a',
+      itemCode: 'TEL-NET-001',
+      description: 'Network Switch - 48 Port Managed (Industrial)',
+      category: 'material',
+      subCategory: 'Signaling',
+      quantity: 4,
+      unit: 'Nos',
+      unitCost: 185000,
+      totalCost: 740000,
+      wbsCode: 'TEL-STN-A-04',
+      phase: 'Telecom Installation',
+      notes: 'For station LAN and signaling network',
+      createdDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 20 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+  ],
+};
+
+/**
+ * BOM 5: MEP (Mechanical, Electrical, Plumbing) - Station A
+ * Focus: HVAC, lifts, escalators, fire systems for passenger comfort and safety
+ */
+export const mockBOM_MEP_StationA: MockBOM = {
+  id: 'bom_mep_stn_a',
+  projectId: 'project_1',
+  name: 'MEP - Station A (HVAC, Lifts, Fire Systems)',
+  type: 'execution',
+  status: 'baseline',
+  version: 'v1.0',
+  quantity: 1,
+  unit: 'Station',
+  description: 'Mechanical, Electrical, and Plumbing systems for Station A passenger facilities',
+  totalEstimatedCost: 65000000, // ₹6.5 Crores
+  totalActualCost: 0,
+  contingency: 5,
+  profitMargin: 10,
+  createdBy: 'user_pm_002',
+  createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000, // 25 days ago
+  updatedDate: Date.now() - 12 * 24 * 60 * 60 * 1000, // 12 days ago
+  syncStatus: 'synced',
+  _version: 1,
+  items: [
+    {
+      id: 'bom_item_mep_001',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-HVAC-001',
+      description: 'Water Cooled Chiller - 500 TR',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 2,
+      unit: 'Nos',
+      unitCost: 12000000,
+      totalCost: 24000000,
+      wbsCode: 'MEP-STN-A-HVAC',
+      phase: 'MEP Installation',
+      notes: 'For station air conditioning (N+1 redundancy)',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_002',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-HVAC-002',
+      description: 'Air Handling Unit (AHU) - 25000 CFM',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 6,
+      unit: 'Nos',
+      unitCost: 850000,
+      totalCost: 5100000,
+      wbsCode: 'MEP-STN-A-HVAC',
+      phase: 'MEP Installation',
+      notes: 'For platform and concourse areas',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_003',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-LIFT-001',
+      description: 'Passenger Lift - 13 Person, 1.0 m/s',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 4,
+      unit: 'Nos',
+      unitCost: 3500000,
+      totalCost: 14000000,
+      wbsCode: 'MEP-STN-A-VT',
+      phase: 'MEP Installation',
+      notes: 'For vertical transportation (street to platform)',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_004',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-ESC-001',
+      description: 'Escalator - 1000mm Width, 6.5m Rise',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 6,
+      unit: 'Nos',
+      unitCost: 2800000,
+      totalCost: 16800000,
+      wbsCode: 'MEP-STN-A-VT',
+      phase: 'MEP Installation',
+      notes: '3 up + 3 down for passenger circulation',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_005',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-FIRE-001',
+      description: 'Fire Pump Set - Electric + Diesel (500 GPM)',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 1,
+      unit: 'Set',
+      unitCost: 1800000,
+      totalCost: 1800000,
+      wbsCode: 'MEP-STN-A-FIRE',
+      phase: 'MEP Installation',
+      notes: 'For fire fighting system',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_006',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-FIRE-002',
+      description: 'Fire Alarm Control Panel - Addressable',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 1,
+      unit: 'System',
+      unitCost: 850000,
+      totalCost: 850000,
+      wbsCode: 'MEP-STN-A-FIRE',
+      phase: 'MEP Installation',
+      notes: 'Complete with smoke detectors, manual call points',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+    {
+      id: 'bom_item_mep_007',
+      bomId: 'bom_mep_stn_a',
+      itemCode: 'MEP-PSD-001',
+      description: 'Platform Screen Doors - Full Height',
+      category: 'material',
+      subCategory: 'MEP',
+      quantity: 40,
+      unit: 'Panels',
+      unitCost: 450000,
+      totalCost: 18000000,
+      wbsCode: 'MEP-STN-A-PSD',
+      phase: 'MEP Installation',
+      notes: '2 platforms × 200m length (5m per panel)',
+      createdDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      updatedDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+      syncStatus: 'synced',
+      _version: 1,
+    },
+  ],
+};
+
+/**
+ * All mock BOMs consolidated
+ */
+export const mockBOMs: MockBOM[] = [
+  mockBOM_StationCivil,
+  mockBOM_OCS_Section1,
+  mockBOM_Traction_Substation,
+  mockBOM_Signaling_StationA,
+  mockBOM_MEP_StationA,
+];
+
+/**
+ * Helper function to get all BOM items across all BOMs
+ */
+export const getAllMockBOMItems = (): MockBOMItem[] => {
+  return mockBOMs.flatMap(bom => bom.items);
+};
+
+/**
+ * Helper function to get BOMs by status
+ */
+export const getMockBOMsByStatus = (status: string): MockBOM[] => {
+  return mockBOMs.filter(bom => bom.status === status);
+};
+
+/**
+ * Helper function to get BOM items by category
+ */
+export const getMockBOMItemsByCategory = (category: string): MockBOMItem[] => {
+  return getAllMockBOMItems().filter(item => item.subCategory === category);
+};

@@ -129,6 +129,13 @@ const createMockModel = (tableName, data, storage) => {
     return Promise.resolve();
   });
 
+  // Add update method that modifies the instance
+  mockInstance.update = jest.fn((callback) => {
+    // Call the callback to update the data
+    callback(mockInstance);
+    return Promise.resolve(mockInstance);
+  });
+
   // Add model-specific methods based on table name
   if (tableName === 'template_modules') {
     mockInstance.getItems = function() {
