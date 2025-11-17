@@ -15,6 +15,9 @@ import DoorsRegisterScreen from '../logistics/DoorsRegisterScreen';
 import DoorsDetailScreen from '../logistics/DoorsDetailScreen';
 import DoorsPackageEditScreen from '../logistics/DoorsPackageEditScreen';
 import DoorsRequirementEditScreen from '../logistics/DoorsRequirementEditScreen';
+import RfqListScreen from '../logistics/RfqListScreen';
+import RfqCreateScreen from '../logistics/RfqCreateScreen';
+import RfqDetailScreen from '../logistics/RfqDetailScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole} from '../auth/AuthContext';
 
@@ -33,6 +36,7 @@ export type LogisticsTabParamList = {
   DeliveryScheduling: undefined;
   InventoryManagementScreen: undefined;
   DoorsRegister: undefined;
+  RfqList: undefined;
 };
 
 export type LogisticsStackParamList = {
@@ -40,6 +44,8 @@ export type LogisticsStackParamList = {
   DoorsDetail: { packageId: string };
   DoorsPackageEdit: { packageId: string };
   DoorsRequirementEdit: { requirementId: string };
+  RfqCreate: { doorsPackageId?: string };
+  RfqDetail: { rfqId: string };
 };
 
 type LogisticsNavigatorProps = {
@@ -97,6 +103,8 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
               iconSymbol = '📦';
             } else if (route.name === 'DoorsRegister') {
               iconSymbol = '📋';
+            } else if (route.name === 'RfqList') {
+              iconSymbol = '📄';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -167,6 +175,15 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
             headerTitle: 'DOORS Register',
           }}
         />
+        <Tab.Screen
+          name="RfqList"
+          component={RfqListScreen}
+          options={{
+            title: 'RFQs',
+            headerShown: false,
+            headerTitle: 'RFQ Management',
+          }}
+        />
       </Tab.Navigator>
   );
 };
@@ -192,6 +209,16 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
         <Stack.Screen
           name="DoorsRequirementEdit"
           component={DoorsRequirementEditScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RfqCreate"
+          component={RfqCreateScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RfqDetail"
+          component={RfqDetailScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

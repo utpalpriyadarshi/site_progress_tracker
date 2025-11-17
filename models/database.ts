@@ -27,6 +27,9 @@ import BomModel from './BomModel';
 import BomItemModel from './BomItemModel';
 import DoorsPackageModel from './DoorsPackageModel';
 import DoorsRequirementModel from './DoorsRequirementModel';
+import VendorModel from './VendorModel';
+import RfqModel from './RfqModel';
+import RfqVendorQuoteModel from './RfqVendorQuoteModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -61,5 +64,8 @@ export const database = new Database({
     BomItemModel,
     DoorsPackageModel,
     DoorsRequirementModel,
+    VendorModel,
+    RfqModel,
+    RfqVendorQuoteModel,
   ],
 });

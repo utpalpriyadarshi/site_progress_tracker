@@ -453,5 +453,96 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v28: Add RFQ Management System (Activity 4: Phase 3 - Days 4-7)
+    {
+      toVersion: 28,
+      steps: [
+        // Create vendors table for vendor management
+        createTable({
+          name: 'vendors',
+          columns: [
+            { name: 'vendor_code', type: 'string', isIndexed: true }, // e.g., VEN-001
+            { name: 'vendor_name', type: 'string' },
+            { name: 'category', type: 'string', isIndexed: true }, // TSS, OHE, SCADA, Cables, etc.
+            { name: 'contact_person', type: 'string', isOptional: true },
+            { name: 'email', type: 'string', isOptional: true },
+            { name: 'phone', type: 'string', isOptional: true },
+            { name: 'address', type: 'string', isOptional: true },
+            { name: 'rating', type: 'number', isOptional: true }, // 1-5 rating
+            { name: 'is_approved', type: 'boolean' }, // approved vendor status
+            { name: 'performance_score', type: 'number', isOptional: true }, // historical performance 0-100
+            { name: 'last_delivery_date', type: 'number', isOptional: true },
+            { name: 'total_orders', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+        // Create rfqs table for RFQ management
+        createTable({
+          name: 'rfqs',
+          columns: [
+            { name: 'rfq_number', type: 'string', isIndexed: true }, // e.g., RFQ-2025-001
+            { name: 'doors_id', type: 'string', isIndexed: true }, // linked DOORS package
+            { name: 'doors_package_id', type: 'string', isIndexed: true }, // FK to doors_packages
+            { name: 'project_id', type: 'string', isIndexed: true },
+            { name: 'title', type: 'string' }, // RFQ title
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'status', type: 'string', isIndexed: true }, // draft, issued, quotes_received, evaluated, awarded, cancelled
+            { name: 'issue_date', type: 'number', isOptional: true },
+            { name: 'closing_date', type: 'number', isOptional: true },
+            { name: 'evaluation_date', type: 'number', isOptional: true },
+            { name: 'award_date', type: 'number', isOptional: true },
+            { name: 'expected_delivery_days', type: 'number', isOptional: true },
+            { name: 'technical_specifications', type: 'string', isOptional: true }, // JSON string
+            { name: 'commercial_terms', type: 'string', isOptional: true }, // JSON string
+            { name: 'total_vendors_invited', type: 'number' },
+            { name: 'total_quotes_received', type: 'number' },
+            { name: 'winning_vendor_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'winning_quote_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'awarded_value', type: 'number', isOptional: true },
+            { name: 'created_by_id', type: 'string', isIndexed: true },
+            { name: 'evaluated_by_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+        // Create rfq_vendor_quotes table for vendor responses
+        createTable({
+          name: 'rfq_vendor_quotes',
+          columns: [
+            { name: 'rfq_id', type: 'string', isIndexed: true }, // FK to rfqs
+            { name: 'vendor_id', type: 'string', isIndexed: true }, // FK to vendors
+            { name: 'quote_reference', type: 'string', isOptional: true }, // vendor's quote ref
+            { name: 'quoted_price', type: 'number' },
+            { name: 'currency', type: 'string' }, // INR, USD, EUR
+            { name: 'lead_time_days', type: 'number' },
+            { name: 'validity_days', type: 'number' }, // quote validity period
+            { name: 'payment_terms', type: 'string', isOptional: true }, // e.g., "30% advance, 70% on delivery"
+            { name: 'warranty_months', type: 'number', isOptional: true },
+            { name: 'technical_compliance_percentage', type: 'number' }, // 0-100
+            { name: 'technical_deviations', type: 'string', isOptional: true }, // JSON array
+            { name: 'commercial_deviations', type: 'string', isOptional: true }, // JSON array
+            { name: 'notes', type: 'string', isOptional: true },
+            { name: 'attachments', type: 'string', isOptional: true }, // JSON array of file paths
+            { name: 'status', type: 'string', isIndexed: true }, // submitted, under_review, shortlisted, rejected, awarded
+            { name: 'technical_score', type: 'number', isOptional: true }, // 0-100 evaluation score
+            { name: 'commercial_score', type: 'number', isOptional: true }, // 0-100 evaluation score
+            { name: 'overall_score', type: 'number', isOptional: true }, // weighted score
+            { name: 'rank', type: 'number', isOptional: true }, // 1, 2, 3... (L1, L2, L3)
+            { name: 'submitted_at', type: 'number', isOptional: true },
+            { name: 'evaluated_at', type: 'number', isOptional: true },
+            { name: 'evaluated_by_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'sync_status', type: 'string' },
+            { name: '_version', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });
