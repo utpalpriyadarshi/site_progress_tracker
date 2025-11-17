@@ -25,6 +25,7 @@ import { Q } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
 import ItemModel from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
+import ProgressLogModel from '../../models/ProgressLogModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { ReportPdfService } from '../../services/pdf/ReportPdfService';
@@ -294,28 +295,27 @@ const DailyReportsScreenComponent = ({
               }, 0) / siteItems.length
             : 0;
 
-          // Generate PDF (temporarily disabled - will enable after linking library)
+          // Generate PDF report
           let pdfPath = '';
           try {
-            // TODO: Re-enable after linking react-native-html-to-pdf
-            // const itemsWithLogs = siteItems.map(item => ({
-            //   item,
-            //   progressLog: siteLogs.find(log => (log as any).itemId === item.id) || null,
-            // }));
+            const itemsWithLogs = siteItems.map(item => ({
+              item,
+              progressLog: (siteLogs.find(log => (log as any).itemId === item.id) as ProgressLogModel) || null,
+            }));
 
-            // pdfPath = await ReportPdfService.generateDailyReport({
-            //   site,
-            //   items: itemsWithLogs,
-            //   supervisorName: `Supervisor ${supervisorId}`,
-            //   reportDate: new Date(),
-            // });
-            // reportPaths.push(pdfPath);
+            pdfPath = await ReportPdfService.generateDailyReport({
+              site,
+              items: itemsWithLogs,
+              supervisorName: `Supervisor ${supervisorId}`,
+              reportDate: new Date(),
+            });
+            reportPaths.push(pdfPath);
 
-            pdfPath = ''; // PDF generation temporarily disabled
-            console.log('PDF generation skipped - will enable after library linking');
+            console.log('[PDF] Generated successfully:', pdfPath);
           } catch (pdfError) {
-            console.error('Error generating PDF:', pdfError);
-            // Continue even if PDF generation fails
+            console.error('[PDF] Generation failed:', pdfError);
+            showSnackbar('Report saved but PDF generation failed', 'warning');
+            // Continue even if PDF generation fails - report still saved
           }
 
           // Create daily report record
@@ -345,14 +345,15 @@ const DailyReportsScreenComponent = ({
       });
 
       const reportDate = new Date().toLocaleDateString();
+      const pdfStatus = reportPaths.length > 0 ? ` - ${reportPaths.length} PDF(s) generated` : '';
       const message = isOnline
-        ? `${totalReportsGenerated} daily report(s) submitted - ${progressLogs.length} updates for ${reportDate}`
-        : `${totalReportsGenerated} report(s) saved locally - ${progressLogs.length} updates for ${reportDate}`;
+        ? `${totalReportsGenerated} daily report(s) submitted - ${progressLogs.length} updates for ${reportDate}${pdfStatus}`
+        : `${totalReportsGenerated} report(s) saved locally - ${progressLogs.length} updates for ${reportDate}${pdfStatus}`;
 
       showSnackbar(message, 'success');
 
       if (reportPaths.length > 0) {
-        console.log('PDF Reports generated at:', reportPaths);
+        console.log('[PDF] Reports generated at:', reportPaths);
       }
     } catch (error) {
       console.error('Error submitting reports:', error);

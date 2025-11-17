@@ -592,6 +592,52 @@ The Logistics role now includes a complete RFQ (Request for Quotation) managemen
 
 ---
 
+**v2.6 Complete** ✅ (November 17, 2025)
+
+#### PDF Report Generation Enabled
+**Quick Win: Enable Supervisor Daily Report PDF Export**
+
+The supervisor role can now export daily progress reports as professional PDF documents.
+
+**What's New:**
+- ✅ **PDF Generation**: Daily reports automatically generate PDF files (133KB avg)
+- ✅ **Professional Template**: Beautiful HTML template with gradient header and color-coded progress
+- ✅ **Auto-Save**: PDFs saved to device Documents folder with date-stamped filenames
+- ✅ **Success Feedback**: Success message shows "X PDF(s) generated" confirmation
+- ✅ **Native Module**: react-native-html-to-pdf v1.3.0 properly linked and working
+
+**PDF Features:**
+- Site information (name, location, date, supervisor)
+- Overall progress summary with large percentage display
+- Item-by-item breakdown with:
+  - Quantity tracking (completed/planned)
+  - Color-coded progress indicators (green/orange/yellow/red)
+  - Status badges (completed/in progress/not started)
+  - Progress notes
+- Professional styling with gradients and shadows
+
+**Technical Implementation:**
+- File location: `/Android/data/com.site_progress_tracker/files/Documents/`
+- File naming: `DailyReport_[SiteName]_[YYYY-MM-DD].pdf`
+- PDF format: PDF 1.4 (Chromium/Skia renderer)
+- Enhanced logging with `[PDF]` prefix for debugging
+
+**Files Modified (2):**
+- services/pdf/ReportPdfService.ts - Updated to use `generatePDF` API
+- src/supervisor/DailyReportsScreen.tsx - Enabled PDF generation with error handling
+
+**Known Limitations:**
+- PDFs saved to app-specific storage (not accessible via standard file browser without ADB)
+- No PDF viewer/share functionality yet (planned for next phase)
+
+**Next Phase (v2.7):**
+- Add PDF viewer button in ReportsHistoryScreen
+- Implement PDF sharing (email, WhatsApp)
+- Add photo attachments to PDFs
+- Include weather conditions and next day plan fields
+
+---
+
 ### v2.0 (October 2025) - UX Improvements Sprint 1 Complete ⭐
 **Alert.alert Migration to Snackbar/Dialog System**
 - ✅ **100% Migration Complete**: All 113 Alert.alert calls replaced with custom Snackbar/ConfirmDialog system
