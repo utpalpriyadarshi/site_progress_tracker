@@ -915,6 +915,10 @@ The supervisor role has the most complete implementation with 7 screens:
 6. **Hindrance Reports**: Report issues with photos (camera/gallery), priority, and status tracking
 7. **Site Inspection**: Conduct site inspections with comprehensive checklists
 
+**UX Improvements**:
+- Focused workflow without role switching (supervisors stay in their context)
+- Streamlined header with logout button only
+
 ## Test Credentials
 
 The app comes with 5 pre-configured test accounts (seeded on first launch):
