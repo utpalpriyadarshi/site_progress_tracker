@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v2.3 (Activity 4: BOM Management System Complete)
-**Database Schema Version**: 25 (Activity 4 - BOM Management)
+**Current Version**: v2.4 (Activity 4: RFQ Management System Complete - Phase 3)
+**Database Schema Version**: 28 (Activity 4 Phase 3 - RFQ & Vendor Management)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: November 7, 2025
+**Last Updated**: November 17, 2025
 
 ---
 
@@ -49,6 +49,11 @@ site_progress_tracker/
 │   ├── TemplateModuleModel.ts    # Reusable work templates (v1.4 - NEW)
 │   ├── BomModel.ts               # Bill of Materials model (v2.3 - Activity 4)
 │   ├── BomItemModel.ts           # BOM line items model (v2.3 - Activity 4)
+│   ├── DoorsPackageModel.ts      # DOORS equipment specifications (v2.4 - Activity 4 Phase 2)
+│   ├── DoorsRequirementModel.ts  # DOORS compliance requirements (v2.4 - Activity 4 Phase 2)
+│   ├── VendorModel.ts            # Vendor master data (v2.4 - Activity 4 Phase 3)
+│   ├── RfqModel.ts               # Request for Quotation records (v2.4 - Activity 4 Phase 3)
+│   ├── RfqVendorQuoteModel.ts    # Vendor quote submissions (v2.4 - Activity 4 Phase 3)
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
 │   ├── ItemModel.ts              # Construction work items model
@@ -65,6 +70,12 @@ site_progress_tracker/
 │   └── database.ts               # Database initialization
 ├── services/                     # Application services
 │   ├── BomImportExportService.ts # BOM Excel export service (v2.3 - Activity 4)
+│   ├── BomLogisticsService.ts    # BOM-Logistics integration (v2.4 - Activity 4.5)
+│   ├── BomDoorsLinkingService.ts # BOM-DOORS automated linking (v2.4 - Phase 2)
+│   ├── DoorsEditService.ts       # DOORS edit operations (v2.4 - Phase 3)
+│   ├── DoorsStatisticsService.ts # DOORS KPI calculations (v2.4 - Phase 2)
+│   ├── RfqService.ts             # RFQ operations & workflows (v2.4 - Phase 3)
+│   ├── UnlinkBomItemsService.ts  # BOM-DOORS unlinking (v2.4 - Phase 3)
 │   ├── planning/                 # Planning services (v1.3 - NEW)
 │   │   ├── PlanningService.ts    # Critical path, metrics, forecasting
 │   │   └── WBSCodeGenerator.ts   # WBS code generation (v1.4 - NEW)
@@ -85,11 +96,22 @@ site_progress_tracker/
 ├── src/                          # Application source code (ACTIVE)
 │   ├── auth/                     # Authentication screens
 │   │   └── LoginScreen.tsx       # User login screen
-│   ├── logistics/                # Logistics-specific screens (4 screens)
-│   │   ├── MaterialTrackingScreen.tsx
-│   │   ├── EquipmentManagementScreen.tsx
-│   │   ├── DeliverySchedulingScreen.tsx
-│   │   └── InventoryManagementScreen.tsx
+│   ├── logistics/                # Logistics-specific screens (10 screens - v2.4)
+│   │   ├── LogisticsDashboardScreen.tsx   # KPI dashboard with DOORS metrics
+│   │   ├── MaterialTrackingScreen.tsx     # BOM-integrated material tracking
+│   │   ├── DoorsRegisterScreen.tsx        # DOORS packages list & management (v2.4)
+│   │   ├── DoorsDetailScreen.tsx          # DOORS package details & requirements (v2.4)
+│   │   ├── DoorsPackageEditScreen.tsx     # Edit DOORS packages (v2.4 Phase 3)
+│   │   ├── DoorsRequirementEditScreen.tsx # Edit individual requirements (v2.4 Phase 3)
+│   │   ├── RfqListScreen.tsx              # RFQ list with filtering (v2.4 Phase 3)
+│   │   ├── RfqDetailScreen.tsx            # RFQ details with 3 tabs (v2.4 Phase 3)
+│   │   ├── RfqCreateScreen.tsx            # 4-step RFQ creation wizard (v2.4 Phase 3)
+│   │   ├── EquipmentManagementScreen.tsx  # Legacy equipment management
+│   │   ├── DeliverySchedulingScreen.tsx   # Delivery scheduling
+│   │   ├── InventoryManagementScreen.tsx  # Inventory management
+│   │   └── components/                    # Logistics components
+│   │       ├── BomRequirementCard.tsx     # BOM card with DOORS section
+│   │       └── DoorsLinkingModal.tsx      # Manual BOM-DOORS linking modal
 │   ├── manager/                  # Manager-specific screens (5 screens)
 │   │   ├── BomManagementScreen.tsx      # BOM Management (v2.3 - Activity 4, 1,450+ lines)
 │   │   ├── ProjectOverviewScreen.tsx
