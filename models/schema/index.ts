@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 25, // Added baseline_bom_id to boms table for copy tracking (Activity 4: Phase 2)
+  version: 28, // Added RFQ Management System - Activity 4: Phase 3 Days 4-7
   tables: [
     tableSchema({
       name: 'projects',
@@ -329,6 +329,10 @@ export default appSchema({
       columns: [
         { name: 'bom_id', type: 'string', isIndexed: true },
         { name: 'material_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'doors_id', type: 'string', isOptional: true, isIndexed: true }, // Link to DOORS package
+        { name: 'link_type', type: 'string', isOptional: true }, // 'auto', 'manual', 'override' (Phase 3)
+        { name: 'linked_by_id', type: 'string', isOptional: true, isIndexed: true }, // User who created link (Phase 3)
+        { name: 'linked_at', type: 'number', isOptional: true }, // When link was created (Phase 3)
         { name: 'item_code', type: 'string' },
         { name: 'description', type: 'string' },
         { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, subcontractor
@@ -344,6 +348,184 @@ export default appSchema({
         { name: 'notes', type: 'string', isOptional: true },
         { name: 'created_date', type: 'number' },
         { name: 'updated_date', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'doors_packages',
+      columns: [
+        // Basic Information
+        { name: 'doors_id', type: 'string', isIndexed: true },
+        { name: 'equipment_name', type: 'string' },
+        { name: 'category', type: 'string', isIndexed: true },
+        { name: 'equipment_type', type: 'string', isIndexed: true },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'specification_ref', type: 'string', isOptional: true },
+        { name: 'drawing_ref', type: 'string', isOptional: true },
+        { name: 'quantity', type: 'number' },
+        { name: 'unit', type: 'string' },
+        // Compliance Summary
+        { name: 'total_requirements', type: 'number' },
+        { name: 'compliant_requirements', type: 'number' },
+        { name: 'compliance_percentage', type: 'number' },
+        { name: 'technical_req_compliance', type: 'number' },
+        { name: 'datasheet_compliance', type: 'number' },
+        { name: 'type_test_compliance', type: 'number' },
+        { name: 'routine_test_compliance', type: 'number' },
+        { name: 'site_req_compliance', type: 'number' },
+        // Status
+        { name: 'status', type: 'string', isIndexed: true },
+        { name: 'priority', type: 'string', isIndexed: true },
+        // RFQ stage
+        { name: 'rfq_no', type: 'string', isOptional: true },
+        { name: 'rfq_issued_date', type: 'number', isOptional: true },
+        { name: 'vendors_invited', type: 'number', isOptional: true },
+        { name: 'vendors_responded', type: 'number', isOptional: true },
+        // Procurement
+        { name: 'po_no', type: 'string', isOptional: true },
+        { name: 'po_date', type: 'number', isOptional: true },
+        { name: 'selected_vendor', type: 'string', isOptional: true },
+        { name: 'po_value', type: 'number', isOptional: true },
+        // Delivery
+        { name: 'delivery_status', type: 'string', isOptional: true },
+        { name: 'expected_delivery', type: 'number', isOptional: true },
+        { name: 'actual_delivery', type: 'number', isOptional: true },
+        // Closure
+        { name: 'closure_date', type: 'number', isOptional: true },
+        { name: 'closure_remarks', type: 'string', isOptional: true },
+        // Ownership
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'assigned_to', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'reviewed_by', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        // Edit audit trail (Phase 3)
+        { name: 'last_modified_at', type: 'number', isOptional: true },
+        { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
+        // Sync
+        { name: 'app_sync_status', type: 'string' },
+        { name: 'version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'doors_requirements',
+      columns: [
+        // Basic Information
+        { name: 'requirement_id', type: 'string', isIndexed: true },
+        { name: 'doors_package_id', type: 'string', isIndexed: true },
+        // Requirement Details
+        { name: 'category', type: 'string', isIndexed: true },
+        { name: 'requirement_code', type: 'string', isIndexed: true },
+        { name: 'requirement_text', type: 'string' },
+        { name: 'specification_clause', type: 'string', isOptional: true },
+        { name: 'acceptance_criteria', type: 'string' },
+        { name: 'is_mandatory', type: 'boolean' },
+        { name: 'sequence_no', type: 'number' },
+        // Compliance Status
+        { name: 'compliance_status', type: 'string', isIndexed: true },
+        { name: 'compliance_percentage', type: 'number', isOptional: true },
+        { name: 'vendor_response', type: 'string', isOptional: true },
+        { name: 'verification_method', type: 'string', isOptional: true },
+        { name: 'verification_status', type: 'string', isOptional: true },
+        // Engineering Review
+        { name: 'review_status', type: 'string', isIndexed: true },
+        { name: 'review_comments', type: 'string', isOptional: true },
+        { name: 'reviewed_by', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'reviewed_at', type: 'number', isOptional: true },
+        // Attachments
+        { name: 'attachment_count', type: 'number' },
+        { name: 'test_report_ref', type: 'string', isOptional: true },
+        { name: 'certificate_ref', type: 'string', isOptional: true },
+        // Timestamps
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        // Edit audit trail (Phase 3)
+        { name: 'last_modified_at', type: 'number', isOptional: true },
+        { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
+        // Sync
+        { name: 'app_sync_status', type: 'string' },
+        { name: 'version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'vendors',
+      columns: [
+        { name: 'vendor_code', type: 'string', isIndexed: true },
+        { name: 'vendor_name', type: 'string' },
+        { name: 'category', type: 'string', isIndexed: true },
+        { name: 'contact_person', type: 'string', isOptional: true },
+        { name: 'email', type: 'string', isOptional: true },
+        { name: 'phone', type: 'string', isOptional: true },
+        { name: 'address', type: 'string', isOptional: true },
+        { name: 'rating', type: 'number', isOptional: true },
+        { name: 'is_approved', type: 'boolean' },
+        { name: 'performance_score', type: 'number', isOptional: true },
+        { name: 'last_delivery_date', type: 'number', isOptional: true },
+        { name: 'total_orders', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'rfqs',
+      columns: [
+        { name: 'rfq_number', type: 'string', isIndexed: true },
+        { name: 'doors_id', type: 'string', isIndexed: true },
+        { name: 'doors_package_id', type: 'string', isIndexed: true },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'status', type: 'string', isIndexed: true },
+        { name: 'issue_date', type: 'number', isOptional: true },
+        { name: 'closing_date', type: 'number', isOptional: true },
+        { name: 'evaluation_date', type: 'number', isOptional: true },
+        { name: 'award_date', type: 'number', isOptional: true },
+        { name: 'expected_delivery_days', type: 'number', isOptional: true },
+        { name: 'technical_specifications', type: 'string', isOptional: true },
+        { name: 'commercial_terms', type: 'string', isOptional: true },
+        { name: 'total_vendors_invited', type: 'number' },
+        { name: 'total_quotes_received', type: 'number' },
+        { name: 'winning_vendor_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'winning_quote_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'awarded_value', type: 'number', isOptional: true },
+        { name: 'created_by_id', type: 'string', isIndexed: true },
+        { name: 'evaluated_by_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'rfq_vendor_quotes',
+      columns: [
+        { name: 'rfq_id', type: 'string', isIndexed: true },
+        { name: 'vendor_id', type: 'string', isIndexed: true },
+        { name: 'quote_reference', type: 'string', isOptional: true },
+        { name: 'quoted_price', type: 'number' },
+        { name: 'currency', type: 'string' },
+        { name: 'lead_time_days', type: 'number' },
+        { name: 'validity_days', type: 'number' },
+        { name: 'payment_terms', type: 'string', isOptional: true },
+        { name: 'warranty_months', type: 'number', isOptional: true },
+        { name: 'technical_compliance_percentage', type: 'number' },
+        { name: 'technical_deviations', type: 'string', isOptional: true },
+        { name: 'commercial_deviations', type: 'string', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'attachments', type: 'string', isOptional: true },
+        { name: 'status', type: 'string', isIndexed: true },
+        { name: 'technical_score', type: 'number', isOptional: true },
+        { name: 'commercial_score', type: 'number', isOptional: true },
+        { name: 'overall_score', type: 'number', isOptional: true },
+        { name: 'rank', type: 'number', isOptional: true },
+        { name: 'submitted_at', type: 'number', isOptional: true },
+        { name: 'evaluated_at', type: 'number', isOptional: true },
+        { name: 'evaluated_by_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
       ],

@@ -494,3 +494,10 @@ const materialItems = await database.collections
 - Document unavoidable errors (e.g., type system limitations) in commit message
 - Use type assertions sparingly and only when necessary
 - Prefer fixing root cause over suppressing errors
+
+### instructions to follow:
+- Always produce clean output without any error
+-Use similar formats for all features
+-Do not create unless specified
+-check for typescript errors
+-Always update README.md & ARCHITECTURE_UNIFIED.md

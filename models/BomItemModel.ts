@@ -19,6 +19,12 @@ export default class BomItemModel extends Model {
   // Relationships
   @field('bom_id') bomId!: string;
   @field('material_id') materialId?: string; // optional reference to materials table
+  @field('doors_id') doorsId?: string; // optional reference to DOORS package
+
+  // DOORS Linking Metadata (Phase 3)
+  @field('link_type') linkType?: string; // 'auto', 'manual', 'override' - how link was created
+  @field('linked_by_id') linkedById?: string; // user ID who created manual link
+  @field('linked_at') linkedAt?: number; // timestamp when link was created
 
   // Item Details
   @field('item_code') itemCode!: string; // e.g., "MAT-001", "LAB-002"

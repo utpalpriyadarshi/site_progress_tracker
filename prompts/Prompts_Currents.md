@@ -324,3 +324,202 @@ Finally Prompt 5 (Analytics)
 
 Each prompt builds on the previous and can be executed sequentially. This gives you a complete, professional BOM management system integrated across your construction app! 🏗️📊
 
+Revised
+
+IMPLEMENT: Railway/Metro Electrification BOM Management for Manager Role
+
+REQUIREMENT: Create specialized BOM system for railway electrification projects with technical specifications and system-based categorization
+
+FILES TO CREATE/MODIFY:
+
+1. UPDATE: src/nav/ManagerNavigator.tsx - Add BOM Management as 5th tab
+2. CREATE: src/manager/BomManagementScreen.tsx - Main BOM interface
+3. CREATE: src/manager/context/BomContext.tsx - BOM shared state
+4. CREATE: src/database/models/RailwayBomModel.ts - Specialized BOM models
+
+SPECIALIZED DATA MODELS FOR RAILWAY ELECTRIFICATION:
+
+// Main BOM Structure
+interface RailwayBOM {
+  id: string;
+  projectId: string;
+  projectType: 'metro' | 'mainline' | 'light_rail';
+  systemType: 'catenary' | 'traction_power' | 'signaling' | 'scada' | 'civil_works';
+  version: string;
+  status: 'draft' | 'approved' | 'baseline' | 'closed';
+  
+  // Project Details
+  lineSection: string;        // "Line 3 - Section A"
+  trackKm: number;           // Kilometer reference
+  electrificationSystem: '1500V DC' | '25kV AC' | '750V DC';
+  
+  // Technical Specifications
+  designSpeed: number;       // km/h
+  trainHeadway: number;      // seconds
+  powerRequirement: number;  // MW
+  
+  items: RailwayBOMItem[];
+}
+
+// Specialized BOM Item with Railway-Specific Fields
+interface RailwayBOMItem {
+  id: string;
+  
+  // Basic Identification
+  itemCode: string;          // "CAT-OW-001"
+  description: string;
+  system: 'catenary' | 'traction' | 'signaling' | 'scada' | 'civil';
+  subsystem: string;         // "Overhead Wiring", "Foundations", "Power Electronics"
+  
+  // Technical Specifications
+  technicalSpec: string;     // "ASTM A123, Grade 60"
+  voltageRating?: number;    // kV
+  currentRating?: number;    // A
+  mechanicalStrength?: number; // kN
+  temperatureRating?: string; // "-40°C to +85°C"
+  
+  // Quantities & Units
+  quantity: number;
+  unit: string;              // "meters", "units", "sets", "kms"
+  unitWeight: number;        // kg per unit
+  totalWeight: number;       // kg total
+  
+  // Location & Installation
+  installationLocation: string;  // "Between KM 5+200 to KM 5+800"
+  track: 'up' | 'down' | 'both';
+  structureType: 'portal' | 'cantilever' | 'headspan' | 'tensioning';
+  
+  // Costs
+  unitCost: number;
+  totalCost: number;
+  currency: string;
+  
+  // Procurement
+  supplier: string;
+  leadTime: number;          // days
+  procurementStatus: 'not_ordered' | 'rfq_issued' | 'ordered' | 'delivered';
+  
+  // Installation
+  installationSequence: number;
+  dependencyItems: string[]; // IDs of items that must be installed first
+  commissioningDate?: Date;
+}
+
+// System-Specific Interfaces
+interface CatenarySystemItem extends RailwayBOMItem {
+  wireType: 'contact' | 'messenger' | 'dropper' | 'stitch';
+  tension: number;           // kN
+  sag: number;              // mm
+  registration: 'center' | 'staggered';
+}
+
+interface TractionPowerItem extends RailwayBOMItem {
+  equipmentType: 'transformer' | 'rectifier' | 'switchgear' | 'cable';
+  protectionClass: string;   // "IP54", "IP65"
+  coolingType: 'ONAN' | 'ONAF' | 'OFAN';
+}
+
+BOM CATEGORIZATION BY SYSTEM:
+
+1. CATENARY SYSTEM ITEMS:
+   - Contact Wire: Copper alloy, cross-section, tension
+   - Messenger Wire: Strength, diameter, material
+   - Droppers & Clamps: Types, materials, corrosion protection
+   - Cantilevers & Portals: Structural steel, foundations
+   - Insulators: Ceramic/polymer, voltage rating
+   - Tensioning Equipment: Weights, pulleys, tension limits
+
+2. TRACTION POWER SYSTEM ITEMS:
+   - Traction Substations: Transformers, rectifiers, switchgear
+   - Power Cables: XLPE, voltage rating, current capacity
+   - Overhead Line Equipment: Circuit breakers, disconnectors
+   - Return Current System: Rails, bonds, negative cables
+   - Earthing & Bonding: Grounding rods, cables, test points
+
+3. SIGNALING & CONTROL ITEMS:
+   - Track Circuits: Impedance bonds, relays
+   - Signals & Points: LED signals, point machines
+   - Control Systems: Interlocking, ATP, ATC
+   - Cables & Conduits: Signaling cables, cable trays
+
+4. SCADA & MONITORING ITEMS:
+   - RTUs & PLCs: Remote terminal units
+   - Sensors: Current, voltage, temperature
+   - Communication: Fiber optics, ethernet switches
+   - Control Center: Servers, workstations, displays
+
+VISUAL COMPONENTS NEEDED:
+
+1. SYSTEM-BASED BOM FILTER:
+   - Quick filter by: Catenary, Traction, Signaling, SCADA, Civil
+   - Subsystem filtering within each main system
+
+2. TECHNICAL SPECIFICATION VIEW:
+   - Show technical parameters prominently
+   - Color-coding by system type
+   - Installation sequence visualization
+
+3. LOCATION-BASED GROUPING:
+   - Group items by track kilometer
+   - Show installation locations on mini-map
+   - Track-wise segregation (Up/Down/Both)
+
+4. PROCUREMENT STATUS DASHBOARD:
+   - System-wise procurement progress
+   - Critical path items highlighting
+   - Lead time alerts for long-lead items
+
+IMPLEMENTATION FEATURES:
+
+1. BOM TEMPLATES:
+   - Pre-defined templates for different electrification systems
+   - Standard item libraries for common railway components
+   - Copy BOM from similar projects
+
+2. TECHNICAL CALCULATIONS:
+   - Weight calculations (unit weight × quantity)
+   - Cost roll-up by system and subsystem
+   - Power load calculations for traction systems
+
+3. INSTALLATION PLANNING:
+   - Dependency management between items
+   - Installation sequence validation
+   - Commissioning schedule integration
+
+4. RAILWAY-SPECIFIC REPORTING:
+   - System-wise cost breakdown
+   - Weight summary for logistics planning
+   - Technical compliance reporting
+   - Installation progress by track section
+
+Please implement the specialized Railway/Metro Electrification BOM system with these technical requirements.
+
+ Example BOM Items for Reference:
+Catenary System Example:
+{
+  itemCode: "CAT-CW-150-01",
+  description: "Hard Drawn Copper Contact Wire 150mm²",
+  system: "catenary",
+  subsystem: "overhead_wiring",
+  technicalSpec: "EN 50149:2012, Cu-ETP",
+  voltageRating: 25,
+  currentRating: 1000,
+  quantity: 25000,
+  unit: "meters",
+  unitWeight: 1.35,
+  installationLocation: "KM 0+000 to KM 25+000",
+  track: "both",
+  wireType: "contact",
+  tension: 12
+}
+
+Key Benefits of This Approach:
+Domain-Specific - Captures railway electrification requirements
+
+Technical Depth - Includes all necessary engineering parameters
+
+System-Based - Organized by electrical systems
+
+Location-Aware - Track kilometer referencing
+
+Installation-Ready - Sequence and dependency management
