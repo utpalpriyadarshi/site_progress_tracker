@@ -1,4 +1,4 @@
-import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import { generatePDF } from 'react-native-html-to-pdf';
 import { database } from '../../models/database';
 import SiteModel from '../../models/SiteModel';
 import ItemModel from '../../models/ItemModel';
@@ -28,7 +28,7 @@ export class ReportPdfService {
         directory: 'Documents',
       };
 
-      const file = await RNHTMLtoPDF.convert(options);
+      const file = await generatePDF(options);
       return file.filePath || '';
     } catch (error) {
       console.error('Error generating PDF:', error);
