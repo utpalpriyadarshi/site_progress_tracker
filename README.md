@@ -626,15 +626,48 @@ The supervisor role can now export daily progress reports as professional PDF do
 - services/pdf/ReportPdfService.ts - Updated to use `generatePDF` API
 - src/supervisor/DailyReportsScreen.tsx - Enabled PDF generation with error handling
 
-**Known Limitations:**
-- PDFs saved to app-specific storage (not accessible via standard file browser without ADB)
-- No PDF viewer/share functionality yet (planned for next phase)
+#### PDF Viewer and Share Functionality
+**Enhanced UX: View and Share PDF Reports** (November 18, 2025)
+
+Supervisors can now preview and share PDF reports directly from the Reports History screen.
+
+**What's New:**
+- ✅ **View PDF Button**: Open PDF in device's PDF viewer or alternative apps
+- ✅ **Share PDF Button**: Share reports via WhatsApp, Email, Drive, etc.
+- ✅ **File Attachment**: PDF properly attached to share intent (not just text)
+- ✅ **FileProvider Configuration**: Secure file sharing with proper Android permissions
+- ✅ **Cache Strategy**: Copies PDF to cache directory for reliable sharing
+- ✅ **Auto-Cleanup**: Temporary cache files automatically deleted after sharing
+- ✅ **Error Handling**: Helpful messages if PDF viewer not installed or sharing fails
+- ✅ **Consistent UI**: Material Design buttons in Report Details dialog
+
+**User Workflow:**
+1. Navigate to Reports History
+2. Tap on a report to see details
+3. Click **"View PDF"** to open in PDF viewer (or see suggestion to share if no viewer)
+4. Click **"Share"** to open Android share sheet
+5. Select app (Gmail, WhatsApp, Drive, etc.)
+6. PDF is attached and ready to send
+
+**Technical Implementation:**
+- **Native Modules**:
+  - react-native-file-viewer v2.1.5 (PDF viewing)
+  - react-native-share v12.2.1 (file sharing)
+  - react-native-fs v2.20.0 (file operations)
+- **FileProvider**: Configured in AndroidManifest.xml for secure file access
+- **File Paths**: XML configuration defines accessible directories (Documents, Cache, External)
+- **Cache Strategy**: Files copied to cache directory before sharing for better compatibility
+- **Error Recovery**: Graceful fallback if viewer missing, auto-cleanup on failures
+
+**Files Modified (3):**
+- src/supervisor/ReportsHistoryScreen.tsx - Added View/Share buttons and handlers
+- android/app/src/main/AndroidManifest.xml - FileProvider configuration
+- android/app/src/main/res/xml/file_paths.xml - Shareable path definitions
 
 **Next Phase (v2.7):**
-- Add PDF viewer button in ReportsHistoryScreen
-- Implement PDF sharing (email, WhatsApp)
 - Add photo attachments to PDFs
 - Include weather conditions and next day plan fields
+- PDF template customization options
 
 ---
 

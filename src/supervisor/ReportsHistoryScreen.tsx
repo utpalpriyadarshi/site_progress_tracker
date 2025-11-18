@@ -27,6 +27,9 @@ import ProgressLogModel from '../../models/ProgressLogModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
+import FileViewer from 'react-native-file-viewer';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -187,12 +190,87 @@ const ReportsHistoryScreen = () => {
     setDetailDialogVisible(true);
   };
 
+  const handleViewPdf = async (pdfPath: string) => {
+    try {
+      const fileExists = await RNFS.exists(pdfPath);
+      if (!fileExists) {
+        showSnackbar('PDF file not found. Please regenerate the report.', 'error');
+        return;
+      }
+
+      await FileViewer.open(pdfPath, {
+        showOpenWithDialog: true,
+        showAppsSuggestions: true
+      });
+    } catch (error: any) {
+      console.error('[PDF] Error viewing PDF:', error);
+
+      // If no PDF viewer app, suggest sharing instead
+      if (error.message?.includes('No app associated') || error.message?.includes('mime type')) {
+        showSnackbar('No PDF viewer installed. Use Share button to open in another app.', 'warning');
+      } else {
+        showSnackbar('Failed to open PDF. Try sharing instead.', 'error');
+      }
+    }
+  };
+
+  const handleSharePdf = async (pdfPath: string, report: DailyReportModel) => {
+    try {
+      const fileExists = await RNFS.exists(pdfPath);
+      if (!fileExists) {
+        showSnackbar('PDF file not found. Please regenerate the report.', 'error');
+        return;
+      }
+
+      const siteName = selectedReport?.site.name || 'Site';
+      const reportDate = formatDate(report.reportDate);
+
+      // Copy to cache directory for sharing (workaround for FileProvider issues)
+      const filename = pdfPath.split('/').pop() || 'DailyReport.pdf';
+      const cachePath = `${RNFS.CachesDirectoryPath}/${filename}`;
+
+      console.log('[PDF] Copying to cache:', cachePath);
+      await RNFS.copyFile(pdfPath, cachePath);
+
+      const shareOptions = {
+        title: 'Daily Progress Report',
+        message: `Daily Progress Report for ${siteName} on ${reportDate}`,
+        url: `file://${cachePath}`,
+        type: 'application/pdf',
+        failOnCancel: false,
+      };
+
+      console.log('[PDF] Sharing from cache:', cachePath);
+
+      const result = await Share.open(shareOptions);
+      console.log('[PDF] Share result:', result);
+
+      // Clean up cache file after sharing
+      try {
+        await RNFS.unlink(cachePath);
+      } catch (cleanupError) {
+        console.log('[PDF] Cache cleanup skipped:', cleanupError);
+      }
+
+      if (result.success !== false) {
+        showSnackbar('Report shared successfully!', 'success');
+      }
+    } catch (error: any) {
+      console.error('[PDF] Error sharing PDF:', error);
+
+      // Don't show error if user just cancelled
+      if (error.message && !error.message.includes('User did not share') && !error.message.includes('cancelled')) {
+        showSnackbar('Failed to share PDF. The PDF file may not be accessible for sharing.', 'error');
+      }
+    }
+  };
+
   const handleShare = (report: DailyReportModel) => {
-    // Placeholder for future PDF sharing
-    showSnackbar(
-      `PDF sharing coming soon! Report: ${formatDate(report.reportDate)} - ${report.totalItems} items`,
-      'info'
-    );
+    if (!report.pdfPath) {
+      showSnackbar('PDF not available for this report', 'warning');
+      return;
+    }
+    handleSharePdf(report.pdfPath, report);
   };
 
   const formatDate = (timestamp: number) => {
@@ -458,6 +536,24 @@ const ReportsHistoryScreen = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
+            {selectedReport?.report.pdfPath && (
+              <>
+                <Button
+                  icon="file-pdf-box"
+                  onPress={() => handleViewPdf(selectedReport.report.pdfPath)}
+                  mode="outlined"
+                >
+                  View PDF
+                </Button>
+                <Button
+                  icon="share-variant"
+                  onPress={() => handleSharePdf(selectedReport.report.pdfPath, selectedReport.report)}
+                  mode="contained"
+                >
+                  Share
+                </Button>
+              </>
+            )}
             <Button onPress={() => setDetailDialogVisible(false)}>Close</Button>
           </Dialog.Actions>
         </Dialog>
