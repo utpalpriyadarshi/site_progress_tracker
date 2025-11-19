@@ -1,5 +1,4 @@
 import { generatePDF } from 'react-native-html-to-pdf';
-import { database } from '../../models/database';
 import SiteModel from '../../models/SiteModel';
 import ItemModel from '../../models/ItemModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
@@ -58,6 +57,9 @@ export class ReportPdfService {
           ? ((item.completedQuantity / item.plannedQuantity) * 100).toFixed(1)
           : '0.0';
 
+        // Generate photos HTML if progress log has photos
+        const photosHtml = progressLog ? this.generatePhotosHtml(progressLog) : '';
+
         return `
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">${item.name}</td>
@@ -84,6 +86,13 @@ export class ReportPdfService {
               ${progressLog?.notes || 'No notes'}
             </td>
           </tr>
+          ${photosHtml ? `
+          <tr>
+            <td colspan="5" style="padding: 16px; background-color: #fafafa; border-bottom: 1px solid #e0e0e0;">
+              ${photosHtml}
+            </td>
+          </tr>
+          ` : ''}
         `;
       })
       .join('');
@@ -267,6 +276,82 @@ export class ReportPdfService {
         return '#9E9E9E';
       default:
         return '#9E9E9E';
+    }
+  }
+
+  /**
+   * Generate HTML for photos section
+   */
+  private static generatePhotosHtml(progressLog: ProgressLogModel): string {
+    // Check if photos exist and are not empty
+    if (!progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
+      return '';
+    }
+
+    try {
+      // Parse the photos JSON string
+      const photos = JSON.parse(progressLog.photos);
+
+      if (!Array.isArray(photos) || photos.length === 0) {
+        return '';
+      }
+
+      // Generate HTML for each photo with proper layout
+      const photosHtml = photos
+        .map((photoUri: string, index: number) => {
+          // Remove 'file://' prefix if it exists to avoid doubling
+          const cleanUri = photoUri.replace(/^file:\/\//, '');
+          return `
+          <div style="
+            display: inline-block;
+            margin: 8px;
+            vertical-align: top;
+            text-align: center;
+          ">
+            <img
+              src="file://${cleanUri}"
+              style="
+                width: 200px;
+                height: 150px;
+                object-fit: cover;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border: 1px solid #e0e0e0;
+              "
+            />
+            <p style="
+              margin-top: 6px;
+              font-size: 10px;
+              color: #666;
+              font-weight: 500;
+            ">Photo ${index + 1}</p>
+          </div>
+        `;
+        })
+        .join('');
+
+      return `
+        <div style="margin-top: 8px;">
+          <h4 style="
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          ">📸 Attached Photos (${photos.length})</h4>
+          <div style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+          ">
+            ${photosHtml}
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error parsing photos JSON:', error);
+      return '';
     }
   }
 
