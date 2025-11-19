@@ -63,6 +63,38 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ## Recent Updates
 
+### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
+
+**Photo Capture in Progress Updates** (November 19, 2025)
+- ✅ **Photo Capture**: Camera and gallery integration for daily progress updates
+- ✅ **Photo Thumbnails**: Visual indicators on item cards showing photo count
+- ✅ **PDF Integration**: Photos automatically embedded in PDF reports
+- ✅ **Photo Management**: Add/remove photos before saving progress
+- ✅ **Real-time Updates**: Photo counts refresh immediately after save
+- 📏 **File Size**: PDF size increases appropriately (148KB → 269KB with photos)
+- 🎯 **Phase 1 Complete**: Task 2.1 from Report Generation Plan
+
+**Files Modified:**
+- src/supervisor/DailyReportsScreen.tsx - Photo capture UI and state management
+- services/pdf/ReportPdfService.ts - Photo rendering in PDF reports
+- docs/COMPREHENSIVE_GAP_ANALYSIS_V2.5.md - Updated to v2.7, 74% complete
+- docs/REPORT_GENERATION_PLAN.md - Marked Task 2.1 as complete
+
+**Next Phase**: Comprehensive daily reports combining progress + hindrances + inspections
+
+---
+
+### v2.6 (November 2025) - PDF Report Generation & Sharing 📄
+
+**PDF Generation & Sharing** (November 17-18, 2025)
+- ✅ **PDF Reports**: Professional daily progress reports with gradient design
+- ✅ **PDF Viewer**: Integration for report preview
+- ✅ **PDF Sharing**: Share via WhatsApp, Email, Google Drive, etc.
+- ✅ **Report History**: View and manage past reports
+- 🎯 **Supervisor Workflow**: Complete end-to-end reporting capability
+
+---
+
 ### v2.2 (October 2025) - Production Security & Sync System 🚀
 
 #### Week 8 Latest: Queue Management & Auto-Sync Complete ✅ (October 31, 2025)

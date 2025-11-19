@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Image,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import {
   Card,
@@ -18,7 +21,9 @@ import {
   ProgressBar,
   Divider,
   Text,
+  Menu,
 } from 'react-native-paper';
+import { launchCamera, launchImageLibrary, ImagePickerResponse, Asset } from 'react-native-image-picker';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
@@ -57,15 +62,9 @@ const DailyReportsScreenComponent = ({
   const [showExceedsWarning, setShowExceedsWarning] = useState(false);
   const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
   const [pendingQuantity, setPendingQuantity] = useState(0);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('DEBUG: Sites count:', sites.length);
-    console.log('DEBUG: Items count:', items.length);
-    sites.forEach(site => {
-      console.log('DEBUG: Site:', site.id, site.name, 'supervisor_id:', (site as any).supervisorId);
-    });
-  }, [sites, items]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [itemPhotoCounts, setItemPhotoCounts] = useState<{ [itemId: string]: number }>({});
 
   // Monitor network status
   useEffect(() => {
@@ -75,6 +74,46 @@ const DailyReportsScreenComponent = ({
 
     return () => unsubscribe();
   }, []);
+
+  // Function to load photo counts for today's progress logs
+  const loadPhotoCounts = useCallback(async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startOfDay = today.getTime();
+    const endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1;
+
+    try {
+      const todaysLogs = await database.collections
+        .get('progress_logs')
+        .query(
+          Q.where('date', Q.gte(startOfDay)),
+          Q.where('date', Q.lte(endOfDay)),
+          Q.where('reported_by', supervisorId)
+        )
+        .fetch();
+
+      const counts: { [itemId: string]: number } = {};
+      todaysLogs.forEach((log: any) => {
+        try {
+          const logPhotos = JSON.parse(log.photos || '[]');
+          if (Array.isArray(logPhotos) && logPhotos.length > 0) {
+            counts[log.itemId] = logPhotos.length;
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      });
+
+      setItemPhotoCounts(counts);
+    } catch (error) {
+      console.error('Error loading photo counts:', error);
+    }
+  }, [supervisorId]);
+
+  // Load photo counts on mount and when items change
+  useEffect(() => {
+    loadPhotoCounts();
+  }, [items, supervisorId, loadPhotoCounts]); // Reload when items change (after saving progress)
 
   // Map items to their site names and filter by selected site
   useEffect(() => {
@@ -131,6 +170,7 @@ const DailyReportsScreenComponent = ({
     setSelectedItem(item);
     setQuantityInput(item.completedQuantity.toString());
     setNotesInput('');
+    setPhotos([]);
     setDialogVisible(true);
   };
 
@@ -139,12 +179,95 @@ const DailyReportsScreenComponent = ({
     setSelectedItem(null);
     setQuantityInput('');
     setNotesInput('');
+    setPhotos([]);
   };
 
   const incrementQuantity = (amount: number) => {
     const currentValue = parseFloat(quantityInput) || 0;
     const newValue = Math.max(0, currentValue + amount);
     setQuantityInput(newValue.toString());
+  };
+
+  // Request camera permission (Android)
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'App needs camera permission to take photos',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Handle camera capture
+  const handleTakePhoto = async () => {
+    setPhotoMenuVisible(false);
+
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      showSnackbar('Camera permission is required to take photos', 'warning');
+      return;
+    }
+
+    const result = await launchCamera({
+      mediaType: 'photo',
+      quality: 0.8,
+      saveToPhotos: true,
+    });
+
+    handleImagePickerResponse(result);
+  };
+
+  // Handle gallery selection
+  const handleChooseFromGallery = async () => {
+    setPhotoMenuVisible(false);
+
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.8,
+      selectionLimit: 5, // Allow multiple photos
+    });
+
+    handleImagePickerResponse(result);
+  };
+
+  // Process image picker response
+  const handleImagePickerResponse = (response: ImagePickerResponse) => {
+    if (response.didCancel) {
+      return;
+    }
+
+    if (response.errorCode) {
+      console.error('ImagePicker Error: ', response.errorMessage);
+      showSnackbar('Failed to capture photo', 'error');
+      return;
+    }
+
+    if (response.assets) {
+      const newPhotos = response.assets
+        .filter((asset: Asset) => asset.uri)
+        .map((asset: Asset) => asset.uri as string);
+
+      setPhotos(prevPhotos => [...prevPhotos, ...newPhotos]);
+      showSnackbar(`${newPhotos.length} photo(s) added`, 'success');
+    }
+  };
+
+  // Remove a photo
+  const removePhoto = (index: number) => {
+    setPhotos(prevPhotos => prevPhotos.filter((_, i) => i !== index));
   };
 
   const handleUpdateProgress = async () => {
@@ -182,7 +305,7 @@ const DailyReportsScreenComponent = ({
               item.status = 'in_progress';
             }
           });
-          console.log('Item updated successfully');
+          console.log('[Progress] Item updated successfully');
         } catch (updateError) {
           console.error('Error in item.update:', updateError);
           throw updateError;
@@ -190,6 +313,8 @@ const DailyReportsScreenComponent = ({
 
         // Create a progress log entry (always pending until report is submitted)
         try {
+          const photosJson = JSON.stringify(photos);
+
           await database.collections
             .get('progress_logs')
             .create((log: any) => {
@@ -197,11 +322,11 @@ const DailyReportsScreenComponent = ({
               log.date = new Date().getTime(); // Convert to timestamp
               log.completedQuantity = newQuantity;
               log.reportedBy = supervisorId; // Use actual supervisor ID from context
-              log.photos = '[]';
+              log.photos = photosJson; // Save photos as JSON string
               log.notes = notesInput || '';
               log.appSyncStatus = 'pending'; // Always pending until submitted as report
             });
-          console.log('Progress log created successfully');
+          console.log('[Progress] Log created with', photos.length, 'photo(s)');
         } catch (logError) {
           console.error('Error creating progress log:', logError);
           throw logError;
@@ -212,6 +337,10 @@ const DailyReportsScreenComponent = ({
         'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report',
         'success'
       );
+
+      // Reload photo counts to update the UI
+      await loadPhotoCounts();
+
       closeDialog();
     } catch (error) {
       console.error('Error updating progress (outer):', error);
@@ -424,6 +553,7 @@ const DailyReportsScreenComponent = ({
                   ) : (
                     siteItems.map(({ item }) => {
                       const progress = getProgressPercentage(item);
+                      const photoCount = itemPhotoCounts[item.id] || 0;
                       return (
                         <View key={item.id} style={styles.itemContainer}>
                           <View style={styles.itemHeader}>
@@ -435,14 +565,21 @@ const DailyReportsScreenComponent = ({
                                 {item.unitOfMeasurement}
                               </Text>
                             </View>
-                            <Chip
-                              mode="flat"
-                              style={{
-                                backgroundColor: getStatusColor(item.status),
-                              }}
-                              textStyle={styles.statusChipText}>
-                              {item.status.replace('_', ' ')}
-                            </Chip>
+                            <View style={styles.chipContainer}>
+                              {photoCount > 0 && (
+                                <Chip icon="camera" style={styles.photoChip} textStyle={styles.photoChipText}>
+                                  {photoCount}
+                                </Chip>
+                              )}
+                              <Chip
+                                mode="flat"
+                                style={{
+                                  backgroundColor: getStatusColor(item.status),
+                                }}
+                                textStyle={styles.statusChipText}>
+                                {item.status.replace('_', ' ')}
+                              </Chip>
+                            </View>
                           </View>
 
                           <ProgressBar
@@ -537,6 +674,61 @@ const DailyReportsScreenComponent = ({
                   numberOfLines={3}
                   style={styles.notesInput}
                 />
+
+                {/* Photo Section */}
+                <View style={styles.photoSection}>
+                  <Text style={styles.photoSectionTitle}>
+                    📸 Photos ({photos.length})
+                  </Text>
+
+                  <Menu
+                    visible={photoMenuVisible}
+                    onDismiss={() => setPhotoMenuVisible(false)}
+                    anchor={
+                      <Button
+                        mode="outlined"
+                        icon="camera"
+                        onPress={() => setPhotoMenuVisible(true)}
+                        style={styles.addPhotoButton}>
+                        Add Photos
+                      </Button>
+                    }>
+                    <Menu.Item
+                      onPress={handleTakePhoto}
+                      title="Take Photo"
+                      leadingIcon="camera"
+                    />
+                    <Menu.Item
+                      onPress={handleChooseFromGallery}
+                      title="Choose from Gallery"
+                      leadingIcon="image"
+                    />
+                  </Menu>
+
+                  {/* Photo Gallery */}
+                  {photos.length > 0 && (
+                    <ScrollView
+                      horizontal
+                      style={styles.photoGallery}
+                      showsHorizontalScrollIndicator={false}>
+                      {photos.map((photoUri, index) => (
+                        <View key={index} style={styles.photoContainer}>
+                          <Image
+                            source={{ uri: photoUri }}
+                            style={styles.photoThumbnail}
+                          />
+                          <IconButton
+                            icon="close-circle"
+                            size={20}
+                            iconColor="#F44336"
+                            style={styles.removePhotoButton}
+                            onPress={() => removePhoto(index)}
+                          />
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
               </>
             )}
           </Dialog.Content>
@@ -592,6 +784,7 @@ const enhance = withObservables(['supervisorId'], ({ supervisorId }: { superviso
   items: database.collections.get('items').query(),
 }));
 
+// @ts-expect-error - WatermelonDB withObservables HOC has typing limitations with Model type inference
 const EnhancedDailyReportsScreen = enhance(DailyReportsScreenComponent);
 
 // Wrapper component that provides context
@@ -657,6 +850,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  chipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  photoChip: {
+    backgroundColor: '#E3F2FD',
+    height: 28,
+  },
+  photoChipText: {
+    color: '#1976D2',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   statusChipText: {
     color: 'white',
     fontSize: 12,
@@ -716,6 +923,39 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     marginTop: 8,
+  },
+  photoSection: {
+    marginTop: 16,
+  },
+  photoSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  addPhotoButton: {
+    marginTop: 8,
+  },
+  photoGallery: {
+    marginTop: 12,
+  },
+  photoContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  photoThumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    margin: 0,
+    backgroundColor: 'white',
+    borderRadius: 12,
   },
 });
 
