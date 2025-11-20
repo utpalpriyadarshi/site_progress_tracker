@@ -37,14 +37,10 @@ const STATUS_FILTERS: FilterOption[] = [
   { id: 'completed', label: 'Completed', icon: 'check-circle' },
 ];
 
-// Phase filter options (11 phases)
+// Phase filter options (6 site-relevant phases for supervisors)
+// Removed: design, approvals, mobilization, procurement, interface (office/planning phases)
 const PHASE_FILTERS: FilterOption[] = [
   { id: 'all', label: 'All Phases' },
-  { id: 'design', label: 'Design', icon: 'pencil-ruler', color: '#9C27B0' },
-  { id: 'approvals', label: 'Approvals', icon: 'file-document-check', color: '#FF9800' },
-  { id: 'mobilization', label: 'Mobilization', icon: 'truck', color: '#795548' },
-  { id: 'procurement', label: 'Procurement', icon: 'cart', color: '#FF9800' },
-  { id: 'interface', label: 'Interface', icon: 'transit-connection-variant', color: '#00BCD4' },
   { id: 'site_prep', label: 'Site Prep', icon: 'bulldozer', color: '#8BC34A' },
   { id: 'construction', label: 'Construction', icon: 'hammer', color: '#4CAF50' },
   { id: 'testing', label: 'Testing', icon: 'test-tube', color: '#2196F3' },
@@ -392,11 +388,11 @@ const ItemsManagementScreenComponent = ({
           Showing {filteredItems.length} of {items.filter(item => selectedSiteId === 'all' || item.siteId === selectedSiteId).length} items
         </Text>
 
-        {hasActiveFilters && (
+        {hasActiveFilters ? (
           <Button mode="text" onPress={clearAllFilters} compact>
             Clear All
           </Button>
-        )}
+        ) : null}
 
         <SortMenu
           sortOptions={SORT_OPTIONS}

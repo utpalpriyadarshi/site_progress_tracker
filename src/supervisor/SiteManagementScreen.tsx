@@ -245,11 +245,11 @@ const SiteManagementScreenComponent = ({
           Showing {displayedSites.length} of {sites.length} sites
         </Text>
 
-        {hasActiveFilters && (
+        {hasActiveFilters ? (
           <Button mode="text" onPress={clearAllFilters} compact>
             Clear All
           </Button>
-        )}
+        ) : null}
 
         <SortMenu
           sortOptions={SORT_OPTIONS}
