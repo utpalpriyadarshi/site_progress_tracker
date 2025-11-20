@@ -31,6 +31,8 @@ import NetInfo from '@react-native-community/netinfo';
 import ItemModel from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
+import HindranceModel from '../../models/HindranceModel';
+import SiteInspectionModel from '../../models/SiteInspectionModel';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { ReportPdfService } from '../../services/pdf/ReportPdfService';
@@ -432,9 +434,31 @@ const DailyReportsScreenComponent = ({
               progressLog: (siteLogs.find(log => (log as any).itemId === item.id) as ProgressLogModel) || null,
             }));
 
-            pdfPath = await ReportPdfService.generateDailyReport({
+            // Collect today's hindrances for this site
+            const todayHindrances = await database.collections
+              .get('hindrances')
+              .query(
+                Q.where('site_id', siteId),
+                Q.where('reported_at', Q.gte(startOfDay)),
+                Q.where('reported_at', Q.lte(endOfDay))
+              )
+              .fetch() as HindranceModel[];
+
+            // Collect today's inspection for this site
+            const todayInspections = await database.collections
+              .get('site_inspections')
+              .query(
+                Q.where('site_id', siteId),
+                Q.where('inspection_date', Q.gte(startOfDay)),
+                Q.where('inspection_date', Q.lte(endOfDay))
+              )
+              .fetch() as SiteInspectionModel[];
+
+            pdfPath = await ReportPdfService.generateComprehensiveReport({
               site,
               items: itemsWithLogs,
+              hindrances: todayHindrances,
+              inspection: todayInspections[0] || null,
               supervisorName: `Supervisor ${supervisorId}`,
               reportDate: new Date(),
             });
