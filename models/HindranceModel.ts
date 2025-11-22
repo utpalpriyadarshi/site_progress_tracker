@@ -6,8 +6,8 @@ export default class HindranceModel extends Model {
   static table = 'hindrances';
 
   static associations: Associations = {
-    item: { type: 'belongs_to', key: 'item_id' },
-    site: { type: 'belongs_to', key: 'site_id' },
+    items: { type: 'belongs_to', key: 'item_id' },
+    sites: { type: 'belongs_to', key: 'site_id' },
     assigned_user: { type: 'belongs_to', key: 'assigned_to' }, // assigned to user
   };
 

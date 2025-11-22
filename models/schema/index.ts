@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 28, // Added RFQ Management System - Activity 4: Phase 3 Days 4-7
+  version: 29, // Added project_id to users table for supervisor project assignment (v2.9)
   tables: [
     tableSchema({
       name: 'projects',
@@ -162,6 +162,7 @@ export default appSchema({
         { name: 'phone', type: 'string', isOptional: true }, // optional phone
         { name: 'is_active', type: 'boolean' }, // account active status
         { name: 'role_id', type: 'string', isIndexed: true }, // assigned role (belongs to role)
+        { name: 'project_id', type: 'string', isOptional: true, isIndexed: true }, // assigned project (for supervisor role) - v2.9
       ],
     }),
     tableSchema({

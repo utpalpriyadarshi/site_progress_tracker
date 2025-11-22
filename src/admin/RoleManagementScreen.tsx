@@ -38,6 +38,7 @@ interface UserFormData {
   email: string;
   phone: string;
   roleId: string;
+  projectId: string; // v2.9: Project assignment for supervisors
   isActive: boolean;
 }
 
@@ -47,11 +48,13 @@ const RoleManagementScreen = () => {
   const [users, setUsers] = useState<UserModel[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserModel[]>([]);
   const [roles, setRoles] = useState<RoleModel[]>([]);
+  const [projects, setProjects] = useState<any[]>([]); // v2.9: Load projects for assignment
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserModel | null>(null);
   const [roleMenuVisible, setRoleMenuVisible] = useState(false);
+  const [projectMenuVisible, setProjectMenuVisible] = useState(false); // v2.9: Project dropdown
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserModel | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
@@ -61,6 +64,7 @@ const RoleManagementScreen = () => {
     email: '',
     phone: '',
     roleId: '',
+    projectId: '', // v2.9: Initialize project assignment
     isActive: true,
   });
 
@@ -83,12 +87,14 @@ const RoleManagementScreen = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersList, rolesList] = await Promise.all([
+      const [usersList, rolesList, projectsList] = await Promise.all([
         database.collections.get<UserModel>('users').query().fetch(),
         database.collections.get<RoleModel>('roles').query().fetch(),
+        database.collections.get('projects').query().fetch(), // v2.9: Load projects
       ]);
       setUsers(usersList);
       setRoles(rolesList);
+      setProjects(projectsList); // v2.9: Store projects
     } catch (error) {
       console.error('Error loading data:', error);
       showSnackbar('Failed to load data', 'error');
@@ -122,6 +128,7 @@ const RoleManagementScreen = () => {
       email: '',
       phone: '',
       roleId: roles.length > 0 ? roles[0].id : '',
+      projectId: '', // v2.9: Initialize project assignment
       isActive: true,
     });
     setModalVisible(true);
@@ -136,6 +143,7 @@ const RoleManagementScreen = () => {
       email: user.email || '',
       phone: user.phone || '',
       roleId: user.roleId,
+      projectId: user.projectId || '', // v2.9: Load project assignment
       isActive: user.isActive,
     });
     setModalVisible(true);
@@ -218,6 +226,7 @@ const RoleManagementScreen = () => {
             user.email = formData.email;
             user.phone = formData.phone;
             user.roleId = formData.roleId;
+            user.projectId = formData.projectId || null; // v2.9: Project assignment
             user.isActive = formData.isActive;
           });
         } else {
@@ -229,6 +238,7 @@ const RoleManagementScreen = () => {
             user.email = formData.email;
             user.phone = formData.phone;
             user.roleId = formData.roleId;
+            user.projectId = formData.projectId || null; // v2.9: Project assignment
             user.isActive = formData.isActive;
           });
         }
@@ -348,6 +358,13 @@ const RoleManagementScreen = () => {
     return role ? role.name : 'Unknown';
   };
 
+  // v2.9: Helper to get project name
+  const getProjectName = (projectId: string) => {
+    if (!projectId) return 'No Project Assigned';
+    const project = projects.find((p) => p.id === projectId);
+    return project ? project.name : 'Unknown Project';
+  };
+
   const getRoleColor = (roleId: string) => {
     const roleName = getRoleName(roleId);
     switch (roleName) {
@@ -410,6 +427,12 @@ const RoleManagementScreen = () => {
                 )}
                 {user.phone && (
                   <Paragraph style={styles.detail}>Phone: {user.phone}</Paragraph>
+                )}
+                {/* v2.9: Show project assignment for supervisors */}
+                {getRoleName(user.roleId) === 'Supervisor' && (
+                  <Paragraph style={styles.detail}>
+                    📁 Project: {getProjectName(user.projectId || '')}
+                  </Paragraph>
                 )}
 
                 <View style={styles.statusContainer}>
@@ -546,6 +569,46 @@ const RoleManagementScreen = () => {
                 />
               ))}
             </Menu>
+
+            {/* v2.9: Project Assignment for Supervisors */}
+            {/* Show for all roles during testing, can be restricted to Supervisor later */}
+            <View style={styles.projectSection}>
+              <Paragraph style={styles.label}>
+                Assigned Project {getRoleName(formData.roleId) === 'Supervisor' ? '(Required for Supervisors)' : '(Optional)'}
+              </Paragraph>
+                <Menu
+                  visible={projectMenuVisible}
+                  onDismiss={() => setProjectMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      onPress={() => setProjectMenuVisible(true)}
+                      style={styles.roleButton}
+                    >
+                      {getProjectName(formData.projectId)}
+                    </Button>
+                  }
+                >
+                  <Menu.Item
+                    onPress={() => {
+                      setFormData({ ...formData, projectId: '' });
+                      setProjectMenuVisible(false);
+                    }}
+                    title="No Project Assigned"
+                  />
+                  <Divider />
+                  {projects.map((project) => (
+                    <Menu.Item
+                      key={project.id}
+                      onPress={() => {
+                        setFormData({ ...formData, projectId: project.id });
+                        setProjectMenuVisible(false);
+                      }}
+                      title={project.name}
+                    />
+                  ))}
+                </Menu>
+            </View>
 
             <View style={styles.activeToggle}>
               <Paragraph style={styles.label}>Account Status</Paragraph>
@@ -848,6 +911,9 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     marginHorizontal: 4,
+  },
+  projectSection: {
+    marginVertical: 10,
   },
 });
 

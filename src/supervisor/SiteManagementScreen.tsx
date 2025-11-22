@@ -11,7 +11,6 @@ import {
   TextInput,
   Portal,
   Dialog,
-  List,
   IconButton,
   Text,
 } from 'react-native-paper';
@@ -21,7 +20,6 @@ import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import { useSiteContext } from './context/SiteContext';
 import { useSnackbar } from '../components/Snackbar';
-import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 
 // Activity filter options
@@ -44,7 +42,7 @@ const SiteManagementScreenComponent = ({
   sites: SiteModel[];
   projects: any[];
 }) => {
-  const { supervisorId, setSelectedSiteId } = useSiteContext();
+  const { supervisorId, setSelectedSiteId, projectId, projectName } = useSiteContext();
   const { showSnackbar } = useSnackbar();
 
   // Search, filter, sort state
@@ -58,9 +56,6 @@ const SiteManagementScreenComponent = ({
   const [editingSite, setEditingSite] = useState<SiteModel | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [siteToDelete, setSiteToDelete] = useState<SiteModel | null>(null);
 
   // Combined filtering and sorting logic
   const displayedSites = useMemo(() => {
@@ -131,7 +126,7 @@ const SiteManagementScreenComponent = ({
     setEditingSite(null);
     setSiteName('');
     setSiteLocation('');
-    setSelectedProjectId(projects[0]?.id || '');
+    // Project ID will be auto-assigned from supervisor's project
     setDialogVisible(true);
   };
 
@@ -139,7 +134,7 @@ const SiteManagementScreenComponent = ({
     setEditingSite(site);
     setSiteName(site.name);
     setSiteLocation(site.location);
-    setSelectedProjectId(site.projectId);
+    // Project ID is locked to supervisor's project - not editable
     setDialogVisible(true);
   };
 
@@ -148,7 +143,6 @@ const SiteManagementScreenComponent = ({
     setEditingSite(null);
     setSiteName('');
     setSiteLocation('');
-    setSelectedProjectId('');
   };
 
   const handleSave = async () => {
@@ -161,19 +155,19 @@ const SiteManagementScreenComponent = ({
     try {
       await database.write(async () => {
         if (editingSite) {
-          // Update existing site
+          // Update existing site (project cannot be changed)
           await editingSite.update((site: any) => {
             site.name = siteName.trim();
             site.location = siteLocation.trim();
-            site.projectId = selectedProjectId;
+            // Project ID is locked to supervisor's project - not editable
           });
           showSnackbar('Site updated successfully', 'success');
         } else {
-          // Create new site (auto-assign to current supervisor)
+          // Create new site (auto-assign to supervisor's project)
           const newSite = await database.collections.get('sites').create((site: any) => {
             site.name = siteName.trim();
             site.location = siteLocation.trim();
-            site.projectId = selectedProjectId;
+            site.projectId = projectId; // Use supervisor's assigned project
             site.supervisorId = supervisorId || null;
           });
           showSnackbar('Site created successfully', 'success');
@@ -189,30 +183,23 @@ const SiteManagementScreenComponent = ({
     }
   };
 
-  const handleDelete = (site: SiteModel) => {
-    setSiteToDelete(site);
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!siteToDelete) return;
-
-    setShowDeleteDialog(false);
-    try {
-      await database.write(async () => {
-        // Note: In production, you should also delete related items, materials, etc.
-        await siteToDelete.markAsDeleted();
-      });
-      showSnackbar('Site deleted successfully', 'success');
-      setSiteToDelete(null);
-    } catch (error) {
-      console.error('Error deleting site:', error);
-      showSnackbar('Failed to delete site: ' + (error as Error).message, 'error');
-    }
-  };
-
   return (
     <View style={styles.container}>
+      {/* Project Header - Shows supervisor's assigned project */}
+      {projectName && (
+        <Card style={styles.projectCard}>
+          <Card.Content>
+            <View style={styles.projectHeader}>
+              <View>
+                <Text style={styles.projectLabel}>📁 Your Assigned Project</Text>
+                <Title style={styles.projectTitle}>{projectName}</Title>
+                <Text style={styles.projectNote}>All sites belong to this project</Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+      )}
+
       <View style={styles.header}>
         <Title>Site Management</Title>
         <Button
@@ -294,12 +281,7 @@ const SiteManagementScreenComponent = ({
                         size={20}
                         onPress={() => openEditDialog(site)}
                       />
-                      <IconButton
-                        icon="delete"
-                        size={20}
-                        iconColor="#FF3B30"
-                        onPress={() => handleDelete(site)}
-                      />
+                      {/* Delete button removed - supervisors cannot delete sites (admin function) */}
                     </View>
                   </View>
                 </Card.Content>
@@ -333,28 +315,12 @@ const SiteManagementScreenComponent = ({
               numberOfLines={2}
             />
 
-            {projects.length > 0 && (
-              <View style={styles.projectSelector}>
-                <Text style={styles.label}>Select Project:</Text>
-                <ScrollView style={styles.projectList}>
-                  {projects.map((project) => (
-                    <List.Item
-                      key={project.id}
-                      title={project.name}
-                      left={(props) => (
-                        <List.Icon
-                          {...props}
-                          icon={
-                            selectedProjectId === project.id
-                              ? 'radiobox-marked'
-                              : 'radiobox-blank'
-                          }
-                        />
-                      )}
-                      onPress={() => setSelectedProjectId(project.id)}
-                    />
-                  ))}
-                </ScrollView>
+            {/* Project selector removed - sites auto-assigned to supervisor's project */}
+            {projectName && (
+              <View style={styles.projectInfo}>
+                <Text style={styles.label}>Project:</Text>
+                <Text style={styles.projectDisplay}>{projectName}</Text>
+                <Text style={styles.projectNote}>Sites are automatically assigned to your project</Text>
               </View>
             )}
           </Dialog.Content>
@@ -366,20 +332,6 @@ const SiteManagementScreenComponent = ({
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
-      <ConfirmDialog
-        visible={showDeleteDialog}
-        title="Delete Site"
-        message={`Are you sure you want to delete "${siteToDelete?.name}"? This will also delete all associated items and data.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          setShowDeleteDialog(false);
-          setSiteToDelete(null);
-        }}
-        destructive={true}
-      />
     </View>
   );
 };
@@ -404,6 +356,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  projectCard: {
+    margin: 16,
+    marginBottom: 8,
+    elevation: 3,
+    backgroundColor: '#E3F2FD',
+  },
+  projectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  projectLabel: {
+    fontSize: 12,
+    color: '#1976D2',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  projectTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0D47A1',
+    marginBottom: 4,
+  },
+  projectNote: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  projectInfo: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 4,
+  },
+  projectDisplay: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 4,
+    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',

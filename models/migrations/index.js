@@ -544,5 +544,17 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v29: Add project_id to users table for supervisor project assignment (v2.9)
+    {
+      toVersion: 29,
+      steps: [
+        addColumns({
+          table: 'users',
+          columns: [
+            { name: 'project_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

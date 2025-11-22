@@ -6,7 +6,7 @@ export default class SiteInspectionModel extends Model {
   static table = 'site_inspections';
 
   static associations: Associations = {
-    site: { type: 'belongs_to', key: 'site_id' },
+    sites: { type: 'belongs_to', key: 'site_id' },
   };
 
   @field('site_id') siteId!: string; // belongs to site

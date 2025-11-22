@@ -39,7 +39,7 @@ interface ReportWithDetails {
 }
 
 const ReportsHistoryScreen = () => {
-  const { selectedSiteId, supervisorId } = useSiteContext();
+  const { selectedSiteId, supervisorId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
   const [refreshing, setRefreshing] = useState(false);
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
@@ -56,8 +56,11 @@ const ReportsHistoryScreen = () => {
       const sitesCollection = database.collections.get<SiteModel>('sites');
       const progressLogsCollection = database.collections.get<ProgressLogModel>('progress_logs');
 
-      // Build query based on supervisor and selected site
-      const queryConditions = [Q.where('supervisor_id', supervisorId)];
+      // Build query based on supervisor, project, and selected site
+      const queryConditions = [
+        Q.where('supervisor_id', supervisorId),
+        Q.on('sites', 'project_id', projectId), // Project isolation
+      ];
 
       if (selectedSiteId !== 'all') {
         queryConditions.push(Q.where('site_id', selectedSiteId));

@@ -75,7 +75,7 @@ const AccordionRightIcon = ({ passCount, total }: { passCount: number; total: nu
 
 const SiteInspectionScreen = () => {
   const { showSnackbar } = useSnackbar();
-  const { selectedSiteId, supervisorId } = useSiteContext();
+  const { selectedSiteId, supervisorId, projectId } = useSiteContext();
   const [refreshing, setRefreshing] = useState(false);
   const [inspections, setInspections] = useState<InspectionWithSite[]>([]);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -138,8 +138,11 @@ const SiteInspectionScreen = () => {
       const inspectionsCollection = database.collections.get<SiteInspectionModel>('site_inspections');
       const sitesCollection = database.collections.get<SiteModel>('sites');
 
-      // Build query
-      const queryConditions = [Q.where('inspector_id', supervisorId)];
+      // Build query - filter by project and optionally by site
+      const queryConditions = [
+        Q.where('inspector_id', supervisorId),
+        Q.on('sites', 'project_id', projectId), // Project isolation
+      ];
 
       if (selectedSiteId !== 'all') {
         queryConditions.push(Q.where('site_id', selectedSiteId));

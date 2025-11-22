@@ -58,7 +58,7 @@ const SORT_OPTIONS: SortOption[] = [
 
 const ItemsManagementScreenComponent = ({
   items,
-  sites,
+  sites: _sites,
   categories,
 }: {
   items: ItemModel[];
@@ -590,8 +590,12 @@ const ItemsManagementScreenComponent = ({
 };
 
 // Enhance component with WatermelonDB observables
-const enhance = withObservables(['supervisorId'], ({ supervisorId }: { supervisorId: string }) => ({
-  items: database.collections.get('items').query(),
+const enhance = withObservables(['supervisorId', 'projectId'], ({ supervisorId, projectId }: { supervisorId: string; projectId: string }) => ({
+  items: database.collections
+    .get('items')
+    .query(
+      Q.on('sites', 'project_id', projectId)
+    ),
   sites: database.collections
     .get('sites')
     .query(Q.where('supervisor_id', supervisorId)),
@@ -602,8 +606,8 @@ const EnhancedItemsManagementScreen = enhance(ItemsManagementScreenComponent);
 
 // Wrapper component that provides context
 const ItemsManagementScreen = () => {
-  const { supervisorId } = useSiteContext();
-  return <EnhancedItemsManagementScreen supervisorId={supervisorId} />;
+  const { supervisorId, projectId } = useSiteContext();
+  return <EnhancedItemsManagementScreen supervisorId={supervisorId} projectId={projectId} />;
 };
 
 const styles = StyleSheet.create({
