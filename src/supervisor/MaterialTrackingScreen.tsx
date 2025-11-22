@@ -45,17 +45,24 @@ const MaterialTrackingScreenComponent = ({
 
   const statusOptions = ['ordered', 'delivered', 'in_use', 'shortage'];
 
-  // Filter materials based on selected site
+  // Filter materials based on selected site and project isolation
   useEffect(() => {
+    // First, filter materials to only include those from project items
+    const projectItemIds = items.map(item => item.id);
+    const projectMaterials = materials.filter(material =>
+      projectItemIds.includes(material.itemId)
+    );
+
     if (selectedSiteId === 'all') {
-      setFilteredMaterials(materials);
+      // Show all materials from project items
+      setFilteredMaterials(projectMaterials);
     } else {
       // Get items for selected site
       const siteItems = items.filter(item => item.siteId === selectedSiteId);
       const siteItemIds = siteItems.map(item => item.id);
 
       // Filter materials that belong to items of the selected site
-      const siteMaterials = materials.filter(material =>
+      const siteMaterials = projectMaterials.filter(material =>
         siteItemIds.includes(material.itemId)
       );
       setFilteredMaterials(siteMaterials);
@@ -426,12 +433,22 @@ const MaterialTrackingScreenComponent = ({
   );
 };
 
-const enhance = withObservables([], () => ({
+const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
   materials: database.collections.get('materials').query(),
-  items: database.collections.get('items').query(),
+  items: database.collections
+    .get('items')
+    .query(
+      Q.on('sites', 'project_id', projectId)
+    ),
 }));
 
-const MaterialTrackingScreen = enhance(MaterialTrackingScreenComponent);
+const EnhancedMaterialTrackingScreen = enhance(MaterialTrackingScreenComponent);
+
+// Wrapper component that provides context
+const MaterialTrackingScreen = () => {
+  const { projectId } = useSiteContext();
+  return <EnhancedMaterialTrackingScreen projectId={projectId} />;
+};
 
 const styles = StyleSheet.create({
   container: {

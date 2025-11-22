@@ -35,10 +35,11 @@ interface ReportWithDetails {
   report: DailyReportModel;
   site: SiteModel;
   progressLogs: ProgressLogModel[];
+  items: ItemModel[]; // Items for this site to display names
 }
 
 const ReportsHistoryScreen = () => {
-  const { selectedSiteId, supervisorId } = useSiteContext();
+  const { selectedSiteId, supervisorId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
   const [refreshing, setRefreshing] = useState(false);
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
@@ -55,8 +56,11 @@ const ReportsHistoryScreen = () => {
       const sitesCollection = database.collections.get<SiteModel>('sites');
       const progressLogsCollection = database.collections.get<ProgressLogModel>('progress_logs');
 
-      // Build query based on supervisor and selected site
-      const queryConditions = [Q.where('supervisor_id', supervisorId)];
+      // Build query based on supervisor, project, and selected site
+      const queryConditions = [
+        Q.where('supervisor_id', supervisorId),
+        Q.on('sites', 'project_id', projectId), // Project isolation
+      ];
 
       if (selectedSiteId !== 'all') {
         queryConditions.push(Q.where('site_id', selectedSiteId));
@@ -102,6 +106,7 @@ const ReportsHistoryScreen = () => {
           report,
           site,
           progressLogs,
+          items: siteItems,
         });
       }
 
@@ -188,6 +193,11 @@ const ReportsHistoryScreen = () => {
   const handleViewDetails = (reportWithDetails: ReportWithDetails) => {
     setSelectedReport(reportWithDetails);
     setDetailDialogVisible(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDetailDialogVisible(false);
+    setSelectedReport(null);
   };
 
   const handleViewPdf = async (pdfPath: string) => {
@@ -388,7 +398,7 @@ const ReportsHistoryScreen = () => {
             </Card.Content>
           </Card>
         ) : (
-          filteredReports.map(({ report, site, progressLogs }) => (
+          filteredReports.map(({ report, site, progressLogs, items }) => (
             <Card key={report.id} style={styles.reportCard}>
               <Card.Content>
                 <View style={styles.cardHeader}>
@@ -432,6 +442,29 @@ const ReportsHistoryScreen = () => {
                   </View>
                 </View>
 
+                {/* Show item details - display up to 3 items */}
+                {progressLogs.length > 0 && (
+                  <>
+                    <Divider style={styles.divider} />
+                    <Text style={styles.itemsLabel}>
+                      Items Updated ({progressLogs.length}):
+                    </Text>
+                    {progressLogs.slice(0, 3).map((log) => {
+                      const item = items.find(i => i.id === log.itemId);
+                      return item ? (
+                        <Text key={log.id} style={styles.itemEntry}>
+                          • {item.name} - {log.completedQuantity} {item.unitOfMeasurement}
+                        </Text>
+                      ) : null;
+                    })}
+                    {progressLogs.length > 3 && (
+                      <Text style={styles.moreItems}>
+                        +{progressLogs.length - 3} more... (tap View Details)
+                      </Text>
+                    )}
+                  </>
+                )}
+
                 {report.notes && (
                   <>
                     <Divider style={styles.divider} />
@@ -465,7 +498,7 @@ const ReportsHistoryScreen = () => {
       <Portal>
         <Dialog
           visible={detailDialogVisible}
-          onDismiss={() => setDetailDialogVisible(false)}
+          onDismiss={handleCloseDialog}
           style={styles.dialog}
         >
           <Dialog.Title>Report Details</Dialog.Title>
@@ -554,7 +587,7 @@ const ReportsHistoryScreen = () => {
                 </Button>
               </>
             )}
-            <Button onPress={() => setDetailDialogVisible(false)}>Close</Button>
+            <Button onPress={handleCloseDialog}>Close</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -645,6 +678,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     fontStyle: 'italic',
+  },
+  itemsLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#666',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  itemEntry: {
+    fontSize: 13,
+    color: '#333',
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+  moreItems: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontStyle: 'italic',
+    marginTop: 4,
+    paddingLeft: 8,
   },
   dialog: {
     maxHeight: '80%',

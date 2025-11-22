@@ -6,7 +6,7 @@ export default class DailyReportModel extends Model {
   static table = 'daily_reports';
 
   static associations: Associations = {
-    site: { type: 'belongs_to', key: 'site_id' },
+    sites: { type: 'belongs_to', key: 'site_id' },
     supervisor: { type: 'belongs_to', key: 'supervisor_id' },
   };
 

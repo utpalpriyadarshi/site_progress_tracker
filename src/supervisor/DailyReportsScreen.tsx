@@ -800,12 +800,16 @@ const DailyReportsScreenComponent = ({
 };
 
 // Enhance component with WatermelonDB observables
-// Note: We use props to pass supervisorId from the wrapper component
-const enhance = withObservables(['supervisorId'], ({ supervisorId }: { supervisorId: string }) => ({
+// Note: We use props to pass supervisorId and projectId from the wrapper component
+const enhance = withObservables(['supervisorId', 'projectId'], ({ supervisorId, projectId }: { supervisorId: string; projectId: string }) => ({
   sites: database.collections
     .get('sites')
     .query(Q.where('supervisor_id', supervisorId)),
-  items: database.collections.get('items').query(),
+  items: database.collections
+    .get('items')
+    .query(
+      Q.on('sites', 'project_id', projectId)
+    ),
 }));
 
 // @ts-expect-error - WatermelonDB withObservables HOC has typing limitations with Model type inference
@@ -813,8 +817,8 @@ const EnhancedDailyReportsScreen = enhance(DailyReportsScreenComponent);
 
 // Wrapper component that provides context
 const DailyReportsScreen = () => {
-  const { supervisorId } = useSiteContext();
-  return <EnhancedDailyReportsScreen supervisorId={supervisorId} />;
+  const { supervisorId, projectId } = useSiteContext();
+  return <EnhancedDailyReportsScreen supervisorId={supervisorId} projectId={projectId} />;
 };
 
 const styles = StyleSheet.create({

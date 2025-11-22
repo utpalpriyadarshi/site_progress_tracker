@@ -1,4 +1,4 @@
-import { Model, Q } from '@nozbe/watermelondb';
+import { Model } from '@nozbe/watermelondb';
 import { field, relation } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
 import RoleModel from './RoleModel';
@@ -8,6 +8,7 @@ export default class UserModel extends Model {
 
   static associations: Associations = {
     roles: { type: 'belongs_to', key: 'role_id' },
+    projects: { type: 'belongs_to', key: 'project_id' },
   };
 
   @field('username') username!: string;
@@ -17,8 +18,10 @@ export default class UserModel extends Model {
   @field('phone') phone!: string;
   @field('is_active') isActive!: boolean;
   @field('role_id') roleId!: string;
+  @field('project_id') projectId?: string; // Assigned project (for supervisor role) - v2.9
 
   @relation('roles', 'role_id') role!: RoleModel;
+  @relation('projects', 'project_id') project: any;
 
   // Helper method to get role name
   async getRoleName(): Promise<string> {
