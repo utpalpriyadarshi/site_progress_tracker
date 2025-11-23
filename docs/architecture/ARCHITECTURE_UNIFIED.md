@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
 
-**Current Version**: v2.4 (Activity 4: RFQ Management System Complete - Phase 3)
-**Database Schema Version**: 28 (Activity 4 Phase 3 - RFQ & Vendor Management)
+**Current Version**: v2.10 (Manager Role Implementation - Phase 2 Complete)
+**Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: November 17, 2025
+**Last Updated**: November 23, 2025
 
 ---
 
@@ -54,6 +54,8 @@ site_progress_tracker/
 │   ├── VendorModel.ts            # Vendor master data (v2.4 - Activity 4 Phase 3)
 │   ├── RfqModel.ts               # Request for Quotation records (v2.4 - Activity 4 Phase 3)
 │   ├── RfqVendorQuoteModel.ts    # Vendor quote submissions (v2.4 - Activity 4 Phase 3)
+│   ├── MilestoneModel.ts         # Project milestone definitions (v2.10 - Phase 1)
+│   ├── MilestoneProgressModel.ts # Site-level milestone progress tracking (v2.10 - Phase 1)
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
 │   ├── ItemModel.ts              # Construction work items model
@@ -112,12 +114,15 @@ site_progress_tracker/
 │   │   └── components/                    # Logistics components
 │   │       ├── BomRequirementCard.tsx     # BOM card with DOORS section
 │   │       └── DoorsLinkingModal.tsx      # Manual BOM-DOORS linking modal
-│   ├── manager/                  # Manager-specific screens (5 screens)
+│   ├── manager/                  # Manager-specific screens (6 screens - v2.10)
+│   │   ├── ManagerDashboardScreen.tsx   # Project overview with 8 KPIs (v2.10 Phase 2, 550+ lines)
+│   │   ├── TeamManagementScreen.tsx     # Team management (stub)
+│   │   ├── FinancialReportsScreen.tsx   # Financial reports (stub)
+│   │   ├── ResourceRequestsScreen.tsx   # Resource requests (stub)
 │   │   ├── BomManagementScreen.tsx      # BOM Management (v2.3 - Activity 4, 1,450+ lines)
-│   │   ├── ProjectOverviewScreen.tsx
-│   │   ├── TeamManagementScreen.tsx
-│   │   ├── FinancialReportsScreen.tsx
-│   │   └── ResourceAllocationScreen.tsx
+│   │   └── context/
+│   │       ├── ManagerContext.tsx       # Manager state management (v2.10 Phase 1)
+│   │       └── BomContext.tsx           # BOM state management (v2.3)
 │   ├── planning/                 # Planning-specific screens (7 screens - v1.7 workflow order)
 │   │   ├── SiteManagementScreen.tsx    # Site creation & supervisor assignment (v1.7 - NEW)
 │   │   ├── WBSManagementScreen.tsx     # WBS management (v1.4)
@@ -161,16 +166,22 @@ site_progress_tracker/
 │   │   │   └── SiteContext.tsx           # Shared site selection context
 │   │   └── components/
 │   │       └── SiteSelector.tsx          # Reusable site selector component
-│   └── nav/                      # Navigation components
-│       ├── MainNavigator.tsx     # Root navigator
-│       ├── AuthNavigator.tsx     # Authentication flow navigator (database-based)
-│       ├── RoleSelectionScreen.tsx # Role selection screen (legacy)
-│       ├── AdminNavigator.tsx    # Admin bottom tabs (3 tabs - v1.2)
-│       ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
-│       ├── ManagerNavigator.tsx   # Manager bottom tabs (4 tabs)
-│       ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
-│       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
-│       └── types.ts              # Navigation type definitions
+│   ├── nav/                      # Navigation components
+│   │   ├── MainNavigator.tsx     # Root navigator
+│   │   ├── AuthNavigator.tsx     # Authentication flow navigator (database-based)
+│   │   ├── RoleSelectionScreen.tsx # Role selection screen (legacy)
+│   │   ├── AdminNavigator.tsx    # Admin bottom tabs (6 tabs - v2.10)
+│   │   ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
+│   │   ├── ManagerNavigator.tsx   # Manager bottom tabs (5 tabs - v2.10)
+│   │   ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
+│   │   ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
+│   │   └── types.ts              # Navigation type definitions
+│   └── utils/                    # Utility screens and helpers (v2.10)
+│       ├── Phase1TestUtility.tsx        # Phase 1 milestone testing utility
+│       ├── ManagerTestDataUtility.tsx   # Manager dashboard test data generator
+│       └── demoData/                    # Demo data seeders
+│           ├── DoorsSeeder.ts           # DOORS demo data (v2.4)
+│           └── RfqSeeder.ts             # RFQ demo data (v2.4)
 ├── __tests__/                    # Test files (v1.3+)
 │   ├── models/                   # Model tests
 │   │   ├── ItemModel.test.ts     # ItemModel tests (26 tests)

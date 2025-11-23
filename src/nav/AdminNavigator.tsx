@@ -11,6 +11,7 @@ import { AdminProvider } from '../admin/context/AdminContext';
 import { useAuth } from '../auth/AuthContext';
 import SnackbarTestScreen from '../test/SnackbarTestScreen';
 import { Phase1TestUtility } from '../utils/Phase1TestUtility';
+import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -27,6 +28,7 @@ export type AdminTabParamList = {
   RoleManagement: undefined;
   SnackbarTest: undefined;
   Phase1Test: undefined;
+  ManagerTestData: undefined;
 };
 
 type AdminNavigatorProps = {
@@ -65,6 +67,8 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
               iconSymbol = '🧪';
             } else if (route.name === 'Phase1Test') {
               iconSymbol = '🔬';
+            } else if (route.name === 'ManagerTestData') {
+              iconSymbol = '🎲';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -123,6 +127,15 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
             title: 'Phase 1',
             headerShown: true,
             headerTitle: 'Phase 1 v2.10 Tests',
+          }}
+        />
+        <Tab.Screen
+          name="ManagerTestData"
+          component={ManagerTestDataUtility}
+          options={{
+            title: 'Test Data',
+            headerShown: true,
+            headerTitle: 'Manager Test Data',
           }}
         />
       </Tab.Navigator>

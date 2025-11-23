@@ -4,7 +4,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import ProjectOverviewScreen from '../manager/ProjectOverviewScreen';
+import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
 import TeamManagementScreen from '../manager/TeamManagementScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import ResourceRequestsScreen from '../manager/ResourceRequestsScreen';
@@ -24,7 +24,7 @@ export type RootStackParamList = {
 };
 
 export type ManagerTabParamList = {
-  ProjectOverview: undefined;
+  Dashboard: undefined;
   TeamManagement: undefined;
   FinancialReports: undefined;
   ResourceRequests: undefined;
@@ -75,7 +75,7 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
           tabBarIcon: ({ focused, color, size }) => {
             let iconSymbol = '';
 
-            if (route.name === 'ProjectOverview') {
+            if (route.name === 'Dashboard') {
               iconSymbol = '📊';
             } else if (route.name === 'TeamManagement') {
               iconSymbol = '👥';
@@ -101,14 +101,14 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         ),
       })}
     >
-      <Tab.Screen 
-        name="ProjectOverview" 
-        component={ProjectOverviewScreen} 
-        options={{ 
-          title: 'Overview',
+      <Tab.Screen
+        name="Dashboard"
+        component={ManagerDashboardScreen}
+        options={{
+          title: 'Dashboard',
           headerShown: true,
-          headerTitle: 'Project Overview',
-        }} 
+          headerTitle: 'Manager Dashboard',
+        }}
       />
       <Tab.Screen 
         name="TeamManagement" 

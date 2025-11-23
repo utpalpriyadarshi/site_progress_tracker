@@ -63,6 +63,70 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ## Recent Updates
 
+### v2.10 (November 2025) - Manager Role Implementation 🎯
+
+**Phase 1: Database & Context Setup** ✅ (November 22, 2025)
+- ✅ **Manager Dashboard Context**: Centralized state management for manager workflows
+- ✅ **Milestone Management**: 7 standard project milestones (PM100-PM700)
+  - Requirements Management (DOORS)
+  - Engineering & Design
+  - Procurement
+  - Manufacturing
+  - Testing & Pre-commissioning
+  - Commissioning
+  - Handover
+- ✅ **Milestone Progress Tracking**: Site-level progress tracking per milestone
+- ✅ **Database Schema v29**: Added milestones and milestone_progress tables
+- ✅ **Test Utility**: Phase 1 testing utility for milestone operations
+- 📚 **Documentation**: Complete specification and testing guides
+
+**Files Created:**
+- models/MilestoneModel.ts - Project milestone definitions
+- models/MilestoneProgressModel.ts - Site-specific progress tracking
+- src/manager/context/ManagerContext.tsx - Manager state management
+- src/utils/Phase1TestUtility.tsx - Milestone testing utility
+
+**Schema Evolution:**
+- **v29**: Added milestones table (project_id, milestone_code, milestone_name, sequence_order, weightage, is_active, is_custom)
+- **v29**: Added milestone_progress table (project_id, site_id, milestone_id, progress_percentage, status, notes)
+
+---
+
+**Phase 2: Manager Dashboard - Section 1 (Overview & KPIs)** ✅ (November 23, 2025)
+- ✅ **Manager Dashboard**: Comprehensive project overview with 8 KPI cards
+- ✅ **Hybrid Progress Calculation**: 60% items + 40% milestones weighted progress
+- ✅ **Project Header**: Timeline, client info, and health status indicators
+- ✅ **KPI Cards** (4x2 Grid):
+  1. Sites Status (on schedule vs delayed with 5% tolerance)
+  2. Budget Utilization (total PO value / project budget)
+  3. Open Issues (hindrance count)
+  4. Critical Path Items at Risk (high/medium dependency risk)
+  5. Deliveries (PO status tracking - placeholder)
+  6. Upcoming Milestones (next 30 days - placeholder)
+  7-8. Pending Approvals & Team Efficiency (placeholders)
+- ✅ **Pull-to-Refresh**: Real-time data updates
+- ✅ **Color-Coded Indicators**: Visual status representation
+- ✅ **Test Data Utility**: Manager test data generator
+
+**Files Created:**
+- src/manager/ManagerDashboardScreen.tsx (550+ lines) - Main dashboard with KPI calculations
+- src/utils/ManagerTestDataUtility.tsx (850+ lines) - Test data generator
+
+**Files Modified:**
+- src/nav/ManagerNavigator.tsx - Updated to use ManagerDashboardScreen
+- src/nav/AdminNavigator.tsx - Added test data utility tab
+
+**Technical Highlights:**
+- Hybrid progress formula: `(items_progress × 0.6) + (milestones_progress × 0.4)`
+- Site schedule calculation: Compares actual vs expected progress with tolerance
+- Database query pattern: Project → Sites → Items/Hindrances (respecting schema hierarchy)
+- Real-time calculations with WatermelonDB observables
+- Material Design UI with responsive grid layout
+
+**Next Phase:** Dashboard Section 2 - Engineering Progress (Items & Milestones tracking)
+
+---
+
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
 **Photo Capture in Progress Updates** (November 19, 2025)
@@ -834,7 +898,7 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB (Schema v20, updated October 2025 - Activity 2) for robust offline-first data management with bidirectional sync capabilities.
+The app uses WatermelonDB (Schema v29, updated November 2025 - v2.10) for robust offline-first data management with bidirectional sync capabilities.
 
 ### Core Entities (with Sync Support - v2.2)
 - **Projects**: Top-level project containers with client, dates, and budgets *(syncable)*
@@ -858,6 +922,23 @@ The app uses WatermelonDB (Schema v20, updated October 2025 - Activity 2) for ro
 - **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
 - **Sessions** (v2.2): JWT session tracking with device info
 - **PasswordHistory** (v2.2): Password history for reuse prevention
+
+### Manager Role - Milestones (v2.10 - Phase 1, November 2025)
+- **Milestones** (Schema v29): Project milestone definitions
+  - **Standard Milestones**: 7 pre-defined milestones (PM100-PM700)
+    - PM100: Requirements Management (DOORS) - 10% weight
+    - PM200: Engineering & Design - 15% weight
+    - PM300: Procurement - 15% weight
+    - PM400: Manufacturing - 10% weight
+    - PM500: Testing & Pre-commissioning - 15% weight
+    - PM600: Commissioning - 20% weight
+    - PM700: Handover - 15% weight
+  - **Custom Milestones**: Support for project-specific milestones
+  - **Fields**: project_id, milestone_code, milestone_name, description, sequence_order, weightage, is_active, is_custom
+- **Milestone Progress** (Schema v29): Site-level progress tracking
+  - **Progress Tracking**: Track percentage completion per site per milestone
+  - **Status Tracking**: not_started, in_progress, completed, delayed
+  - **Fields**: project_id, site_id, milestone_id, progress_percentage, status, start_date, target_date, actual_completion_date, notes
 
 ### BOM Management (v2.3 - Activity 4, November 2025)
 - **BOMs** (Schema v23-v25): Bill of Materials for estimation and execution
@@ -898,7 +979,7 @@ Items now include advanced planning and WBS management capabilities:
   - **risk_notes**: Risk description and mitigation plan
 
 ### Key Database Features
-- **Schema Version 25**: Latest schema with BOM management (v2.3 - Activity 4, November 2025)
+- **Schema Version 29**: Latest schema with Manager Milestones (v2.10 - Phase 1, November 2025)
 - **Offline-First**: All operations work without internet
 - **Bidirectional Sync** (v2.2 - Week 6): Automatic push/pull synchronization with server
 - **Conflict Resolution** (v2.2 - Week 7): Version-based Last-Write-Wins strategy
@@ -1038,11 +1119,12 @@ MainNavigator
     │   ├── SiteManagementScreen (🏗️ Sites) - Manage sites
     │   ├── HindranceReportScreen (⚠️ Issues) - Report hindrances with photos
     │   └── SiteInspectionScreen (🔍 Inspection) - Site inspections
-    ├── ManagerNavigator (Bottom Tabs)
-    │   ├── ProjectOverviewScreen
-    │   ├── TeamManagementScreen
-    │   ├── FinancialReportsScreen
-    │   └── ResourceAllocationScreen
+    ├── ManagerNavigator (Bottom Tabs - v2.10)
+    │   ├── ManagerDashboardScreen (v2.10 Phase 2) - Project overview with 8 KPIs
+    │   ├── TeamManagementScreen (stub)
+    │   ├── FinancialReportsScreen (stub)
+    │   ├── ResourceRequestsScreen (stub)
+    │   └── BomManagementScreen (v2.3) - Bill of Materials management
     ├── PlanningNavigator (Bottom Tabs + Stack Screens)
     │   ├── WBSManagementScreen (v1.4) - Hierarchical WBS with auto-generated codes
     │   │   └── ItemCreationScreen (v1.4) - Create/Edit items with selectors
