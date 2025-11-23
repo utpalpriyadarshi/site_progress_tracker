@@ -66,6 +66,9 @@ export default class ItemModel extends Model {
   @field('dependency_risk') dependencyRisk?: DependencyRisk;
   @field('risk_notes') riskNotes?: string;
 
+  // Milestone linking (v2.10)
+  @field('milestone_id') milestoneId?: string; // linked milestone
+
   // Sync Management (v18 - Activity 2 prep)
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking

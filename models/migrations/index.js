@@ -1,4 +1,5 @@
 import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { v30Migration } from './v30_add_manager_tables';
 
 export default schemaMigrations({
   migrations: [
@@ -556,5 +557,7 @@ export default schemaMigrations({
         }),
       ],
     },
+    // v30: Add Manager role tables - milestones, milestone_progress, purchase_orders (v2.10)
+    v30Migration,
   ],
 });
