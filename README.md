@@ -127,6 +127,36 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ---
 
+**Phase 3: Manager Dashboard - Section 2 (Engineering Progress)** ✅ (November 24, 2025)
+- ✅ **Engineering Overview (PM200)**: Design completion percentage and status tracking
+- ✅ **DOORS Packages Summary**: Total packages with status breakdown
+  - Approved packages count
+  - Packages under review
+  - Open issues count
+  - Requirements compliance percentage with visual progress bar
+- ✅ **RFQ Status Tracking**: Procurement workflow monitoring
+  - Total RFQs issued
+  - Quotes received count
+  - RFQs under evaluation
+  - Awarded RFQs count
+- ✅ **Real-time Calculations**: All data pulled from database
+- ✅ **Visual Indicators**: Color-coded status chips and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+187 lines) - Added Section 2 with 3 subsections
+
+**Technical Implementation:**
+- PM200 milestone progress calculation across all sites
+- DOORS packages query with status aggregation
+- DOORS requirements compliance percentage
+- RFQ status tracking from rfqs table
+- Color-coded status chips (green/blue/gray)
+- Progress bar for compliance visualization
+
+**Next Phase:** Dashboard Section 3 - Site Progress (All Sites Comparison)
+
+---
+
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
 **Photo Capture in Progress Updates** (November 19, 2025)

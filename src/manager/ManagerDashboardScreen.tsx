@@ -15,7 +15,7 @@
  *   8. Upcoming Milestones (next 30 days)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import {
   Card,
@@ -23,7 +23,6 @@ import {
   Paragraph,
   Chip,
   ActivityIndicator,
-  Surface,
   Divider,
   ProgressBar,
 } from 'react-native-paper';
@@ -54,8 +53,23 @@ interface ProjectInfo {
   budget: number;
 }
 
+interface EngineeringData {
+  pm200Progress: number;
+  pm200Status: string;
+  totalDoors: number;
+  doorsApproved: number;
+  doorsUnderReview: number;
+  doorsOpenIssues: number;
+  totalRequirements: number;
+  compliantRequirements: number;
+  totalRfqs: number;
+  rfqsQuotesReceived: number;
+  rfqsUnderEvaluation: number;
+  rfqsAwarded: number;
+}
+
 const ManagerDashboardScreen = () => {
-  const { projectId, projectName } = useManagerContext();
+  const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<ProjectStats>({
@@ -72,23 +86,38 @@ const ManagerDashboardScreen = () => {
     upcomingMilestones: 0,
   });
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null);
+  const [engineeringData, setEngineeringData] = useState<EngineeringData>({
+    pm200Progress: 0,
+    pm200Status: 'not_started',
+    totalDoors: 0,
+    doorsApproved: 0,
+    doorsUnderReview: 0,
+    doorsOpenIssues: 0,
+    totalRequirements: 0,
+    compliantRequirements: 0,
+    totalRfqs: 0,
+    rfqsQuotesReceived: 0,
+    rfqsUnderEvaluation: 0,
+    rfqsAwarded: 0,
+  });
 
-  useEffect(() => {
-    if (projectId) {
-      loadDashboardData();
-    }
-  }, [projectId]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([loadProjectInfo(), calculateStats()]);
+      await Promise.all([loadProjectInfo(), calculateStats(), loadEngineeringData()]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      loadDashboardData();
+    }
+  }, [projectId, loadDashboardData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -345,6 +374,110 @@ const ManagerDashboardScreen = () => {
     });
   };
 
+  const loadEngineeringData = async () => {
+    if (!projectId) return;
+
+    try {
+      // Get PM200 milestone progress
+      const pm200Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM200'))
+        .fetch();
+
+      let pm200Progress = 0;
+      let pm200Status = 'not_started';
+
+      if (pm200Milestone.length > 0) {
+        const milestoneId = pm200Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          // Calculate average progress across all sites
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm200Progress = totalProgress / progressRecords.length;
+
+          // Determine status
+          if (pm200Progress === 0) {
+            pm200Status = 'not_started';
+          } else if (pm200Progress < 100) {
+            pm200Status = 'in_progress';
+          } else {
+            pm200Status = 'completed';
+          }
+        }
+      }
+
+      // Get DOORS packages data
+      const doorsPackages = await database.collections.get('doors_packages').query().fetch();
+      const totalDoors = doorsPackages.length;
+
+      let doorsApproved = 0;
+      let doorsUnderReview = 0;
+      let doorsOpenIssues = 0;
+
+      doorsPackages.forEach((pkg: any) => {
+        if (pkg.status === 'approved') {
+          doorsApproved++;
+        } else if (pkg.status === 'under_review') {
+          doorsUnderReview++;
+        } else if (pkg.status === 'open_issues') {
+          doorsOpenIssues++;
+        }
+      });
+
+      // Get total requirements count
+      const allRequirements = await database.collections
+        .get('doors_requirements')
+        .query()
+        .fetch();
+      const totalRequirements = allRequirements.length;
+      const compliantRequirements = allRequirements.filter(
+        (req: any) => req.complianceStatus === 'compliant'
+      ).length;
+
+      // Get RFQ data
+      const allRfqs = await database.collections.get('rfqs').query().fetch();
+      const totalRfqs = allRfqs.length;
+
+      let rfqsQuotesReceived = 0;
+      let rfqsUnderEvaluation = 0;
+      let rfqsAwarded = 0;
+
+      allRfqs.forEach((rfq: any) => {
+        if (rfq.status === 'quotes_received') {
+          rfqsQuotesReceived++;
+        } else if (rfq.status === 'evaluated') {
+          rfqsUnderEvaluation++;
+        } else if (rfq.status === 'awarded') {
+          rfqsAwarded++;
+        }
+      });
+
+      setEngineeringData({
+        pm200Progress: Math.round(pm200Progress),
+        pm200Status,
+        totalDoors,
+        doorsApproved,
+        doorsUnderReview,
+        doorsOpenIssues,
+        totalRequirements,
+        compliantRequirements,
+        totalRfqs,
+        rfqsQuotesReceived,
+        rfqsUnderEvaluation,
+        rfqsAwarded,
+      });
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading engineering data:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -352,6 +485,100 @@ const ManagerDashboardScreen = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const renderEngineeringProgress = () => {
+    const { pm200Progress, pm200Status, totalDoors, doorsApproved, doorsUnderReview, doorsOpenIssues, totalRequirements, compliantRequirements, totalRfqs, rfqsQuotesReceived, rfqsUnderEvaluation, rfqsAwarded } = engineeringData;
+
+    const compliancePercentage = totalRequirements > 0
+      ? Math.round((compliantRequirements / totalRequirements) * 100)
+      : 0;
+
+    return (
+      <>
+        {/* 2.1 Engineering Overview */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Engineering Overview (PM200)</Title>
+            <View style={styles.engineeringRow}>
+              <View style={styles.engineeringMetric}>
+                <Title style={styles.metricValue}>{pm200Progress}%</Title>
+                <Paragraph style={styles.metricLabel}>Design Completion</Paragraph>
+              </View>
+              <View style={styles.engineeringMetric}>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm200Status === 'completed'
+                          ? '#4CAF50'
+                          : pm200Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 12 }}
+                >
+                  {pm200Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+                <Paragraph style={styles.metricLabel}>Status</Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 2.2 DOORS Packages */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>DOORS Packages</Title>
+            <View style={styles.doorsRow}>
+              <View style={styles.doorsMetric}>
+                <Title style={styles.metricValue}>{totalDoors}</Title>
+                <Paragraph style={styles.metricLabel}>Total Packages</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.doorsMetric}>
+                <Paragraph style={styles.doorsCount}>✅ {doorsApproved} Approved</Paragraph>
+                <Paragraph style={styles.doorsCount}>🔄 {doorsUnderReview} Under Review</Paragraph>
+                <Paragraph style={styles.doorsCount}>⚠️ {doorsOpenIssues} Open Issues</Paragraph>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.complianceRow}>
+              <Paragraph style={styles.complianceLabel}>Requirements Compliance:</Paragraph>
+              <Paragraph style={styles.complianceValue}>
+                {compliantRequirements}/{totalRequirements} ({compliancePercentage}%)
+              </Paragraph>
+            </View>
+            <ProgressBar
+              progress={compliancePercentage / 100}
+              color={compliancePercentage >= 80 ? '#4CAF50' : compliancePercentage >= 50 ? '#FFC107' : '#F44336'}
+              style={styles.progressBar}
+            />
+          </Card.Content>
+        </Card>
+
+        {/* 2.3 RFQ Status */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>RFQ Status (Procurement)</Title>
+            <View style={styles.rfqRow}>
+              <View style={styles.rfqMetric}>
+                <Title style={styles.metricValue}>{totalRfqs}</Title>
+                <Paragraph style={styles.metricLabel}>Total RFQs</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.rfqMetric}>
+                <Paragraph style={styles.rfqCount}>📨 {rfqsQuotesReceived} Quotes Received</Paragraph>
+                <Paragraph style={styles.rfqCount}>⚖️ {rfqsUnderEvaluation} Under Evaluation</Paragraph>
+                <Paragraph style={styles.rfqCount}>✅ {rfqsAwarded} Awarded</Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+      </>
+    );
   };
 
   if (loading && !refreshing) {
@@ -606,6 +833,14 @@ const ManagerDashboardScreen = () => {
           </Card>
         </View>
       </View>
+
+      {/* Section 2: Engineering Progress */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Engineering Progress</Title>
+        <Paragraph style={styles.sectionSubtitle}>PM200 Milestone + DOORS + RFQ Status</Paragraph>
+
+        {renderEngineeringProgress()}
+      </View>
     </ScrollView>
   );
 };
@@ -738,6 +973,94 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  // Section 2: Engineering Progress styles
+  section: {
+    padding: 15,
+    paddingTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 15,
+  },
+  sectionCard: {
+    marginBottom: 15,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  engineeringRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  engineeringMetric: {
+    alignItems: 'center',
+  },
+  metricValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  statusChip: {
+    marginVertical: 5,
+  },
+  doorsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  doorsMetric: {
+    flex: 1,
+  },
+  doorsCount: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  verticalDivider: {
+    width: 1,
+    height: 60,
+    marginHorizontal: 15,
+  },
+  complianceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  complianceLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  complianceValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rfqRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rfqMetric: {
+    flex: 1,
+  },
+  rfqCount: {
+    fontSize: 14,
+    marginVertical: 3,
   },
 });
 
