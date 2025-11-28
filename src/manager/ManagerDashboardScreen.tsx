@@ -79,6 +79,22 @@ interface SiteProgressData {
   milestonesProgress: number;
 }
 
+interface EquipmentMaterialsData {
+  pm300Progress: number;
+  pm300Status: string;
+  pm400Progress: number;
+  pm400Status: string;
+  totalPOs: number;
+  posDraft: number;
+  posIssued: number;
+  posInProgress: number;
+  posDelivered: number;
+  posClosed: number;
+  totalPOValue: number;
+  upcomingDeliveries: number;
+  delayedDeliveries: number;
+}
+
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
@@ -112,11 +128,32 @@ const ManagerDashboardScreen = () => {
     rfqsAwarded: 0,
   });
   const [sitesProgress, setSitesProgress] = useState<SiteProgressData[]>([]);
+  const [equipmentData, setEquipmentData] = useState<EquipmentMaterialsData>({
+    pm300Progress: 0,
+    pm300Status: 'not_started',
+    pm400Progress: 0,
+    pm400Status: 'not_started',
+    totalPOs: 0,
+    posDraft: 0,
+    posIssued: 0,
+    posInProgress: 0,
+    posDelivered: 0,
+    posClosed: 0,
+    totalPOValue: 0,
+    upcomingDeliveries: 0,
+    delayedDeliveries: 0,
+  });
 
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([loadProjectInfo(), calculateStats(), loadEngineeringData(), loadSitesProgress()]);
+      await Promise.all([
+        loadProjectInfo(),
+        calculateStats(),
+        loadEngineeringData(),
+        loadSitesProgress(),
+        loadEquipmentMaterialsData(),
+      ]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
     } finally {
@@ -617,6 +654,156 @@ const ManagerDashboardScreen = () => {
     }
   };
 
+  const loadEquipmentMaterialsData = async () => {
+    if (!projectId) return;
+
+    try {
+      // Get PM300 (Procurement) milestone progress
+      const pm300Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM300'))
+        .fetch();
+
+      let pm300Progress = 0;
+      let pm300Status = 'not_started';
+
+      if (pm300Milestone.length > 0) {
+        const milestoneId = pm300Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm300Progress = totalProgress / progressRecords.length;
+
+          if (pm300Progress === 0) {
+            pm300Status = 'not_started';
+          } else if (pm300Progress < 100) {
+            pm300Status = 'in_progress';
+          } else {
+            pm300Status = 'completed';
+          }
+        }
+      }
+
+      // Get PM400 (Manufacturing) milestone progress
+      const pm400Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM400'))
+        .fetch();
+
+      let pm400Progress = 0;
+      let pm400Status = 'not_started';
+
+      if (pm400Milestone.length > 0) {
+        const milestoneId = pm400Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm400Progress = totalProgress / progressRecords.length;
+
+          if (pm400Progress === 0) {
+            pm400Status = 'not_started';
+          } else if (pm400Progress < 100) {
+            pm400Status = 'in_progress';
+          } else {
+            pm400Status = 'completed';
+          }
+        }
+      }
+
+      // Get Purchase Orders data
+      const allPOs = await database.collections
+        .get('purchase_orders')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const totalPOs = allPOs.length;
+      let posDraft = 0;
+      let posIssued = 0;
+      let posInProgress = 0;
+      let posDelivered = 0;
+      let posClosed = 0;
+      let totalPOValue = 0;
+
+      allPOs.forEach((po: any) => {
+        totalPOValue += po.poValue || 0;
+
+        switch (po.status) {
+          case 'draft':
+            posDraft++;
+            break;
+          case 'issued':
+            posIssued++;
+            break;
+          case 'in_progress':
+            posInProgress++;
+            break;
+          case 'delivered':
+            posDelivered++;
+            break;
+          case 'closed':
+            posClosed++;
+            break;
+        }
+      });
+
+      // Calculate delivery metrics
+      const now = Date.now();
+      const thirtyDaysFromNow = now + 30 * 24 * 60 * 60 * 1000;
+
+      let upcomingDeliveries = 0;
+      let delayedDeliveries = 0;
+
+      allPOs.forEach((po: any) => {
+        const expectedDelivery = po.expectedDeliveryDate;
+        const actualDelivery = po.actualDeliveryDate;
+
+        // Upcoming deliveries (next 30 days)
+        if (expectedDelivery && expectedDelivery >= now && expectedDelivery <= thirtyDaysFromNow) {
+          if (!actualDelivery) {
+            upcomingDeliveries++;
+          }
+        }
+
+        // Delayed deliveries
+        if (expectedDelivery && expectedDelivery < now && !actualDelivery) {
+          delayedDeliveries++;
+        }
+      });
+
+      setEquipmentData({
+        pm300Progress: Math.round(pm300Progress),
+        pm300Status,
+        pm400Progress: Math.round(pm400Progress),
+        pm400Status,
+        totalPOs,
+        posDraft,
+        posIssued,
+        posInProgress,
+        posDelivered,
+        posClosed,
+        totalPOValue,
+        upcomingDeliveries,
+        delayedDeliveries,
+      });
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading equipment/materials data:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -800,6 +987,129 @@ const ManagerDashboardScreen = () => {
             </Card.Content>
           </Card>
         ))}
+      </>
+    );
+  };
+
+  const renderEquipmentMaterials = () => {
+    const {
+      pm300Progress,
+      pm300Status,
+      pm400Progress,
+      pm400Status,
+      totalPOs,
+      posDraft,
+      posIssued,
+      posInProgress,
+      posDelivered,
+      posClosed,
+      totalPOValue,
+      upcomingDeliveries,
+      delayedDeliveries,
+    } = equipmentData;
+
+    return (
+      <>
+        {/* 4.1 Procurement Pipeline (PM300 & PM400) */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Procurement & Manufacturing Pipeline</Title>
+            <View style={styles.pipelineRow}>
+              {/* PM300 */}
+              <View style={styles.pipelineItem}>
+                <Paragraph style={styles.pipelineLabel}>Procurement (PM300)</Paragraph>
+                <Title style={styles.pipelineValue}>{pm300Progress}%</Title>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm300Status === 'completed'
+                          ? '#4CAF50'
+                          : pm300Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11 }}
+                >
+                  {pm300Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+              </View>
+
+              <Divider style={styles.verticalDivider} />
+
+              {/* PM400 */}
+              <View style={styles.pipelineItem}>
+                <Paragraph style={styles.pipelineLabel}>Manufacturing (PM400)</Paragraph>
+                <Title style={styles.pipelineValue}>{pm400Progress}%</Title>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm400Status === 'completed'
+                          ? '#4CAF50'
+                          : pm400Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11 }}
+                >
+                  {pm400Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 4.2 Purchase Orders Summary */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Purchase Orders</Title>
+            <View style={styles.poSummaryRow}>
+              <View style={styles.poSummaryLeft}>
+                <Title style={styles.poTotalValue}>{formatCurrency(totalPOValue)}</Title>
+                <Paragraph style={styles.poTotalLabel}>Total PO Value</Paragraph>
+                <Paragraph style={styles.poCount}>{totalPOs} Purchase Orders</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.poSummaryRight}>
+                <Paragraph style={styles.poStatusItem}>📝 {posDraft} Draft</Paragraph>
+                <Paragraph style={styles.poStatusItem}>📤 {posIssued} Issued</Paragraph>
+                <Paragraph style={styles.poStatusItem}>⏳ {posInProgress} In Progress</Paragraph>
+                <Paragraph style={styles.poStatusItem}>📦 {posDelivered} Delivered</Paragraph>
+                <Paragraph style={styles.poStatusItem}>✅ {posClosed} Closed</Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 4.3 Delivery Schedule */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Delivery Schedule</Title>
+            <View style={styles.deliveryRow}>
+              <View style={styles.deliveryMetric}>
+                <Title style={styles.deliveryValue}>{upcomingDeliveries}</Title>
+                <Paragraph style={styles.deliveryLabel}>Upcoming (30 days)</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.deliveryMetric}>
+                <Title style={[styles.deliveryValue, { color: delayedDeliveries > 0 ? '#F44336' : '#666' }]}>
+                  {delayedDeliveries}
+                </Title>
+                <Paragraph style={styles.deliveryLabel}>Delayed Deliveries</Paragraph>
+              </View>
+            </View>
+            {delayedDeliveries > 0 && (
+              <Paragraph style={styles.warningText}>
+                ⚠️ {delayedDeliveries} deliveries are past their expected date
+              </Paragraph>
+            )}
+          </Card.Content>
+        </Card>
       </>
     );
   };
@@ -1073,6 +1383,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         {renderSiteProgress()}
+      </View>
+
+      {/* Section 4: Equipment/Materials Status */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Equipment & Materials Status</Title>
+        <Paragraph style={styles.sectionSubtitle}>
+          Procurement (PM300) + Manufacturing (PM400) + Purchase Orders
+        </Paragraph>
+
+        {renderEquipmentMaterials()}
       </View>
     </ScrollView>
   );
@@ -1361,6 +1681,80 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     marginTop: 3,
+  },
+  // Section 4: Equipment/Materials styles
+  pipelineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pipelineItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pipelineLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  pipelineValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  poSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  poSummaryLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  poTotalValue: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 5,
+  },
+  poTotalLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  poCount: {
+    fontSize: 13,
+    color: '#999',
+  },
+  poSummaryRight: {
+    flex: 1,
+  },
+  poStatusItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  deliveryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  deliveryMetric: {
+    alignItems: 'center',
+  },
+  deliveryValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#666',
+    marginBottom: 5,
+  },
+  deliveryLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  warningText: {
+    marginTop: 15,
+    fontSize: 13,
+    color: '#F44336',
+    fontWeight: '500',
   },
 });
 

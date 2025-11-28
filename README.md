@@ -195,6 +195,49 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ---
 
+**Phase 5: Manager Dashboard - Section 4 (Equipment & Materials Status)** ✅ (November 24, 2025)
+- ✅ **Procurement Pipeline**: PM300 & PM400 milestone progress tracking
+  - Procurement (PM300) progress percentage and status
+  - Manufacturing (PM400) progress percentage and status
+  - Color-coded status chips (NOT STARTED/IN PROGRESS/COMPLETED)
+- ✅ **Purchase Orders Summary**: Comprehensive PO tracking
+  - Total PO value with currency formatting
+  - Total count of purchase orders
+  - Status breakdown with icons:
+    * 📝 Draft
+    * 📤 Issued
+    * ⏳ In Progress
+    * 📦 Delivered
+    * ✅ Closed
+- ✅ **Delivery Schedule**: Time-based delivery monitoring
+  - Upcoming deliveries (next 30 days) count
+  - Delayed deliveries count with warning indicator
+  - Conditional warning message for delayed items
+- ✅ **Real-time Calculations**: All data from database
+- ✅ **Visual Indicators**: Color-coded values and warning text
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+274 lines, now 1,762 lines total)
+
+**Technical Implementation:**
+- Added EquipmentMaterialsData interface with 13 fields
+- loadEquipmentMaterialsData() function (148 lines):
+  * PM300 milestone progress calculation across sites
+  * PM400 milestone progress calculation across sites
+  * Purchase orders query and aggregation by status
+  * Total PO value summation
+  * Upcoming deliveries calculation (next 30 days window)
+  * Delayed deliveries detection (past expected date)
+- renderEquipmentMaterials() function (122 lines):
+  * 3-card layout: Pipeline, POs, Deliveries
+  * Dual-column layouts with dividers
+  * Conditional warning display for delays
+- Added 15 new styles for Section 4 components
+
+**Next Phase:** Dashboard Section 5 - Financial Summary
+
+---
+
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
 **Photo Capture in Progress Updates** (November 19, 2025)
