@@ -157,6 +157,44 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ---
 
+**Phase 4: Manager Dashboard - Section 3 (Site Progress Comparison)** ✅ (November 24, 2025)
+- ✅ **Site Summary Cards**: Individual card for each site with comprehensive metrics
+  - Site name and supervisor assignment
+  - Overall hybrid progress percentage (60% items + 40% milestones)
+  - Status indicator chip (ON TRACK / AT RISK / DELAYED)
+  - Critical issues count
+  - Progress formula breakdown display
+- ✅ **Hybrid Progress Calculation**: Per-site weighted calculation
+  - Items progress: Σ(item_completion × item_weightage) / Σ(item_weightage)
+  - Milestones progress: Σ(milestone_completion × milestone_weightage) / 100
+  - Final: (items_progress × 0.6) + (milestones_progress × 0.4)
+- ✅ **Status Determination**: Intelligent schedule-based status
+  - ON TRACK: Progress ≥ Expected progress - 5%
+  - AT RISK: Progress between Expected - 10% and Expected - 5%
+  - DELAYED: Progress < Expected - 10%
+- ✅ **Visual Progress Bars**: Color-coded by status (green/yellow/red)
+- ✅ **Supervisor Information**: Displays assigned supervisor or "Unassigned"
+- ✅ **Critical Issues Tracking**: Count of high/critical priority hindrances per site
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+203 lines, now 1,368 lines total)
+
+**Technical Implementation:**
+- Added SiteProgressData interface with 8 fields
+- loadSitesProgress() function with comprehensive site analysis:
+  * Supervisor lookup from users table
+  * Weighted items progress calculation
+  * Site-specific milestone progress calculation
+  * Schedule-based status determination
+  * Critical hindrances filtering
+- renderSiteProgress() function with card-based layout
+- Added 17 new styles for Section 3 components
+- Optimized for-loop for processing multiple sites efficiently
+
+**Next Phase:** Dashboard Section 4 - Equipment/Materials Status (PM300-PM400)
+
+---
+
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
 **Photo Capture in Progress Updates** (November 19, 2025)

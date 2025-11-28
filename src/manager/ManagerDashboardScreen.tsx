@@ -68,6 +68,17 @@ interface EngineeringData {
   rfqsAwarded: number;
 }
 
+interface SiteProgressData {
+  siteId: string;
+  siteName: string;
+  supervisorName: string;
+  overallProgress: number;
+  status: 'on_track' | 'at_risk' | 'delayed';
+  criticalIssues: number;
+  itemsProgress: number;
+  milestonesProgress: number;
+}
+
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
@@ -100,11 +111,12 @@ const ManagerDashboardScreen = () => {
     rfqsUnderEvaluation: 0,
     rfqsAwarded: 0,
   });
+  const [sitesProgress, setSitesProgress] = useState<SiteProgressData[]>([]);
 
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([loadProjectInfo(), calculateStats(), loadEngineeringData()]);
+      await Promise.all([loadProjectInfo(), calculateStats(), loadEngineeringData(), loadSitesProgress()]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
     } finally {
@@ -478,6 +490,133 @@ const ManagerDashboardScreen = () => {
     }
   };
 
+  const loadSitesProgress = async () => {
+    if (!projectId) return;
+
+    try {
+      // Get all sites for this project
+      const sites = await database.collections
+        .get('sites')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const sitesData: SiteProgressData[] = [];
+
+      for (const site of sites) {
+        const siteId = site.id;
+        const siteName = (site as any).name;
+
+        // Get supervisor name
+        const supervisorId = (site as any).supervisorId;
+        let supervisorName = 'Unassigned';
+        if (supervisorId) {
+          try {
+            const supervisor = await database.collections.get('users').find(supervisorId);
+            supervisorName = (supervisor as any).fullName || (supervisor as any).username;
+          } catch (err) {
+            supervisorName = 'Unknown';
+          }
+        }
+
+        // Calculate items progress (weighted)
+        const items = await database.collections
+          .get('items')
+          .query(Q.where('site_id', siteId))
+          .fetch();
+
+        let itemsProgress = 0;
+        if (items.length > 0) {
+          const totalWeightage = items.reduce((sum, item: any) => sum + (item.weightage || 1), 0);
+          const weightedProgress = items.reduce((sum, item: any) => {
+            const weightage = item.weightage || 1;
+            const progress = item.currentProgress || 0;
+            return sum + (weightage * progress);
+          }, 0);
+          itemsProgress = totalWeightage > 0 ? (weightedProgress / totalWeightage) : 0;
+        }
+
+        // Calculate milestones progress for this site
+        const milestones = await database.collections
+          .get('milestones')
+          .query(Q.where('project_id', projectId), Q.where('is_active', true))
+          .fetch();
+
+        let milestonesProgress = 0;
+        if (milestones.length > 0) {
+          const totalMilestoneWeight = milestones.reduce(
+            (sum, m: any) => sum + (m.weightage || 0),
+            0
+          );
+
+          const milestoneProgressRecords = await database.collections
+            .get('milestone_progress')
+            .query(Q.where('site_id', siteId))
+            .fetch();
+
+          const milestoneProgressMap = new Map<string, number>();
+          milestoneProgressRecords.forEach((mp: any) => {
+            milestoneProgressMap.set(mp.milestoneId, mp.progressPercentage || 0);
+          });
+
+          const weightedMilestoneProgress = milestones.reduce((sum, milestone: any) => {
+            const progress = milestoneProgressMap.get(milestone.id) || 0;
+            return sum + (milestone.weightage * progress);
+          }, 0);
+
+          milestonesProgress =
+            totalMilestoneWeight > 0 ? weightedMilestoneProgress / totalMilestoneWeight : 0;
+        }
+
+        // Hybrid calculation: 60% items + 40% milestones
+        const overallProgress = itemsProgress * 0.6 + milestonesProgress * 0.4;
+
+        // Determine status based on schedule
+        const siteStartDate = (site as any).startDate;
+        const siteTargetDate = (site as any).targetDate;
+        const now = Date.now();
+
+        let status: 'on_track' | 'at_risk' | 'delayed' = 'on_track';
+
+        if (siteStartDate && siteTargetDate) {
+          const daysElapsed = Math.floor((now - siteStartDate) / (1000 * 60 * 60 * 24));
+          const totalDays = Math.floor((siteTargetDate - siteStartDate) / (1000 * 60 * 60 * 24));
+          const expectedProgress = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
+
+          if (overallProgress < expectedProgress - 10) {
+            status = 'delayed';
+          } else if (overallProgress < expectedProgress - 5) {
+            status = 'at_risk';
+          }
+        }
+
+        // Get critical issues count
+        const hindrances = await database.collections
+          .get('hindrances')
+          .query(Q.where('site_id', siteId), Q.where('status', 'open'))
+          .fetch();
+
+        const criticalIssues = hindrances.filter(
+          (h: any) => h.priority === 'high' || h.priority === 'critical'
+        ).length;
+
+        sitesData.push({
+          siteId,
+          siteName,
+          supervisorName,
+          overallProgress: Math.round(overallProgress * 10) / 10,
+          status,
+          criticalIssues,
+          itemsProgress: Math.round(itemsProgress),
+          milestonesProgress: Math.round(milestonesProgress),
+        });
+      }
+
+      setSitesProgress(sitesData);
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading sites progress:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -577,6 +716,90 @@ const ManagerDashboardScreen = () => {
             </View>
           </Card.Content>
         </Card>
+      </>
+    );
+  };
+
+  const renderSiteProgress = () => {
+    if (sitesProgress.length === 0) {
+      return (
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Paragraph style={styles.emptyText}>No sites found for this project</Paragraph>
+          </Card.Content>
+        </Card>
+      );
+    }
+
+    return (
+      <>
+        {sitesProgress.map((site) => (
+          <Card key={site.siteId} style={styles.siteCard}>
+            <Card.Content>
+              <View style={styles.siteHeader}>
+                <View style={styles.siteHeaderLeft}>
+                  <Title style={styles.siteName}>{site.siteName}</Title>
+                  <Paragraph style={styles.supervisorText}>
+                    👷 {site.supervisorName}
+                  </Paragraph>
+                </View>
+                <Chip
+                  style={[
+                    styles.siteStatusChip,
+                    {
+                      backgroundColor:
+                        site.status === 'on_track'
+                          ? '#4CAF50'
+                          : site.status === 'at_risk'
+                          ? '#FFC107'
+                          : '#F44336',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}
+                >
+                  {site.status === 'on_track'
+                    ? 'ON TRACK'
+                    : site.status === 'at_risk'
+                    ? 'AT RISK'
+                    : 'DELAYED'}
+                </Chip>
+              </View>
+
+              <Divider style={styles.divider} />
+
+              {/* Progress Section */}
+              <View style={styles.siteProgressSection}>
+                <View style={styles.siteProgressLeft}>
+                  <Title style={styles.siteProgressValue}>{site.overallProgress}%</Title>
+                  <Paragraph style={styles.siteProgressLabel}>Overall Progress</Paragraph>
+                  <Paragraph style={styles.siteProgressFormula}>
+                    ({site.itemsProgress}% items × 0.6 + {site.milestonesProgress}% milestones × 0.4)
+                  </Paragraph>
+                </View>
+
+                <View style={styles.siteProgressRight}>
+                  <View style={styles.siteMetric}>
+                    <Paragraph style={styles.siteMetricValue}>{site.criticalIssues}</Paragraph>
+                    <Paragraph style={styles.siteMetricLabel}>Critical Issues</Paragraph>
+                  </View>
+                </View>
+              </View>
+
+              {/* Progress Bar */}
+              <ProgressBar
+                progress={site.overallProgress / 100}
+                color={
+                  site.status === 'on_track'
+                    ? '#4CAF50'
+                    : site.status === 'at_risk'
+                    ? '#FFC107'
+                    : '#F44336'
+                }
+                style={styles.progressBar}
+              />
+            </Card.Content>
+          </Card>
+        ))}
       </>
     );
   };
@@ -841,6 +1064,16 @@ const ManagerDashboardScreen = () => {
 
         {renderEngineeringProgress()}
       </View>
+
+      {/* Section 3: Site Progress */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Site Progress Comparison</Title>
+        <Paragraph style={styles.sectionSubtitle}>
+          All Sites - Hybrid Tracking (60% Items + 40% Milestones)
+        </Paragraph>
+
+        {renderSiteProgress()}
+      </View>
     </ScrollView>
   );
 };
@@ -1061,6 +1294,73 @@ const styles = StyleSheet.create({
   rfqCount: {
     fontSize: 14,
     marginVertical: 3,
+  },
+  // Section 3: Site Progress styles
+  siteCard: {
+    marginBottom: 15,
+  },
+  siteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  siteHeaderLeft: {
+    flex: 1,
+  },
+  siteName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  supervisorText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  siteStatusChip: {
+    marginLeft: 10,
+  },
+  siteProgressSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  siteProgressLeft: {
+    flex: 1,
+  },
+  siteProgressValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  siteProgressLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 3,
+  },
+  siteProgressFormula: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  siteProgressRight: {
+    alignItems: 'center',
+    marginLeft: 20,
+  },
+  siteMetric: {
+    alignItems: 'center',
+  },
+  siteMetricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F44336',
+  },
+  siteMetricLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 3,
   },
 });
 
