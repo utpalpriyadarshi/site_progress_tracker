@@ -285,7 +285,61 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   * Conditional color coding for all metrics
 - Added 25 new styles for Section 5 components
 
-**Next Phase:** Dashboard Sections 6 & 7 (Testing/Commissioning + Handover)
+**Next Phase:** Dashboard Section 7 (Handover - PM700)
+
+---
+
+**Phase 5 - Section 6: Manager Dashboard - Testing & Commissioning** ✅ (November 29, 2025)
+- ✅ **Pre-commissioning (PM500)**: Testing phase tracking
+  - PM500 milestone progress with status chip
+  - Items count in pre-commissioning phase
+  - Progress percentage with color-coded status
+- ✅ **Commissioning (PM600)**: Live systems tracking
+  - PM600 milestone progress with status chip
+  - Items count in commissioning phase
+  - Progress percentage with color-coded status
+- ✅ **Testing & Systems Status**: Operational metrics
+  - Tests completed vs pending breakdown
+  - Systems energized count (⚡)
+  - Systems operational count (✅)
+- ✅ **Quality Inspections**: Quality control tracking
+  - Total inspections count
+  - Inspections passed (✅) vs failed (❌)
+  - Pass rate percentage with progress bar
+  - Color-coded pass rate (green ≥90%, yellow ≥70%, red <70%)
+  - Warning for inspections requiring rework
+- ✅ **Real-time Calculations**: All data from milestones and inspections
+- ✅ **Visual Indicators**: Color-coded status chips and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+272 lines, now 2,444 lines total)
+
+**Technical Implementation:**
+- Added TestingCommissioningData interface with 13 fields
+- loadTestingCommissioningData() function (148 lines):
+  * Queries PM500 milestone progress (average across sites)
+  * Queries PM600 milestone progress (average across sites)
+  * Counts items in pre-commissioning and commissioning phases
+  * Queries site inspections data
+  * Calculates tests completed/pending from inspection status
+  * Counts systems energized/operational from item status
+  * Computes pass rate from inspection results
+- renderTestingCommissioning() function (154 lines):
+  * 3 Material Design cards
+  * Card 1: PM500 & PM600 overview with status chips
+  * Card 2: Testing and systems status
+  * Card 3: Quality inspections with pass rate
+  * Conditional color coding for all metrics
+- Added 21 new styles for Section 6 components
+
+**Dashboard Progress Summary:**
+✅ Section 1: Project Overview & KPIs (Phase 2)
+✅ Section 2: Engineering Progress (Phase 3)
+✅ Section 3: Site Progress Comparison (Phase 4)
+✅ Section 4: Equipment & Materials Status (Phase 5)
+✅ Section 5: Financial Summary (Phase 5)
+✅ Section 6: Testing & Commissioning (Phase 5) ← NEW
+⏳ Section 7: Handover (PM700) - Next
 
 ---
 

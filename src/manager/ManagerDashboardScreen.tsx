@@ -114,6 +114,22 @@ interface FinancialData {
   bomActualCost: number;
 }
 
+interface TestingCommissioningData {
+  pm500Progress: number;
+  pm500Status: string;
+  pm600Progress: number;
+  pm600Status: string;
+  itemsInPreCommissioning: number;
+  itemsInCommissioning: number;
+  testsCompleted: number;
+  testsPending: number;
+  systemsEnergized: number;
+  systemsOperational: number;
+  totalInspections: number;
+  inspectionsPassed: number;
+  inspectionsFailed: number;
+}
+
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
@@ -180,6 +196,21 @@ const ManagerDashboardScreen = () => {
     bomTotalCost: 0,
     bomActualCost: 0,
   });
+  const [testingCommissioningData, setTestingCommissioningData] = useState<TestingCommissioningData>({
+    pm500Progress: 0,
+    pm500Status: 'not_started',
+    pm600Progress: 0,
+    pm600Status: 'not_started',
+    itemsInPreCommissioning: 0,
+    itemsInCommissioning: 0,
+    testsCompleted: 0,
+    testsPending: 0,
+    systemsEnergized: 0,
+    systemsOperational: 0,
+    totalInspections: 0,
+    inspectionsPassed: 0,
+    inspectionsFailed: 0,
+  });
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -191,6 +222,7 @@ const ManagerDashboardScreen = () => {
         loadSitesProgress(),
         loadEquipmentMaterialsData(),
         loadFinancialData(),
+        loadTestingCommissioningData(),
       ]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
@@ -923,6 +955,156 @@ const ManagerDashboardScreen = () => {
     }
   };
 
+  const loadTestingCommissioningData = async () => {
+    if (!projectId) return;
+
+    try {
+      // Get PM500 (Pre-commissioning) milestone progress
+      const pm500Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM500'))
+        .fetch();
+
+      let pm500Progress = 0;
+      let pm500Status = 'not_started';
+
+      if (pm500Milestone.length > 0) {
+        const milestoneId = pm500Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm500Progress = totalProgress / progressRecords.length;
+
+          if (pm500Progress === 0) {
+            pm500Status = 'not_started';
+          } else if (pm500Progress < 100) {
+            pm500Status = 'in_progress';
+          } else {
+            pm500Status = 'completed';
+          }
+        }
+      }
+
+      // Get PM600 (Commissioning) milestone progress
+      const pm600Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM600'))
+        .fetch();
+
+      let pm600Progress = 0;
+      let pm600Status = 'not_started';
+
+      if (pm600Milestone.length > 0) {
+        const milestoneId = pm600Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm600Progress = totalProgress / progressRecords.length;
+
+          if (pm600Progress === 0) {
+            pm600Status = 'not_started';
+          } else if (pm600Progress < 100) {
+            pm600Status = 'in_progress';
+          } else {
+            pm600Status = 'completed';
+          }
+        }
+      }
+
+      // Get all sites for this project
+      const sites = await database.collections
+        .get('sites')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const siteIds = sites.map((s) => s.id);
+
+      // Get items data for testing/commissioning phase
+      const allItems = await database.collections
+        .get('items')
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      // Count items in pre-commissioning and commissioning phases
+      let itemsInPreCommissioning = 0;
+      let itemsInCommissioning = 0;
+
+      allItems.forEach((item: any) => {
+        const phase = item.phase?.toLowerCase() || '';
+        if (phase.includes('pre-commission') || phase.includes('testing')) {
+          itemsInPreCommissioning++;
+        } else if (phase.includes('commission')) {
+          itemsInCommissioning++;
+        }
+      });
+
+      // Get inspections data
+      const allInspections = await database.collections
+        .get('site_inspections')
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      const totalInspections = allInspections.length;
+      let inspectionsPassed = 0;
+      let inspectionsFailed = 0;
+
+      allInspections.forEach((inspection: any) => {
+        if (inspection.status === 'passed' || inspection.status === 'approved') {
+          inspectionsPassed++;
+        } else if (inspection.status === 'failed') {
+          inspectionsFailed++;
+        }
+      });
+
+      // Calculate tests based on inspections
+      const testsCompleted = inspectionsPassed + inspectionsFailed;
+      const testsPending = totalInspections - testsCompleted;
+
+      // Calculate systems (simplified - based on items that are commissioned)
+      const systemsEnergized = allItems.filter((item: any) => {
+        const status = item.status?.toLowerCase() || '';
+        return status.includes('energized') || status.includes('powered');
+      }).length;
+
+      const systemsOperational = allItems.filter((item: any) => {
+        const status = item.status?.toLowerCase() || '';
+        return status.includes('operational') || status.includes('commissioned');
+      }).length;
+
+      setTestingCommissioningData({
+        pm500Progress: Math.round(pm500Progress),
+        pm500Status,
+        pm600Progress: Math.round(pm600Progress),
+        pm600Status,
+        itemsInPreCommissioning,
+        itemsInCommissioning,
+        testsCompleted,
+        testsPending,
+        systemsEnergized,
+        systemsOperational,
+        totalInspections,
+        inspectionsPassed,
+        inspectionsFailed,
+      });
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading testing/commissioning data:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -1377,6 +1559,162 @@ const ManagerDashboardScreen = () => {
     );
   };
 
+  const renderTestingCommissioning = () => {
+    const {
+      pm500Progress,
+      pm500Status,
+      pm600Progress,
+      pm600Status,
+      itemsInPreCommissioning,
+      itemsInCommissioning,
+      testsCompleted,
+      testsPending,
+      systemsEnergized,
+      systemsOperational,
+      totalInspections,
+      inspectionsPassed,
+      inspectionsFailed,
+    } = testingCommissioningData;
+
+    const passRate = totalInspections > 0 ? Math.round((inspectionsPassed / totalInspections) * 100) : 0;
+
+    return (
+      <>
+        {/* 6.1 Pre-commissioning (PM500) & Commissioning (PM600) */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Pre-commissioning & Commissioning Overview</Title>
+            <View style={styles.testingRow}>
+              {/* PM500 */}
+              <View style={styles.testingItem}>
+                <Paragraph style={styles.testingLabel}>Pre-commissioning (PM500)</Paragraph>
+                <Title style={styles.testingValue}>{pm500Progress}%</Title>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm500Status === 'completed'
+                          ? '#4CAF50'
+                          : pm500Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11 }}
+                >
+                  {pm500Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+                <Paragraph style={styles.testingCount}>
+                  {itemsInPreCommissioning} Items in Phase
+                </Paragraph>
+              </View>
+
+              <Divider style={styles.verticalDivider} />
+
+              {/* PM600 */}
+              <View style={styles.testingItem}>
+                <Paragraph style={styles.testingLabel}>Commissioning (PM600)</Paragraph>
+                <Title style={styles.testingValue}>{pm600Progress}%</Title>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm600Status === 'completed'
+                          ? '#4CAF50'
+                          : pm600Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11 }}
+                >
+                  {pm600Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+                <Paragraph style={styles.testingCount}>
+                  {itemsInCommissioning} Items in Phase
+                </Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 6.2 Testing & Systems Status */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Testing & Systems Status</Title>
+            <View style={styles.systemsRow}>
+              <View style={styles.systemsLeft}>
+                <Paragraph style={styles.systemsLabel}>Tests Progress:</Paragraph>
+                <Paragraph style={styles.systemsItem}>
+                  ✅ {testsCompleted} Completed
+                </Paragraph>
+                <Paragraph style={styles.systemsItem}>
+                  ⏳ {testsPending} Pending
+                </Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.systemsRight}>
+                <Paragraph style={styles.systemsLabel}>Systems Status:</Paragraph>
+                <Paragraph style={styles.systemsItem}>
+                  ⚡ {systemsEnergized} Energized
+                </Paragraph>
+                <Paragraph style={styles.systemsItem}>
+                  ✅ {systemsOperational} Operational
+                </Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 6.3 Quality Inspections */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Quality Inspections</Title>
+            <View style={styles.inspectionRow}>
+              <View style={styles.inspectionLeft}>
+                <Title style={styles.inspectionTotal}>{totalInspections}</Title>
+                <Paragraph style={styles.inspectionLabel}>Total Inspections</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.inspectionRight}>
+                <Paragraph style={styles.inspectionItem}>
+                  ✅ {inspectionsPassed} Passed
+                </Paragraph>
+                <Paragraph style={styles.inspectionItem}>
+                  ❌ {inspectionsFailed} Failed
+                </Paragraph>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.passRateRow}>
+              <Paragraph style={styles.passRateLabel}>Pass Rate:</Paragraph>
+              <Paragraph
+                style={[
+                  styles.passRateValue,
+                  { color: passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336' },
+                ]}
+              >
+                {passRate}%
+              </Paragraph>
+            </View>
+            <ProgressBar
+              progress={passRate / 100}
+              color={passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336'}
+              style={styles.progressBar}
+            />
+            {inspectionsFailed > 0 && (
+              <Paragraph style={styles.warningText}>
+                ⚠️ {inspectionsFailed} inspections require rework
+              </Paragraph>
+            )}
+          </Card.Content>
+        </Card>
+      </>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -1666,6 +2004,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         {renderFinancialSummary()}
+      </View>
+
+      {/* Section 6: Testing & Commissioning */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Testing & Commissioning</Title>
+        <Paragraph style={styles.sectionSubtitle}>
+          Pre-commissioning (PM500) + Commissioning (PM600) + Quality Inspections
+        </Paragraph>
+
+        {renderTestingCommissioning()}
       </View>
     </ScrollView>
   );
@@ -2164,6 +2512,91 @@ const styles = StyleSheet.create({
   },
   varianceValue: {
     fontSize: 15,
+    fontWeight: 'bold',
+  },
+  // Section 6: Testing & Commissioning styles
+  testingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  testingItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  testingLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  testingValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  testingCount: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
+  },
+  systemsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  systemsLeft: {
+    flex: 1,
+  },
+  systemsRight: {
+    flex: 1,
+  },
+  systemsLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  systemsItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  inspectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inspectionLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  inspectionRight: {
+    flex: 1,
+  },
+  inspectionTotal: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  inspectionLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  inspectionItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  passRateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  passRateLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  passRateValue: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
