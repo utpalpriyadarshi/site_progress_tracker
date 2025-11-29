@@ -130,6 +130,22 @@ interface TestingCommissioningData {
   inspectionsFailed: number;
 }
 
+interface HandoverData {
+  pm700Progress: number;
+  pm700Status: string;
+  sitesReadyForHandover: number;
+  sitesHandedOver: number;
+  totalSites: number;
+  documentationComplete: number;
+  documentationPending: number;
+  documentationPercentage: number;
+  totalPunchItems: number;
+  punchItemsClosed: number;
+  punchItemsOpen: number;
+  punchItemsCritical: number;
+  punchListCompletion: number;
+}
+
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
@@ -211,6 +227,21 @@ const ManagerDashboardScreen = () => {
     inspectionsPassed: 0,
     inspectionsFailed: 0,
   });
+  const [handoverData, setHandoverData] = useState<HandoverData>({
+    pm700Progress: 0,
+    pm700Status: 'not_started',
+    sitesReadyForHandover: 0,
+    sitesHandedOver: 0,
+    totalSites: 0,
+    documentationComplete: 0,
+    documentationPending: 0,
+    documentationPercentage: 0,
+    totalPunchItems: 0,
+    punchItemsClosed: 0,
+    punchItemsOpen: 0,
+    punchItemsCritical: 0,
+    punchListCompletion: 0,
+  });
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -223,6 +254,7 @@ const ManagerDashboardScreen = () => {
         loadEquipmentMaterialsData(),
         loadFinancialData(),
         loadTestingCommissioningData(),
+        loadHandoverData(),
       ]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
@@ -1105,6 +1137,143 @@ const ManagerDashboardScreen = () => {
     }
   };
 
+  const loadHandoverData = async () => {
+    if (!projectId) return;
+
+    try {
+      // Get PM700 (Handover) milestone progress
+      const pm700Milestone = await database.collections
+        .get('milestones')
+        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM700'))
+        .fetch();
+
+      let pm700Progress = 0;
+      let pm700Status = 'not_started';
+
+      if (pm700Milestone.length > 0) {
+        const milestoneId = pm700Milestone[0].id;
+        const progressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        if (progressRecords.length > 0) {
+          const totalProgress = progressRecords.reduce(
+            (sum, record: any) => sum + (record.progressPercentage || 0),
+            0
+          );
+          pm700Progress = totalProgress / progressRecords.length;
+
+          if (pm700Progress === 0) {
+            pm700Status = 'not_started';
+            } else if (pm700Progress < 100) {
+            pm700Status = 'in_progress';
+          } else {
+            pm700Status = 'completed';
+          }
+        }
+      }
+
+      // Get all sites for this project
+      const sites = await database.collections
+        .get('sites')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const totalSites = sites.length;
+      const siteIds = sites.map((s) => s.id);
+
+      // Calculate sites ready for handover and sites handed over
+      // (Simplified: based on overall progress and PM700 progress per site)
+      let sitesReadyForHandover = 0;
+      let sitesHandedOver = 0;
+
+      if (pm700Milestone.length > 0) {
+        const milestoneId = pm700Milestone[0].id;
+        const siteProgressRecords = await database.collections
+          .get('milestone_progress')
+          .query(Q.where('milestone_id', milestoneId))
+          .fetch();
+
+        siteProgressRecords.forEach((record: any) => {
+          const progress = record.progressPercentage || 0;
+          if (progress === 100) {
+            sitesHandedOver++;
+          } else if (progress >= 80) {
+            sitesReadyForHandover++;
+          }
+        });
+      }
+
+      // Get items data for documentation tracking
+      // (Simplified: items with status 'completed' or 'handed_over')
+      const allItems = await database.collections
+        .get('items')
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      const totalItems = allItems.length;
+      let documentationComplete = 0;
+
+      allItems.forEach((item: any) => {
+        const status = item.status?.toLowerCase() || '';
+        if (status.includes('complete') || status.includes('handed') || status.includes('closed')) {
+          documentationComplete++;
+        }
+      });
+
+      const documentationPending = totalItems - documentationComplete;
+      const documentationPercentage = totalItems > 0
+        ? Math.round((documentationComplete / totalItems) * 100)
+        : 0;
+
+      // Get hindrances as simplified punch list items
+      // (Note: Ideally would have a separate punch_list table)
+      const allHindrances = await database.collections
+        .get('hindrances')
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      const totalPunchItems = allHindrances.length;
+      let punchItemsClosed = 0;
+      let punchItemsCritical = 0;
+
+      allHindrances.forEach((hindrance: any) => {
+        if (hindrance.status === 'resolved' || hindrance.status === 'closed') {
+          punchItemsClosed++;
+        }
+        if (hindrance.priority === 'high' || hindrance.priority === 'critical') {
+          if (hindrance.status !== 'resolved' && hindrance.status !== 'closed') {
+            punchItemsCritical++;
+          }
+        }
+      });
+
+      const punchItemsOpen = totalPunchItems - punchItemsClosed;
+      const punchListCompletion = totalPunchItems > 0
+        ? Math.round((punchItemsClosed / totalPunchItems) * 100)
+        : 0;
+
+      setHandoverData({
+        pm700Progress: Math.round(pm700Progress),
+        pm700Status,
+        sitesReadyForHandover,
+        sitesHandedOver,
+        totalSites,
+        documentationComplete,
+        documentationPending,
+        documentationPercentage,
+        totalPunchItems,
+        punchItemsClosed,
+        punchItemsOpen,
+        punchItemsCritical,
+        punchListCompletion,
+      });
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading handover data:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -1715,6 +1884,172 @@ const ManagerDashboardScreen = () => {
     );
   };
 
+  const renderHandover = () => {
+    const {
+      pm700Progress,
+      pm700Status,
+      sitesReadyForHandover,
+      sitesHandedOver,
+      totalSites,
+      documentationComplete,
+      documentationPending,
+      documentationPercentage,
+      totalPunchItems,
+      punchItemsClosed,
+      punchItemsOpen,
+      punchItemsCritical,
+      punchListCompletion,
+    } = handoverData;
+
+    return (
+      <>
+        {/* 7.1 PM700 Overview & Site Status */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Handover Overview (PM700)</Title>
+            <View style={styles.handoverOverviewRow}>
+              <View style={styles.handoverOverviewLeft}>
+                <Title style={styles.handoverProgress}>{pm700Progress}%</Title>
+                <Paragraph style={styles.handoverLabel}>PM700 Progress</Paragraph>
+                <Chip
+                  style={[
+                    styles.statusChip,
+                    {
+                      backgroundColor:
+                        pm700Status === 'completed'
+                          ? '#4CAF50'
+                          : pm700Status === 'in_progress'
+                          ? '#2196F3'
+                          : '#9E9E9E',
+                    },
+                  ]}
+                  textStyle={{ color: '#fff', fontSize: 11 }}
+                >
+                  {pm700Status.replace('_', ' ').toUpperCase()}
+                </Chip>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.handoverOverviewRight}>
+                <Paragraph style={styles.handoverSiteLabel}>Site Status:</Paragraph>
+                <Paragraph style={styles.handoverSiteItem}>
+                  ✅ {sitesHandedOver} Handed Over
+                </Paragraph>
+                <Paragraph style={styles.handoverSiteItem}>
+                  🎯 {sitesReadyForHandover} Ready
+                </Paragraph>
+                <Paragraph style={styles.handoverSiteItem}>
+                  📊 {totalSites} Total Sites
+                </Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 7.2 Documentation Status */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Documentation Status</Title>
+            <View style={styles.documentationRow}>
+              <View style={styles.documentationLeft}>
+                <Title style={styles.documentationTotal}>{documentationComplete}</Title>
+                <Paragraph style={styles.documentationLabel}>Items Documented</Paragraph>
+                <Paragraph style={styles.documentationPending}>
+                  {documentationPending} Pending
+                </Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.documentationRight}>
+                <Paragraph style={styles.documentationPercentageLabel}>
+                  Completion:
+                </Paragraph>
+                <Title style={styles.documentationPercentageValue}>
+                  {documentationPercentage}%
+                </Title>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <ProgressBar
+              progress={documentationPercentage / 100}
+              color={
+                documentationPercentage >= 90
+                  ? '#4CAF50'
+                  : documentationPercentage >= 70
+                  ? '#FFC107'
+                  : '#F44336'
+              }
+              style={styles.progressBar}
+            />
+            <Paragraph style={styles.documentationNote}>
+              📄 Includes as-built drawings, O&M manuals, test certificates, and warranties
+            </Paragraph>
+          </Card.Content>
+        </Card>
+
+        {/* 7.3 Punch List Summary */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Punch List</Title>
+            <View style={styles.punchListRow}>
+              <View style={styles.punchListLeft}>
+                <Title style={styles.punchListTotal}>{totalPunchItems}</Title>
+                <Paragraph style={styles.punchListLabel}>Total Items</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.punchListRight}>
+                <Paragraph style={styles.punchListItem}>
+                  ✅ {punchItemsClosed} Closed
+                </Paragraph>
+                <Paragraph style={styles.punchListItem}>
+                  ⏳ {punchItemsOpen} Open
+                </Paragraph>
+                {punchItemsCritical > 0 && (
+                  <Paragraph style={styles.punchListCritical}>
+                    ⚠️ {punchItemsCritical} Critical
+                  </Paragraph>
+                )}
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.punchCompletionRow}>
+              <Paragraph style={styles.punchCompletionLabel}>Punch List Completion:</Paragraph>
+              <Paragraph
+                style={[
+                  styles.punchCompletionValue,
+                  {
+                    color:
+                      punchListCompletion >= 90
+                        ? '#4CAF50'
+                        : punchListCompletion >= 70
+                        ? '#FFC107'
+                        : '#F44336',
+                  },
+                ]}
+              >
+                {punchListCompletion}%
+              </Paragraph>
+            </View>
+            <ProgressBar
+              progress={punchListCompletion / 100}
+              color={
+                punchListCompletion >= 90
+                  ? '#4CAF50'
+                  : punchListCompletion >= 70
+                  ? '#FFC107'
+                  : '#F44336'
+              }
+              style={styles.progressBar}
+            />
+            {punchItemsCritical > 0 && (
+              <Paragraph style={styles.warningText}>
+                ⚠️ {punchItemsCritical} critical items must be resolved before handover
+              </Paragraph>
+            )}
+          </Card.Content>
+        </Card>
+      </>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -2014,6 +2349,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         {renderTestingCommissioning()}
+      </View>
+
+      {/* Section 7: Handover Status */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Handover Status</Title>
+        <Paragraph style={styles.sectionSubtitle}>
+          PM700 Milestone + Documentation + Punch List
+        </Paragraph>
+
+        {renderHandover()}
       </View>
     </ScrollView>
   );
@@ -2596,6 +2941,126 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   passRateValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Section 7: Handover Status styles
+  handoverOverviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  handoverOverviewLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  handoverOverviewRight: {
+    flex: 1,
+  },
+  handoverProgress: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  handoverLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  handoverSiteLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  handoverSiteItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  documentationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  documentationLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  documentationRight: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  documentationTotal: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  documentationLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  documentationPending: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
+  },
+  documentationPercentageLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  documentationPercentageValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  documentationNote: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  punchListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  punchListLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  punchListRight: {
+    flex: 1,
+  },
+  punchListTotal: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  punchListLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  punchListItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  punchListCritical: {
+    fontSize: 14,
+    marginVertical: 3,
+    color: '#F44336',
+    fontWeight: '500',
+  },
+  punchCompletionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  punchCompletionLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  punchCompletionValue: {
     fontSize: 16,
     fontWeight: 'bold',
   },
