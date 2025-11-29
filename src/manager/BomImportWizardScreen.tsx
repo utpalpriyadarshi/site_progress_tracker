@@ -21,7 +21,7 @@ import {
   DataTable,
   Chip,
 } from 'react-native-paper';
-import DocumentPicker from 'react-native-document-picker';
+// import DocumentPicker from 'react-native-document-picker'; // Removed - incompatible with RN 0.81
 import RNFS from 'react-native-fs';
 import { useManagerContext } from './context/ManagerContext';
 import {
@@ -91,65 +91,69 @@ const BomImportWizardScreen = () => {
 
   // Step 1: File Upload
   const handleFilePicker = async () => {
-    try {
-      const result = await DocumentPicker.pick({
-        type: [DocumentPicker.types.allFiles],
-      });
+    // NOTE: File picker temporarily disabled due to react-native-document-picker
+    // incompatibility with React Native 0.81
+    //
+    // Alternative implementation options:
+    // 1. Upgrade to React Native 0.74+ to use @react-native-community/document-picker
+    // 2. Use platform-specific file pickers (not cross-platform)
+    // 3. Load sample file from assets for demo purposes
 
-      const file = result[0];
-      const fileName = file.name || '';
-      const fileSize = file.size || 0;
-      const fileType = fileName.split('.').pop()?.toLowerCase() || '';
+    Alert.alert(
+      'File Upload Not Available',
+      'File picker is temporarily unavailable due to React Native version compatibility.\n\n' +
+      'To enable file upload:\n' +
+      '1. Upgrade React Native to 0.74+\n' +
+      '2. Install @react-native-community/document-picker\n\n' +
+      'For now, you can test with the demo below.',
+      [
+        { text: 'OK' },
+        {
+          text: 'Load Demo Data',
+          onPress: () => loadDemoData(),
+        },
+      ]
+    );
+  };
 
-      // Validate file type
-      if (!validateFileType(fileName)) {
-        Alert.alert('Invalid File', 'Please select an Excel (.xlsx, .xls) or CSV (.csv) file');
-        return;
-      }
+  // Demo data loader for testing
+  const loadDemoData = () => {
+    const demoHeaders = ['S.N', 'Description', 'Category', 'Quantity', 'Unit', 'Unit Cost', 'Total Cost'];
+    const demoData = [
+      {
+        'S.N': '1',
+        'Description': 'Sample Item 1',
+        'Category': 'Electrical',
+        'Quantity': '10',
+        'Unit': 'pcs',
+        'Unit Cost': '100',
+        'Total Cost': '1000',
+      },
+      {
+        'S.N': '2',
+        'Description': 'Sample Item 2',
+        'Category': 'Mechanical',
+        'Quantity': '5',
+        'Unit': 'units',
+        'Unit Cost': '200',
+        'Total Cost': '1000',
+      },
+    ];
 
-      // Validate file size
-      if (!validateFileSize(fileSize)) {
-        Alert.alert('File Too Large', 'Maximum file size is 10MB');
-        return;
-      }
+    const autoMapping = autoDetectColumns(demoHeaders);
 
-      // Read file content
-      const fileContent = await RNFS.readFile(file.uri, 'base64');
+    setImportData({
+      ...importData,
+      fileName: 'demo_bom.csv',
+      fileSize: 1024,
+      fileType: 'csv',
+      fileContent: '',
+      headers: demoHeaders,
+      rawData: demoData,
+      columnMapping: autoMapping,
+    });
 
-      // Parse file
-      let parseResult;
-      if (fileType === 'csv') {
-        const csvContent = await RNFS.readFile(file.uri, 'utf8');
-        parseResult = parseCSV(csvContent);
-      } else {
-        parseResult = await parseExcel(fileContent);
-      }
-
-      if (!parseResult.success) {
-        Alert.alert('Parse Error', parseResult.errors.join('\n'));
-        return;
-      }
-
-      // Auto-detect column mapping
-      const autoMapping = autoDetectColumns(parseResult.headers);
-
-      setImportData({
-        ...importData,
-        fileName,
-        fileSize,
-        fileType,
-        fileContent,
-        headers: parseResult.headers,
-        rawData: parseResult.data,
-        columnMapping: autoMapping,
-      });
-
-      Alert.alert('Success', `File uploaded: ${fileName}\n${parseResult.rowCount} rows found`);
-    } catch (err: any) {
-      if (!DocumentPicker.isCancel(err)) {
-        Alert.alert('Error', `Failed to pick file: ${err.message}`);
-      }
-    }
+    Alert.alert('Demo Data Loaded', `${demoData.length} sample rows loaded for testing`);
   };
 
   // Step 2: Validate column mapping
