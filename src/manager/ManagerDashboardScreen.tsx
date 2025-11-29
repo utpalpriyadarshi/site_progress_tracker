@@ -95,6 +95,25 @@ interface EquipmentMaterialsData {
   delayedDeliveries: number;
 }
 
+interface FinancialData {
+  projectBudget: number;
+  budgetAllocated: number;
+  budgetSpent: number;
+  budgetRemaining: number;
+  budgetUtilization: number;
+  contractValue: number;
+  estimatedCost: number;
+  actualCost: number;
+  projectedProfit: number;
+  profitMargin: number;
+  totalBOMs: number;
+  bomsDraft: number;
+  bomsApproved: number;
+  bomsLocked: number;
+  bomTotalCost: number;
+  bomActualCost: number;
+}
+
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const [loading, setLoading] = useState(true);
@@ -143,6 +162,24 @@ const ManagerDashboardScreen = () => {
     upcomingDeliveries: 0,
     delayedDeliveries: 0,
   });
+  const [financialData, setFinancialData] = useState<FinancialData>({
+    projectBudget: 0,
+    budgetAllocated: 0,
+    budgetSpent: 0,
+    budgetRemaining: 0,
+    budgetUtilization: 0,
+    contractValue: 0,
+    estimatedCost: 0,
+    actualCost: 0,
+    projectedProfit: 0,
+    profitMargin: 0,
+    totalBOMs: 0,
+    bomsDraft: 0,
+    bomsApproved: 0,
+    bomsLocked: 0,
+    bomTotalCost: 0,
+    bomActualCost: 0,
+  });
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -153,6 +190,7 @@ const ManagerDashboardScreen = () => {
         loadEngineeringData(),
         loadSitesProgress(),
         loadEquipmentMaterialsData(),
+        loadFinancialData(),
       ]);
     } catch (error) {
       console.error('[ManagerDashboard] Error loading data:', error);
@@ -804,6 +842,87 @@ const ManagerDashboardScreen = () => {
     }
   };
 
+  const loadFinancialData = async () => {
+    if (!projectId || !projectInfo) return;
+
+    try {
+      // Get project budget from projectInfo
+      const projectBudget = projectInfo.budget || 0;
+      const contractValue = projectBudget; // Assuming contract value = budget (can be modified)
+
+      // Get all BOMs for the project
+      const boms = await database.collections
+        .get('boms')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const totalBOMs = boms.length;
+      let bomsDraft = 0;
+      let bomsApproved = 0;
+      let bomsLocked = 0;
+      let bomTotalCost = 0;
+
+      boms.forEach((bom: any) => {
+        if (bom.status === 'draft') {
+          bomsDraft++;
+        } else if (bom.status === 'approved') {
+          bomsApproved++;
+        } else if (bom.status === 'locked') {
+          bomsLocked++;
+        }
+        bomTotalCost += bom.totalCost || 0;
+      });
+
+      // Get all purchase orders for actual cost
+      const allPOs = await database.collections
+        .get('purchase_orders')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      let actualCost = 0;
+      allPOs.forEach((po: any) => {
+        if (po.status === 'delivered' || po.status === 'closed') {
+          actualCost += po.poValue || 0;
+        }
+      });
+
+      // Calculate budget metrics
+      const budgetAllocated = bomTotalCost; // Budget allocated = total BOM cost
+      const budgetSpent = actualCost; // Budget spent = delivered/closed POs
+      const budgetRemaining = projectBudget - budgetSpent;
+      const budgetUtilization = projectBudget > 0 ? (budgetSpent / projectBudget) * 100 : 0;
+
+      // Calculate profitability
+      const estimatedCost = bomTotalCost; // Estimated cost = total BOM cost
+      const projectedProfit = contractValue - actualCost;
+      const profitMargin = contractValue > 0 ? (projectedProfit / contractValue) * 100 : 0;
+
+      // BOM cost variance
+      const bomActualCost = actualCost;
+
+      setFinancialData({
+        projectBudget,
+        budgetAllocated,
+        budgetSpent,
+        budgetRemaining,
+        budgetUtilization: Math.round(budgetUtilization * 10) / 10,
+        contractValue,
+        estimatedCost,
+        actualCost,
+        projectedProfit,
+        profitMargin: Math.round(profitMargin * 10) / 10,
+        totalBOMs,
+        bomsDraft,
+        bomsApproved,
+        bomsLocked,
+        bomTotalCost,
+        bomActualCost,
+      });
+    } catch (error) {
+      console.error('[ManagerDashboard] Error loading financial data:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -1114,6 +1233,150 @@ const ManagerDashboardScreen = () => {
     );
   };
 
+  const renderFinancialSummary = () => {
+    const {
+      projectBudget,
+      budgetAllocated,
+      budgetSpent,
+      budgetRemaining,
+      budgetUtilization,
+      contractValue,
+      estimatedCost,
+      actualCost,
+      projectedProfit,
+      profitMargin,
+      totalBOMs,
+      bomsDraft,
+      bomsApproved,
+      bomsLocked,
+      bomTotalCost,
+      bomActualCost,
+    } = financialData;
+
+    const bomCostVariance = bomTotalCost - bomActualCost;
+    const bomVariancePercent =
+      bomTotalCost > 0 ? ((bomCostVariance / bomTotalCost) * 100) : 0;
+
+    return (
+      <>
+        {/* 5.1 Budget Overview */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Budget Overview</Title>
+            <View style={styles.budgetRow}>
+              <View style={styles.budgetMetric}>
+                <Title style={styles.budgetValue}>{formatCurrency(projectBudget)}</Title>
+                <Paragraph style={styles.budgetLabel}>Total Budget</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.budgetMetric}>
+                <Paragraph style={styles.budgetItem}>
+                  Allocated: {formatCurrency(budgetAllocated)}
+                </Paragraph>
+                <Paragraph style={styles.budgetItem}>
+                  Spent: {formatCurrency(budgetSpent)}
+                </Paragraph>
+                <Paragraph style={styles.budgetItem}>
+                  Remaining: {formatCurrency(budgetRemaining)}
+                </Paragraph>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.utilizationRow}>
+              <Paragraph style={styles.utilizationLabel}>Budget Utilization:</Paragraph>
+              <Paragraph
+                style={[
+                  styles.utilizationValue,
+                  { color: budgetUtilization > 100 ? '#F44336' : '#4CAF50' },
+                ]}
+              >
+                {budgetUtilization}%
+              </Paragraph>
+            </View>
+            <ProgressBar
+              progress={Math.min(budgetUtilization / 100, 1)}
+              color={budgetUtilization > 100 ? '#F44336' : budgetUtilization > 90 ? '#FFC107' : '#4CAF50'}
+              style={styles.progressBar}
+            />
+          </Card.Content>
+        </Card>
+
+        {/* 5.2 Profitability */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>Profitability</Title>
+            <View style={styles.profitRow}>
+              <View style={styles.profitLeft}>
+                <Paragraph style={styles.profitLabel}>Contract Value:</Paragraph>
+                <Title style={styles.profitValue}>{formatCurrency(contractValue)}</Title>
+              </View>
+              <View style={styles.profitRight}>
+                <Paragraph style={styles.profitItem}>
+                  Estimated Cost: {formatCurrency(estimatedCost)}
+                </Paragraph>
+                <Paragraph style={styles.profitItem}>
+                  Actual Cost: {formatCurrency(actualCost)}
+                </Paragraph>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.marginRow}>
+              <View style={styles.marginMetric}>
+                <Title style={[styles.marginValue, { color: projectedProfit >= 0 ? '#4CAF50' : '#F44336' }]}>
+                  {formatCurrency(projectedProfit)}
+                </Title>
+                <Paragraph style={styles.marginLabel}>Projected Profit/Loss</Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.marginMetric}>
+                <Title style={[styles.marginValue, { color: profitMargin >= 0 ? '#4CAF50' : '#F44336' }]}>
+                  {profitMargin}%
+                </Title>
+                <Paragraph style={styles.marginLabel}>Profit Margin</Paragraph>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 5.3 BOM Summary */}
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Title style={styles.cardTitle}>BOM Summary</Title>
+            <View style={styles.bomRow}>
+              <View style={styles.bomLeft}>
+                <Title style={styles.bomTotal}>{totalBOMs}</Title>
+                <Paragraph style={styles.bomLabel}>Total BOMs</Paragraph>
+                <Paragraph style={styles.bomStatus}>
+                  📝 {bomsDraft} Draft | ✅ {bomsApproved} Approved | 🔒 {bomsLocked} Locked
+                </Paragraph>
+              </View>
+              <Divider style={styles.verticalDivider} />
+              <View style={styles.bomRight}>
+                <Paragraph style={styles.bomCostLabel}>BOM Total Cost:</Paragraph>
+                <Title style={styles.bomCostValue}>{formatCurrency(bomTotalCost)}</Title>
+                <Paragraph style={styles.bomCostLabel}>Actual Cost:</Paragraph>
+                <Paragraph style={styles.bomActual}>{formatCurrency(bomActualCost)}</Paragraph>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.varianceRow}>
+              <Paragraph style={styles.varianceLabel}>Cost Variance:</Paragraph>
+              <Paragraph
+                style={[
+                  styles.varianceValue,
+                  { color: bomCostVariance >= 0 ? '#4CAF50' : '#F44336' },
+                ]}
+              >
+                {formatCurrency(Math.abs(bomCostVariance))} ({bomCostVariance >= 0 ? '+' : '-'}
+                {Math.abs(Math.round(bomVariancePercent * 10) / 10)}%)
+              </Paragraph>
+            </View>
+          </Card.Content>
+        </Card>
+      </>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -1393,6 +1656,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         {renderEquipmentMaterials()}
+      </View>
+
+      {/* Section 5: Financial Summary */}
+      <View style={styles.section}>
+        <Title style={styles.sectionTitle}>Financial Summary</Title>
+        <Paragraph style={styles.sectionSubtitle}>
+          Budget Overview + Profitability + BOM Summary
+        </Paragraph>
+
+        {renderFinancialSummary()}
       </View>
     </ScrollView>
   );
@@ -1755,6 +2028,143 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#F44336',
     fontWeight: '500',
+  },
+  // Section 5: Financial Summary styles
+  budgetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  budgetMetric: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  budgetValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 5,
+  },
+  budgetLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  budgetItem: {
+    fontSize: 14,
+    marginVertical: 3,
+  },
+  utilizationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  utilizationLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  utilizationValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  profitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  profitLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  profitLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  profitValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  profitRight: {
+    flex: 1,
+  },
+  profitItem: {
+    fontSize: 13,
+    marginVertical: 3,
+  },
+  marginRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  marginMetric: {
+    alignItems: 'center',
+  },
+  marginValue: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  marginLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  bomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bomLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  bomTotal: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  bomLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  bomStatus: {
+    fontSize: 12,
+    color: '#999',
+  },
+  bomRight: {
+    flex: 1,
+  },
+  bomCostLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  bomCostValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 10,
+  },
+  bomActual: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  varianceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  varianceLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  varianceValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
   },
 });
 

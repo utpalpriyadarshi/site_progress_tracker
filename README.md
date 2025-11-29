@@ -238,6 +238,57 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 
 ---
 
+**Phase 5 - Section 5: Manager Dashboard - Financial Summary** ✅ (November 24, 2025)
+- ✅ **Budget Overview**: Comprehensive budget tracking
+  - Total project budget display
+  - Budget allocated (total BOM cost)
+  - Budget spent (delivered/closed POs)
+  - Budget remaining calculation
+  - Budget utilization percentage with progress bar
+  - Color-coded utilization (green ≤90%, yellow ≤100%, red >100%)
+- ✅ **Profitability Analysis**: Financial performance metrics
+  - Contract value display
+  - Estimated cost (total BOM cost)
+  - Actual cost to date (delivered/closed POs)
+  - Projected profit/loss calculation
+  - Profit margin percentage
+  - Color-coded profitability (green = profit, red = loss)
+- ✅ **BOM Summary**: Bill of Materials tracking
+  - Total BOMs count
+  - Status breakdown: 📝 Draft | ✅ Approved | 🔒 Locked
+  - BOM total cost
+  - Actual cost comparison
+  - Cost variance display with percentage
+- ✅ **Real-time Calculations**: All data from BOMs and POs
+- ✅ **Visual Indicators**: Color-coded values and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+259 lines, now 2,172 lines total)
+
+**Technical Implementation:**
+- Added FinancialData interface with 16 fields
+- loadFinancialData() function (79 lines):
+  * Reads project budget from projectInfo
+  * Queries all BOMs for the project
+  * Aggregates BOMs by status (draft/approved/locked)
+  * Sums total BOM cost
+  * Queries all purchase orders
+  * Calculates actual cost from delivered/closed POs
+  * Computes budget metrics (allocated, spent, remaining, utilization)
+  * Calculates profitability (profit/loss, margin)
+  * Computes BOM cost variance
+- renderFinancialSummary() function (143 lines):
+  * 3 Material Design cards
+  * Card 1: Budget overview with utilization progress bar
+  * Card 2: Profitability with contract value and costs
+  * Card 3: BOM summary with status and variance
+  * Conditional color coding for all metrics
+- Added 25 new styles for Section 5 components
+
+**Next Phase:** Dashboard Sections 6 & 7 (Testing/Commissioning + Handover)
+
+---
+
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
 **Photo Capture in Progress Updates** (November 19, 2025)
