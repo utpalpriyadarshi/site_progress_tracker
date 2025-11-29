@@ -84,19 +84,87 @@ export const parseCSV = (content: string): ParseResult => {
 };
 
 /**
- * Parse Excel file (placeholder for Phase 6B)
- * Will require xlsx library: npm install xlsx
+ * Parse Excel file using xlsx library
  */
-export const parseExcel = async (_fileUri: string): Promise<ParseResult> => {
-  // TODO: Implement Excel parsing in Phase 6B
-  // Will use 'xlsx' library to read .xlsx/.xls files
-  return {
-    success: false,
-    data: [],
-    headers: [],
-    rowCount: 0,
-    errors: ['Excel parsing not yet implemented - will be added in Phase 6B'],
-  };
+export const parseExcel = async (fileContent: string): Promise<ParseResult> => {
+  try {
+    // Dynamic import to avoid bundling issues
+    const XLSX = require('xlsx');
+
+    // Read the workbook from base64 string
+    const workbook = XLSX.read(fileContent, { type: 'base64' });
+
+    // Get the first sheet
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      return {
+        success: false,
+        data: [],
+        headers: [],
+        rowCount: 0,
+        errors: ['No sheets found in Excel file'],
+      };
+    }
+
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Convert sheet to JSON
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+    if (jsonData.length === 0) {
+      return {
+        success: false,
+        data: [],
+        headers: [],
+        rowCount: 0,
+        errors: ['Excel file is empty'],
+      };
+    }
+
+    // Extract headers (first row)
+    const headers = (jsonData[0] as any[]).map((h: any) => String(h || '').trim());
+
+    // Parse data rows
+    const data: ParsedBomRow[] = [];
+    const errors: string[] = [];
+
+    for (let i = 1; i < jsonData.length; i++) {
+      try {
+        const values = jsonData[i] as any[];
+
+        // Skip empty rows
+        if (!values || values.every((v: any) => !v)) {
+          continue;
+        }
+
+        // Basic row parsing
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] !== undefined ? String(values[index]) : '';
+        });
+
+        data.push(row as ParsedBomRow);
+      } catch (err) {
+        errors.push(`Error parsing row ${i + 1}: ${err}`);
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      data,
+      headers,
+      rowCount: data.length,
+      errors,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: [],
+      headers: [],
+      rowCount: 0,
+      errors: [`Failed to parse Excel file: ${error}`],
+    };
+  }
 };
 
 /**
