@@ -401,7 +401,57 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - Total sections: 7 comprehensive PSR dashboard sections
 - Manager v2.10 Dashboard: Fully operational
 
-**Next Phase:** BOM Import Wizard (Phase 6) or Team Performance Monitoring (Phase 7)
+**Next Phase:** BOM Import Wizard Phase 6B (Column Mapping & Validation)
+
+---
+
+**Phase 6A: BOM Import Wizard - Core Infrastructure** ✅ (November 29, 2025)
+- ✅ **BomImportWizardScreen**: Complete 5-step wizard UI with stepper
+  - Step 1: Upload File (Excel/CSV) - implemented
+  - Step 2: Map Columns - placeholder
+  - Step 3: Validate Data - placeholder
+  - Step 4: Preview & Confirm - placeholder
+  - Step 5: Import - placeholder
+- ✅ **Stepper Component**: Visual progress indicator
+  - 5 steps with completion status
+  - Progress bar showing current position
+  - Color-coded status (green = completed, blue = active, gray = pending)
+- ✅ **File Upload Interface**: Drag-drop zone with file picker
+  - Upload container with dashed border
+  - File size and format info display
+  - Template download button
+- ✅ **BomFileParser Utility**: CSV/Excel parsing foundation
+  - CSV parsing implemented
+  - Excel parsing placeholder (Phase 6B)
+  - File type validation (.csv, .xlsx, .xls)
+  - File size validation (max 10MB)
+  - Auto-detect column mapping
+  - Required fields validation
+- ✅ **Navigation**: Ready for integration with BOM Management
+
+**Files Created:**
+- src/manager/BomImportWizardScreen.tsx (469 lines)
+- src/utils/BomFileParser.ts (213 lines)
+
+**Technical Implementation:**
+- 5-step wizard state machine
+- WizardStep type (1-5)
+- ImportData interface for tracking upload state
+- ValidationError interface for error handling
+- Auto-column mapping algorithm (10 supported fields)
+- File format utilities (size formatting, validation)
+- Material Design stepper UI with progress tracking
+
+**Quality Checks:**
+- ESLint: 0 errors, 0 warnings ✅
+- TypeScript: 0 errors ✅
+
+**Next Steps (Phase 6B):**
+- File picker integration (react-native-document-picker)
+- Excel parsing with xlsx library
+- Column mapping interface
+- Data validation logic
+- Preview and import execution
 
 ---
 
