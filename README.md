@@ -461,7 +461,77 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - Team Performance: 545 lines (supervisor monitoring)
 - Total Manager functionality: 4,400+ lines of production code
 
-**Next Phase:** Planning Module Enhancements or Logistics Features
+**Next Phase:** Milestone Management (Phase 9)
+
+---
+
+**Phase 8: Financial Reports Screen & Excel Export** ✅ (November 30, 2025)
+- ✅ **FinancialReportsScreen**: Comprehensive financial analytics dashboard (940 lines)
+  - Budget Overview card with utilization tracking
+  - Profitability Analysis with profit margin
+  - Cost Breakdown by Category (Material, Labor, Equipment, Subcontractor)
+  - BOM Summary with status breakdown
+  - Purchase Orders tracking
+- ✅ **Financial Metrics**:
+  - Budget tracking: Total, Allocated, Spent, Remaining, Utilization %
+  - Profitability: Contract Value, Estimated Cost, Actual Cost, Projected Profit, Profit Margin %
+  - Cost Variance: BOM Total Cost vs Actual Cost
+  - Category breakdown with percentages
+- ✅ **Excel Export Functionality**:
+  - Two-sheet Excel file export
+  - Sheet 1: Financial Summary (all metrics)
+  - Sheet 2: Cost Breakdown by Category
+  - Auto-formatted columns for readability
+  - Date-stamped file names
+  - Saved to Downloads folder (Android) or Documents (iOS)
+- ✅ **Visual Indicators**:
+  - Color-coded budget status (Green ≤90%, Yellow ≤100%, Red >100%)
+  - Color-coded profitability (Green = profit, Red = loss)
+  - Budget utilization progress bar
+  - Warning messages for budget overruns
+  - Category cost percentages with breakdown
+- ✅ **Pull-to-Refresh**: Real-time data updates with RefreshControl
+- ✅ **Material Design UI**: Cards, chips, progress bars, dividers throughout
+
+**Files Modified:**
+- src/manager/FinancialReportsScreen.tsx (940 lines - from 25-line stub)
+
+**Technical Implementation:**
+- FinancialData interface with 23 fields
+- loadFinancialData() function: 146 lines
+  * Queries BOMs, BOM items, Purchase Orders from database
+  * Calculates budget metrics (allocated, spent, remaining, utilization)
+  * Calculates profitability (estimated cost, actual cost, profit, margin)
+  * Aggregates costs by category (material, labor, equipment, subcontractor)
+  * Counts PO statuses (draft, issued, in_progress, delivered, closed)
+- exportToExcel() function: 126 lines
+  * Creates 2-sheet Excel workbook using XLSX library
+  * Formats financial summary with project info
+  * Creates cost breakdown table with percentages
+  * Writes to file system using RNFS
+  * Shows success alert with file path
+- formatCurrency() helper for Indian Rupee formatting
+- getUtilizationColor() for dynamic color coding
+- Added 69 new styles for financial cards and metrics
+
+**Quality Checks:**
+- ESLint: 0 errors, 5 warnings (inline styles only) ✅
+- TypeScript: 0 errors ✅
+- Total new code: 915 lines (940 total - 25 stub)
+
+**v2.10 Manager Role - Phase 8 Complete!**
+✅ Phase 1: Database & Context Setup
+✅ Phase 2: Dashboard Section 1 (KPIs)
+✅ Phase 3: Dashboard Section 2 (Engineering)
+✅ Phase 4: Dashboard Section 3 (Site Progress)
+✅ Phase 5: Dashboard Sections 4-7 (Equipment, Financial, Testing, Handover)
+✅ Phase 6: BOM Import Wizard
+✅ Phase 7: Team Performance & Monitoring
+✅ Phase 8: Financial Reports & Excel Export ← COMPLETE!
+
+**Remaining:**
+⏳ Phase 9: Milestone Management
+⏳ Phase 10: Testing & Documentation
 
 ---
 
