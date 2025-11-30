@@ -7,7 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
 import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
-import ResourceRequestsScreen from '../manager/ResourceRequestsScreen';
+import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
 import BomManagementScreen from '../manager/BomManagementScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
@@ -27,7 +27,7 @@ export type ManagerTabParamList = {
   Dashboard: undefined;
   TeamPerformance: undefined;
   FinancialReports: undefined;
-  ResourceRequests: undefined;
+  Milestones: undefined;
   BomManagement: undefined;
 };
 
@@ -81,8 +81,8 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
               iconSymbol = '👥';
             } else if (route.name === 'FinancialReports') {
               iconSymbol = '💰';
-            } else if (route.name === 'ResourceRequests') {
-              iconSymbol = '👷';
+            } else if (route.name === 'Milestones') {
+              iconSymbol = '🎯';
             } else if (route.name === 'BomManagement') {
               iconSymbol = '📋';
             }
@@ -129,12 +129,12 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         }} 
       />
       <Tab.Screen
-        name="ResourceRequests"
-        component={ResourceRequestsScreen}
+        name="Milestones"
+        component={MilestoneManagementScreen}
         options={{
-          title: 'Requests',
+          title: 'Milestones',
           headerShown: true,
-          headerTitle: 'Resource Requests',
+          headerTitle: 'Milestone Management',
         }}
       />
       <Tab.Screen
