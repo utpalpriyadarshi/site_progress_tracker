@@ -5,7 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
-import TeamManagementScreen from '../manager/TeamManagementScreen';
+import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import ResourceRequestsScreen from '../manager/ResourceRequestsScreen';
 import BomManagementScreen from '../manager/BomManagementScreen';
@@ -25,7 +25,7 @@ export type RootStackParamList = {
 
 export type ManagerTabParamList = {
   Dashboard: undefined;
-  TeamManagement: undefined;
+  TeamPerformance: undefined;
   FinancialReports: undefined;
   ResourceRequests: undefined;
   BomManagement: undefined;
@@ -72,12 +72,12 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
       <BomProvider>
         <Tab.Navigator
           screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarIcon: ({ color, size }) => {
             let iconSymbol = '';
 
             if (route.name === 'Dashboard') {
               iconSymbol = '📊';
-            } else if (route.name === 'TeamManagement') {
+            } else if (route.name === 'TeamPerformance') {
               iconSymbol = '👥';
             } else if (route.name === 'FinancialReports') {
               iconSymbol = '💰';
@@ -110,14 +110,14 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
           headerTitle: 'Manager Dashboard',
         }}
       />
-      <Tab.Screen 
-        name="TeamManagement" 
-        component={TeamManagementScreen} 
-        options={{ 
+      <Tab.Screen
+        name="TeamPerformance"
+        component={TeamPerformanceScreen}
+        options={{
           title: 'Team',
           headerShown: true,
-          headerTitle: 'Team Management',
-        }} 
+          headerTitle: 'Team Performance',
+        }}
       />
       <Tab.Screen 
         name="FinancialReports" 
