@@ -120,22 +120,22 @@ const TeamPerformanceScreen = () => {
           .get('daily_reports')
           .query(
             Q.where('site_id', siteId),
-            Q.where('created_by', userId)
+            Q.where('supervisor_id', userId)
           )
           .fetch();
 
         const reportsSubmitted = reports.length;
         const lastReport = reports.length > 0
-          ? reports.sort((a: any, b: any) => b.createdAt - a.createdAt)[0]
+          ? reports.sort((a: any, b: any) => b.submittedAt - a.submittedAt)[0]
           : null;
         const lastReportDate = lastReport
-          ? new Date((lastReport as any).createdAt).toLocaleDateString()
+          ? new Date((lastReport as any).submittedAt).toLocaleDateString()
           : 'Never';
 
         // Calculate days active (days since first report)
         const daysActive = reports.length > 0
           ? Math.max(1, Math.ceil(
-              (Date.now() - Math.min(...reports.map((r: any) => r.createdAt))) /
+              (Date.now() - Math.min(...reports.map((r: any) => r.submittedAt))) /
               (1000 * 60 * 60 * 24)
             ))
           : 1;

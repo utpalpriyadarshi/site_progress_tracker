@@ -18,7 +18,7 @@ import {
   ActivityIndicator,
 } from 'react-native-paper';
 import { useManager } from './context/ManagerContext';
-import { useDatabase } from '@nozbe/watermelondb/hooks';
+import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
@@ -64,7 +64,6 @@ interface FinancialData {
 
 const FinancialReportsScreen = () => {
   const { projectId, projectInfo } = useManager();
-  const database = useDatabase();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

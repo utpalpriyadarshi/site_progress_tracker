@@ -22,7 +22,7 @@ import {
   DataTable,
 } from 'react-native-paper';
 import { useManager } from './context/ManagerContext';
-import { useDatabase } from '@nozbe/watermelondb/hooks';
+import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 
 interface Milestone {
@@ -61,7 +61,6 @@ interface MilestoneWithProgress extends Milestone {
 
 const MilestoneManagementScreen = () => {
   const { projectId, projectInfo } = useManager();
-  const database = useDatabase();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
