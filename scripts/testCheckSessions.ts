@@ -168,11 +168,18 @@ export async function checkLatestSession() {
     // Sort by WatermelonDB internal timestamps first, then by created_at
     // For new sessions, _raw._changed should have a value
     const sortedSessions = allSessions.sort((a, b) => {
+      // First, prefer NON-EXPIRED active sessions over expired ones
+      const aValid = a.isActive && !a.isExpired();
+      const bValid = b.isActive && !b.isExpired();
+
+      if (aValid && !bValid) return -1;
+      if (!aValid && bValid) return 1;
+
       // Prefer sessions with valid created_at timestamps
       const aTime = a.createdAt > 0 ? a.createdAt : a.updatedAt > 0 ? a.updatedAt : 0;
       const bTime = b.createdAt > 0 ? b.createdAt : b.updatedAt > 0 ? b.updatedAt : 0;
 
-      // If both have valid timestamps, compare them
+      // If both have valid timestamps, compare them (most recent first)
       if (aTime > 0 && bTime > 0) {
         return bTime - aTime;
       }
@@ -185,8 +192,8 @@ export async function checkLatestSession() {
       if (a.isActive && !b.isActive) return -1;
       if (!a.isActive && b.isActive) return 1;
 
-      // Fall back to ID comparison (newer IDs are typically created later)
-      return 0;
+      // Fall back to expiry date (most recent expiry = newest session)
+      return b.expiresAt - a.expiresAt;
     });
 
     const session = sortedSessions[0];
