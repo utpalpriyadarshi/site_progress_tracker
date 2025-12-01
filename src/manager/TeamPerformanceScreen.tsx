@@ -64,12 +64,25 @@ const TeamPerformanceScreen = () => {
         .query(Q.where('project_id', projectId))
         .fetch();
 
+      // Get supervisor role ID first
+      const supervisorRole = await database.collections
+        .get('roles')
+        .query(Q.where('name', 'Supervisor'))
+        .fetch();
+
+      if (supervisorRole.length === 0) {
+        console.error('[TeamPerformance] Supervisor role not found');
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       // Get all users with supervisor role for this project
       const users = await database.collections
         .get('users')
         .query(
           Q.where('project_id', projectId),
-          Q.where('role', 'supervisor')
+          Q.where('role_id', supervisorRole[0].id)
         )
         .fetch();
 

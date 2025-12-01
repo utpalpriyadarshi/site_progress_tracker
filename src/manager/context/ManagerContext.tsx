@@ -177,3 +177,6 @@ export const useManagerContext = () => {
   }
   return context;
 };
+
+// Alias for convenience
+export const useManager = useManagerContext;
