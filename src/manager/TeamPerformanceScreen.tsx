@@ -429,13 +429,6 @@ const TeamPerformanceScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Title style={styles.headerTitle}>Team Performance</Title>
-        <Paragraph style={styles.headerSubtitle}>
-          Monitor supervisor productivity across all sites
-        </Paragraph>
-      </View>
-
       {renderProjectSummary()}
       {renderSupervisorList()}
       {renderPerformanceTable()}

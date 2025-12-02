@@ -422,9 +422,8 @@ const FinancialReportsScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      {/* Header with Export Button */}
+      {/* Export Button */}
       <View style={styles.header}>
-        <Title style={styles.screenTitle}>Financial Reports</Title>
         <Button
           mode="contained"
           onPress={exportToExcel}

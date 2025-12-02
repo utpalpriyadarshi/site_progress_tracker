@@ -557,12 +557,8 @@ const MilestoneManagementScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {/* Header */}
+        {/* Header Actions */}
         <View style={styles.header}>
-          <Title style={styles.screenTitle}>Milestone Management</Title>
-          <Paragraph style={styles.screenSubtitle}>
-            {projectInfo?.name || 'No Project Selected'}
-          </Paragraph>
           <Button
             mode="contained"
             onPress={() => setAddDialogVisible(true)}
