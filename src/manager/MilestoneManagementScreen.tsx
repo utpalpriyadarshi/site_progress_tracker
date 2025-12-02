@@ -60,10 +60,11 @@ interface MilestoneWithProgress extends Milestone {
 }
 
 const MilestoneManagementScreen = () => {
-  const { projectId, projectInfo } = useManager();
+  const { projectId } = useManager();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [projectInfo, setProjectInfo] = useState<any>(null);
 
   const [milestones, setMilestones] = useState<MilestoneWithProgress[]>([]);
 
@@ -93,10 +94,17 @@ const MilestoneManagementScreen = () => {
   }, [projectId]);
 
   const loadData = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+
+      // Fetch project info from database
+      const project = await database.collections.get('projects').find(projectId);
+      setProjectInfo(project);
 
       // Load milestones for the project
       const milestonesData = await database.collections
