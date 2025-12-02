@@ -42,6 +42,7 @@ interface ProjectStats {
   deliveryDelayed: number;
   criticalPathItemsAtRisk: number;
   upcomingMilestones: number;
+  activeSupervisors: number;
 }
 
 interface ProjectInfo {
@@ -162,6 +163,7 @@ const ManagerDashboardScreen = () => {
     deliveryDelayed: 0,
     criticalPathItemsAtRisk: 0,
     upcomingMilestones: 0,
+    activeSupervisors: 0,
   });
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null);
   const [engineeringData, setEngineeringData] = useState<EngineeringData>({
@@ -378,6 +380,24 @@ const ManagerDashboardScreen = () => {
       // Calculate budget utilization (simplified)
       const budgetUtilization = await calculateBudgetUtilization();
 
+      // Calculate active supervisors (supervisors assigned to sites in this project)
+      const supervisorRoles = await database.collections
+        .get('roles')
+        .query(Q.where('name', 'Supervisor'))
+        .fetch();
+
+      let activeSupervisors = 0;
+      if (supervisorRoles.length > 0) {
+        const supervisors = await database.collections
+          .get('users')
+          .query(
+            Q.where('project_id', projectId),
+            Q.where('role_id', supervisorRoles[0].id)
+          )
+          .fetch();
+        activeSupervisors = supervisors.length;
+      }
+
       setStats({
         overallCompletion,
         sitesOnSchedule,
@@ -390,6 +410,7 @@ const ManagerDashboardScreen = () => {
         deliveryDelayed,
         criticalPathItemsAtRisk,
         upcomingMilestones,
+        activeSupervisors,
       });
     } catch (error) {
       console.error('[ManagerDashboard] Error calculating stats:', error);
@@ -2284,14 +2305,16 @@ const ManagerDashboardScreen = () => {
             </Card.Content>
           </Card>
 
-          {/* KPI 8: Placeholder */}
+          {/* KPI 8: Active Supervisors */}
           <Card style={styles.kpiCard}>
             <Card.Content>
-              <Paragraph style={styles.kpiLabel}>Team Efficiency</Paragraph>
-              <Title style={styles.kpiValue}>-</Title>
-              <Paragraph style={styles.kpiSubtext}>Coming soon</Paragraph>
+              <Paragraph style={styles.kpiLabel}>Active Supervisors</Paragraph>
+              <Title style={styles.kpiValue}>{stats.activeSupervisors}</Title>
+              <Paragraph style={styles.kpiSubtext}>Total supervisors</Paragraph>
               <View style={styles.kpiIndicator}>
-                <View style={[styles.kpiDot, { backgroundColor: '#9E9E9E' }]} />
+                <View style={[styles.kpiDot, {
+                  backgroundColor: stats.activeSupervisors > 0 ? '#4CAF50' : '#9E9E9E'
+                }]} />
               </View>
             </Card.Content>
           </Card>
