@@ -63,11 +63,12 @@ interface FinancialData {
 }
 
 const FinancialReportsScreen = () => {
-  const { projectId, projectInfo } = useManager();
+  const { projectId, projectName } = useManager();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [projectInfo, setProjectInfo] = useState<any>(null);
 
   const [financialData, setFinancialData] = useState<FinancialData>({
     projectBudget: 0,
@@ -105,13 +106,20 @@ const FinancialReportsScreen = () => {
   }, [projectId]);
 
   const loadFinancialData = async () => {
-    if (!projectId || !projectInfo) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Get project budget from projectInfo
-      const projectBudget = projectInfo.budget || 0;
+      // Fetch project info from database
+      const project = await database.collections.get('projects').find(projectId);
+      setProjectInfo(project);
+
+      // Get project budget from project
+      const projectBudget = (project as any).budget || 0;
       const contractValue = projectBudget;
 
       // Get all BOMs for the project
@@ -286,8 +294,8 @@ const FinancialReportsScreen = () => {
       const summaryData = [
         ['FINANCIAL REPORT'],
         [],
-        ['Project:', projectInfo.name],
-        ['Client:', projectInfo.client || ''],
+        ['Project:', (projectInfo as any).name || projectName],
+        ['Client:', (projectInfo as any).client || ''],
         ['Report Date:', new Date().toLocaleDateString('en-IN')],
         [],
         ['BUDGET OVERVIEW'],
@@ -375,7 +383,8 @@ const FinancialReportsScreen = () => {
 
       // Determine file path
       const timestamp = new Date().toISOString().split('T')[0];
-      const fileName = `FinancialReport_${projectInfo.name.replace(/\s+/g, '_')}_${timestamp}.xlsx`;
+      const projName = (projectInfo as any).name || projectName || 'Project';
+      const fileName = `FinancialReport_${projName.replace(/\s+/g, '_')}_${timestamp}.xlsx`;
       const filePath =
         Platform.OS === 'android'
           ? `${RNFS.DownloadDirectoryPath}/${fileName}`
