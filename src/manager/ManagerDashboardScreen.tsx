@@ -307,16 +307,11 @@ const ManagerDashboardScreen = () => {
       const totalSites = sites.length;
 
       // Calculate site schedule status
+      // Note: Simplified calculation - sites are on schedule if target date is in future
+      // For more accurate calculation, we would need to calculate hybrid progress for each site
+      const now = Date.now();
       const sitesOnSchedule = sites.filter((s: any) => {
-        const progress = s.currentProgress || 0;
-        const daysElapsed = Math.floor(
-          (Date.now() - s.startDate) / (1000 * 60 * 60 * 24)
-        );
-        const totalDays = Math.floor(
-          (s.targetDate - s.startDate) / (1000 * 60 * 60 * 24)
-        );
-        const expectedProgress = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
-        return progress >= expectedProgress - 5; // 5% tolerance
+        return s.targetDate && s.targetDate >= now;
       }).length;
 
       const sitesDelayed = totalSites - sitesOnSchedule;
@@ -428,7 +423,7 @@ const ManagerDashboardScreen = () => {
       const totalWeightage = items.reduce((sum, item: any) => sum + (item.weightage || 1), 0);
       const weightedProgress = items.reduce((sum, item: any) => {
         const weightage = item.weightage || 1;
-        const progress = item.currentProgress || 0;
+        const progress = item.getProgressPercentage ? item.getProgressPercentage() : 0;
         return sum + (weightage * progress);
       }, 0);
 
@@ -668,7 +663,7 @@ const ManagerDashboardScreen = () => {
           const totalWeightage = items.reduce((sum, item: any) => sum + (item.weightage || 1), 0);
           const weightedProgress = items.reduce((sum, item: any) => {
             const weightage = item.weightage || 1;
-            const progress = item.currentProgress || 0;
+            const progress = item.getProgressPercentage ? item.getProgressPercentage() : 0;
             return sum + (weightage * progress);
           }, 0);
           itemsProgress = totalWeightage > 0 ? (weightedProgress / totalWeightage) : 0;
