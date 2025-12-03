@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
 };
 
 export type AuthStackParamList = {

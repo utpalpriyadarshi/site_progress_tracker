@@ -70,15 +70,24 @@ export class SimpleDatabaseService {
         });
       });
 
+      const designEngineerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'DesignEngineer';
+          role.description = 'Design engineer managing DOORS packages and design RFQs';
+          role.permissions = JSON.stringify(['view_doors', 'manage_doors', 'manage_design_rfqs', 'view_projects']);
+        });
+      });
+
       // ✅ Hash passwords for demo users (one-time cost during initialization)
       // Using strong passwords with special characters for better security
       console.log('SimpleDatabaseService: Hashing demo user passwords...');
-      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash] = await Promise.all([
+      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash, designEngineerHash] = await Promise.all([
         this.hashPassword('Admin@2025'),
         this.hashPassword('Supervisor@2025'),
         this.hashPassword('Manager@2025'),
         this.hashPassword('Planner@2025'),
         this.hashPassword('Logistics@2025'),
+        this.hashPassword('Designer@2025'),
       ]);
       console.log('SimpleDatabaseService: Password hashing complete');
 
@@ -143,6 +152,18 @@ export class SimpleDatabaseService {
         });
       });
 
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'designer';
+          user.passwordHash = designEngineerHash;
+          user.fullName = 'David Design Engineer';
+          user.email = 'designer@construction.com';
+          user.phone = '+1234567895';
+          user.isActive = true;
+          user.roleId = designEngineerRole.id;
+        });
+      });
+
       console.log('Default roles and users created successfully');
 
       // ✅ Create default project
@@ -156,6 +177,17 @@ export class SimpleDatabaseService {
           project.budget = 1000000;
         });
       });
+
+      // ✅ Assign Design Engineer to project (v2.11)
+      const designerUsers = await database.collections.get('users').query(Q.where('username', 'designer')).fetch();
+      if (designerUsers.length > 0) {
+        await database.write(async () => {
+          await designerUsers[0].update((user: any) => {
+            user.projectId = sampleProject.id;
+          });
+        });
+        console.log('Design Engineer assigned to project:', sampleProject.id);
+      }
 
       // ✅ Create default site
       const sampleSite = await database.write(async () => {

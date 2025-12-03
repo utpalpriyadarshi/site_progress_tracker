@@ -66,10 +66,12 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
 
       // Navigate to appropriate dashboard based on selected role
       const roleMap: Record<UserRole, keyof RootStackParamList> = {
+        admin: 'Admin',
         supervisor: 'Supervisor',
         manager: 'Manager',
         planning: 'Planning',
         logistics: 'Logistics',
+        design_engineer: 'DesignEngineer',
       };
 
       navigation.reset({

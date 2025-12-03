@@ -20,10 +20,12 @@ import { PlanningStackParamList } from './types';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
 };
 
 export type PlanningTabParamList = {
@@ -59,10 +61,12 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
 
   const handleRoleChange = (newRole: UserRole) => {
     const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      admin: 'Admin',
       supervisor: 'Supervisor',
       manager: 'Manager',
       planning: 'Planning',
       logistics: 'Logistics',
+      design_engineer: 'DesignEngineer',
     };
 
     parentNavigation.dispatch(

@@ -23,10 +23,12 @@ import { useAuth, UserRole} from '../auth/AuthContext';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
 };
 
 export type LogisticsTabParamList = {
@@ -71,10 +73,12 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
 
   const handleRoleChange = (newRole: UserRole) => {
     const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      admin: 'Admin',
       supervisor: 'Supervisor',
       manager: 'Manager',
       planning: 'Planning',
       logistics: 'Logistics',
+      design_engineer: 'DesignEngineer',
     };
 
     parentNavigation.dispatch(
