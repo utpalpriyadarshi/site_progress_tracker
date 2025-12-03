@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Title, Paragraph, Menu, Button, Divider, ActivityIndicator } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAdminContext, AdminRole } from './context/AdminContext';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { database } from '../../models/database';
 import PasswordMigrationService from '../../services/auth/PasswordMigrationService';
+import { SimpleDatabaseService } from '../../services/db/SimpleDatabaseService';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -290,6 +292,108 @@ const AdminDashboardScreen = () => {
               <Paragraph style={{ marginLeft: 10 }}>Migrating passwords...</Paragraph>
             </View>
           )}
+        </Card.Content>
+      </Card>
+
+      {/* Database Reset Card (v2.11) */}
+      <Card style={[styles.card, { backgroundColor: '#FFE5E5' }]}>
+        <Card.Content>
+          <Title>🗄️ Database Reset (v2.11)</Title>
+          <Paragraph style={styles.cardDescription}>
+            Clear all data and re-initialize with default users (including new Design Engineer)
+          </Paragraph>
+          <Paragraph style={{ color: '#D32F2F', fontWeight: 'bold', marginVertical: 10 }}>
+            ⚠️ WARNING: This will delete ALL local data!
+          </Paragraph>
+          <Button
+            mode="contained"
+            onPress={async () => {
+              Alert.alert(
+                'Reset Database',
+                'This will delete ALL local data and re-initialize with default users. Are you sure?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        console.log('🔄 Starting database reset...');
+
+                        // Clear database FIRST (most important)
+                        const collections = [
+                          'users', 'roles', 'projects', 'sites', 'categories', 'items',
+                          'reports', 'materials', 'material_requests', 'material_deliveries',
+                          'suppliers', 'sessions', 'milestones', 'milestone_progress',
+                          'doors_packages', 'doors_requirements', 'rfqs', 'rfq_vendors',
+                          'rfq_vendor_quotes', 'purchase_orders', 'vendors', 'boms',
+                          'bom_items', 'budgets', 'costs', 'invoices'
+                        ];
+
+                        let totalDeleted = 0;
+                        for (const collectionName of collections) {
+                          try {
+                            const collection = database.collections.get(collectionName);
+                            const records = await collection.query().fetch();
+                            if (records.length > 0) {
+                              await database.write(async () => {
+                                await database.batch(
+                                  ...records.map((record: any) => record.prepareDestroyPermanently())
+                                );
+                              });
+                              totalDeleted += records.length;
+                              console.log(`  ✅ Deleted ${records.length} records from ${collectionName}`);
+                            }
+                          } catch (error) {
+                            console.log(`  ⚠️  Collection ${collectionName} error:`, error);
+                          }
+                        }
+
+                        console.log(`🗑️  Total records deleted: ${totalDeleted}`);
+
+                        // Clear AsyncStorage (this will force re-login)
+                        await AsyncStorage.clear();
+                        console.log('🧹 AsyncStorage cleared');
+
+                        // IMPORTANT: Re-initialize default data after reset
+                        console.log('🔄 Re-initializing database with default data...');
+                        await SimpleDatabaseService.initializeDefaultData();
+                        console.log('✅ Database re-initialization complete!');
+
+                        Alert.alert(
+                          'Success',
+                          `Database reset complete!\n\nDeleted ${totalDeleted} records and re-initialized with default users.\n\nYou can now login with:\n• designer / Designer@2025\n• admin / Admin@2025\n• supervisor / Supervisor@2025\n• manager / Manager@2025\n• planner / Planner@2025\n• logistics / Logistics@2025`,
+                          [
+                            {
+                              text: 'Go to Login',
+                              onPress: () => {
+                                // Navigate to Auth screen
+                                navigation.dispatch(
+                                  CommonActions.reset({
+                                    index: 0,
+                                    routes: [{ name: 'Auth' }],
+                                  })
+                                );
+                              }
+                            }
+                          ]
+                        );
+                      } catch (error) {
+                        console.error('❌ Reset failed:', error);
+                        Alert.alert('Error', 'Failed to reset database: ' + error);
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            style={[styles.actionButton, { backgroundColor: '#D32F2F' }]}
+          >
+            Reset Database
+          </Button>
+          <Paragraph style={{ fontSize: 12, color: '#666', marginTop: 10 }}>
+            After reset, restart app to re-initialize. New user: designer / Designer@2025
+          </Paragraph>
         </Card.Content>
       </Card>
     </ScrollView>
