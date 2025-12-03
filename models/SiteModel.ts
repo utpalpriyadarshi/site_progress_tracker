@@ -1,5 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, relation } from '@nozbe/watermelondb/decorators';
+import { field } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
 
 export default class SiteModel extends Model {
@@ -15,6 +15,11 @@ export default class SiteModel extends Model {
   @field('location') location!: string;
   @field('project_id') projectId!: string; // belongs to project
   @field('supervisor_id') supervisorId?: string; // assigned supervisor (optional, can be null)
+  // v2.11: Planning Engineer role - site schedule dates
+  @field('planned_start_date') plannedStartDate?: number;
+  @field('planned_end_date') plannedEndDate?: number;
+  @field('actual_start_date') actualStartDate?: number;
+  @field('actual_end_date') actualEndDate?: number;
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking
 }

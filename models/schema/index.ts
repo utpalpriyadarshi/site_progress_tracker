@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 30, // Added Manager role tables - milestones, milestone_progress, purchase_orders (v2.10)
+  version: 31, // Added multi-role tables - budgets, costs, invoices + enhancements (v2.11)
   tables: [
     tableSchema({
       name: 'projects',
@@ -23,6 +23,11 @@ export default appSchema({
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
+        // v2.11: Planning Engineer role - site schedule dates
+        { name: 'planned_start_date', type: 'number', isOptional: true },
+        { name: 'planned_end_date', type: 'number', isOptional: true },
+        { name: 'actual_start_date', type: 'number', isOptional: true },
+        { name: 'actual_end_date', type: 'number', isOptional: true },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
@@ -482,6 +487,8 @@ export default appSchema({
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
         { name: 'status', type: 'string', isIndexed: true },
+        // v2.11: Design Engineer vs Logistics distinction
+        { name: 'rfq_type', type: 'string', isIndexed: true }, // 'design' | 'procurement'
         { name: 'issue_date', type: 'number', isOptional: true },
         { name: 'closing_date', type: 'number', isOptional: true },
         { name: 'evaluation_date', type: 'number', isOptional: true },
@@ -593,6 +600,55 @@ export default appSchema({
         { name: 'notes', type: 'string', isOptional: true },
         { name: 'created_by_id', type: 'string', isIndexed: true },
         { name: 'approved_by_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v2.11: Commercial Manager role tables
+    tableSchema({
+      name: 'budgets',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, other
+        { name: 'allocated_amount', type: 'number' },
+        { name: 'description', type: 'string' },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'costs',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'po_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, other
+        { name: 'amount', type: 'number' },
+        { name: 'description', type: 'string' },
+        { name: 'cost_date', type: 'number' },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'invoices',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'po_id', type: 'string', isIndexed: true },
+        { name: 'invoice_number', type: 'string', isIndexed: true },
+        { name: 'invoice_date', type: 'number' },
+        { name: 'amount', type: 'number' },
+        { name: 'payment_status', type: 'string', isIndexed: true }, // pending, paid
+        { name: 'payment_date', type: 'number', isOptional: true },
+        { name: 'vendor_id', type: 'string', isIndexed: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },

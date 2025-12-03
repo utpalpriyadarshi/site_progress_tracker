@@ -33,6 +33,9 @@ import RfqVendorQuoteModel from './RfqVendorQuoteModel';
 import MilestoneModel from './MilestoneModel';
 import MilestoneProgressModel from './MilestoneProgressModel';
 import PurchaseOrderModel from './PurchaseOrderModel';
+import BudgetModel from './BudgetModel';
+import CostModel from './CostModel';
+import InvoiceModel from './InvoiceModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -73,5 +76,8 @@ export const database = new Database({
     MilestoneModel,
     MilestoneProgressModel,
     PurchaseOrderModel,
+    BudgetModel,
+    CostModel,
+    InvoiceModel,
   ],
 });
