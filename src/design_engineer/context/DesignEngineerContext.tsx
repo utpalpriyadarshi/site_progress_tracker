@@ -55,7 +55,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Load design engineer's project from database when user logs in
+  // Load design engineer's project from database when user logs in OR when role switching
   useEffect(() => {
     const loadEngineerProject = async () => {
       if (!user || !user.userId) {
@@ -67,10 +67,35 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
         console.log('[DesignEngineerContext] Loading project for user:', user.userId);
 
         // Fetch user from database to get project assignment
-        const userRecord = await database.collections.get('users').find(user.userId);
+        let userRecord;
+        try {
+          userRecord = await database.collections.get('users').find(user.userId);
+        } catch (findError) {
+          console.log('[DesignEngineerContext] User not found by ID, checking if role switching...');
+
+          // When role switching from Admin, user.userId is admin's ID
+          // Find the actual Design Engineer user instead
+          const rolesCollection = database.collections.get('roles');
+          const roles = await rolesCollection.query().fetch();
+          const designEngineerRole = roles.find((r: any) => r.name === 'DesignEngineer');
+
+          if (designEngineerRole) {
+            console.log('[DesignEngineerContext] Found DesignEngineer role:', designEngineerRole.id);
+            const usersCollection = database.collections.get('users');
+            const designEngineers = await usersCollection
+              .query(Q.where('role_id', designEngineerRole.id))
+              .fetch();
+
+            if (designEngineers.length > 0) {
+              userRecord = designEngineers[0]; // Get first design engineer
+              console.log('[DesignEngineerContext] Found Design Engineer user:', (userRecord as any).username);
+            }
+          }
+        }
 
         if (userRecord) {
           const projectId = (userRecord as any).projectId;
+          const userId = (userRecord as any).id;
           console.log('[DesignEngineerContext] User record found');
           console.log('[DesignEngineerContext] User projectId:', projectId);
           console.log('[DesignEngineerContext] ProjectId type:', typeof projectId);
@@ -87,7 +112,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
               // Update context state and persist to AsyncStorage
               await setProjectId(projectId);
               await setProjectName(projectName);
-              await setEngineerId(user.userId);
+              await setEngineerId(userId); // Use the design engineer's actual ID
 
               console.log('[DesignEngineerContext] ✅ Project loaded successfully');
             } catch (projectError) {
