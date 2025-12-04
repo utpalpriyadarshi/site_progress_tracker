@@ -499,6 +499,46 @@ export class SimpleDatabaseService {
         });
       });
 
+      // ✅ Create sample vendors (v2.11 Phase 3)
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'ABC Construction Supplies';
+          vendor.contactPerson = 'John Smith';
+          vendor.email = 'john@abcsupplies.com';
+          vendor.phone = '+1234567890';
+          vendor.address = '123 Industrial Ave, Construction City';
+          vendor.category = 'Materials';
+          vendor.rating = 4.5;
+          vendor.isActive = true;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'Global Steel & Metal Co.';
+          vendor.contactPerson = 'Sarah Johnson';
+          vendor.email = 'sarah@globalsteel.com';
+          vendor.phone = '+1234567891';
+          vendor.address = '456 Steel Road, Metal Town';
+          vendor.category = 'Steel & Metal';
+          vendor.rating = 4.8;
+          vendor.isActive = true;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'BuildRight Equipment Rentals';
+          vendor.contactPerson = 'Mike Davis';
+          vendor.email = 'mike@buildright.com';
+          vendor.phone = '+1234567892';
+          vendor.address = '789 Equipment Blvd, Tool City';
+          vendor.category = 'Equipment';
+          vendor.rating = 4.2;
+          vendor.isActive = true;
+        });
+      });
+
       console.log('Default data initialized successfully');
 
       // DEBUG: Verify data was created
