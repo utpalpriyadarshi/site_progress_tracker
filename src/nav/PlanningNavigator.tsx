@@ -177,7 +177,7 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
 const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="WBSManagement">
+      <Stack.Screen name="SiteManagement">
         {(props) => <PlanningTabs {...props} navigation={parentNavigation} />}
       </Stack.Screen>
       <Stack.Screen
