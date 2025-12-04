@@ -428,8 +428,10 @@ const RoleManagementScreen = () => {
                 {user.phone && (
                   <Paragraph style={styles.detail}>Phone: {user.phone}</Paragraph>
                 )}
-                {/* v2.9/v2.10: Show project assignment for supervisors and managers */}
-                {(getRoleName(user.roleId) === 'Supervisor' || getRoleName(user.roleId) === 'Manager') && (
+                {/* v2.9/v2.10/v2.11: Show project assignment for supervisors, managers, and design engineers */}
+                {(getRoleName(user.roleId) === 'Supervisor' ||
+                  getRoleName(user.roleId) === 'Manager' ||
+                  getRoleName(user.roleId) === 'DesignEngineer') && (
                   <Paragraph style={styles.detail}>
                     📁 Project: {getProjectName(user.projectId || '')}
                   </Paragraph>

@@ -75,6 +75,7 @@ const AdminDashboardScreen = () => {
         Manager: 'Manager',
         Planner: 'Planning',
         Logistics: 'Logistics',
+        DesignEngineer: 'DesignEngineer',
       };
 
       navigation.dispatch(
@@ -191,6 +192,10 @@ const AdminDashboardScreen = () => {
             <Menu.Item
               onPress={() => handleRoleSwitch('Logistics')}
               title="Logistics"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('DesignEngineer')}
+              title="Design Engineer"
             />
           </Menu>
         </Card.Content>

@@ -58,7 +58,10 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   // Load design engineer's project from database when user logs in
   useEffect(() => {
     const loadEngineerProject = async () => {
-      if (!user || !user.userId) return;
+      if (!user || !user.userId) {
+        console.log('[DesignEngineerContext] No user or userId available');
+        return;
+      }
 
       try {
         console.log('[DesignEngineerContext] Loading project for user:', user.userId);
@@ -68,25 +71,36 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
 
         if (userRecord) {
           const projectId = (userRecord as any).projectId;
+          console.log('[DesignEngineerContext] User record found');
           console.log('[DesignEngineerContext] User projectId:', projectId);
+          console.log('[DesignEngineerContext] ProjectId type:', typeof projectId);
 
           if (projectId) {
-            // Fetch project details
-            const project = await database.collections.get('projects').find(projectId);
-            const projectName = (project as any).name;
+            try {
+              // Fetch project details
+              const project = await database.collections.get('projects').find(projectId);
+              const projectName = (project as any).name;
 
-            console.log('[DesignEngineerContext] Setting project:', projectName);
+              console.log('[DesignEngineerContext] Project found:', projectName);
+              console.log('[DesignEngineerContext] Setting project in context...');
 
-            // Update context state and persist to AsyncStorage
-            await setProjectId(projectId);
-            await setProjectName(projectName);
-            await setEngineerId(user.userId);
+              // Update context state and persist to AsyncStorage
+              await setProjectId(projectId);
+              await setProjectName(projectName);
+              await setEngineerId(user.userId);
+
+              console.log('[DesignEngineerContext] ✅ Project loaded successfully');
+            } catch (projectError) {
+              console.error('[DesignEngineerContext] ❌ Error fetching project:', projectError);
+            }
           } else {
-            console.log('[DesignEngineerContext] No project assigned to user');
+            console.log('[DesignEngineerContext] ⚠️ No project assigned to user (projectId is null/undefined)');
           }
+        } else {
+          console.log('[DesignEngineerContext] ❌ User record not found in database');
         }
       } catch (error) {
-        console.error('[DesignEngineerContext] Error loading engineer project:', error);
+        console.error('[DesignEngineerContext] ❌ Error loading engineer project:', error);
       }
     };
 
