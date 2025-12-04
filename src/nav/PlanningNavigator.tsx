@@ -10,7 +10,6 @@ import ItemCreationScreen from '../planning/ItemCreationScreen';
 import ItemEditScreen from '../planning/ItemEditScreen';
 import GanttChartScreen from '../planning/GanttChartScreen';
 import ScheduleManagementScreen from '../planning/ScheduleManagementScreen';
-import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
 import MilestoneTrackingScreen from '../planning/MilestoneTrackingScreen';
 import BaselineScreen from '../planning/BaselineScreen';
 import SiteManagementScreen from '../planning/SiteManagementScreen';
@@ -32,7 +31,6 @@ export type PlanningTabParamList = {
   WBSManagement: undefined;
   GanttChart: undefined;
   ScheduleManagement: undefined;
-  ResourcePlanning: undefined;
   MilestoneTracking: undefined;
   Baseline: undefined;
   SiteManagement: undefined;
@@ -89,8 +87,6 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
             iconSymbol = '📊';
           } else if (route.name === 'ScheduleManagement') {
             iconSymbol = '📅';
-          } else if (route.name === 'ResourcePlanning') {
-            iconSymbol = '👷';
           } else if (route.name === 'MilestoneTracking') {
             iconSymbol = '🏁';
           } else if (route.name === 'Baseline') {
@@ -133,17 +129,7 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
           headerTitle: 'Work Breakdown Structure',
         }}
       />
-      {/* Tab 3: Resources - Who does the work */}
-      <Tab.Screen
-        name="ResourcePlanning"
-        component={ResourcePlanningScreen}
-        options={{
-          title: 'Resources',
-          headerShown: true,
-          headerTitle: 'Resource Planning',
-        }}
-      />
-      {/* Tab 4: Schedule - When work happens */}
+      {/* Tab 3: Schedule - When work happens */}
       <Tab.Screen
         name="ScheduleManagement"
         component={ScheduleManagementScreen}
