@@ -99,6 +99,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         planner: 'Planning',
         logistics: 'Logistics',
         designengineer: 'DesignEngineer',
+        commercialmanager: 'CommercialManager',
       };
 
       const screenName = roleMap[result.user.role];

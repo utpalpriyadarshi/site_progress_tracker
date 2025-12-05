@@ -90,16 +90,25 @@ export class SimpleDatabaseService {
         });
       });
 
+      const commercialManagerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'CommercialManager';
+          role.description = 'Commercial manager for budget, cost tracking, and financial reporting';
+          role.permissions = JSON.stringify(['view_budgets', 'manage_budgets', 'manage_costs', 'manage_invoices', 'view_financial_reports']);
+        });
+      });
+
       // ✅ Hash passwords for demo users (one-time cost during initialization)
       // Using strong passwords with special characters for better security
       console.log('SimpleDatabaseService: Hashing demo user passwords...');
-      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash, designEngineerHash] = await Promise.all([
+      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash, designEngineerHash, commercialManagerHash] = await Promise.all([
         this.hashPassword('Admin@2025'),
         this.hashPassword('Supervisor@2025'),
         this.hashPassword('Manager@2025'),
         this.hashPassword('Planner@2025'),
         this.hashPassword('Logistics@2025'),
         this.hashPassword('Designer@2025'),
+        this.hashPassword('Commercial@2025'),
       ]);
       console.log('SimpleDatabaseService: Password hashing complete');
 
@@ -176,6 +185,18 @@ export class SimpleDatabaseService {
         });
       });
 
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'commercial';
+          user.passwordHash = commercialManagerHash;
+          user.fullName = 'Carol Commercial Manager';
+          user.email = 'commercial@construction.com';
+          user.phone = '+1234567896';
+          user.isActive = true;
+          user.roleId = commercialManagerRole.id;
+        });
+      });
+
       console.log('Default roles and users created successfully');
 
       // ✅ Create default project
@@ -199,6 +220,17 @@ export class SimpleDatabaseService {
           });
         });
         console.log('Design Engineer assigned to project:', sampleProject.id);
+      }
+
+      // ✅ Assign Commercial Manager to project (v2.11 Phase 5)
+      const commercialUsers = await database.collections.get('users').query(Q.where('username', 'commercial')).fetch();
+      if (commercialUsers.length > 0) {
+        await database.write(async () => {
+          await commercialUsers[0].update((user: any) => {
+            user.projectId = sampleProject.id;
+          });
+        });
+        console.log('Commercial Manager assigned to project:', sampleProject.id);
       }
 
       // ✅ Create default site

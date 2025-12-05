@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthService from '../../services/auth/AuthService';
 import TokenStorage from '../../services/storage/TokenStorage';
 
-export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'design_engineer' | 'admin';
+export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'design_engineer' | 'commercial_manager' | 'admin';
 
 interface User {
   userId: string;
