@@ -9,7 +9,7 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 ### Key Features
 - **Offline-First**: Works seamlessly without internet connectivity
 - **Construction-Specific**: Tailored for construction site management workflows
-- **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, and admin
+- **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, design engineers, commercial managers, and admin
 - **Modern UX** (v2.0 - NEW): Custom Snackbar/Dialog system with color-coded, non-blocking notifications
 - **Admin Role** (v1.2): Complete administration panel with:
   - User management (CRUD operations)
@@ -56,12 +56,136 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   - **DOORS Requirements**: Equipment specification tracking with compliance monitoring
   - **RFQ Management**: Complete procurement workflow with vendor management
   - **BOM-DOORS Integration**: Automated linking with one-tap navigation
+- **Commercial Manager Role** (v2.11 - COMPLETE): Complete financial management system
+  - **Budget Management**: Category-based budget allocation with variance tracking
+  - **Cost Tracking**: Real-time cost monitoring with PO linkage and budget comparison
+  - **Invoice Management**: Payment tracking with automatic overdue calculation
+  - **Financial Reports**: Multi-table analytics with date filtering and profitability metrics
+  - **Commercial Dashboard**: Real-time financial health with intelligent alerts
 - **Site Context**: Persistent site selection across all supervisor screens
 - **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
 - **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
 - **Automated Testing** (v1.3 - NEW): 35 tests with Jest covering critical functionality
 
 ## Recent Updates
+
+### v2.11 (December 2025) - Commercial Manager Role Implementation 💰
+
+**Phase 5: Commercial Manager - Complete Financial Management System** ✅ (December 5, 2025)
+
+The Commercial Manager role provides comprehensive financial oversight and budget management for construction projects with real-time analytics and multi-table data aggregation.
+
+**Core Features Implemented:**
+
+1. **Budget Management Screen** ✅
+   - Full CRUD operations for project budgets
+   - Category-based budget allocation (labor, material, equipment, other)
+   - Real-time budget vs actual comparison
+   - Over-budget warnings with color-coded indicators
+   - Budget variance analysis with percentage tracking
+   - Search and filter capabilities
+
+2. **Cost Tracking Screen** ✅
+   - Complete cost entry management with DateTimePicker
+   - Purchase Order number linkage
+   - Category-based cost organization
+   - Budget comparison per cost entry
+   - Real-time budget utilization display
+   - Over-budget alerts per category
+
+3. **Invoice Management Screen** ✅
+   - Invoice CRUD with vendor integration
+   - Payment status tracking (pending, paid, overdue)
+   - Automatic overdue calculation (30 days from invoice date)
+   - Mark as Paid functionality with confirmation
+   - Vendor name resolution from database
+   - Invoice number and amount tracking
+
+4. **Financial Reports Screen** ✅
+   - Multi-table data aggregation (budgets + costs + invoices)
+   - Date range filtering for all reports
+   - 5 comprehensive report sections:
+     * Budget Summary: Total budget, spent, remaining, variance
+     * Budget Variance by Category: Category-wise analysis with progress bars
+     * Cost Distribution: Percentage breakdown by category
+     * Cash Flow Analysis: Revenue vs costs with net calculation
+     * Profitability Metrics: Gross profit and margin calculations
+   - Visual analytics with progress bars and color coding
+   - Export-ready data views
+
+5. **Commercial Dashboard** ✅
+   - Real-time financial health overview
+   - 6 key sections:
+     * Intelligent Alerts: Conditional warnings (over-budget, overdue invoices, budget utilization)
+     * Budget Summary: Total budget, spent, remaining with utilization progress bar
+     * Category Breakdown: Spending by category with over-budget indicators
+     * Cash Flow: Revenue (paid invoices) vs costs with net calculation
+     * Invoices Overview: Total, paid, pending, overdue counts with amounts
+     * Recent Costs: Last 5 costs with category chips and dates
+   - Alert types: Danger (red), Warning (orange), Info (green)
+   - Color-coded metrics and visual indicators
+
+**Technical Implementation:**
+
+- **Context System**: CommercialContext with AsyncStorage persistence
+  - Project selection and isolation
+  - Project name display across all screens
+  - Refresh trigger for data synchronization
+
+- **Database Integration**: WatermelonDB with Q operators
+  - budgets table: Tracks allocated amounts per category
+  - costs table: Records actual expenditures with PO linkage
+  - invoices table: Manages vendor invoices and payments
+  - vendors table: Vendor information lookup
+
+- **Navigation**: Bottom tab navigator with 5 tabs
+  - Dashboard (default landing screen)
+  - Budget Management
+  - Cost Tracking
+  - Invoice Management
+  - Financial Reports
+
+- **Performance Optimization**: useCallback hooks for efficient re-renders
+
+- **User Management**: Commercial Manager user and role created
+  - Username: commercial1
+  - Password: Password@2025
+  - Role: commercial_manager
+  - Full access to financial management features
+  - Note: Update password via Admin interface if currently using password123
+
+**Files Created:**
+- src/commercial/CommercialContext.tsx - Commercial state management
+- src/commercial/CommercialDashboardScreen.tsx - Financial overview dashboard (797 lines)
+- src/commercial/BudgetManagementScreen.tsx - Budget CRUD operations (720 lines)
+- src/commercial/CostTrackingScreen.tsx - Cost tracking with PO linkage (767 lines)
+- src/commercial/InvoiceManagementScreen.tsx - Invoice and payment management (877 lines)
+- src/commercial/FinancialReportsScreen.tsx - Multi-report analytics (786 lines)
+- src/nav/CommercialNavigator.tsx - Commercial tab navigation
+
+**Database Schema:**
+- Utilized existing budgets table (project_id, category, allocated_amount, actual_spent)
+- Utilized existing costs table (project_id, description, amount, cost_date, category, po_number)
+- Utilized existing invoices table (project_id, vendor_id, invoice_number, amount, invoice_date, payment_status, payment_date)
+
+**Key Achievements:**
+- ✅ Complete financial management workflow
+- ✅ Real-time budget monitoring with variance analysis
+- ✅ Automatic payment status calculation (overdue detection)
+- ✅ Multi-table data aggregation for comprehensive reporting
+- ✅ Category-based financial organization
+- ✅ Visual analytics with progress bars and color coding
+- ✅ Project isolation for multi-project support
+- ✅ All TypeScript and ESLint checks passing
+- ✅ Consistent UI/UX with Material Design patterns
+
+**Quality Assurance:**
+- All screens tested with ESLint (only pre-existing inline style warnings)
+- TypeScript compilation successful (no Commercial-related errors)
+- Navigation type consistency across all navigators
+- useCallback optimization for performance
+
+---
 
 ### v2.10 (November 2025) - Manager Role Implementation 🎯
 

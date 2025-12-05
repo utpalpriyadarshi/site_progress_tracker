@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Construction Site Progress Tracker - A React Native mobile application for construction site management with offline-first capabilities using WatermelonDB. The app features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics).
+Construction Site Progress Tracker - A React Native mobile application for construction site management with offline-first capabilities using WatermelonDB. The app features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers).
+
+**Current Version**: v2.11 (Commercial Manager Role Implementation - Phase 5 Complete)
+**Last Updated**: December 5, 2025
 
 ## Development Commands
 
@@ -84,9 +87,11 @@ The app uses a hierarchical navigation system:
   - **AuthNavigator** - Login and role selection
   - **Role-based Navigators** - Bottom tab navigators for each role:
     - **SupervisorNavigator** - 7 screens with shared SiteContext
-    - ManagerNavigator - 4 screens
-    - PlanningNavigator - 4 screens
-    - LogisticsNavigator - 4 screens
+    - **ManagerNavigator** - 5 screens with Manager Dashboard
+    - **PlanningNavigator** - 6 screens with WBS Management
+    - **LogisticsNavigator** - 4 screens with Material Tracking
+    - **DesignEngineerNavigator** - 3 screens with DOORS Management
+    - **CommercialNavigator** - 5 screens with Financial Management (v2.11)
 
 ### Supervisor Navigation (Most Complete)
 The supervisor role has 7 dedicated screens in `src/supervisor/`:
@@ -382,6 +387,8 @@ Default test users (defined in DATABASE.md):
 - Supervisor: `supervisor` / `Supervisor@2025`
 - Planner: `planner` / `Planner@2025`
 - Logistics: `logistics` / `Logistics@2025`
+- Design Engineer: `designer1` / `Password@2025`
+- Commercial Manager: `commercial1` / `Password@2025`
 
 ## References
 
