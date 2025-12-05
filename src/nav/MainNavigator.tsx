@@ -10,6 +10,7 @@ import ManagerNavigator from './ManagerNavigator';
 import PlanningNavigator from './PlanningNavigator';
 import LogisticsNavigator from './LogisticsNavigator';
 import DesignEngineerNavigator from './DesignEngineerNavigator';
+import CommercialNavigator from './CommercialNavigator';
 
 import { RootStackParamList } from './types';
 
@@ -54,6 +55,11 @@ const MainNavigator = () => {
           <Stack.Screen
             name="DesignEngineer"
             component={DesignEngineerNavigator}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="CommercialManager"
+            component={CommercialNavigator}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

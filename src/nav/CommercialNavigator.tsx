@@ -4,15 +4,15 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import AdminDashboardScreen from '../admin/AdminDashboardScreen';
-import ProjectManagementScreen from '../admin/ProjectManagementScreen';
-import RoleManagementScreen from '../admin/RoleManagementScreen';
-import { AdminProvider } from '../admin/context/AdminContext';
-import { useAuth, UserRole } from '../auth/AuthContext';
+// Placeholder screens - will be created in subsequent sprints
+import CommercialDashboardScreen from '../commercial/CommercialDashboardScreen';
+import BudgetManagementScreen from '../commercial/BudgetManagementScreen';
+import CostTrackingScreen from '../commercial/CostTrackingScreen';
+import InvoiceManagementScreen from '../commercial/InvoiceManagementScreen';
+import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
-import SnackbarTestScreen from '../test/SnackbarTestScreen';
-import { Phase1TestUtility } from '../utils/Phase1TestUtility';
-import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
+import { useAuth, UserRole } from '../auth/AuthContext';
+import { CommercialProvider } from '../commercial/context/CommercialContext';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -25,22 +25,21 @@ export type RootStackParamList = {
   CommercialManager: undefined;
 };
 
-export type AdminTabParamList = {
-  AdminDashboard: undefined;
-  ProjectManagement: undefined;
-  RoleManagement: undefined;
-  SnackbarTest: undefined;
-  Phase1Test: undefined;
-  ManagerTestData: undefined;
+export type CommercialTabParamList = {
+  Dashboard: undefined;
+  BudgetManagement: undefined;
+  CostTracking: undefined;
+  InvoiceManagement: undefined;
+  FinancialReports: undefined;
 };
 
-type AdminNavigatorProps = {
-  navigation: StackNavigationProp<RootStackParamList, 'Admin'>;
+type CommercialNavigatorProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'CommercialManager'>;
 };
 
-const Tab = createBottomTabNavigator<AdminTabParamList>();
+const Tab = createBottomTabNavigator<CommercialTabParamList>();
 
-const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavigation }) => {
+const CommercialNavigator: React.FC<CommercialNavigatorProps> = ({ navigation: parentNavigation }) => {
   const { logout } = useAuth();
 
   const handleLogout = async () => {
@@ -73,24 +72,22 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
   };
 
   return (
-    <AdminProvider>
+    <CommercialProvider>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
             let iconSymbol = '';
 
-            if (route.name === 'AdminDashboard') {
-              iconSymbol = '🏠';
-            } else if (route.name === 'ProjectManagement') {
-              iconSymbol = '📁';
-            } else if (route.name === 'RoleManagement') {
-              iconSymbol = '👥';
-            } else if (route.name === 'SnackbarTest') {
-              iconSymbol = '🧪';
-            } else if (route.name === 'Phase1Test') {
-              iconSymbol = '🔬';
-            } else if (route.name === 'ManagerTestData') {
-              iconSymbol = '🎲';
+            if (route.name === 'Dashboard') {
+              iconSymbol = '📊';
+            } else if (route.name === 'BudgetManagement') {
+              iconSymbol = '💰';
+            } else if (route.name === 'CostTracking') {
+              iconSymbol = '📈';
+            } else if (route.name === 'InvoiceManagement') {
+              iconSymbol = '🧾';
+            } else if (route.name === 'FinancialReports') {
+              iconSymbol = '📑';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -108,62 +105,53 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
         })}
       >
         <Tab.Screen
-          name="AdminDashboard"
-          component={AdminDashboardScreen}
+          name="Dashboard"
+          component={CommercialDashboardScreen}
           options={{
             title: 'Dashboard',
             headerShown: true,
-            headerTitle: 'Admin Dashboard',
+            headerTitle: 'Commercial Dashboard',
           }}
         />
         <Tab.Screen
-          name="ProjectManagement"
-          component={ProjectManagementScreen}
+          name="BudgetManagement"
+          component={BudgetManagementScreen}
           options={{
-            title: 'Projects',
+            title: 'Budgets',
             headerShown: true,
-            headerTitle: 'Project Management',
+            headerTitle: 'Budget Management',
           }}
         />
         <Tab.Screen
-          name="RoleManagement"
-          component={RoleManagementScreen}
+          name="CostTracking"
+          component={CostTrackingScreen}
           options={{
-            title: 'Users',
+            title: 'Costs',
             headerShown: true,
-            headerTitle: 'User & Role Management',
+            headerTitle: 'Cost Tracking',
           }}
         />
         <Tab.Screen
-          name="SnackbarTest"
-          component={SnackbarTestScreen}
+          name="InvoiceManagement"
+          component={InvoiceManagementScreen}
           options={{
-            title: 'Test',
+            title: 'Invoices',
             headerShown: true,
-            headerTitle: 'Snackbar & Dialog Tests',
+            headerTitle: 'Invoice Management',
           }}
         />
         <Tab.Screen
-          name="Phase1Test"
-          component={Phase1TestUtility}
+          name="FinancialReports"
+          component={FinancialReportsScreen}
           options={{
-            title: 'Phase 1',
+            title: 'Reports',
             headerShown: true,
-            headerTitle: 'Phase 1 v2.10 Tests',
-          }}
-        />
-        <Tab.Screen
-          name="ManagerTestData"
-          component={ManagerTestDataUtility}
-          options={{
-            title: 'Test Data',
-            headerShown: true,
-            headerTitle: 'Manager Test Data',
+            headerTitle: 'Financial Reports',
           }}
         />
       </Tab.Navigator>
-    </AdminProvider>
+    </CommercialProvider>
   );
 };
 
-export default AdminNavigator;
+export default CommercialNavigator;
