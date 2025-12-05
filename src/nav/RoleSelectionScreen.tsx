@@ -72,6 +72,7 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
         planning: 'Planning',
         logistics: 'Logistics',
         design_engineer: 'DesignEngineer',
+        commercial_manager: 'CommercialManager',
       };
 
       navigation.reset({

@@ -25,6 +25,7 @@ export type RootStackParamList = {
   Planning: undefined;
   Logistics: undefined;
   DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 export type PlanningTabParamList = {
@@ -65,6 +66,7 @@ const PlanningTabs: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavi
       planning: 'Planning',
       logistics: 'Logistics',
       design_engineer: 'DesignEngineer',
+      commercial_manager: 'CommercialManager',
     };
 
     parentNavigation.dispatch(

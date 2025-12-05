@@ -16,10 +16,13 @@ import { useAuth } from '../auth/AuthContext';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 export type SupervisorTabParamList = {
