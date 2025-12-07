@@ -16,6 +16,7 @@ type RootStackParamList = {
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  CommercialManager: undefined;
 };
 
 type AdminDashboardNavigationProp = StackNavigationProp<RootStackParamList, 'Admin'>;
@@ -76,6 +77,7 @@ const AdminDashboardScreen = () => {
         Planner: 'Planning',
         Logistics: 'Logistics',
         DesignEngineer: 'DesignEngineer',
+        CommercialManager: 'CommercialManager',
       };
 
       navigation.dispatch(
@@ -196,6 +198,10 @@ const AdminDashboardScreen = () => {
             <Menu.Item
               onPress={() => handleRoleSwitch('DesignEngineer')}
               title="Design Engineer"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('CommercialManager')}
+              title="Commercial Manager"
             />
           </Menu>
         </Card.Content>

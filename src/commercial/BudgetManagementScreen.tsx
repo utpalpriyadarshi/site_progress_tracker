@@ -88,7 +88,7 @@ const BudgetManagementScreen = () => {
         // Sum all costs in this category
         const actualSpent = costsData
           .filter((cost: any) => cost.category === budget.category)
-          .reduce((sum: number, cost: any) => sum + (cost.actualAmount || 0), 0);
+          .reduce((sum: number, cost: any) => sum + (cost.amount || 0), 0);
 
         return {
           id: budget.id,

@@ -26,7 +26,7 @@
 
 ### Required Test Credentials
 ```
-Username: commercial1
+Username: commercial
 Password: Password@2025
 ```
 
@@ -55,7 +55,7 @@ Verify that Commercial Manager role authentication and navigation work correctly
 1. **Login as Commercial Manager**
    ```
    1. Open the app
-   2. Enter username: commercial1
+   2. Enter username: commercial
    3. Enter password: Password@2025
    4. Tap "Login"
    ```
@@ -97,7 +97,7 @@ Verify that Commercial Manager role authentication and navigation work correctly
    - No unauthorized navigation options visible
 
 **Test 1 Result**: ⬜ PASS / ⬜ FAIL
-**Notes**: _____________________________________
+**Notes**: All passed, Project isolation is not there, commercial manager not assigned this project able to see the details of sample project.___________________________________
 
 ---
 
@@ -128,6 +128,7 @@ Test Budget Management screen with full CRUD operations and variance tracking.
 - Category filter chips below search
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 2.2 Create New Budget
 
@@ -153,6 +154,7 @@ Test Budget Management screen with full CRUD operations and variance tracking.
   * Variance: $50,000 (green)
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 2.3 Search & Filter
 
@@ -173,6 +175,7 @@ Test Budget Management screen with full CRUD operations and variance tracking.
 - Clearing filters shows all budgets
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 2.4 Edit Budget
 
@@ -191,6 +194,7 @@ Test Budget Management screen with full CRUD operations and variance tracking.
 - Variance recalculates automatically
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 2.5 Delete Budget
 
@@ -210,7 +214,8 @@ Test Budget Management screen with full CRUD operations and variance tracking.
 **Result**: ⬜ PASS / ⬜ FAIL
 
 **Test 2 Overall Result**: ⬜ PASS / ⬜ FAIL
-**Notes**: _____________________________________
+**Notes**: All tests of Test passed except for Total spent not being updated.
+_____________________________________
 
 ---
 
@@ -240,7 +245,7 @@ Test Cost Tracking screen with PO linkage and budget comparison.
 - Category filter chips
 
 **Result**: ⬜ PASS / ⬜ FAIL
-
+Observation:-All ok but no Budget comparison section
 ### 3.2 Create New Cost Entry
 
 **Steps:**
@@ -271,6 +276,7 @@ Test Cost Tracking screen with PO linkage and budget comparison.
   * Budget comparison showing Materials budget vs spent
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 3.3 Budget Comparison Display
 
@@ -288,6 +294,7 @@ Test Cost Tracking screen with PO linkage and budget comparison.
 - If over budget, warning icon displayed
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 3.4 Edit Cost Entry
 
@@ -307,6 +314,7 @@ Test Cost Tracking screen with PO linkage and budget comparison.
 - New remaining: $15,000
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 3.5 Delete Cost Entry
 
@@ -325,7 +333,7 @@ Test Cost Tracking screen with PO linkage and budget comparison.
 **Result**: ⬜ PASS / ⬜ FAIL
 
 **Test 3 Overall Result**: ⬜ PASS / ⬜ FAIL
-**Notes**: _____________________________________
+**Notes**: All passed_____________________________________
 
 ---
 
@@ -359,6 +367,7 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
 - Status filter chips
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok but Vendor name is unknown vendor
 
 ### 4.2 Create New Invoice
 
@@ -385,6 +394,7 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
   * Invoice Date: Today
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observation:- All ok but vendor dropdown not there
 
 ### 4.3 Mark Invoice as Paid
 
@@ -405,6 +415,7 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
   * Amounts update accordingly
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 4.4 Test Automatic Overdue Calculation
 
@@ -423,6 +434,7 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
 - Warning icon displayed on card
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 4.5 Filter by Status
 
@@ -441,6 +453,7 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
 - "All" chip shows all invoices
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 4.6 Edit & Delete Invoice
 
@@ -463,9 +476,9 @@ Test Invoice Management with payment tracking and automatic overdue calculation.
 - Summary recalculates
 
 **Result**: ⬜ PASS / ⬜ FAIL
-
+Observeation:- Ok
 **Test 4 Overall Result**: ⬜ PASS / ⬜ FAIL
-**Notes**: _____________________________________
+**Notes**: All ok, filter button not working on second click to get all status. _____________________________________
 
 ---
 
@@ -493,6 +506,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
   5. Profitability Metrics
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 5.2 Budget Summary Section
 
@@ -514,6 +528,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
 - All calculations accurate
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 5.3 Budget Variance by Category
 
@@ -533,6 +548,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
 - Color-coded (green/red) based on status
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok, however i dont see Progress bars show utilization in Budget variance
 
 ### 5.4 Cost Distribution
 
@@ -549,6 +565,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
 - Sorted by highest percentage
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok, no sorting 
 
 ### 5.5 Cash Flow Analysis
 
@@ -567,7 +584,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
   * Red if negative
 
 **Result**: ⬜ PASS / ⬜ FAIL
-
+Observeation:- Ok
 ### 5.6 Profitability Metrics
 
 **Steps:**
@@ -583,6 +600,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
 - Percentages accurate
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 5.7 Date Range Filtering
 
@@ -604,6 +622,7 @@ Test Financial Reports screen with multi-table data aggregation and analytics.
 - Budgets show actual spent within date range
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 **Test 5 Overall Result**: ⬜ PASS / ⬜ FAIL
 **Notes**: _____________________________________
@@ -634,7 +653,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
   6. Recent Costs
 
 **Result**: ⬜ PASS / ⬜ FAIL
-
+Observeation:- Ok, recent cost chip text fully not visible
 ### 6.2 Intelligent Alerts System
 
 **Steps:**
@@ -660,6 +679,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
 - Sorted by priority (danger → warning → info)
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.3 Budget Summary Card
 
@@ -680,6 +700,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
   * Color: Blue if < 100%, Red if > 100%
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.4 Category Breakdown Section
 
@@ -699,6 +720,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
   * Progress bar (colored by category or red if over)
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.5 Cash Flow Card
 
@@ -717,6 +739,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
     - Red if negative
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.6 Invoices Overview
 
@@ -736,6 +759,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
 - Amounts match invoice totals
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.7 Recent Costs Section
 
@@ -755,6 +779,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
 - Sorted by most recent first
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 6.8 Dashboard Refresh
 
@@ -778,6 +803,7 @@ Test Commercial Dashboard with real-time financial health overview and intellige
 
 **Test 6 Overall Result**: ⬜ PASS / ⬜ FAIL
 **Notes**: _____________________________________
+Observeation:- Ok, not auto refreshing
 
 ---
 
@@ -809,6 +835,7 @@ Expected Results:
 - ✅ Commercial Dashboard
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 7.2 Multi-Category Aggregation
 
@@ -832,6 +859,7 @@ Expected:
 - ✅ Category breakdowns match individual categories
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observeation:- Ok
 
 ### 7.3 Cash Flow Accuracy
 
@@ -856,6 +884,7 @@ Expected:
 - ✅ Invoice Management (summary)
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observation:- Created 3 invoices as desired, where to create total cost, give detailed steps
 
 ### 7.4 Overdue Calculation
 
@@ -877,6 +906,7 @@ Logic: Invoice Date + 30 days < Today AND Status = Pending → Overdue
 - ✅ Dashboard alerts show overdue warning
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Obsrvation:-Overdue status badge displayed, count in summary & Dashboard is not refreshing/updating
 
 ### 7.5 Date Range Filtering
 
@@ -899,6 +929,7 @@ Expected:
 - ✅ Removing filter shows all data again
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observation:-OK
 
 **Test 7 Overall Result**: ⬜ PASS / ⬜ FAIL
 **Notes**: _____________________________________
@@ -927,6 +958,7 @@ Verify project context isolation and navigation consistency.
 - If no project assigned, shows "No project assigned"
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observation:- OK, 
 
 ### 8.2 Data Isolation by Project
 
@@ -944,7 +976,7 @@ Verify project context isolation and navigation consistency.
 - Aggregations only include current project data
 
 **Result**: ⬜ PASS / ⬜ FAIL
-
+Observation:- ok
 ### 8.3 Navigation Consistency
 
 **Steps:**
@@ -961,6 +993,7 @@ Verify project context isolation and navigation consistency.
 - State preserved when returning to tabs
 
 **Result**: ⬜ PASS / ⬜ FAIL
+Observation:- ok
 
 ### 8.4 Logout and Re-login
 
@@ -969,7 +1002,7 @@ Verify project context isolation and navigation consistency.
 1. From any Commercial screen
 2. Try to access logout (via role switcher if available)
 3. Logout
-4. Login again as commercial1
+4. Login again as commercial
 5. Verify you return to Commercial Dashboard
 ```
 
@@ -983,7 +1016,7 @@ Verify project context isolation and navigation consistency.
 
 **Test 8 Overall Result**: ⬜ PASS / ⬜ FAIL
 **Notes**: _____________________________________
-
+Observation:- ok
 ---
 
 ## Final Checklist
@@ -1064,8 +1097,8 @@ Severity Levels: 🔴 Critical | 🟡 Major | 🟢 Minor | 🔵 Cosmetic
 
 ## Sign-Off
 
-**Tested By**: _________________________
-**Date**: _________________________
+**Tested By**: Utpal Priyadarshi_________________________
+**Date**: 6th & 7th December 25 _________________________
 **Signature**: _________________________
 
 **Approved for Merge**: ⬜ YES / ⬜ NO

@@ -64,6 +64,8 @@ const InvoiceManagementScreen = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [showVendorMenu, setShowVendorMenu] = useState(false);
 
   // Form state
   const [formInvoiceNumber, setFormInvoiceNumber] = useState('');
@@ -136,6 +138,17 @@ const InvoiceManagementScreen = () => {
     }
   }, [projectId]);
 
+  const loadVendors = useCallback(async () => {
+    try {
+      const vendorsCollection = database.collections.get('vendors');
+      const vendorsData = await vendorsCollection.query().fetch();
+      setVendors(vendorsData);
+      console.log('[Invoice] Loaded vendors:', vendorsData.length);
+    } catch (error) {
+      console.error('[Invoice] Error loading vendors:', error);
+    }
+  }, []);
+
   const applyFilters = useCallback(() => {
     let filtered = [...invoices];
 
@@ -161,6 +174,10 @@ const InvoiceManagementScreen = () => {
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices, refreshTrigger]);
+
+  useEffect(() => {
+    loadVendors();
+  }, [loadVendors]);
 
   useEffect(() => {
     applyFilters();
@@ -471,13 +488,37 @@ const InvoiceManagementScreen = () => {
         style={styles.input}
       />
 
-      <TextInput
-        label="Vendor ID *"
-        value={formVendorId}
-        onChangeText={setFormVendorId}
-        mode="outlined"
-        style={styles.input}
-      />
+      <Menu
+        visible={showVendorMenu}
+        onDismiss={() => setShowVendorMenu(false)}
+        anchor={
+          <Button
+            mode="outlined"
+            onPress={() => setShowVendorMenu(true)}
+            style={styles.input}
+            contentStyle={{ justifyContent: 'flex-start' }}
+          >
+            {formVendorId
+              ? vendors.find((v) => v.id === formVendorId)?.name || 'Select Vendor'
+              : 'Select Vendor *'}
+          </Button>
+        }
+      >
+        {vendors.length === 0 ? (
+          <Menu.Item title="No vendors available" disabled />
+        ) : (
+          vendors.map((vendor: any) => (
+            <Menu.Item
+              key={vendor.id}
+              onPress={() => {
+                setFormVendorId(vendor.id);
+                setShowVendorMenu(false);
+              }}
+              title={vendor.name}
+            />
+          ))
+        )}
+      </Menu>
 
       <TextInput
         label="Amount *"

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Card, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
@@ -241,6 +242,15 @@ const CommercialDashboardScreen = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData, refreshTrigger]);
+
+  // Reload dashboard when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (projectId) {
+        loadDashboardData();
+      }
+    }, [projectId, loadDashboardData])
+  );
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
@@ -757,6 +767,7 @@ const styles = StyleSheet.create({
   },
   miniCategoryChip: {
     height: 24,
+    maxWidth: '70%',
   },
   miniCategoryChipText: {
     color: 'white',

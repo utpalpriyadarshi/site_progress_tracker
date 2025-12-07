@@ -7,14 +7,13 @@
 
 ## Login & Access
 ```
-Username: commercial1
+Username: commercial
 Password: Password@2025
 ```
 
 - ⬜ Login successful
 - ⬜ Lands on Commercial Dashboard
 - ⬜ 5 tabs visible: Dashboard, Budget, Costs, Invoices, Reports
-
 ---
 
 ## Quick Feature Tests
@@ -24,12 +23,14 @@ Password: Password@2025
 - ⬜ View budget card with allocated amount
 - ⬜ Edit budget: Change to $60,000
 - ⬜ Delete budget successfully
+Observations:-All ok
 
 ### Cost Tracking (2 min)
 - ⬜ Create cost: "Test materials", $15,000, Materials category
 - ⬜ View budget comparison showing $15k/$60k
 - ⬜ Progress bar displays ~25%
 - ⬜ Delete cost successfully
+Observations:-All ok
 
 ### Invoice Management (3 min)
 - ⬜ Create invoice: INV-001, select vendor, $25,000, pending
@@ -37,6 +38,7 @@ Password: Password@2025
 - ⬜ Long-press → Mark as Paid
 - ⬜ Status changes to Paid (green chip)
 - ⬜ Delete invoice successfully
+Observations:-All ok, vendor ID not found 
 
 ### Financial Reports (2 min)
 - ⬜ All 5 report sections visible:
@@ -47,7 +49,7 @@ Password: Password@2025
   - Profitability Metrics
 - ⬜ Date range filter buttons work
 - ⬜ Data displays correctly
-
+Observations:-All ok
 ### Commercial Dashboard (3 min)
 - ⬜ Budget Summary card shows totals
 - ⬜ Category Breakdown displays all 4 categories
@@ -55,7 +57,7 @@ Password: Password@2025
 - ⬜ Invoices Overview shows counts
 - ⬜ Recent Costs section displays (if any)
 - ⬜ Alerts appear if applicable (over budget, overdue, etc.)
-
+Observations:-All ok except chip for recent cost is not fully visible, refer screenshot Commercial1.png @prompts foler
 ---
 
 ## Critical Calculations Check
@@ -71,7 +73,7 @@ Password: Password@2025
 - ⬜ Reports show: Total budget $10k, Total spent $7k
 - ⬜ Dashboard Cash Flow shows: Revenue $15k, Costs $7k, Net $8k
 - ⬜ Profitability shows: Profit $8k, Margin 53.3%
-
+Observations:- Created budget, cost and invoice, refer screenshot comercial2.png in Prompts folder, cost is not updated in budget tab,
 ---
 
 ## Navigation & Context
@@ -79,7 +81,7 @@ Password: Password@2025
 - ⬜ Project name displays in all screen headers
 - ⬜ Back button navigation works correctly
 - ⬜ No errors in console/logs
-
+Observations:-All Ok but i dont see back button anywhere.
 ---
 
 ## Final Check
@@ -88,7 +90,7 @@ Password: Password@2025
 - ⬜ Calculations are accurate
 - ⬜ UI displays correctly (no visual glitches)
 - ⬜ Data persists across navigation
-
+Observations:-All OK
 ---
 
 ## Result
@@ -96,11 +98,13 @@ Password: Password@2025
 **Overall Status**: ⬜ READY TO MERGE / ⬜ NEEDS FIXES
 
 **Issues Found**:
-_________________________________________
-_________________________________________
+1 one issue found as  E  '[Invoice] Vendor not found:', 'CYZ1'
+2 Recent cost card chip not fully visible in Dashboard tab
+3.In admin we have role switcher at 2 places one at top, this is not required,
+4.Switch role view card dont have commercial for selection _________________________________________
 
-**Tested By**: _____________________
-**Date**: _____________________
+**Tested By**: Utpal Priyadarshi_____________________
+**Date**: 06/12/2025_____________________
 
 ---
 
