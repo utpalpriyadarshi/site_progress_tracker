@@ -64,14 +64,12 @@ const InvoiceManagementScreen = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [showVendorMenu, setShowVendorMenu] = useState(false);
 
   // Form state
   const [formInvoiceNumber, setFormInvoiceNumber] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formPoId, setFormPoId] = useState('');
-  const [formVendorId, setFormVendorId] = useState('');
+  const [formVendorName, setFormVendorName] = useState('');
   const [formInvoiceDate, setFormInvoiceDate] = useState<Date>(new Date());
   const [formPaymentDate, setFormPaymentDate] = useState<Date | undefined>(undefined);
   const [formPaymentStatus, setFormPaymentStatus] = useState('pending');
@@ -93,40 +91,28 @@ const InvoiceManagementScreen = () => {
         .query(Q.where('project_id', projectId), Q.sortBy('invoice_date', Q.desc))
         .fetch();
 
-      // Fetch vendor names
-      const invoicesWithVendors = await Promise.all(
-        invoicesData.map(async (invoice: any) => {
-          let vendorName = 'Unknown Vendor';
-          if (invoice.vendorId) {
-            try {
-              const vendor = await database.collections.get('vendors').find(invoice.vendorId);
-              vendorName = (vendor as any).name;
-            } catch (error) {
-              console.error('[Invoice] Vendor not found:', invoice.vendorId);
-            }
-          }
+      // Map invoices with vendor names (now stored directly)
+      const invoicesWithVendors = invoicesData.map((invoice: any) => {
+        // Calculate if overdue (pending and past invoice date + 30 days)
+        const today = Date.now();
+        const dueDate = invoice.invoiceDate + (30 * 24 * 60 * 60 * 1000); // 30 days after invoice date
+        const isOverdue = invoice.paymentStatus === 'pending' && today > dueDate;
 
-          // Calculate if overdue (pending and past invoice date + 30 days)
-          const today = Date.now();
-          const dueDate = invoice.invoiceDate + (30 * 24 * 60 * 60 * 1000); // 30 days after invoice date
-          const isOverdue = invoice.paymentStatus === 'pending' && today > dueDate;
-
-          return {
-            id: invoice.id,
-            projectId: invoice.projectId,
-            poId: invoice.poId,
-            invoiceNumber: invoice.invoiceNumber,
-            invoiceDate: invoice.invoiceDate,
-            amount: invoice.amount,
-            paymentStatus: isOverdue ? 'overdue' : invoice.paymentStatus,
-            paymentDate: invoice.paymentDate,
-            vendorId: invoice.vendorId,
-            vendorName,
-            createdBy: invoice.createdBy,
-            createdAt: invoice.createdAt,
-          };
-        })
-      );
+        return {
+          id: invoice.id,
+          projectId: invoice.projectId,
+          poId: invoice.poId,
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceDate: invoice.invoiceDate,
+          amount: invoice.amount,
+          paymentStatus: isOverdue ? 'overdue' : invoice.paymentStatus,
+          paymentDate: invoice.paymentDate,
+          vendorId: invoice.vendorId,
+          vendorName: invoice.vendorName || 'Unknown Vendor',
+          createdBy: invoice.createdBy,
+          createdAt: invoice.createdAt,
+        };
+      });
 
       console.log('[Invoice] Loaded invoices:', invoicesWithVendors.length);
       setInvoices(invoicesWithVendors);
@@ -137,17 +123,6 @@ const InvoiceManagementScreen = () => {
       setLoading(false);
     }
   }, [projectId]);
-
-  const loadVendors = useCallback(async () => {
-    try {
-      const vendorsCollection = database.collections.get('vendors');
-      const vendorsData = await vendorsCollection.query().fetch();
-      setVendors(vendorsData);
-      console.log('[Invoice] Loaded vendors:', vendorsData.length);
-    } catch (error) {
-      console.error('[Invoice] Error loading vendors:', error);
-    }
-  }, []);
 
   const applyFilters = useCallback(() => {
     let filtered = [...invoices];
@@ -176,10 +151,6 @@ const InvoiceManagementScreen = () => {
   }, [loadInvoices, refreshTrigger]);
 
   useEffect(() => {
-    loadVendors();
-  }, [loadVendors]);
-
-  useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
@@ -194,8 +165,8 @@ const InvoiceManagementScreen = () => {
       return;
     }
 
-    if (!formVendorId.trim()) {
-      Alert.alert('Validation Error', 'Please enter a vendor ID');
+    if (!formVendorName.trim()) {
+      Alert.alert('Validation Error', 'Please enter a vendor name');
       return;
     }
 
@@ -217,7 +188,8 @@ const InvoiceManagementScreen = () => {
           record.amount = amount;
           record.paymentStatus = formPaymentStatus;
           record.paymentDate = formPaymentDate ? formPaymentDate.getTime() : null;
-          record.vendorId = formVendorId.trim();
+          record.vendorId = ''; // No longer using vendorId
+          record.vendorName = formVendorName.trim();
           record.createdBy = user?.userId || '';
           record.appSyncStatus = 'pending';
           record.version = 1;
@@ -245,8 +217,8 @@ const InvoiceManagementScreen = () => {
       return;
     }
 
-    if (!formVendorId.trim()) {
-      Alert.alert('Validation Error', 'Please enter a vendor ID');
+    if (!formVendorName.trim()) {
+      Alert.alert('Validation Error', 'Please enter a vendor name');
       return;
     }
 
@@ -268,7 +240,8 @@ const InvoiceManagementScreen = () => {
           record.amount = amount;
           record.paymentStatus = formPaymentStatus;
           record.paymentDate = formPaymentDate ? formPaymentDate.getTime() : null;
-          record.vendorId = formVendorId.trim();
+          record.vendorId = ''; // No longer using vendorId
+          record.vendorName = formVendorName.trim();
           record.appSyncStatus = 'pending';
         });
       });
@@ -352,7 +325,7 @@ const InvoiceManagementScreen = () => {
     setFormInvoiceNumber(invoice.invoiceNumber);
     setFormAmount(invoice.amount.toString());
     setFormPoId(invoice.poId);
-    setFormVendorId(invoice.vendorId);
+    setFormVendorName(invoice.vendorName || '');
     setFormInvoiceDate(new Date(invoice.invoiceDate));
     setFormPaymentDate(invoice.paymentDate ? new Date(invoice.paymentDate) : undefined);
     setFormPaymentStatus(invoice.paymentStatus === 'overdue' ? 'pending' : invoice.paymentStatus);
@@ -363,7 +336,7 @@ const InvoiceManagementScreen = () => {
     setFormInvoiceNumber('');
     setFormAmount('');
     setFormPoId('');
-    setFormVendorId('');
+    setFormVendorName('');
     setFormInvoiceDate(new Date());
     setFormPaymentDate(undefined);
     setFormPaymentStatus('pending');
@@ -488,37 +461,14 @@ const InvoiceManagementScreen = () => {
         style={styles.input}
       />
 
-      <Menu
-        visible={showVendorMenu}
-        onDismiss={() => setShowVendorMenu(false)}
-        anchor={
-          <Button
-            mode="outlined"
-            onPress={() => setShowVendorMenu(true)}
-            style={styles.input}
-            contentStyle={{ justifyContent: 'flex-start' }}
-          >
-            {formVendorId
-              ? vendors.find((v) => v.id === formVendorId)?.name || 'Select Vendor'
-              : 'Select Vendor *'}
-          </Button>
-        }
-      >
-        {vendors.length === 0 ? (
-          <Menu.Item title="No vendors available" disabled />
-        ) : (
-          vendors.map((vendor: any) => (
-            <Menu.Item
-              key={vendor.id}
-              onPress={() => {
-                setFormVendorId(vendor.id);
-                setShowVendorMenu(false);
-              }}
-              title={vendor.name}
-            />
-          ))
-        )}
-      </Menu>
+      <TextInput
+        label="Vendor Name *"
+        value={formVendorName}
+        onChangeText={setFormVendorName}
+        mode="outlined"
+        style={styles.input}
+        placeholder="Enter vendor name"
+      />
 
       <TextInput
         label="Amount *"

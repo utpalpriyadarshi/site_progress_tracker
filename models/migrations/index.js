@@ -1,6 +1,7 @@
 import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
 import { v30Migration } from './v30_add_manager_tables';
 import { v31Migration } from './v31_add_multi_role_tables';
+import { v32Migration } from './v32_add_vendor_name_to_invoices';
 
 export default schemaMigrations({
   migrations: [
@@ -562,5 +563,7 @@ export default schemaMigrations({
     v30Migration,
     // v31: Add multi-role tables - budgets, costs, invoices + enhancements (v2.11)
     v31Migration,
+    // v32: Add vendor_name to invoices table (v2.11 fix)
+    v32Migration,
   ],
 });

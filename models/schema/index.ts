@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 31, // Added multi-role tables - budgets, costs, invoices + enhancements (v2.11)
+  version: 32, // Added vendor_name to invoices table (v2.11 fix)
   tables: [
     tableSchema({
       name: 'projects',
@@ -648,6 +648,7 @@ export default appSchema({
         { name: 'payment_status', type: 'string', isIndexed: true }, // pending, paid
         { name: 'payment_date', type: 'number', isOptional: true },
         { name: 'vendor_id', type: 'string', isIndexed: true },
+        { name: 'vendor_name', type: 'string', isOptional: true }, // Manual vendor name entry (v2.11 fix)
         { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

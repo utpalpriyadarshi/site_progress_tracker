@@ -19,6 +19,7 @@ export default class InvoiceModel extends Model {
   @field('payment_status') paymentStatus!: string; // 'pending' | 'paid'
   @field('payment_date') paymentDate?: number;
   @field('vendor_id') vendorId!: string;
+  @field('vendor_name') vendorName?: string; // Manual vendor name entry
   @field('created_by') createdBy!: string;
   @readonly @field('created_at') createdAt!: number;
   @field('updated_at') updatedAt!: number;

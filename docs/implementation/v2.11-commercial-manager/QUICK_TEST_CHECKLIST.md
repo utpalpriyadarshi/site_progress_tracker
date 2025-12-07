@@ -38,7 +38,7 @@ Observations:-All ok
 - ⬜ Long-press → Mark as Paid
 - ⬜ Status changes to Paid (green chip)
 - ⬜ Delete invoice successfully
-Observations:-All ok, vendor ID not found 
+Observations:-Validation error due to Vendor ID, blank vendor dropdown created, from where vendor will be populated
 
 ### Financial Reports (2 min)
 - ⬜ All 5 report sections visible:
