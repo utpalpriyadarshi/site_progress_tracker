@@ -25,10 +25,24 @@ import {
   ActivityIndicator,
   Divider,
   ProgressBar,
+  Menu,
+  Button,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { useManagerContext } from './context/ManagerContext';
 import { Q } from '@nozbe/watermelondb';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+
+type RootStackParamList = {
+  Auth: undefined;
+  Admin: undefined;
+  Supervisor: undefined;
+  Manager: undefined;
+  Planning: undefined;
+  Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
+};
 
 interface ProjectStats {
   overallCompletion: number;
@@ -149,8 +163,10 @@ interface HandoverData {
 
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [stats, setStats] = useState<ProjectStats>({
     overallCompletion: 0,
     sitesOnSchedule: 0,
@@ -539,6 +555,16 @@ const ManagerDashboardScreen = () => {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const handleRoleSwitch = (role: keyof RootStackParamList) => {
+    setMenuVisible(false);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: role }],
+      })
+    );
   };
 
   const loadEngineeringData = async () => {
@@ -2127,6 +2153,50 @@ const ManagerDashboardScreen = () => {
         </Card.Content>
       </Card>
 
+      {/* Role Switcher Card */}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title>Switch Role View</Title>
+          <Paragraph style={styles.cardDescription}>
+            View the app as a different role to coordinate across departments
+          </Paragraph>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setMenuVisible(true)}
+                style={styles.roleButton}
+              >
+                Select Role to Switch
+              </Button>
+            }
+          >
+            <Menu.Item
+              onPress={() => handleRoleSwitch('Supervisor')}
+              title="Supervisor"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('Planning')}
+              title="Planning"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('Logistics')}
+              title="Logistics"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('DesignEngineer')}
+              title="Design Engineer"
+            />
+            <Menu.Item
+              onPress={() => handleRoleSwitch('CommercialManager')}
+              title="Commercial Manager"
+            />
+          </Menu>
+        </Card.Content>
+      </Card>
+
       {/* KPI Cards Grid */}
       <View style={styles.kpiGrid}>
         {/* Row 1 */}
@@ -2474,6 +2544,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     fontStyle: 'italic',
+  },
+  card: {
+    margin: 15,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 15,
+  },
+  roleButton: {
+    marginTop: 5,
   },
   kpiGrid: {
     padding: 10,

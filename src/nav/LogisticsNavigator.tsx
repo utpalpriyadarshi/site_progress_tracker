@@ -16,8 +16,7 @@ import RfqListScreen from '../logistics/RfqListScreen';
 import RfqCreateScreen from '../logistics/RfqCreateScreen';
 import RfqDetailScreen from '../logistics/RfqDetailScreen';
 import PurchaseOrderManagementScreen from '../logistics/PurchaseOrderManagementScreen';
-import RoleSwitcher from '../auth/RoleSwitcher';
-import { useAuth, UserRole} from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -68,25 +67,6 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
     );
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      admin: 'Admin',
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-      design_engineer: 'DesignEngineer',
-      commercial_manager: 'CommercialManager',
-    };
-
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: roleMap[newRole] }],
-      })
-    );
-  };
-
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -110,12 +90,9 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <RoleSwitcher onRoleChange={handleRoleChange} />
-              <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
-                <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+            </TouchableOpacity>
           ),
         })}
       >

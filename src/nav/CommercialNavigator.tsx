@@ -10,8 +10,7 @@ import BudgetManagementScreen from '../commercial/BudgetManagementScreen';
 import CostTrackingScreen from '../commercial/CostTrackingScreen';
 import InvoiceManagementScreen from '../commercial/InvoiceManagementScreen';
 import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
-import RoleSwitcher from '../auth/RoleSwitcher';
-import { useAuth, UserRole } from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { CommercialProvider } from '../commercial/context/CommercialContext';
 
 export type RootStackParamList = {
@@ -52,25 +51,6 @@ const CommercialNavigator: React.FC<CommercialNavigatorProps> = ({ navigation: p
     );
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      admin: 'Admin',
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-      design_engineer: 'DesignEngineer',
-      commercial_manager: 'CommercialManager',
-    };
-
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: roleMap[newRole] }],
-      })
-    );
-  };
-
   return (
     <CommercialProvider>
       <Tab.Navigator
@@ -95,12 +75,9 @@ const CommercialNavigator: React.FC<CommercialNavigatorProps> = ({ navigation: p
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <RoleSwitcher onRoleChange={handleRoleChange} />
-              <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
-                <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+            </TouchableOpacity>
           ),
         })}
       >
