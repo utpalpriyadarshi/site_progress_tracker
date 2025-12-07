@@ -8,9 +8,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LogisticsProvider } from '../logistics/context/LogisticsContext';
 import LogisticsDashboardScreen from '../logistics/LogisticsDashboardScreen';
 import MaterialTrackingScreen from '../logistics/MaterialTrackingScreen';
-import EquipmentManagementScreen from '../logistics/EquipmentManagementScreen';
-import DeliverySchedulingScreen from '../logistics/DeliverySchedulingScreen';
-import InventoryManagementScreen from '../logistics/InventoryManagementScreen';
 import DoorsRegisterScreen from '../logistics/DoorsRegisterScreen';
 import DoorsDetailScreen from '../logistics/DoorsDetailScreen';
 import DoorsPackageEditScreen from '../logistics/DoorsPackageEditScreen';
@@ -18,23 +15,25 @@ import DoorsRequirementEditScreen from '../logistics/DoorsRequirementEditScreen'
 import RfqListScreen from '../logistics/RfqListScreen';
 import RfqCreateScreen from '../logistics/RfqCreateScreen';
 import RfqDetailScreen from '../logistics/RfqDetailScreen';
+import PurchaseOrderManagementScreen from '../logistics/PurchaseOrderManagementScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole} from '../auth/AuthContext';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Admin: undefined;
   Supervisor: undefined;
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 export type LogisticsTabParamList = {
   Dashboard: undefined;
   MaterialTracking: undefined;
-  EquipmentManagement: undefined;
-  DeliveryScheduling: undefined;
-  InventoryManagementScreen: undefined;
+  PurchaseOrders: undefined;
   DoorsRegister: undefined;
   RfqList: undefined;
 };
@@ -71,10 +70,13 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
 
   const handleRoleChange = (newRole: UserRole) => {
     const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      admin: 'Admin',
       supervisor: 'Supervisor',
       manager: 'Manager',
       planning: 'Planning',
       logistics: 'Logistics',
+      design_engineer: 'DesignEngineer',
+      commercial_manager: 'CommercialManager',
     };
 
     parentNavigation.dispatch(
@@ -95,14 +97,10 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
               iconSymbol = '📊';
             } else if (route.name === 'MaterialTracking') {
               iconSymbol = '🚚';
-            } else if (route.name === 'EquipmentManagement') {
-              iconSymbol = '🔧';
-            } else if (route.name === 'DeliveryScheduling') {
-              iconSymbol = '📦';
-            } else if (route.name === 'InventoryManagementScreen') {
-              iconSymbol = '📦';
-            } else if (route.name === 'DoorsRegister') {
+            } else if (route.name === 'PurchaseOrders') {
               iconSymbol = '📋';
+            } else if (route.name === 'DoorsRegister') {
+              iconSymbol = '📦';
             } else if (route.name === 'RfqList') {
               iconSymbol = '📄';
             }
@@ -140,30 +138,12 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
           }}
         />
         <Tab.Screen
-          name="EquipmentManagement"
-          component={EquipmentManagementScreen}
+          name="PurchaseOrders"
+          component={PurchaseOrderManagementScreen}
           options={{
-            title: 'Equipment',
+            title: 'POs',
             headerShown: true,
-            headerTitle: 'Equipment Management',
-          }}
-        />
-        <Tab.Screen
-          name="DeliveryScheduling"
-          component={DeliverySchedulingScreen}
-          options={{
-            title: 'Delivery',
-            headerShown: true,
-            headerTitle: 'Delivery Scheduling',
-          }}
-        />
-        <Tab.Screen
-          name="InventoryManagementScreen"
-          component={InventoryManagementScreen}
-          options={{
-            title: 'Inventory',
-            headerShown: true,
-            headerTitle: 'Inventory Management',
+            headerTitle: 'Purchase Orders',
           }}
         />
         <Tab.Screen

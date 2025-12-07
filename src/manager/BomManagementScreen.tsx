@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   TextInput,
   Portal,
   Dialog,
-  List,
   IconButton,
   Text,
   Chip,
@@ -16,7 +14,6 @@ import {
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Q } from '@nozbe/watermelondb';
 import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
 import ProjectModel from '../../models/ProjectModel';
@@ -402,6 +399,7 @@ const BomManagementScreenComponent = ({
   };
 
   // Create BOM from imported data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createBomFromImport = async (importResult: any) => {
     try {
       if (projects.length === 0) {
@@ -727,7 +725,7 @@ const BomManagementScreenComponent = ({
               </Text>
             ) : (
               <View style={styles.itemsList}>
-                {items.map((item, index) => (
+                {items.map((item, _index) => (
                   <View key={item.id} style={styles.itemRow}>
                     <View style={styles.itemInfo}>
                       <Text variant="bodyMedium" style={styles.itemCode}>
@@ -869,9 +867,8 @@ const BomManagementScreenComponent = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header Actions */}
       <View style={styles.header}>
-        <Title>BOM Management</Title>
         <View style={styles.headerButtons}>
           <Button
             mode="outlined"

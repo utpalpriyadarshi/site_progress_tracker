@@ -20,9 +20,11 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
+import MilestoneModel from '../../models/MilestoneModel';
 import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { useAuth } from '../auth/AuthContext';
 
 interface ProjectFormData {
   name: string;
@@ -35,6 +37,7 @@ interface ProjectFormData {
 
 const ProjectManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
+  const { user } = useAuth(); // v2.10: Get current user for milestone creation
   const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectModel[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +98,41 @@ const ProjectManagementScreen = () => {
     setFilteredProjects(filtered);
   };
 
+  // v2.10: Create default milestones for a new project
+  const createDefaultMilestones = async (projectId: string, createdBy: string) => {
+    const defaultMilestones = [
+      { code: 'PM100', name: 'Requirements Management (DOORS)', weightage: 10, order: 1 },
+      { code: 'PM200', name: 'Engineering & Design', weightage: 15, order: 2 },
+      { code: 'PM300', name: 'Procurement', weightage: 15, order: 3 },
+      { code: 'PM400', name: 'Manufacturing', weightage: 10, order: 4 },
+      { code: 'PM500', name: 'Testing & Pre-commissioning', weightage: 15, order: 5 },
+      { code: 'PM600', name: 'Commissioning', weightage: 20, order: 6 },
+      { code: 'PM700', name: 'Handover', weightage: 15, order: 7 },
+    ];
+
+    const now = Date.now();
+
+    for (const milestone of defaultMilestones) {
+      await database.collections.get('milestones').create((record: any) => {
+        record.projectId = projectId;
+        record.milestoneCode = milestone.code;
+        record.milestoneName = milestone.name;
+        record.description = `Default milestone: ${milestone.name}`;
+        record.sequenceOrder = milestone.order;
+        record.weightage = milestone.weightage;
+        record.isActive = true;
+        record.isCustom = false; // Default milestones
+        record.createdBy = createdBy;
+        // createdAt is @readonly and set automatically by WatermelonDB
+        record.updatedAt = now;
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+    }
+
+    console.log(`[ProjectManagement] Created ${defaultMilestones.length} default milestones for project ${projectId}`);
+  };
+
   const openCreateModal = () => {
     setEditingProject(null);
     setFormData({
@@ -142,6 +180,8 @@ const ProjectManagementScreen = () => {
     }
 
     try {
+      let newProjectId: string | null = null;
+
       await database.write(async () => {
         if (editingProject) {
           // Update existing project
@@ -155,7 +195,7 @@ const ProjectManagementScreen = () => {
           });
         } else {
           // Create new project
-          await database.collections.get('projects').create((project: any) => {
+          const newProject = await database.collections.get('projects').create((project: any) => {
             project.name = formData.name;
             project.client = formData.client;
             project.startDate = formData.startDate.getTime();
@@ -163,8 +203,16 @@ const ProjectManagementScreen = () => {
             project.status = formData.status;
             project.budget = budget;
           });
+          newProjectId = newProject.id;
         }
       });
+
+      // v2.10: Create default milestones for new projects
+      if (newProjectId && user?.userId) {
+        await database.write(async () => {
+          await createDefaultMilestones(newProjectId!, user.userId);
+        });
+      }
 
       setModalVisible(false);
       loadProjects();

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type AdminRole = 'Supervisor' | 'Manager' | 'Planner' | 'Logistics' | null;
+export type AdminRole = 'Supervisor' | 'Manager' | 'Planner' | 'Logistics' | 'DesignEngineer' | 'CommercialManager' | null;
 
 interface AdminContextType {
   selectedRole: AdminRole;
@@ -26,7 +26,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     const loadSavedRole = async () => {
       try {
         const savedRole = await AsyncStorage.getItem(STORAGE_KEY);
-        if (savedRole && ['Supervisor', 'Manager', 'Planner', 'Logistics'].includes(savedRole)) {
+        if (savedRole && ['Supervisor', 'Manager', 'Planner', 'Logistics', 'DesignEngineer', 'CommercialManager'].includes(savedRole)) {
           setSelectedRoleState(savedRole as AdminRole);
         }
       } catch (error) {

@@ -9,7 +9,7 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 ### Key Features
 - **Offline-First**: Works seamlessly without internet connectivity
 - **Construction-Specific**: Tailored for construction site management workflows
-- **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, and admin
+- **Role-Based Access**: Different interfaces for supervisors, managers, planners, logistics, design engineers, commercial managers, and admin
 - **Modern UX** (v2.0 - NEW): Custom Snackbar/Dialog system with color-coded, non-blocking notifications
 - **Admin Role** (v1.2): Complete administration panel with:
   - User management (CRUD operations)
@@ -56,12 +56,871 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   - **DOORS Requirements**: Equipment specification tracking with compliance monitoring
   - **RFQ Management**: Complete procurement workflow with vendor management
   - **BOM-DOORS Integration**: Automated linking with one-tap navigation
+- **Commercial Manager Role** (v2.11 - COMPLETE): Complete financial management system
+  - **Budget Management**: Category-based budget allocation with variance tracking
+  - **Cost Tracking**: Real-time cost monitoring with PO linkage and budget comparison
+  - **Invoice Management**: Payment tracking with automatic overdue calculation
+  - **Financial Reports**: Multi-table analytics with date filtering and profitability metrics
+  - **Commercial Dashboard**: Real-time financial health with intelligent alerts
 - **Site Context**: Persistent site selection across all supervisor screens
 - **Photo Documentation**: Camera and gallery integration for progress logs and hindrance reports
 - **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
 - **Automated Testing** (v1.3 - NEW): 35 tests with Jest covering critical functionality
 
 ## Recent Updates
+
+### v2.11 (December 2025) - Commercial Manager Role Implementation 💰
+
+**Phase 5: Commercial Manager - Complete Financial Management System** ✅ (December 5, 2025)
+
+The Commercial Manager role provides comprehensive financial oversight and budget management for construction projects with real-time analytics and multi-table data aggregation.
+
+**Core Features Implemented:**
+
+1. **Budget Management Screen** ✅
+   - Full CRUD operations for project budgets
+   - Category-based budget allocation (labor, material, equipment, other)
+   - Real-time budget vs actual comparison
+   - Over-budget warnings with color-coded indicators
+   - Budget variance analysis with percentage tracking
+   - Search and filter capabilities
+
+2. **Cost Tracking Screen** ✅
+   - Complete cost entry management with DateTimePicker
+   - Purchase Order number linkage
+   - Category-based cost organization
+   - Budget comparison per cost entry
+   - Real-time budget utilization display
+   - Over-budget alerts per category
+
+3. **Invoice Management Screen** ✅
+   - Invoice CRUD with vendor integration
+   - Payment status tracking (pending, paid, overdue)
+   - Automatic overdue calculation (30 days from invoice date)
+   - Mark as Paid functionality with confirmation
+   - Vendor name resolution from database
+   - Invoice number and amount tracking
+
+4. **Financial Reports Screen** ✅
+   - Multi-table data aggregation (budgets + costs + invoices)
+   - Date range filtering for all reports
+   - 5 comprehensive report sections:
+     * Budget Summary: Total budget, spent, remaining, variance
+     * Budget Variance by Category: Category-wise analysis with progress bars
+     * Cost Distribution: Percentage breakdown by category
+     * Cash Flow Analysis: Revenue vs costs with net calculation
+     * Profitability Metrics: Gross profit and margin calculations
+   - Visual analytics with progress bars and color coding
+   - Export-ready data views
+
+5. **Commercial Dashboard** ✅
+   - Real-time financial health overview
+   - 6 key sections:
+     * Intelligent Alerts: Conditional warnings (over-budget, overdue invoices, budget utilization)
+     * Budget Summary: Total budget, spent, remaining with utilization progress bar
+     * Category Breakdown: Spending by category with over-budget indicators
+     * Cash Flow: Revenue (paid invoices) vs costs with net calculation
+     * Invoices Overview: Total, paid, pending, overdue counts with amounts
+     * Recent Costs: Last 5 costs with category chips and dates
+   - Alert types: Danger (red), Warning (orange), Info (green)
+   - Color-coded metrics and visual indicators
+
+**Technical Implementation:**
+
+- **Context System**: CommercialContext with AsyncStorage persistence
+  - Project selection and isolation
+  - Project name display across all screens
+  - Refresh trigger for data synchronization
+
+- **Database Integration**: WatermelonDB with Q operators
+  - budgets table: Tracks allocated amounts per category
+  - costs table: Records actual expenditures with PO linkage
+  - invoices table: Manages vendor invoices and payments
+  - vendors table: Vendor information lookup
+
+- **Navigation**: Bottom tab navigator with 5 tabs
+  - Dashboard (default landing screen)
+  - Budget Management
+  - Cost Tracking
+  - Invoice Management
+  - Financial Reports
+
+- **Performance Optimization**: useCallback hooks for efficient re-renders
+
+- **User Management**: Commercial Manager user and role created
+  - Username: commercial1
+  - Password: Password@2025
+  - Role: commercial_manager
+  - Full access to financial management features
+  - Note: Update password via Admin interface if currently using password123
+
+**Files Created:**
+- src/commercial/CommercialContext.tsx - Commercial state management
+- src/commercial/CommercialDashboardScreen.tsx - Financial overview dashboard (797 lines)
+- src/commercial/BudgetManagementScreen.tsx - Budget CRUD operations (720 lines)
+- src/commercial/CostTrackingScreen.tsx - Cost tracking with PO linkage (767 lines)
+- src/commercial/InvoiceManagementScreen.tsx - Invoice and payment management (877 lines)
+- src/commercial/FinancialReportsScreen.tsx - Multi-report analytics (786 lines)
+- src/nav/CommercialNavigator.tsx - Commercial tab navigation
+
+**Database Schema:**
+- Utilized existing budgets table (project_id, category, allocated_amount, actual_spent)
+- Utilized existing costs table (project_id, description, amount, cost_date, category, po_number)
+- Utilized existing invoices table (project_id, vendor_id, invoice_number, amount, invoice_date, payment_status, payment_date)
+
+**Key Achievements:**
+- ✅ Complete financial management workflow
+- ✅ Real-time budget monitoring with variance analysis
+- ✅ Automatic payment status calculation (overdue detection)
+- ✅ Multi-table data aggregation for comprehensive reporting
+- ✅ Category-based financial organization
+- ✅ Visual analytics with progress bars and color coding
+- ✅ Project isolation for multi-project support
+- ✅ All TypeScript and ESLint checks passing
+- ✅ Consistent UI/UX with Material Design patterns
+
+**Quality Assurance:**
+- All screens tested with ESLint (only pre-existing inline style warnings)
+- TypeScript compilation successful (no Commercial-related errors)
+- Navigation type consistency across all navigators
+- useCallback optimization for performance
+
+---
+
+### v2.10 (November 2025) - Manager Role Implementation 🎯
+
+**Phase 1: Database & Context Setup** ✅ (November 22, 2025)
+- ✅ **Manager Dashboard Context**: Centralized state management for manager workflows
+- ✅ **Milestone Management**: 7 standard project milestones (PM100-PM700)
+  - Requirements Management (DOORS)
+  - Engineering & Design
+  - Procurement
+  - Manufacturing
+  - Testing & Pre-commissioning
+  - Commissioning
+  - Handover
+- ✅ **Milestone Progress Tracking**: Site-level progress tracking per milestone
+- ✅ **Database Schema v29**: Added milestones and milestone_progress tables
+- ✅ **Test Utility**: Phase 1 testing utility for milestone operations
+- 📚 **Documentation**: Complete specification and testing guides
+
+**Files Created:**
+- models/MilestoneModel.ts - Project milestone definitions
+- models/MilestoneProgressModel.ts - Site-specific progress tracking
+- src/manager/context/ManagerContext.tsx - Manager state management
+- src/utils/Phase1TestUtility.tsx - Milestone testing utility
+
+**Schema Evolution:**
+- **v29**: Added milestones table (project_id, milestone_code, milestone_name, sequence_order, weightage, is_active, is_custom)
+- **v29**: Added milestone_progress table (project_id, site_id, milestone_id, progress_percentage, status, notes)
+
+---
+
+**Phase 2: Manager Dashboard - Section 1 (Overview & KPIs)** ✅ (November 23, 2025)
+- ✅ **Manager Dashboard**: Comprehensive project overview with 8 KPI cards
+- ✅ **Hybrid Progress Calculation**: 60% items + 40% milestones weighted progress
+- ✅ **Project Header**: Timeline, client info, and health status indicators
+- ✅ **KPI Cards** (4x2 Grid):
+  1. Sites Status (on schedule vs delayed with 5% tolerance)
+  2. Budget Utilization (total PO value / project budget)
+  3. Open Issues (hindrance count)
+  4. Critical Path Items at Risk (high/medium dependency risk)
+  5. Deliveries (PO status tracking - placeholder)
+  6. Upcoming Milestones (next 30 days - placeholder)
+  7-8. Pending Approvals & Team Efficiency (placeholders)
+- ✅ **Pull-to-Refresh**: Real-time data updates
+- ✅ **Color-Coded Indicators**: Visual status representation
+- ✅ **Test Data Utility**: Manager test data generator
+
+**Files Created:**
+- src/manager/ManagerDashboardScreen.tsx (550+ lines) - Main dashboard with KPI calculations
+- src/utils/ManagerTestDataUtility.tsx (850+ lines) - Test data generator
+
+**Files Modified:**
+- src/nav/ManagerNavigator.tsx - Updated to use ManagerDashboardScreen
+- src/nav/AdminNavigator.tsx - Added test data utility tab
+
+**Technical Highlights:**
+- Hybrid progress formula: `(items_progress × 0.6) + (milestones_progress × 0.4)`
+- Site schedule calculation: Compares actual vs expected progress with tolerance
+- Database query pattern: Project → Sites → Items/Hindrances (respecting schema hierarchy)
+- Real-time calculations with WatermelonDB observables
+- Material Design UI with responsive grid layout
+
+**Next Phase:** Dashboard Section 2 - Engineering Progress (Items & Milestones tracking)
+
+---
+
+**Phase 3: Manager Dashboard - Section 2 (Engineering Progress)** ✅ (November 24, 2025)
+- ✅ **Engineering Overview (PM200)**: Design completion percentage and status tracking
+- ✅ **DOORS Packages Summary**: Total packages with status breakdown
+  - Approved packages count
+  - Packages under review
+  - Open issues count
+  - Requirements compliance percentage with visual progress bar
+- ✅ **RFQ Status Tracking**: Procurement workflow monitoring
+  - Total RFQs issued
+  - Quotes received count
+  - RFQs under evaluation
+  - Awarded RFQs count
+- ✅ **Real-time Calculations**: All data pulled from database
+- ✅ **Visual Indicators**: Color-coded status chips and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+187 lines) - Added Section 2 with 3 subsections
+
+**Technical Implementation:**
+- PM200 milestone progress calculation across all sites
+- DOORS packages query with status aggregation
+- DOORS requirements compliance percentage
+- RFQ status tracking from rfqs table
+- Color-coded status chips (green/blue/gray)
+- Progress bar for compliance visualization
+
+**Next Phase:** Dashboard Section 3 - Site Progress (All Sites Comparison)
+
+---
+
+**Phase 4: Manager Dashboard - Section 3 (Site Progress Comparison)** ✅ (November 24, 2025)
+- ✅ **Site Summary Cards**: Individual card for each site with comprehensive metrics
+  - Site name and supervisor assignment
+  - Overall hybrid progress percentage (60% items + 40% milestones)
+  - Status indicator chip (ON TRACK / AT RISK / DELAYED)
+  - Critical issues count
+  - Progress formula breakdown display
+- ✅ **Hybrid Progress Calculation**: Per-site weighted calculation
+  - Items progress: Σ(item_completion × item_weightage) / Σ(item_weightage)
+  - Milestones progress: Σ(milestone_completion × milestone_weightage) / 100
+  - Final: (items_progress × 0.6) + (milestones_progress × 0.4)
+- ✅ **Status Determination**: Intelligent schedule-based status
+  - ON TRACK: Progress ≥ Expected progress - 5%
+  - AT RISK: Progress between Expected - 10% and Expected - 5%
+  - DELAYED: Progress < Expected - 10%
+- ✅ **Visual Progress Bars**: Color-coded by status (green/yellow/red)
+- ✅ **Supervisor Information**: Displays assigned supervisor or "Unassigned"
+- ✅ **Critical Issues Tracking**: Count of high/critical priority hindrances per site
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+203 lines, now 1,368 lines total)
+
+**Technical Implementation:**
+- Added SiteProgressData interface with 8 fields
+- loadSitesProgress() function with comprehensive site analysis:
+  * Supervisor lookup from users table
+  * Weighted items progress calculation
+  * Site-specific milestone progress calculation
+  * Schedule-based status determination
+  * Critical hindrances filtering
+- renderSiteProgress() function with card-based layout
+- Added 17 new styles for Section 3 components
+- Optimized for-loop for processing multiple sites efficiently
+
+**Next Phase:** Dashboard Section 4 - Equipment/Materials Status (PM300-PM400)
+
+---
+
+**Phase 5: Manager Dashboard - Section 4 (Equipment & Materials Status)** ✅ (November 24, 2025)
+- ✅ **Procurement Pipeline**: PM300 & PM400 milestone progress tracking
+  - Procurement (PM300) progress percentage and status
+  - Manufacturing (PM400) progress percentage and status
+  - Color-coded status chips (NOT STARTED/IN PROGRESS/COMPLETED)
+- ✅ **Purchase Orders Summary**: Comprehensive PO tracking
+  - Total PO value with currency formatting
+  - Total count of purchase orders
+  - Status breakdown with icons:
+    * 📝 Draft
+    * 📤 Issued
+    * ⏳ In Progress
+    * 📦 Delivered
+    * ✅ Closed
+- ✅ **Delivery Schedule**: Time-based delivery monitoring
+  - Upcoming deliveries (next 30 days) count
+  - Delayed deliveries count with warning indicator
+  - Conditional warning message for delayed items
+- ✅ **Real-time Calculations**: All data from database
+- ✅ **Visual Indicators**: Color-coded values and warning text
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+274 lines, now 1,762 lines total)
+
+**Technical Implementation:**
+- Added EquipmentMaterialsData interface with 13 fields
+- loadEquipmentMaterialsData() function (148 lines):
+  * PM300 milestone progress calculation across sites
+  * PM400 milestone progress calculation across sites
+  * Purchase orders query and aggregation by status
+  * Total PO value summation
+  * Upcoming deliveries calculation (next 30 days window)
+  * Delayed deliveries detection (past expected date)
+- renderEquipmentMaterials() function (122 lines):
+  * 3-card layout: Pipeline, POs, Deliveries
+  * Dual-column layouts with dividers
+  * Conditional warning display for delays
+- Added 15 new styles for Section 4 components
+
+**Next Phase:** Dashboard Section 5 - Financial Summary
+
+---
+
+**Phase 5 - Section 5: Manager Dashboard - Financial Summary** ✅ (November 24, 2025)
+- ✅ **Budget Overview**: Comprehensive budget tracking
+  - Total project budget display
+  - Budget allocated (total BOM cost)
+  - Budget spent (delivered/closed POs)
+  - Budget remaining calculation
+  - Budget utilization percentage with progress bar
+  - Color-coded utilization (green ≤90%, yellow ≤100%, red >100%)
+- ✅ **Profitability Analysis**: Financial performance metrics
+  - Contract value display
+  - Estimated cost (total BOM cost)
+  - Actual cost to date (delivered/closed POs)
+  - Projected profit/loss calculation
+  - Profit margin percentage
+  - Color-coded profitability (green = profit, red = loss)
+- ✅ **BOM Summary**: Bill of Materials tracking
+  - Total BOMs count
+  - Status breakdown: 📝 Draft | ✅ Approved | 🔒 Locked
+  - BOM total cost
+  - Actual cost comparison
+  - Cost variance display with percentage
+- ✅ **Real-time Calculations**: All data from BOMs and POs
+- ✅ **Visual Indicators**: Color-coded values and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+259 lines, now 2,172 lines total)
+
+**Technical Implementation:**
+- Added FinancialData interface with 16 fields
+- loadFinancialData() function (79 lines):
+  * Reads project budget from projectInfo
+  * Queries all BOMs for the project
+  * Aggregates BOMs by status (draft/approved/locked)
+  * Sums total BOM cost
+  * Queries all purchase orders
+  * Calculates actual cost from delivered/closed POs
+  * Computes budget metrics (allocated, spent, remaining, utilization)
+  * Calculates profitability (profit/loss, margin)
+  * Computes BOM cost variance
+- renderFinancialSummary() function (143 lines):
+  * 3 Material Design cards
+  * Card 1: Budget overview with utilization progress bar
+  * Card 2: Profitability with contract value and costs
+  * Card 3: BOM summary with status and variance
+  * Conditional color coding for all metrics
+- Added 25 new styles for Section 5 components
+
+**Next Phase:** Dashboard Section 7 (Handover - PM700)
+
+---
+
+**Phase 5 - Section 6: Manager Dashboard - Testing & Commissioning** ✅ (November 29, 2025)
+- ✅ **Pre-commissioning (PM500)**: Testing phase tracking
+  - PM500 milestone progress with status chip
+  - Items count in pre-commissioning phase
+  - Progress percentage with color-coded status
+- ✅ **Commissioning (PM600)**: Live systems tracking
+  - PM600 milestone progress with status chip
+  - Items count in commissioning phase
+  - Progress percentage with color-coded status
+- ✅ **Testing & Systems Status**: Operational metrics
+  - Tests completed vs pending breakdown
+  - Systems energized count (⚡)
+  - Systems operational count (✅)
+- ✅ **Quality Inspections**: Quality control tracking
+  - Total inspections count
+  - Inspections passed (✅) vs failed (❌)
+  - Pass rate percentage with progress bar
+  - Color-coded pass rate (green ≥90%, yellow ≥70%, red <70%)
+  - Warning for inspections requiring rework
+- ✅ **Real-time Calculations**: All data from milestones and inspections
+- ✅ **Visual Indicators**: Color-coded status chips and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+272 lines, now 2,444 lines total)
+
+**Technical Implementation:**
+- Added TestingCommissioningData interface with 13 fields
+- loadTestingCommissioningData() function (148 lines):
+  * Queries PM500 milestone progress (average across sites)
+  * Queries PM600 milestone progress (average across sites)
+  * Counts items in pre-commissioning and commissioning phases
+  * Queries site inspections data
+  * Calculates tests completed/pending from inspection status
+  * Counts systems energized/operational from item status
+  * Computes pass rate from inspection results
+- renderTestingCommissioning() function (154 lines):
+  * 3 Material Design cards
+  * Card 1: PM500 & PM600 overview with status chips
+  * Card 2: Testing and systems status
+  * Card 3: Quality inspections with pass rate
+  * Conditional color coding for all metrics
+- Added 21 new styles for Section 6 components
+
+**Dashboard Progress Summary:**
+✅ Section 1: Project Overview & KPIs (Phase 2)
+✅ Section 2: Engineering Progress (Phase 3)
+✅ Section 3: Site Progress Comparison (Phase 4)
+✅ Section 4: Equipment & Materials Status (Phase 5)
+✅ Section 5: Financial Summary (Phase 5)
+✅ Section 6: Testing & Commissioning (Phase 5)
+⏳ Section 7: Handover (PM700) - Next
+
+---
+
+**Phase 5 - Section 7: Manager Dashboard - Handover Status (PM700)** ✅ (November 29, 2025)
+- ✅ **PM700 Milestone Overview**: Final handover tracking
+  - PM700 milestone progress with status chip
+  - Progress percentage with color-coded status
+  - Sites handed over count (✅)
+  - Sites ready for handover count (🎯)
+  - Total sites breakdown
+- ✅ **Documentation Status**: Comprehensive documentation tracking
+  - Items documented count
+  - Items pending documentation
+  - Documentation completion percentage with progress bar
+  - Color-coded completion (green ≥90%, yellow ≥70%, red <70%)
+  - Documentation note: as-built drawings, O&M manuals, test certificates, warranties
+- ✅ **Punch List Summary**: Quality closure tracking
+  - Total punch items count
+  - Punch items closed (✅) vs open (⏳)
+  - Critical punch items count (⚠️)
+  - Punch list completion percentage with progress bar
+  - Color-coded completion (green ≥90%, yellow ≥70%, red <70%)
+  - Warning for critical items requiring resolution
+- ✅ **Real-time Calculations**: All data from milestones, items, and hindrances
+- ✅ **Visual Indicators**: Color-coded status chips and progress bars
+
+**Files Modified:**
+- src/manager/ManagerDashboardScreen.tsx (+280 lines, now 2,790 lines total)
+
+**Technical Implementation:**
+- Added HandoverData interface with 13 fields
+- loadHandoverData() function (135 lines):
+  * Queries PM700 milestone progress (average across sites)
+  * Calculates sites ready for handover (≥80% progress) and sites handed over (100%)
+  * Counts documented items based on item status (completed/handed/closed)
+  * Calculates documentation percentage
+  * Uses hindrances as simplified punch list items
+  * Counts punch items closed, open, and critical
+  * Computes punch list completion percentage
+- renderHandover() function (166 lines):
+  * 3 Material Design cards
+  * Card 1: PM700 overview with site status breakdown
+  * Card 2: Documentation status with completion percentage
+  * Card 3: Punch list with critical items warning
+  * Conditional color coding for all metrics
+- Added 27 new styles for Section 7 components
+
+**Dashboard Complete Summary:**
+✅ Section 1: Project Overview & KPIs (Phase 2) - 8 KPI cards
+✅ Section 2: Engineering Progress (Phase 3) - DOORS + RFQ tracking
+✅ Section 3: Site Progress Comparison (Phase 4) - Hybrid progress (60% items + 40% milestones)
+✅ Section 4: Equipment & Materials Status (Phase 5) - PM300 + PM400 + Purchase orders
+✅ Section 5: Financial Summary (Phase 5) - Budget + Profitability + BOM tracking
+✅ Section 6: Testing & Commissioning (Phase 5) - PM500 + PM600 + Quality inspections
+✅ Section 7: Handover Status (Phase 5) - PM700 + Documentation + Punch list ← COMPLETE!
+
+**🎉 ALL 7 DASHBOARD SECTIONS COMPLETE! 🎉**
+- Total file size: 2,790 lines (from 0 lines baseline)
+- Total sections: 7 comprehensive PSR dashboard sections
+- Manager v2.10 Dashboard: Fully operational
+
+**Next Phase:** Team Performance & Monitoring (Phase 7)
+
+---
+
+**Phase 7: Team Performance & Monitoring** ✅ (November 30, 2025)
+- ✅ **TeamPerformanceScreen**: Comprehensive supervisor performance monitoring
+  - SupervisorPerformance interface with 15 tracking fields
+  - Project-level summary statistics (sites, supervisors, items, productivity)
+  - Individual supervisor performance cards
+  - Performance comparison table
+- ✅ **Performance Metrics Calculation**:
+  - Progress percentage: (completedItems / totalItems) × 100
+  - Productivity: completedItems / daysActive (items per day)
+  - Days Active: Days since first report submission
+  - Activity tracking: reports submitted, hindrances, inspections
+- ✅ **Visual Performance Indicators**:
+  - Color-coded status chips (Green ≥75%, Yellow ≥50%, Red <50%)
+  - Progress bars for visual representation
+  - Last report date tracking
+  - Hindrances reported vs resolved comparison
+  - Inspections passed vs failed breakdown
+- ✅ **Navigation Integration**: Replaced TeamManagement with TeamPerformance tab
+- ✅ **Data Aggregation**: Multi-table queries (users, sites, items, reports, hindrances, inspections)
+- ✅ **Pull-to-Refresh**: Real-time data updates with RefreshControl
+- ✅ **Material Design UI**: Cards, chips, progress bars throughout
+
+**Files Created:**
+- src/manager/TeamPerformanceScreen.tsx (545 lines) - Complete supervisor monitoring
+
+**Files Modified:**
+- src/nav/ManagerNavigator.tsx - Updated tab navigation from TeamManagement to TeamPerformance
+
+**Technical Implementation:**
+- SupervisorPerformance interface: userId, name, siteId, siteName, totalItems, completedItems, progressPercentage, reportsSubmitted, lastReportDate, hindrancesReported, hindrancesResolved, inspectionsPassed, inspectionsFailed, daysActive, productivity
+- getPerformanceColor() function for status color coding
+- loadSupervisorPerformance() with comprehensive data aggregation
+- renderSupervisorCard() and renderComparisonTable() for UI display
+- Added 22 new styles for Phase 7 components
+
+**Quality Checks:**
+- ESLint: 0 errors, 6 warnings (inline styles only) ✅
+- TypeScript: 0 errors ✅
+- Total new code: 545 lines
+
+**v2.10 Manager Role - Complete Summary:**
+✅ Phase 1: Database & Context Setup (Milestones & Manager Context)
+✅ Phase 2: Dashboard Section 1 (Overview & KPIs)
+✅ Phase 3: Dashboard Section 2 (Engineering Progress)
+✅ Phase 4: Dashboard Section 3 (Site Progress Comparison)
+✅ Phase 5: Dashboard Sections 4-7 (Equipment, Financial, Testing, Handover)
+✅ Phase 6: BOM Import Wizard (5-step import with demo data)
+✅ Phase 7: Team Performance & Monitoring ← COMPLETE!
+
+**🎉 MANAGER ROLE v2.10 COMPLETE! 🎉**
+- Total implementation: 7 phases across 8 days
+- Manager Dashboard: 2,790 lines (7 comprehensive sections)
+- BOM Import Wizard: 1,070 lines (5-step wizard)
+- Team Performance: 545 lines (supervisor monitoring)
+- Total Manager functionality: 4,400+ lines of production code
+
+**Next Phase:** Milestone Management (Phase 9)
+
+---
+
+**Phase 8: Financial Reports Screen & Excel Export** ✅ (November 30, 2025)
+- ✅ **FinancialReportsScreen**: Comprehensive financial analytics dashboard (940 lines)
+  - Budget Overview card with utilization tracking
+  - Profitability Analysis with profit margin
+  - Cost Breakdown by Category (Material, Labor, Equipment, Subcontractor)
+  - BOM Summary with status breakdown
+  - Purchase Orders tracking
+- ✅ **Financial Metrics**:
+  - Budget tracking: Total, Allocated, Spent, Remaining, Utilization %
+  - Profitability: Contract Value, Estimated Cost, Actual Cost, Projected Profit, Profit Margin %
+  - Cost Variance: BOM Total Cost vs Actual Cost
+  - Category breakdown with percentages
+- ✅ **Excel Export Functionality**:
+  - Two-sheet Excel file export
+  - Sheet 1: Financial Summary (all metrics)
+  - Sheet 2: Cost Breakdown by Category
+  - Auto-formatted columns for readability
+  - Date-stamped file names
+  - Saved to Downloads folder (Android) or Documents (iOS)
+- ✅ **Visual Indicators**:
+  - Color-coded budget status (Green ≤90%, Yellow ≤100%, Red >100%)
+  - Color-coded profitability (Green = profit, Red = loss)
+  - Budget utilization progress bar
+  - Warning messages for budget overruns
+  - Category cost percentages with breakdown
+- ✅ **Pull-to-Refresh**: Real-time data updates with RefreshControl
+- ✅ **Material Design UI**: Cards, chips, progress bars, dividers throughout
+
+**Files Modified:**
+- src/manager/FinancialReportsScreen.tsx (940 lines - from 25-line stub)
+
+**Technical Implementation:**
+- FinancialData interface with 23 fields
+- loadFinancialData() function: 146 lines
+  * Queries BOMs, BOM items, Purchase Orders from database
+  * Calculates budget metrics (allocated, spent, remaining, utilization)
+  * Calculates profitability (estimated cost, actual cost, profit, margin)
+  * Aggregates costs by category (material, labor, equipment, subcontractor)
+  * Counts PO statuses (draft, issued, in_progress, delivered, closed)
+- exportToExcel() function: 126 lines
+  * Creates 2-sheet Excel workbook using XLSX library
+  * Formats financial summary with project info
+  * Creates cost breakdown table with percentages
+  * Writes to file system using RNFS
+  * Shows success alert with file path
+- formatCurrency() helper for Indian Rupee formatting
+- getUtilizationColor() for dynamic color coding
+- Added 69 new styles for financial cards and metrics
+
+**Quality Checks:**
+- ESLint: 0 errors, 5 warnings (inline styles only) ✅
+- TypeScript: 0 errors ✅
+- Total new code: 915 lines (940 total - 25 stub)
+
+**v2.10 Manager Role - Phase 8 Complete!**
+✅ Phase 1: Database & Context Setup
+✅ Phase 2: Dashboard Section 1 (KPIs)
+✅ Phase 3: Dashboard Section 2 (Engineering)
+✅ Phase 4: Dashboard Section 3 (Site Progress)
+✅ Phase 5: Dashboard Sections 4-7 (Equipment, Financial, Testing, Handover)
+✅ Phase 6: BOM Import Wizard
+✅ Phase 7: Team Performance & Monitoring
+✅ Phase 8: Financial Reports & Excel Export ← COMPLETE!
+
+**Remaining:**
+⏳ Phase 10: Testing & Documentation
+
+---
+
+**Phase 9: Milestone Management** ✅ (November 30, 2025)
+- ✅ **MilestoneManagementScreen**: Complete milestone management interface (980 lines)
+  - Milestone listing (7 standard PM100-PM700 + custom milestones)
+  - Add custom milestone dialog with validation
+  - Edit milestone capability (custom milestones only)
+  - Delete milestone with confirmation (custom milestones only)
+  - Site-level progress tracking per milestone
+  - Expandable timeline visualization
+- ✅ **Milestone Summary Card**:
+  - Total milestones count
+  - Standard vs Custom breakdown
+  - Visual summary statistics
+- ✅ **Milestone Cards** (for each milestone):
+  - Milestone code chip (color-coded: blue=standard, purple=custom)
+  - Milestone name and weightage percentage
+  - Overall progress percentage with color-coded progress bar
+  - Sites summary (Completed, In Progress, Not Started, Total)
+  - Action buttons: View Progress, Edit (custom), Delete (custom)
+  - Expandable timeline view toggle
+- ✅ **Timeline Visualization** (per milestone):
+  - Site-level progress tracking
+  - Progress percentage per site with color-coded bars
+  - Status chips (Not Started, In Progress, Completed, On Hold)
+  - Planned vs Actual dates display
+  - Notes display for each site
+  - Visual indicators with border colors
+- ✅ **Add Custom Milestone Dialog**:
+  - Milestone name input (required)
+  - Description textarea
+  - Weightage percentage input (1-100%)
+  - Auto-generated milestone code (PM800, PM801, etc.)
+  - Validation with error alerts
+- ✅ **Edit Milestone Dialog**:
+  - Editable name, description, weightage
+  - Restricted to custom milestones only
+  - Standard milestones (PM100-PM700) protected
+- ✅ **Progress Dialog**:
+  - DataTable with site-wise progress
+  - Site name, progress percentage, status columns
+  - Color-coded status chips
+  - Scrollable view for many sites
+- ✅ **Data Loading**:
+  - Loads milestones sorted by sequence order
+  - Aggregates progress from milestone_progress table
+  - Calculates overall progress across all sites
+  - Counts sites by status (completed, in_progress, not_started)
+- ✅ **Pull-to-Refresh**: Real-time data updates with RefreshControl
+- ✅ **Material Design UI**: Cards, chips, progress bars, dialogs, data tables
+
+**Files Created:**
+- src/manager/MilestoneManagementScreen.tsx (980 lines)
+
+**Files Modified:**
+- src/nav/ManagerNavigator.tsx (replaced ResourceRequests with Milestones tab)
+
+**Technical Implementation:**
+- Milestone interface with 9 fields (id, code, name, description, sequence, weightage, isActive, isCustom, createdBy)
+- MilestoneWithProgress interface extends Milestone with 6 progress fields
+- SiteProgress interface with 10 fields for site-level tracking
+- loadData() function (95 lines):
+  * Queries milestones table sorted by sequence_order
+  * Queries sites table for project sites
+  * Queries milestone_progress table for each milestone
+  * Calculates overall progress (average across sites)
+  * Counts sites by status (completed/in_progress/not_started)
+  * Builds siteProgress array with all site data
+- handleAddMilestone() (29 lines):
+  * Validates input (name required, weightage 1-100)
+  * Auto-generates milestone code (PM800+)
+  * Calculates next sequence order
+  * Creates milestone record in database
+  * Marks as custom milestone
+- handleEditMilestone() and handleUpdateMilestone():
+  * Validates milestone is custom (standard milestones protected)
+  * Updates name, description, weightage
+  * Increments version for sync tracking
+- handleDeleteMilestone():
+  * Confirms deletion with alert
+  * Marks milestone as deleted (cascade deletes progress)
+  * Only allows deletion of custom milestones
+- handleViewProgress():
+  * Opens dialog with DataTable of site progress
+  * Shows site name, progress %, status
+- Timeline visualization with expandable state per milestone
+- getStatusColor() and getProgressColor() for visual indicators
+- formatDate() helper for timestamp display
+- Added 70+ styles for comprehensive UI
+
+**Quality Checks:**
+- ESLint: 0 errors, 6 warnings (inline styles only) ✅
+- TypeScript: 0 errors ✅
+- Total new code: 980 lines
+
+**Navigation Changes:**
+- Replaced "Resource Requests" tab with "Milestones" tab
+- Icon: 🎯
+- Title: "Milestones"
+- Header: "Milestone Management"
+
+**v2.10 Manager Role - Phase 9 Complete!**
+✅ Phase 1: Database & Context Setup
+✅ Phase 2: Dashboard Section 1 (KPIs)
+✅ Phase 3: Dashboard Section 2 (Engineering)
+✅ Phase 4: Dashboard Section 3 (Site Progress)
+✅ Phase 5: Dashboard Sections 4-7 (Equipment, Financial, Testing, Handover)
+✅ Phase 6: BOM Import Wizard
+✅ Phase 7: Team Performance & Monitoring
+✅ Phase 8: Financial Reports & Excel Export
+✅ Phase 9: Milestone Management ← COMPLETE!
+
+**Remaining:**
+⏳ Phase 10: Testing & Documentation
+
+**Total Manager v2.10 Implementation:**
+- 9 phases completed across 10 days
+- Manager Dashboard: 2,790 lines (7 comprehensive sections)
+- BOM Import Wizard: 1,070 lines (5-step wizard)
+- Team Performance: 545 lines (supervisor monitoring)
+- Financial Reports: 940 lines (analytics + Excel export)
+- Milestone Management: 980 lines (milestone tracking + timeline)
+- Total: 6,325+ lines of production code
+
+---
+
+**Phase 6A: BOM Import Wizard - Core Infrastructure** ✅ (November 29, 2025)
+- ✅ **BomImportWizardScreen**: Complete 5-step wizard UI with stepper
+  - Step 1: Upload File (Excel/CSV) - implemented
+  - Step 2: Map Columns - placeholder
+  - Step 3: Validate Data - placeholder
+  - Step 4: Preview & Confirm - placeholder
+  - Step 5: Import - placeholder
+- ✅ **Stepper Component**: Visual progress indicator
+  - 5 steps with completion status
+  - Progress bar showing current position
+  - Color-coded status (green = completed, blue = active, gray = pending)
+- ✅ **File Upload Interface**: Drag-drop zone with file picker
+  - Upload container with dashed border
+  - File size and format info display
+  - Template download button
+- ✅ **BomFileParser Utility**: CSV/Excel parsing foundation
+  - CSV parsing implemented
+  - Excel parsing placeholder (Phase 6B)
+  - File type validation (.csv, .xlsx, .xls)
+  - File size validation (max 10MB)
+  - Auto-detect column mapping
+  - Required fields validation
+- ✅ **Navigation**: Ready for integration with BOM Management
+
+**Files Created:**
+- src/manager/BomImportWizardScreen.tsx (469 lines)
+- src/utils/BomFileParser.ts (213 lines)
+
+**Technical Implementation:**
+- 5-step wizard state machine
+- WizardStep type (1-5)
+- ImportData interface for tracking upload state
+- ValidationError interface for error handling
+- Auto-column mapping algorithm (10 supported fields)
+- File format utilities (size formatting, validation)
+- Material Design stepper UI with progress tracking
+
+**Quality Checks:**
+- ESLint: 0 errors, 0 warnings ✅
+- TypeScript: 0 errors ✅
+
+**Next Steps (Phase 6B):**
+- File picker integration (react-native-document-picker)
+- Excel parsing with xlsx library
+- Column mapping interface
+- Data validation logic
+- Preview and import execution
+
+---
+
+**Phase 6B: BOM Import Wizard - Complete Implementation** ✅ (November 29, 2025)
+🎉 **PHASE 6 COMPLETE - Full BOM Import Wizard Operational!** 🎉
+
+- ✅ **Step 1: File Upload** - Demo data implementation
+  - Demo data loader with 2 sample BOM items
+  - File type validation ready (.csv, .xlsx, .xls)
+  - File size validation ready (max 10MB)
+  - Excel parsing with xlsx library (ready)
+  - CSV parsing implementation (ready)
+  - File info display with change option
+  - **Note**: File picker requires RN 0.74+ upgrade (currently using demo data)
+- ✅ **Step 2: Column Mapping** - Auto-detection + display
+  - Auto-detect 10 BOM fields from headers
+  - Required fields validation
+  - Column mapping table display
+  - Shows mapped Excel columns to BOM fields
+- ✅ **Step 3: Data Validation** - Row-by-row checking
+  - Required field validation
+  - Number field validation (quantity, costs)
+  - Auto-calculate total cost if missing
+  - Error/warning categorization
+  - Display first 20 errors with row numbers
+- ✅ **Step 4: Preview & Confirm** - Review before import
+  - Summary statistics (total items, total cost)
+  - Preview table showing first 10 items
+  - All columns display (description, category, qty, unit, costs)
+  - Item count indicator
+- ✅ **Step 5: Import Execution** - Database import
+  - Creates new BOM record
+  - Batch imports all BOM items
+  - Real-time progress bar (0-100%)
+  - Success confirmation with count
+  - Auto-reset wizard on completion
+
+**Files Modified/Created:**
+- src/manager/BomImportWizardScreen.tsx (1,070 lines - complete implementation)
+- src/utils/BomFileParser.ts (+86 lines - Excel parsing added)
+- **Build Fix**: Removed react-native-document-picker (incompatible with RN 0.81)
+
+**Technical Implementation:**
+- Complete 5-step wizard with state management
+- Demo data loader for testing (file picker requires RN upgrade)
+- xlsx library for Excel parsing (.xlsx, .xls) - ready
+- CSV parsing with line-by-line processing - ready
+- Auto-column mapping algorithm (10 fields)
+- Comprehensive data validation
+  * Required fields check
+  * Data type validation
+  * Auto-calculation of totals
+- Database import with WatermelonDB
+  * Creates BOM parent record
+  * Batch creates BOM items
+  * Progress tracking
+- Material Design UI throughout
+- Alert dialogs for user feedback
+
+**Supported BOM Fields:**
+1. S.N (Serial Number)
+2. Description (required)
+3. Category (required)
+4. Sub-Category
+5. Quantity (required, number)
+6. Unit (required)
+7. Unit Cost (required, number)
+8. Total Cost (auto-calculated)
+9. Phase
+10. DOORS ID
+11. Notes
+
+**Quality Checks:**
+- ESLint: 0 errors, 0 warnings ✅
+- TypeScript: 0 errors ✅
+- Total: 1,176 lines of production code
+
+**User Flow:**
+1. Click "Browse Files" → Load demo data (or upload file after RN upgrade)
+2. Review column mapping → Proceed if valid
+3. Validate all data → Fix errors if needed
+4. Preview summary → Confirm import
+5. Execute import → Database updated
+
+**Build Status:**
+✅ App builds successfully
+⚠️ File upload requires React Native 0.74+ upgrade
+✅ All other features (Steps 2-5) fully functional with demo data
+
+🎯 **Phase 6 Status: 100% Complete (with demo data)**
+
+---
 
 ### v2.7 (November 2025) - Progress Photos & PDF Enhancement 📸✅
 
@@ -834,7 +1693,7 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB (Schema v20, updated October 2025 - Activity 2) for robust offline-first data management with bidirectional sync capabilities.
+The app uses WatermelonDB (Schema v29, updated November 2025 - v2.10) for robust offline-first data management with bidirectional sync capabilities.
 
 ### Core Entities (with Sync Support - v2.2)
 - **Projects**: Top-level project containers with client, dates, and budgets *(syncable)*
@@ -858,6 +1717,23 @@ The app uses WatermelonDB (Schema v20, updated October 2025 - Activity 2) for ro
 - **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
 - **Sessions** (v2.2): JWT session tracking with device info
 - **PasswordHistory** (v2.2): Password history for reuse prevention
+
+### Manager Role - Milestones (v2.10 - Phase 1, November 2025)
+- **Milestones** (Schema v29): Project milestone definitions
+  - **Standard Milestones**: 7 pre-defined milestones (PM100-PM700)
+    - PM100: Requirements Management (DOORS) - 10% weight
+    - PM200: Engineering & Design - 15% weight
+    - PM300: Procurement - 15% weight
+    - PM400: Manufacturing - 10% weight
+    - PM500: Testing & Pre-commissioning - 15% weight
+    - PM600: Commissioning - 20% weight
+    - PM700: Handover - 15% weight
+  - **Custom Milestones**: Support for project-specific milestones
+  - **Fields**: project_id, milestone_code, milestone_name, description, sequence_order, weightage, is_active, is_custom
+- **Milestone Progress** (Schema v29): Site-level progress tracking
+  - **Progress Tracking**: Track percentage completion per site per milestone
+  - **Status Tracking**: not_started, in_progress, completed, delayed
+  - **Fields**: project_id, site_id, milestone_id, progress_percentage, status, start_date, target_date, actual_completion_date, notes
 
 ### BOM Management (v2.3 - Activity 4, November 2025)
 - **BOMs** (Schema v23-v25): Bill of Materials for estimation and execution
@@ -898,7 +1774,7 @@ Items now include advanced planning and WBS management capabilities:
   - **risk_notes**: Risk description and mitigation plan
 
 ### Key Database Features
-- **Schema Version 25**: Latest schema with BOM management (v2.3 - Activity 4, November 2025)
+- **Schema Version 29**: Latest schema with Manager Milestones (v2.10 - Phase 1, November 2025)
 - **Offline-First**: All operations work without internet
 - **Bidirectional Sync** (v2.2 - Week 6): Automatic push/pull synchronization with server
 - **Conflict Resolution** (v2.2 - Week 7): Version-based Last-Write-Wins strategy
@@ -1038,11 +1914,12 @@ MainNavigator
     │   ├── SiteManagementScreen (🏗️ Sites) - Manage sites
     │   ├── HindranceReportScreen (⚠️ Issues) - Report hindrances with photos
     │   └── SiteInspectionScreen (🔍 Inspection) - Site inspections
-    ├── ManagerNavigator (Bottom Tabs)
-    │   ├── ProjectOverviewScreen
-    │   ├── TeamManagementScreen
-    │   ├── FinancialReportsScreen
-    │   └── ResourceAllocationScreen
+    ├── ManagerNavigator (Bottom Tabs - v2.10)
+    │   ├── ManagerDashboardScreen (v2.10 Phase 2) - Project overview with 8 KPIs
+    │   ├── TeamManagementScreen (stub)
+    │   ├── FinancialReportsScreen (stub)
+    │   ├── ResourceRequestsScreen (stub)
+    │   └── BomManagementScreen (v2.3) - Bill of Materials management
     ├── PlanningNavigator (Bottom Tabs + Stack Screens)
     │   ├── WBSManagementScreen (v1.4) - Hierarchical WBS with auto-generated codes
     │   │   └── ItemCreationScreen (v1.4) - Create/Edit items with selectors

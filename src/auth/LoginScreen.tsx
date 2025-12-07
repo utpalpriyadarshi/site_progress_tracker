@@ -22,6 +22,8 @@ type RootStackParamList = {
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'RoleSelection'> &
@@ -98,6 +100,8 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         manager: 'Manager',
         planner: 'Planning',
         logistics: 'Logistics',
+        designengineer: 'DesignEngineer',
+        commercialmanager: 'CommercialManager',
       };
 
       const screenName = roleMap[result.user.role];

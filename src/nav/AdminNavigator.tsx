@@ -8,8 +8,11 @@ import AdminDashboardScreen from '../admin/AdminDashboardScreen';
 import ProjectManagementScreen from '../admin/ProjectManagementScreen';
 import RoleManagementScreen from '../admin/RoleManagementScreen';
 import { AdminProvider } from '../admin/context/AdminContext';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, UserRole } from '../auth/AuthContext';
+import RoleSwitcher from '../auth/RoleSwitcher';
 import SnackbarTestScreen from '../test/SnackbarTestScreen';
+import { Phase1TestUtility } from '../utils/Phase1TestUtility';
+import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -18,6 +21,8 @@ export type RootStackParamList = {
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 export type AdminTabParamList = {
@@ -25,6 +30,8 @@ export type AdminTabParamList = {
   ProjectManagement: undefined;
   RoleManagement: undefined;
   SnackbarTest: undefined;
+  Phase1Test: undefined;
+  ManagerTestData: undefined;
 };
 
 type AdminNavigatorProps = {
@@ -46,11 +53,30 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
     );
   };
 
+  const handleRoleChange = (newRole: UserRole) => {
+    const roleMap: Record<UserRole, keyof RootStackParamList> = {
+      admin: 'Admin',
+      supervisor: 'Supervisor',
+      manager: 'Manager',
+      planning: 'Planning',
+      logistics: 'Logistics',
+      design_engineer: 'DesignEngineer',
+      commercial_manager: 'CommercialManager',
+    };
+
+    parentNavigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: roleMap[newRole] }],
+      })
+    );
+  };
+
   return (
     <AdminProvider>
       <Tab.Navigator
         screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarIcon: ({ color, size }) => {
             let iconSymbol = '';
 
             if (route.name === 'AdminDashboard') {
@@ -61,6 +87,10 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
               iconSymbol = '👥';
             } else if (route.name === 'SnackbarTest') {
               iconSymbol = '🧪';
+            } else if (route.name === 'Phase1Test') {
+              iconSymbol = '🔬';
+            } else if (route.name === 'ManagerTestData') {
+              iconSymbol = '🎲';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -69,7 +99,8 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <TouchableOpacity onPress={handleLogout}>
+              <RoleSwitcher onRoleChange={handleRoleChange} />
+              <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
                 <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
               </TouchableOpacity>
             </View>
@@ -110,6 +141,24 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
             title: 'Test',
             headerShown: true,
             headerTitle: 'Snackbar & Dialog Tests',
+          }}
+        />
+        <Tab.Screen
+          name="Phase1Test"
+          component={Phase1TestUtility}
+          options={{
+            title: 'Phase 1',
+            headerShown: true,
+            headerTitle: 'Phase 1 v2.10 Tests',
+          }}
+        />
+        <Tab.Screen
+          name="ManagerTestData"
+          component={ManagerTestDataUtility}
+          options={{
+            title: 'Test Data',
+            headerShown: true,
+            headerTitle: 'Manager Test Data',
           }}
         />
       </Tab.Navigator>

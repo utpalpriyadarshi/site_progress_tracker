@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 29, // Added project_id to users table for supervisor project assignment (v2.9)
+  version: 32, // Added vendor_name to invoices table (v2.11 fix)
   tables: [
     tableSchema({
       name: 'projects',
@@ -23,6 +23,11 @@ export default appSchema({
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
+        // v2.11: Planning Engineer role - site schedule dates
+        { name: 'planned_start_date', type: 'number', isOptional: true },
+        { name: 'planned_end_date', type: 'number', isOptional: true },
+        { name: 'actual_start_date', type: 'number', isOptional: true },
+        { name: 'actual_end_date', type: 'number', isOptional: true },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
@@ -69,6 +74,8 @@ export default appSchema({
         { name: 'float_days', type: 'number', isOptional: true }, // total float
         { name: 'dependency_risk', type: 'string', isOptional: true }, // low, medium, high
         { name: 'risk_notes', type: 'string', isOptional: true }, // risk description
+        // Milestone linking (v2.10)
+        { name: 'milestone_id', type: 'string', isOptional: true, isIndexed: true }, // linked milestone
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
@@ -480,6 +487,8 @@ export default appSchema({
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
         { name: 'status', type: 'string', isIndexed: true },
+        // v2.11: Design Engineer vs Logistics distinction
+        { name: 'rfq_type', type: 'string', isIndexed: true }, // 'design' | 'procurement'
         { name: 'issue_date', type: 'number', isOptional: true },
         { name: 'closing_date', type: 'number', isOptional: true },
         { name: 'evaluation_date', type: 'number', isOptional: true },
@@ -525,6 +534,122 @@ export default appSchema({
         { name: 'submitted_at', type: 'number', isOptional: true },
         { name: 'evaluated_at', type: 'number', isOptional: true },
         { name: 'evaluated_by_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v2.10: Manager role tables
+    tableSchema({
+      name: 'milestones',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'milestone_code', type: 'string', isIndexed: true }, // PM100, PM200, etc.
+        { name: 'milestone_name', type: 'string' }, // "Requirements Management"
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'sequence_order', type: 'number' }, // 1, 2, 3...
+        { name: 'weightage', type: 'number' }, // % weightage for progress calc
+        { name: 'is_active', type: 'boolean' },
+        { name: 'is_custom', type: 'boolean' }, // true if added by manager
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'milestone_progress',
+      columns: [
+        { name: 'milestone_id', type: 'string', isIndexed: true },
+        { name: 'site_id', type: 'string', isIndexed: true }, // site-level tracking
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'progress_percentage', type: 'number' }, // 0-100
+        { name: 'status', type: 'string' }, // not_started, in_progress, completed, on_hold
+        { name: 'owner_id', type: 'string', isOptional: true }, // responsible person
+        { name: 'planned_start_date', type: 'number', isOptional: true },
+        { name: 'planned_end_date', type: 'number', isOptional: true },
+        { name: 'actual_start_date', type: 'number', isOptional: true },
+        { name: 'actual_end_date', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'updated_by', type: 'string', isIndexed: true },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'purchase_orders',
+      columns: [
+        { name: 'po_number', type: 'string', isIndexed: true }, // PO-2025-001
+        { name: 'rfq_id', type: 'string', isIndexed: true }, // linked RFQ
+        { name: 'vendor_id', type: 'string', isIndexed: true },
+        { name: 'doors_package_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'po_date', type: 'number' },
+        { name: 'po_value', type: 'number' },
+        { name: 'currency', type: 'string' }, // INR, USD, EUR
+        { name: 'payment_terms', type: 'string', isOptional: true },
+        { name: 'delivery_terms', type: 'string', isOptional: true },
+        { name: 'expected_delivery_date', type: 'number', isOptional: true },
+        { name: 'actual_delivery_date', type: 'number', isOptional: true },
+        { name: 'status', type: 'string', isIndexed: true }, // draft, issued, in_progress, delivered, closed, cancelled
+        { name: 'items_details', type: 'string' }, // JSON array of PO line items
+        { name: 'terms_conditions', type: 'string', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'created_by_id', type: 'string', isIndexed: true },
+        { name: 'approved_by_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v2.11: Commercial Manager role tables
+    tableSchema({
+      name: 'budgets',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, other
+        { name: 'allocated_amount', type: 'number' },
+        { name: 'description', type: 'string' },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'costs',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'po_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'category', type: 'string', isIndexed: true }, // material, labor, equipment, other
+        { name: 'amount', type: 'number' },
+        { name: 'description', type: 'string' },
+        { name: 'cost_date', type: 'number' },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'invoices',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'po_id', type: 'string', isIndexed: true },
+        { name: 'invoice_number', type: 'string', isIndexed: true },
+        { name: 'invoice_date', type: 'number' },
+        { name: 'amount', type: 'number' },
+        { name: 'payment_status', type: 'string', isIndexed: true }, // pending, paid
+        { name: 'payment_date', type: 'number', isOptional: true },
+        { name: 'vendor_id', type: 'string', isIndexed: true },
+        { name: 'vendor_name', type: 'string', isOptional: true }, // Manual vendor name entry (v2.11 fix)
+        { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },

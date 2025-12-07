@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics) with comprehensive progress tracking, reporting, material management, and advanced planning capabilities.
+A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers) with comprehensive progress tracking, reporting, material management, financial management, and advanced planning capabilities.
 
-**Current Version**: v2.4 (Activity 4: RFQ Management System Complete - Phase 3)
-**Database Schema Version**: 28 (Activity 4 Phase 3 - RFQ & Vendor Management)
+**Current Version**: v2.11 (Commercial Manager Role Implementation - Phase 5 Complete)
+**Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: November 17, 2025
+**Last Updated**: December 5, 2025
 
 ---
 
@@ -54,6 +54,8 @@ site_progress_tracker/
 │   ├── VendorModel.ts            # Vendor master data (v2.4 - Activity 4 Phase 3)
 │   ├── RfqModel.ts               # Request for Quotation records (v2.4 - Activity 4 Phase 3)
 │   ├── RfqVendorQuoteModel.ts    # Vendor quote submissions (v2.4 - Activity 4 Phase 3)
+│   ├── MilestoneModel.ts         # Project milestone definitions (v2.10 - Phase 1)
+│   ├── MilestoneProgressModel.ts # Site-level milestone progress tracking (v2.10 - Phase 1)
 │   ├── DailyReportModel.ts       # Daily reports model
 │   ├── HindranceModel.ts         # Hindrance/obstacle model (with photos)
 │   ├── ItemModel.ts              # Construction work items model
@@ -112,12 +114,23 @@ site_progress_tracker/
 │   │   └── components/                    # Logistics components
 │   │       ├── BomRequirementCard.tsx     # BOM card with DOORS section
 │   │       └── DoorsLinkingModal.tsx      # Manual BOM-DOORS linking modal
-│   ├── manager/                  # Manager-specific screens (5 screens)
+│   ├── manager/                  # Manager-specific screens (6 screens - v2.10)
+│   │   ├── ManagerDashboardScreen.tsx   # Project overview with 8 KPIs (v2.10 Phase 2, 550+ lines)
+│   │   ├── TeamManagementScreen.tsx     # Team management (stub)
+│   │   ├── FinancialReportsScreen.tsx   # Financial reports (stub)
+│   │   ├── ResourceRequestsScreen.tsx   # Resource requests (stub)
 │   │   ├── BomManagementScreen.tsx      # BOM Management (v2.3 - Activity 4, 1,450+ lines)
-│   │   ├── ProjectOverviewScreen.tsx
-│   │   ├── TeamManagementScreen.tsx
-│   │   ├── FinancialReportsScreen.tsx
-│   │   └── ResourceAllocationScreen.tsx
+│   │   └── context/
+│   │       ├── ManagerContext.tsx       # Manager state management (v2.10 Phase 1)
+│   │       └── BomContext.tsx           # BOM state management (v2.3)
+│   ├── commercial/               # Commercial Manager screens (5 screens - v2.11)
+│   │   ├── CommercialDashboardScreen.tsx # Financial health dashboard (797 lines)
+│   │   ├── BudgetManagementScreen.tsx    # Budget CRUD with variance tracking (720 lines)
+│   │   ├── CostTrackingScreen.tsx        # Cost tracking with PO linkage (767 lines)
+│   │   ├── InvoiceManagementScreen.tsx   # Invoice & payment management (877 lines)
+│   │   ├── FinancialReportsScreen.tsx    # Multi-table financial analytics (786 lines)
+│   │   └── context/
+│   │       └── CommercialContext.tsx     # Commercial state management (v2.11)
 │   ├── planning/                 # Planning-specific screens (7 screens - v1.7 workflow order)
 │   │   ├── SiteManagementScreen.tsx    # Site creation & supervisor assignment (v1.7 - NEW)
 │   │   ├── WBSManagementScreen.tsx     # WBS management (v1.4)
@@ -161,16 +174,24 @@ site_progress_tracker/
 │   │   │   └── SiteContext.tsx           # Shared site selection context
 │   │   └── components/
 │   │       └── SiteSelector.tsx          # Reusable site selector component
-│   └── nav/                      # Navigation components
-│       ├── MainNavigator.tsx     # Root navigator
-│       ├── AuthNavigator.tsx     # Authentication flow navigator (database-based)
-│       ├── RoleSelectionScreen.tsx # Role selection screen (legacy)
-│       ├── AdminNavigator.tsx    # Admin bottom tabs (3 tabs - v1.2)
-│       ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
-│       ├── ManagerNavigator.tsx   # Manager bottom tabs (4 tabs)
-│       ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
-│       ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
-│       └── types.ts              # Navigation type definitions
+│   ├── nav/                      # Navigation components
+│   │   ├── MainNavigator.tsx     # Root navigator
+│   │   ├── AuthNavigator.tsx     # Authentication flow navigator (database-based)
+│   │   ├── RoleSelectionScreen.tsx # Role selection screen (legacy)
+│   │   ├── AdminNavigator.tsx    # Admin bottom tabs (6 tabs - v2.10)
+│   │   ├── SupervisorNavigator.tsx # Supervisor bottom tabs (7 tabs)
+│   │   ├── ManagerNavigator.tsx   # Manager bottom tabs (5 tabs - v2.10)
+│   │   ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
+│   │   ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
+│   │   ├── DesignEngineerNavigator.tsx # Design Engineer bottom tabs (3 tabs - v2.10)
+│   │   ├── CommercialNavigator.tsx # Commercial Manager bottom tabs (5 tabs - v2.11)
+│   │   └── types.ts              # Navigation type definitions
+│   └── utils/                    # Utility screens and helpers (v2.10)
+│       ├── Phase1TestUtility.tsx        # Phase 1 milestone testing utility
+│       ├── ManagerTestDataUtility.tsx   # Manager dashboard test data generator
+│       └── demoData/                    # Demo data seeders
+│           ├── DoorsSeeder.ts           # DOORS demo data (v2.4)
+│           └── RfqSeeder.ts             # RFQ demo data (v2.4)
 ├── __tests__/                    # Test files (v1.3+)
 │   ├── models/                   # Model tests
 │   │   ├── ItemModel.test.ts     # ItemModel tests (26 tests)
@@ -278,6 +299,13 @@ Screens are organized by user role for clear separation of concerns:
 - **Logistics** (`src/logistics/`): 4 screens for materials/equipment
   - Material tracking, equipment management
   - Delivery scheduling, inventory management
+
+- **Commercial Manager** (`src/commercial/`): 5 screens for financial management (v2.11)
+  - Budget Management: Category-based budget allocation with variance tracking
+  - Cost Tracking: Real-time cost monitoring with PO linkage
+  - Invoice Management: Payment tracking with automatic overdue calculation
+  - Financial Reports: Multi-table analytics with profitability metrics
+  - Commercial Dashboard: Real-time financial health with intelligent alerts
 
 #### Navigation Architecture
 - **Location**: `src/nav/`
@@ -481,16 +509,26 @@ MainNavigator (Stack)
     │   └── Stack Screens (Modal/Detail screens)
     │       ├── ItemCreation (Create new WBS items) [v1.4]
     │       └── ItemEdit (Edit existing WBS items) [v1.5]
-    └── LogisticsNavigator (4 tabs)
-        ├── MaterialTrackingScreen (📦 Materials)
-        ├── EquipmentManagementScreen (🚜 Equipment)
-        ├── DeliverySchedulingScreen (🚚 Delivery)
-        └── InventoryManagementScreen (📋 Inventory)
+    ├── LogisticsNavigator (4 tabs)
+    │   ├── MaterialTrackingScreen (📦 Materials)
+    │   ├── EquipmentManagementScreen (🚜 Equipment)
+    │   ├── DeliverySchedulingScreen (🚚 Delivery)
+    │   └── InventoryManagementScreen (📋 Inventory)
+    ├── DesignEngineerNavigator (3 tabs) [v2.10]
+    │   ├── DesignEngineerDashboardScreen (📊 Dashboard)
+    │   ├── DoorsPackageManagementScreen (📦 DOORS Packages)
+    │   └── DesignRfqManagementScreen (📝 RFQs)
+    └── CommercialNavigator (5 tabs) [v2.11]
+        ├── CommercialDashboardScreen (📊 Dashboard - Financial health)
+        ├── BudgetManagementScreen (💰 Budget - Allocation & variance)
+        ├── CostTrackingScreen (💵 Costs - Tracking & PO linkage)
+        ├── InvoiceManagementScreen (📄 Invoices - Payment tracking)
+        └── FinancialReportsScreen (📈 Reports - Multi-table analytics)
 ```
 
 ### Navigation Patterns
 
-1. **Role-based Access**: Different navigators and screens per role (Admin, Supervisor, Manager, Planner, Logistics)
+1. **Role-based Access**: Different navigators and screens per role (Admin, Supervisor, Manager, Planner, Logistics, Design Engineer, Commercial Manager)
 2. **Database-based Authentication**: Login validates against users table with role-based routing (v1.2)
 3. **Bottom Tab Navigation**: Primary navigation within each role
 4. **Shared Context**:
@@ -619,7 +657,7 @@ MainNavigator (Stack)
 - User roles and permissions
 - Fields: name, description, permissions (JSON)
 - **Relationships**: has_many users
-- **System Roles**: Admin, Supervisor, Manager, Planner, Logistics
+- **System Roles**: Admin, Supervisor, Manager, Planner, Logistics, Design Engineer, Commercial Manager
 
 #### boms (v2.3 - Activity 4, November 2025)
 - Bill of Materials for Pre-Contract (Estimating) and Post-Contract (Execution)
@@ -790,7 +828,7 @@ MainNavigator (Stack)
 
 ### 1. Role-based Access Control (Enhanced in v1.2)
 - Different UI and functionality based on user role
-- 5 distinct role types: Admin, Supervisor, Manager, Planner, Logistics
+- 7 distinct role types: Admin, Supervisor, Manager, Planner, Logistics, Design Engineer, Commercial Manager
 - Database-based authentication with role assignment
 - Admin role for system administration and user management
 - Role switcher for admins to test different role views
@@ -1394,11 +1432,14 @@ item.site_id = 'site-123';  // Will save empty value!
 
 #### Test Users
 - **Test Users**: Stored in database (seeded on first launch)
-  - Admin: `admin` / `admin123`
-  - Supervisor: `supervisor` / `supervisor123`
-  - Manager: `manager` / `manager123`
-  - Planner: `planner` / `planner123`
-  - Logistics: `logistics` / `logistics123`
+  - Admin: `admin` / `Admin@2025`
+  - Supervisor: `supervisor` / `Supervisor@2025`
+  - Manager: `manager` / `Manager@2025`
+  - Planner: `planner` / `Planner@2025`
+  - Logistics: `logistics` / `Logistics@2025`
+  - Design Engineer: `designer1` / `Password@2025`
+  - Commercial Manager: `commercial1` / `Password@2025`
+  - Note: Update Design Engineer and Commercial Manager passwords via Admin interface if needed
 
 #### Testing Documentation
 - **TESTING_QUICKSTART.md**: 10-minute testing guide

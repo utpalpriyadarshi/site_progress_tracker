@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import {
   Card,
@@ -17,6 +18,7 @@ import {
   Chip,
   Snackbar,
 } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
@@ -40,6 +42,16 @@ const SiteManagementScreenComponent = ({
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
   const [supervisorName, setSupervisorName] = useState('Unassigned');
 
+  // v2.11 Phase 4: Date fields
+  const [plannedStartDate, setPlannedStartDate] = useState<Date | undefined>(undefined);
+  const [plannedEndDate, setPlannedEndDate] = useState<Date | undefined>(undefined);
+  const [actualStartDate, setActualStartDate] = useState<Date | undefined>(undefined);
+  const [actualEndDate, setActualEndDate] = useState<Date | undefined>(undefined);
+  const [showPlannedStartPicker, setShowPlannedStartPicker] = useState(false);
+  const [showPlannedEndPicker, setShowPlannedEndPicker] = useState(false);
+  const [showActualStartPicker, setShowActualStartPicker] = useState(false);
+  const [showActualEndPicker, setShowActualEndPicker] = useState(false);
+
   // Snackbar state
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -56,6 +68,10 @@ const SiteManagementScreenComponent = ({
     setSelectedProjectId(projects[0]?.id || '');
     setSelectedSupervisorId(undefined);
     setSupervisorName('Unassigned');
+    setPlannedStartDate(undefined);
+    setPlannedEndDate(undefined);
+    setActualStartDate(undefined);
+    setActualEndDate(undefined);
     setDialogVisible(true);
   };
 
@@ -79,6 +95,12 @@ const SiteManagementScreenComponent = ({
     } else {
       setSupervisorName('Unassigned');
     }
+
+    // v2.11 Phase 4: Load dates
+    setPlannedStartDate(site.plannedStartDate ? new Date(site.plannedStartDate) : undefined);
+    setPlannedEndDate(site.plannedEndDate ? new Date(site.plannedEndDate) : undefined);
+    setActualStartDate(site.actualStartDate ? new Date(site.actualStartDate) : undefined);
+    setActualEndDate(site.actualEndDate ? new Date(site.actualEndDate) : undefined);
 
     setDialogVisible(true);
   };
@@ -127,6 +149,11 @@ const SiteManagementScreenComponent = ({
             site.location = siteLocation.trim();
             site.projectId = selectedProjectId;
             site.supervisorId = selectedSupervisorId || null;
+            // v2.11 Phase 4: Save dates
+            site.plannedStartDate = plannedStartDate?.getTime() || null;
+            site.plannedEndDate = plannedEndDate?.getTime() || null;
+            site.actualStartDate = actualStartDate?.getTime() || null;
+            site.actualEndDate = actualEndDate?.getTime() || null;
           });
           setSnackbarMessage('Site updated successfully');
         } else {
@@ -136,6 +163,11 @@ const SiteManagementScreenComponent = ({
             site.location = siteLocation.trim();
             site.projectId = selectedProjectId;
             site.supervisorId = selectedSupervisorId || null;
+            // v2.11 Phase 4: Save dates
+            site.plannedStartDate = plannedStartDate?.getTime() || null;
+            site.plannedEndDate = plannedEndDate?.getTime() || null;
+            site.actualStartDate = actualStartDate?.getTime() || null;
+            site.actualEndDate = actualEndDate?.getTime() || null;
           });
           setSnackbarMessage('Site created successfully');
         }
@@ -314,6 +346,91 @@ const SiteManagementScreenComponent = ({
                 {supervisorName}
               </Button>
             </View>
+
+            {/* v2.11 Phase 4: Date Fields */}
+            <View style={styles.dateSection}>
+              <Text style={styles.sectionTitle}>Schedule Dates</Text>
+
+              {/* Planned Start Date */}
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>Planned Start:</Text>
+                <Button
+                  mode="outlined"
+                  icon="calendar"
+                  onPress={() => setShowPlannedStartPicker(true)}
+                  style={styles.dateButton}
+                >
+                  {plannedStartDate ? plannedStartDate.toLocaleDateString() : 'Not Set'}
+                </Button>
+                {plannedStartDate && (
+                  <IconButton
+                    icon="close"
+                    size={16}
+                    onPress={() => setPlannedStartDate(undefined)}
+                  />
+                )}
+              </View>
+
+              {/* Planned End Date */}
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>Planned End:</Text>
+                <Button
+                  mode="outlined"
+                  icon="calendar"
+                  onPress={() => setShowPlannedEndPicker(true)}
+                  style={styles.dateButton}
+                >
+                  {plannedEndDate ? plannedEndDate.toLocaleDateString() : 'Not Set'}
+                </Button>
+                {plannedEndDate && (
+                  <IconButton
+                    icon="close"
+                    size={16}
+                    onPress={() => setPlannedEndDate(undefined)}
+                  />
+                )}
+              </View>
+
+              {/* Actual Start Date */}
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>Actual Start:</Text>
+                <Button
+                  mode="outlined"
+                  icon="calendar"
+                  onPress={() => setShowActualStartPicker(true)}
+                  style={styles.dateButton}
+                >
+                  {actualStartDate ? actualStartDate.toLocaleDateString() : 'Not Set'}
+                </Button>
+                {actualStartDate && (
+                  <IconButton
+                    icon="close"
+                    size={16}
+                    onPress={() => setActualStartDate(undefined)}
+                  />
+                )}
+              </View>
+
+              {/* Actual End Date */}
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>Actual End:</Text>
+                <Button
+                  mode="outlined"
+                  icon="calendar"
+                  onPress={() => setShowActualEndPicker(true)}
+                  style={styles.dateButton}
+                >
+                  {actualEndDate ? actualEndDate.toLocaleDateString() : 'Not Set'}
+                </Button>
+                {actualEndDate && (
+                  <IconButton
+                    icon="close"
+                    size={16}
+                    onPress={() => setActualEndDate(undefined)}
+                  />
+                )}
+              </View>
+            </View>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closeDialog}>Cancel</Button>
@@ -343,6 +460,52 @@ const SiteManagementScreenComponent = ({
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* v2.11 Phase 4: Date Pickers */}
+      {showPlannedStartPicker && (
+        <DateTimePicker
+          value={plannedStartDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowPlannedStartPicker(Platform.OS === 'ios');
+            if (selectedDate) setPlannedStartDate(selectedDate);
+          }}
+        />
+      )}
+      {showPlannedEndPicker && (
+        <DateTimePicker
+          value={plannedEndDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowPlannedEndPicker(Platform.OS === 'ios');
+            if (selectedDate) setPlannedEndDate(selectedDate);
+          }}
+        />
+      )}
+      {showActualStartPicker && (
+        <DateTimePicker
+          value={actualStartDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowActualStartPicker(Platform.OS === 'ios');
+            if (selectedDate) setActualStartDate(selectedDate);
+          }}
+        />
+      )}
+      {showActualEndPicker && (
+        <DateTimePicker
+          value={actualEndDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowActualEndPicker(Platform.OS === 'ios');
+            if (selectedDate) setActualEndDate(selectedDate);
+          }}
+        />
+      )}
 
       {/* Supervisor Assignment Picker */}
       <SupervisorAssignmentPicker
@@ -457,6 +620,33 @@ const styles = StyleSheet.create({
   },
   supervisorButton: {
     marginTop: 4,
+  },
+  // v2.11 Phase 4: Date section styles
+  dateSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dateLabel: {
+    fontSize: 14,
+    width: 100,
+    color: '#666',
+  },
+  dateButton: {
+    flex: 1,
+    marginRight: 4,
   },
   errorSnackbar: {
     backgroundColor: '#D32F2F',

@@ -15,6 +15,7 @@ export default class RfqModel extends Model {
   @field('title') title!: string;
   @field('description') description?: string;
   @field('status') status!: string; // draft, issued, quotes_received, evaluated, awarded, cancelled
+  @field('rfq_type') rfqType!: string; // 'design' | 'procurement' (v2.11)
   @field('issue_date') issueDate?: number;
   @field('closing_date') closingDate?: number;
   @field('evaluation_date') evaluationDate?: number;

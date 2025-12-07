@@ -428,8 +428,10 @@ const RoleManagementScreen = () => {
                 {user.phone && (
                   <Paragraph style={styles.detail}>Phone: {user.phone}</Paragraph>
                 )}
-                {/* v2.9: Show project assignment for supervisors */}
-                {getRoleName(user.roleId) === 'Supervisor' && (
+                {/* v2.9/v2.10/v2.11: Show project assignment for supervisors, managers, and design engineers */}
+                {(getRoleName(user.roleId) === 'Supervisor' ||
+                  getRoleName(user.roleId) === 'Manager' ||
+                  getRoleName(user.roleId) === 'DesignEngineer') && (
                   <Paragraph style={styles.detail}>
                     📁 Project: {getProjectName(user.projectId || '')}
                   </Paragraph>
@@ -570,11 +572,11 @@ const RoleManagementScreen = () => {
               ))}
             </Menu>
 
-            {/* v2.9: Project Assignment for Supervisors */}
-            {/* Show for all roles during testing, can be restricted to Supervisor later */}
+            {/* v2.9/v2.10: Project Assignment for Supervisors and Managers */}
+            {/* Show for all roles during testing, can be restricted later */}
             <View style={styles.projectSection}>
               <Paragraph style={styles.label}>
-                Assigned Project {getRoleName(formData.roleId) === 'Supervisor' ? '(Required for Supervisors)' : '(Optional)'}
+                Assigned Project {(getRoleName(formData.roleId) === 'Supervisor' || getRoleName(formData.roleId) === 'Manager') ? '(Required)' : '(Optional)'}
               </Paragraph>
                 <Menu
                   visible={projectMenuVisible}

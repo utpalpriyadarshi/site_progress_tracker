@@ -13,6 +13,8 @@ const roleDisplayNames: Record<UserRole, string> = {
   manager: 'Manager',
   planning: 'Planning',
   logistics: 'Logistics',
+  design_engineer: 'Design Engineer',
+  commercial_manager: 'Commercial Manager',
   admin: 'Admin',
 };
 
@@ -21,6 +23,8 @@ const roleIcons: Record<UserRole, string> = {
   manager: 'briefcase',
   planning: 'calendar-check',
   logistics: 'truck-delivery',
+  design_engineer: 'pencil-ruler',
+  commercial_manager: 'cash-multiple',
   admin: 'shield-account',
 };
 

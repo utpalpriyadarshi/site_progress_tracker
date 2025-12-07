@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthService from '../../services/auth/AuthService';
 import TokenStorage from '../../services/storage/TokenStorage';
 
-export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'admin';
+export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'design_engineer' | 'commercial_manager' | 'admin';
 
 interface User {
   userId: string;
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('AuthContext: JWT session restored');
 
         // In development mode, allow access to all roles for testing
-        const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'admin'];
+        const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'design_engineer', 'admin'];
         const backendRole = session.user.role as UserRole;
         const rolesToUse = __DEV__ ? allRoles : [backendRole];
 
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // In development mode (__DEV__), allow access to all roles for testing
       // In production, only use the roles assigned by backend
-      const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'admin'];
+      const allRoles: UserRole[] = ['supervisor', 'manager', 'planning', 'logistics', 'design_engineer', 'admin'];
       const rolesToUse = __DEV__ ? allRoles : availableRoles;
 
       const userData: User = {

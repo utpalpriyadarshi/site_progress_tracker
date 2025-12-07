@@ -4,10 +4,10 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import ProjectOverviewScreen from '../manager/ProjectOverviewScreen';
-import TeamManagementScreen from '../manager/TeamManagementScreen';
+import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
+import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
-import ResourceRequestsScreen from '../manager/ResourceRequestsScreen';
+import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
 import BomManagementScreen from '../manager/BomManagementScreen';
 import RoleSwitcher from '../auth/RoleSwitcher';
 import { useAuth, UserRole } from '../auth/AuthContext';
@@ -21,13 +21,15 @@ export type RootStackParamList = {
   Manager: undefined;
   Planning: undefined;
   Logistics: undefined;
+  DesignEngineer: undefined;
+  CommercialManager: undefined;
 };
 
 export type ManagerTabParamList = {
-  ProjectOverview: undefined;
-  TeamManagement: undefined;
+  Dashboard: undefined;
+  TeamPerformance: undefined;
   FinancialReports: undefined;
-  ResourceRequests: undefined;
+  Milestones: undefined;
   BomManagement: undefined;
 };
 
@@ -57,6 +59,8 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
       manager: 'Manager',
       planning: 'Planning',
       logistics: 'Logistics',
+      design_engineer: 'DesignEngineer',
+      commercial_manager: 'CommercialManager',
     };
 
     parentNavigation.dispatch(
@@ -72,17 +76,17 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
       <BomProvider>
         <Tab.Navigator
           screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarIcon: ({ color, size }) => {
             let iconSymbol = '';
 
-            if (route.name === 'ProjectOverview') {
+            if (route.name === 'Dashboard') {
               iconSymbol = '📊';
-            } else if (route.name === 'TeamManagement') {
+            } else if (route.name === 'TeamPerformance') {
               iconSymbol = '👥';
             } else if (route.name === 'FinancialReports') {
               iconSymbol = '💰';
-            } else if (route.name === 'ResourceRequests') {
-              iconSymbol = '👷';
+            } else if (route.name === 'Milestones') {
+              iconSymbol = '🎯';
             } else if (route.name === 'BomManagement') {
               iconSymbol = '📋';
             }
@@ -101,23 +105,23 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         ),
       })}
     >
-      <Tab.Screen 
-        name="ProjectOverview" 
-        component={ProjectOverviewScreen} 
-        options={{ 
-          title: 'Overview',
+      <Tab.Screen
+        name="Dashboard"
+        component={ManagerDashboardScreen}
+        options={{
+          title: 'Dashboard',
           headerShown: true,
-          headerTitle: 'Project Overview',
-        }} 
+          headerTitle: 'Manager Dashboard',
+        }}
       />
-      <Tab.Screen 
-        name="TeamManagement" 
-        component={TeamManagementScreen} 
-        options={{ 
+      <Tab.Screen
+        name="TeamPerformance"
+        component={TeamPerformanceScreen}
+        options={{
           title: 'Team',
           headerShown: true,
-          headerTitle: 'Team Management',
-        }} 
+          headerTitle: 'Team Performance',
+        }}
       />
       <Tab.Screen 
         name="FinancialReports" 
@@ -129,12 +133,12 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         }} 
       />
       <Tab.Screen
-        name="ResourceRequests"
-        component={ResourceRequestsScreen}
+        name="Milestones"
+        component={MilestoneManagementScreen}
         options={{
-          title: 'Requests',
+          title: 'Milestones',
           headerShown: true,
-          headerTitle: 'Resource Requests',
+          headerTitle: 'Milestone Management',
         }}
       />
       <Tab.Screen

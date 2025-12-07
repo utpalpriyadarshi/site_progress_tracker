@@ -23,11 +23,23 @@ export class SimpleDatabaseService {
   static async initializeDefaultData(): Promise<void> {
     try {
       // Check if we already have data to avoid duplicates
+      // Check both projects AND users to be thorough
       const projects = await database.collections.get('projects').query().fetch();
-      if (projects.length > 0) {
+      const users = await database.collections.get('users').query().fetch();
+
+      if (projects.length > 0 && users.length > 0) {
         console.log('Default data already exists, skipping initialization');
+        console.log(`  - Found ${projects.length} projects and ${users.length} users`);
         return;
       }
+
+      if (projects.length > 0 || users.length > 0) {
+        console.log('⚠️  Partial data found! This may indicate incomplete reset.');
+        console.log(`  - Projects: ${projects.length}, Users: ${users.length}`);
+        console.log('  - Proceeding with initialization...');
+      }
+
+      console.log('🚀 Initializing default data...');
 
       // ✅ Create default roles
       const adminRole = await database.write(async () => {
@@ -70,15 +82,33 @@ export class SimpleDatabaseService {
         });
       });
 
+      const designEngineerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'DesignEngineer';
+          role.description = 'Design engineer managing DOORS packages and design RFQs';
+          role.permissions = JSON.stringify(['view_doors', 'manage_doors', 'manage_design_rfqs', 'view_projects']);
+        });
+      });
+
+      const commercialManagerRole = await database.write(async () => {
+        return await database.collections.get('roles').create((role: any) => {
+          role.name = 'CommercialManager';
+          role.description = 'Commercial manager for budget, cost tracking, and financial reporting';
+          role.permissions = JSON.stringify(['view_budgets', 'manage_budgets', 'manage_costs', 'manage_invoices', 'view_financial_reports']);
+        });
+      });
+
       // ✅ Hash passwords for demo users (one-time cost during initialization)
       // Using strong passwords with special characters for better security
       console.log('SimpleDatabaseService: Hashing demo user passwords...');
-      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash] = await Promise.all([
+      const [adminHash, supervisorHash, managerHash, plannerHash, logisticsHash, designEngineerHash, commercialManagerHash] = await Promise.all([
         this.hashPassword('Admin@2025'),
         this.hashPassword('Supervisor@2025'),
         this.hashPassword('Manager@2025'),
         this.hashPassword('Planner@2025'),
         this.hashPassword('Logistics@2025'),
+        this.hashPassword('Designer@2025'),
+        this.hashPassword('Commercial@2025'),
       ]);
       console.log('SimpleDatabaseService: Password hashing complete');
 
@@ -143,6 +173,30 @@ export class SimpleDatabaseService {
         });
       });
 
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'designer';
+          user.passwordHash = designEngineerHash;
+          user.fullName = 'David Design Engineer';
+          user.email = 'designer@construction.com';
+          user.phone = '+1234567895';
+          user.isActive = true;
+          user.roleId = designEngineerRole.id;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('users').create((user: any) => {
+          user.username = 'commercial';
+          user.passwordHash = commercialManagerHash;
+          user.fullName = 'Carol Commercial Manager';
+          user.email = 'commercial@construction.com';
+          user.phone = '+1234567896';
+          user.isActive = true;
+          user.roleId = commercialManagerRole.id;
+        });
+      });
+
       console.log('Default roles and users created successfully');
 
       // ✅ Create default project
@@ -156,6 +210,28 @@ export class SimpleDatabaseService {
           project.budget = 1000000;
         });
       });
+
+      // ✅ Assign Design Engineer to project (v2.11)
+      const designerUsers = await database.collections.get('users').query(Q.where('username', 'designer')).fetch();
+      if (designerUsers.length > 0) {
+        await database.write(async () => {
+          await designerUsers[0].update((user: any) => {
+            user.projectId = sampleProject.id;
+          });
+        });
+        console.log('Design Engineer assigned to project:', sampleProject.id);
+      }
+
+      // ✅ Assign Commercial Manager to project (v2.11 Phase 5)
+      const commercialUsers = await database.collections.get('users').query(Q.where('username', 'commercial')).fetch();
+      if (commercialUsers.length > 0) {
+        await database.write(async () => {
+          await commercialUsers[0].update((user: any) => {
+            user.projectId = sampleProject.id;
+          });
+        });
+        console.log('Commercial Manager assigned to project:', sampleProject.id);
+      }
 
       // ✅ Create default site
       const sampleSite = await database.write(async () => {
@@ -452,6 +528,46 @@ export class SimpleDatabaseService {
           material.status = 'delivered';
           material.supplier = 'Building Materials Inc.';
           material.procurementManagerId = 'procurement-1';
+        });
+      });
+
+      // ✅ Create sample vendors (v2.11 Phase 3)
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'ABC Construction Supplies';
+          vendor.contactPerson = 'John Smith';
+          vendor.email = 'john@abcsupplies.com';
+          vendor.phone = '+1234567890';
+          vendor.address = '123 Industrial Ave, Construction City';
+          vendor.category = 'Materials';
+          vendor.rating = 4.5;
+          vendor.isActive = true;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'Global Steel & Metal Co.';
+          vendor.contactPerson = 'Sarah Johnson';
+          vendor.email = 'sarah@globalsteel.com';
+          vendor.phone = '+1234567891';
+          vendor.address = '456 Steel Road, Metal Town';
+          vendor.category = 'Steel & Metal';
+          vendor.rating = 4.8;
+          vendor.isActive = true;
+        });
+      });
+
+      await database.write(async () => {
+        await database.collections.get('vendors').create((vendor: any) => {
+          vendor.name = 'BuildRight Equipment Rentals';
+          vendor.contactPerson = 'Mike Davis';
+          vendor.email = 'mike@buildright.com';
+          vendor.phone = '+1234567892';
+          vendor.address = '789 Equipment Blvd, Tool City';
+          vendor.category = 'Equipment';
+          vendor.rating = 4.2;
+          vendor.isActive = true;
         });
       });
 
