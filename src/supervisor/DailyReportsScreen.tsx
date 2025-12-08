@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import {
   Card,
-  Title,
   Paragraph,
   Button,
   TextInput,
@@ -535,7 +534,6 @@ const DailyReportsScreenComponent = ({
     <View style={styles.container}>
       {/* Header with sync status */}
       <View style={styles.header}>
-        <Title>Daily Progress Report</Title>
         {getSyncStatusChip()}
       </View>
 

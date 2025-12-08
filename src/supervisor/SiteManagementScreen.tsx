@@ -201,7 +201,6 @@ const SiteManagementScreenComponent = ({
       )}
 
       <View style={styles.header}>
-        <Title>Site Management</Title>
         <Button
           mode="contained"
           icon="plus"

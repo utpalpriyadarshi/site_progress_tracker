@@ -8,8 +8,7 @@ import AdminDashboardScreen from '../admin/AdminDashboardScreen';
 import ProjectManagementScreen from '../admin/ProjectManagementScreen';
 import RoleManagementScreen from '../admin/RoleManagementScreen';
 import { AdminProvider } from '../admin/context/AdminContext';
-import { useAuth, UserRole } from '../auth/AuthContext';
-import RoleSwitcher from '../auth/RoleSwitcher';
+import { useAuth } from '../auth/AuthContext';
 import SnackbarTestScreen from '../test/SnackbarTestScreen';
 import { Phase1TestUtility } from '../utils/Phase1TestUtility';
 import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
@@ -53,25 +52,6 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
     );
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      admin: 'Admin',
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-      design_engineer: 'DesignEngineer',
-      commercial_manager: 'CommercialManager',
-    };
-
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: roleMap[newRole] }],
-      })
-    );
-  };
-
   return (
     <AdminProvider>
       <Tab.Navigator
@@ -99,8 +79,7 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <RoleSwitcher onRoleChange={handleRoleChange} />
-              <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
+              <TouchableOpacity onPress={handleLogout}>
                 <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
               </TouchableOpacity>
             </View>

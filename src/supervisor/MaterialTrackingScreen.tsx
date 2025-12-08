@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -258,11 +258,6 @@ const MaterialTrackingScreenComponent = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Material Tracking</Text>
-        <Text style={styles.subtitle}>Track material usage and identify shortages</Text>
-      </View>
-
       {/* Site Selector */}
       <View style={styles.selectorContainer}>
         <SiteSelector />

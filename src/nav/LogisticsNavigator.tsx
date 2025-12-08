@@ -137,7 +137,7 @@ const LogisticsTabs: React.FC<LogisticsNavigatorProps> = ({ navigation: parentNa
           component={RfqListScreen}
           options={{
             title: 'RFQs',
-            headerShown: false,
+            headerShown: true,
             headerTitle: 'RFQ Management',
           }}
         />

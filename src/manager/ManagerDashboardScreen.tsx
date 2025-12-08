@@ -285,8 +285,12 @@ const ManagerDashboardScreen = () => {
   useEffect(() => {
     if (projectId) {
       loadDashboardData();
+    } else {
+      // No project assigned, stop loading
+      setLoading(false);
     }
-  }, [projectId, loadDashboardData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   TextInput,
   Portal,
@@ -345,7 +344,6 @@ const ItemsManagementScreenComponent = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Title>Items Management</Title>
         <Button
           mode="contained"
           icon="plus"

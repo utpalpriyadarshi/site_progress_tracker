@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   TextInput,
   Portal,
@@ -21,7 +20,6 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
@@ -219,7 +217,6 @@ const SiteManagementScreenComponent = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Title>Site Management</Title>
         <Button
           mode="contained"
           icon="plus"
