@@ -36,6 +36,7 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { logger } from '../services/LoggingService';
 
 interface HindranceWithDetails {
   hindrance: HindranceModel;
@@ -122,7 +123,11 @@ const HindranceReportScreen = () => {
 
       setHindrances(hindrancesWithDetails);
     } catch (error) {
-      console.error('Error loading hindrances:', error);
+      logger.error('Failed to load hindrances', error as Error, {
+        component: 'HindranceReportScreen',
+        action: 'loadHindrances',
+        supervisorId,
+      });
       showSnackbar('Failed to load hindrances', 'error');
     }
   };
@@ -142,7 +147,11 @@ const HindranceReportScreen = () => {
 
       setSiteItems(items);
     } catch (error) {
-      console.error('Error loading site items:', error);
+      logger.error('Failed to load site items', error as Error, {
+        component: 'HindranceReportScreen',
+        action: 'loadSiteItems',
+        siteId,
+      });
     }
   };
 
@@ -173,9 +182,16 @@ const HindranceReportScreen = () => {
         }
       });
 
-      console.log(`Synced ${pendingHindrances.length} hindrances`);
+      logger.info('Hindrances synced successfully', {
+        component: 'HindranceReportScreen',
+        action: 'syncPendingHindrances',
+        count: pendingHindrances.length,
+      });
     } catch (error) {
-      console.error('Error syncing hindrances:', error);
+      logger.error('Failed to sync hindrances', error as Error, {
+        component: 'HindranceReportScreen',
+        action: 'syncPendingHindrances',
+      });
     }
   };
 
@@ -234,7 +250,11 @@ const HindranceReportScreen = () => {
       loadHindrances();
       setHindranceToDelete(null);
     } catch (error) {
-      console.error('Error deleting hindrance:', error);
+      logger.error('Failed to delete hindrance', error as Error, {
+        component: 'HindranceReportScreen',
+        action: 'confirmDelete',
+        hindranceId: hindranceToDelete?.id,
+      });
       showSnackbar('Failed to delete hindrance', 'error');
     }
   };
@@ -255,7 +275,10 @@ const HindranceReportScreen = () => {
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        logger.warn('Camera permission request failed', {
+          component: 'HindranceReportScreen',
+          error: String(err),
+        });
         return false;
       }
     }
@@ -395,16 +418,28 @@ const HindranceReportScreen = () => {
               });
             });
 
-            console.log('Hindrance synced successfully:', hindranceId);
+            logger.info('Hindrance synced successfully', {
+              component: 'HindranceReportScreen',
+              action: 'handleSave',
+              hindranceId,
+            });
             // Reload to show updated sync status
             loadHindrances();
           } catch (error) {
-            console.error('Error updating sync status:', error);
+            logger.error('Failed to update sync status', error as Error, {
+              component: 'HindranceReportScreen',
+              action: 'handleSave',
+              hindranceId,
+            });
           }
         }, 2000);
       }
     } catch (error) {
-      console.error('Error saving hindrance:', error);
+      logger.error('Failed to save hindrance', error as Error, {
+        component: 'HindranceReportScreen',
+        action: 'handleSave',
+        description,
+      });
       showSnackbar('Failed to save hindrance', 'error');
     }
   };

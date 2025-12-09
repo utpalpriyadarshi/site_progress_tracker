@@ -37,6 +37,7 @@ import SiteSelector from './components/SiteSelector';
 import { ReportPdfService } from '../../services/pdf/ReportPdfService';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { logger } from '../services/LoggingService';
 
 interface ItemWithSite {
   item: ItemModel;
@@ -107,7 +108,11 @@ const DailyReportsScreenComponent = ({
 
       setItemPhotoCounts(counts);
     } catch (error) {
-      console.error('Error loading photo counts:', error);
+      logger.error('Failed to load photo counts', error as Error, {
+        component: 'DailyReportsScreen',
+        action: 'loadPhotoCounts',
+        supervisorId,
+      });
     }
   }, [supervisorId]);
 
@@ -205,7 +210,7 @@ const DailyReportsScreenComponent = ({
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        logger.warn('Camera permission request failed', { component: 'DailyReportsScreen', error: String(err) });
         return false;
       }
     }
@@ -251,7 +256,11 @@ const DailyReportsScreenComponent = ({
     }
 
     if (response.errorCode) {
-      console.error('ImagePicker Error: ', response.errorMessage);
+      logger.error('ImagePicker error', new Error(response.errorMessage || 'Unknown error'), {
+        component: 'DailyReportsScreen',
+        action: 'handleAddPhoto',
+        errorCode: response.errorCode,
+      });
       showSnackbar('Failed to capture photo', 'error');
       return;
     }
@@ -306,9 +315,17 @@ const DailyReportsScreenComponent = ({
               item.status = 'in_progress';
             }
           });
-          console.log('[Progress] Item updated successfully');
+          logger.debug('Item progress updated successfully', {
+            component: 'DailyReportsScreen',
+            action: 'updateProgress',
+            itemId: selectedItem.id,
+          });
         } catch (updateError) {
-          console.error('Error in item.update:', updateError);
+          logger.error('Failed to update item progress', updateError as Error, {
+            component: 'DailyReportsScreen',
+            action: 'updateProgress',
+            itemId: selectedItem.id,
+          });
           throw updateError;
         }
 
@@ -327,9 +344,18 @@ const DailyReportsScreenComponent = ({
               log.notes = notesInput || '';
               log.appSyncStatus = 'pending'; // Always pending until submitted as report
             });
-          console.log('[Progress] Log created with', photos.length, 'photo(s)');
+          logger.debug('Progress log created successfully', {
+            component: 'DailyReportsScreen',
+            action: 'updateProgress',
+            itemId: selectedItem.id,
+            photoCount: photos.length,
+          });
         } catch (logError) {
-          console.error('Error creating progress log:', logError);
+          logger.error('Failed to create progress log', logError as Error, {
+            component: 'DailyReportsScreen',
+            action: 'updateProgress',
+            itemId: selectedItem.id,
+          });
           throw logError;
         }
       });
@@ -344,8 +370,11 @@ const DailyReportsScreenComponent = ({
 
       closeDialog();
     } catch (error) {
-      console.error('Error updating progress (outer):', error);
-      console.error('Error stack:', (error as any).stack);
+      logger.error('Failed to update progress', error as Error, {
+        component: 'DailyReportsScreen',
+        action: 'updateProgress',
+        itemId: selectedItem?.id,
+      });
       showSnackbar(
         'Failed to update progress: ' + (error as Error).message,
         'error'
@@ -363,6 +392,7 @@ const DailyReportsScreenComponent = ({
 
   const submitReports = async () => {
     setIsSyncing(true);
+    let progressLogs: any[] = [];
     try {
       // Get today's date range (start of day to end of day)
       const today = new Date();
@@ -371,7 +401,7 @@ const DailyReportsScreenComponent = ({
       const endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1;
 
       // Get all pending progress logs for today for this supervisor's sites
-      const progressLogs = await database.collections
+      progressLogs = await database.collections
         .get('progress_logs')
         .query(
           Q.where('sync_status', 'pending'),
@@ -463,9 +493,18 @@ const DailyReportsScreenComponent = ({
             });
             reportPaths.push(pdfPath);
 
-            console.log('[PDF] Generated successfully:', pdfPath);
+            logger.info('PDF report generated successfully', {
+              component: 'DailyReportsScreen',
+              action: 'submitReports',
+              pdfPath,
+              siteId,
+            });
           } catch (pdfError) {
-            console.error('[PDF] Generation failed:', pdfError);
+            logger.error('PDF generation failed', pdfError as Error, {
+              component: 'DailyReportsScreen',
+              action: 'submitReports',
+              siteId,
+            });
             showSnackbar('Report saved but PDF generation failed', 'warning');
             // Continue even if PDF generation fails - report still saved
           }
@@ -505,10 +544,19 @@ const DailyReportsScreenComponent = ({
       showSnackbar(message, 'success');
 
       if (reportPaths.length > 0) {
-        console.log('[PDF] Reports generated at:', reportPaths);
+        logger.info('PDF reports generated', {
+          component: 'DailyReportsScreen',
+          action: 'submitReports',
+          count: reportPaths.length,
+          paths: reportPaths,
+        });
       }
     } catch (error) {
-      console.error('Error submitting reports:', error);
+      logger.error('Failed to submit reports', error as Error, {
+        component: 'DailyReportsScreen',
+        action: 'submitReports',
+        progressLogCount: progressLogs.length,
+      });
       showSnackbar('Failed to submit reports: ' + (error as Error).message, 'error');
     } finally {
       setIsSyncing(false);

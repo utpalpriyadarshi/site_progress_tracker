@@ -13,6 +13,7 @@ import SiteManagementScreen from '../supervisor/SiteManagementScreen';
 import ItemsManagementScreen from '../supervisor/ItemsManagementScreen';
 import { SiteProvider } from '../supervisor/context/SiteContext';
 import { useAuth } from '../auth/AuthContext';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -40,6 +41,50 @@ type SupervisorNavigatorProps = {
 };
 
 const Tab = createBottomTabNavigator<SupervisorTabParamList>();
+
+// Wrap each screen with ErrorBoundary for crash protection
+// Note: Props are forwarded to handle navigation props properly
+const WrappedDailyReportsScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="DailyReportsScreen">
+    <DailyReportsScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedReportsHistoryScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="ReportsHistoryScreen">
+    <ReportsHistoryScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedMaterialTrackingScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="MaterialTrackingScreen">
+    <MaterialTrackingScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedItemsManagementScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="ItemsManagementScreen">
+    <ItemsManagementScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedSiteManagementScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="SiteManagementScreen">
+    <SiteManagementScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedHindranceReportScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="HindranceReportScreen">
+    <HindranceReportScreen {...props} />
+  </ErrorBoundary>
+);
+
+const WrappedSiteInspectionScreen: React.FC<any> = (props) => (
+  <ErrorBoundary name="SiteInspectionScreen">
+    <SiteInspectionScreen {...props} />
+  </ErrorBoundary>
+);
 
 const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: parentNavigation }) => {
   const { logout } = useAuth();
@@ -91,7 +136,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 1: Sites - Start here, select your site */}
         <Tab.Screen
           name="SiteManagement"
-          component={SiteManagementScreen}
+          component={WrappedSiteManagementScreen}
           options={{
             title: 'Sites',
             headerShown: true,
@@ -101,7 +146,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 2: Items - View/manage items for selected site */}
         <Tab.Screen
           name="ItemsManagement"
-          component={ItemsManagementScreen}
+          component={WrappedItemsManagementScreen}
           options={{
             title: 'Items',
             headerShown: true,
@@ -111,7 +156,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 3: Daily Reports - Create progress reports */}
         <Tab.Screen
           name="DailyReports"
-          component={DailyReportsScreen}
+          component={WrappedDailyReportsScreen}
           options={{
             title: 'Reports',
             headerShown: true,
@@ -121,7 +166,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 4: Materials - Track material usage */}
         <Tab.Screen
           name="MaterialTracking"
-          component={MaterialTrackingScreen}
+          component={WrappedMaterialTrackingScreen}
           options={{
             title: 'Materials',
             headerShown: true,
@@ -131,7 +176,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 5: Issues - Report hindrances/problems */}
         <Tab.Screen
           name="HindranceReport"
-          component={HindranceReportScreen}
+          component={WrappedHindranceReportScreen}
           options={{
             title: 'Issues',
             headerShown: true,
@@ -141,7 +186,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 6: Inspection - Conduct site inspections */}
         <Tab.Screen
           name="SiteInspection"
-          component={SiteInspectionScreen}
+          component={WrappedSiteInspectionScreen}
           options={{
             title: 'Inspection',
             headerShown: true,
@@ -151,7 +196,7 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
         {/* Tab 7: History - Review past reports */}
         <Tab.Screen
           name="ReportsHistory"
-          component={ReportsHistoryScreen}
+          component={WrappedReportsHistoryScreen}
           options={{
             title: 'History',
             headerShown: true,

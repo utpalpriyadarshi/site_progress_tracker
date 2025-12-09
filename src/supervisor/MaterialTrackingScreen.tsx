@@ -10,6 +10,7 @@ import ItemModel from '../../models/ItemModel';
 import { Portal, Dialog, Button, TextInput, Menu, IconButton } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { logger } from '../services/LoggingService';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -150,7 +151,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material created successfully', 'success');
       closeDialog();
     } catch (error) {
-      console.error('Error creating material:', error);
+      logger.error('Failed to create material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'handleCreateMaterial',
+        materialName,
+        selectedItemId,
+      });
       showSnackbar('Failed to create material', 'error');
     }
   };
@@ -179,7 +185,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material updated successfully', 'success');
       closeDialog();
     } catch (error) {
-      console.error('Error updating material:', error);
+      logger.error('Failed to update material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'handleUpdateMaterial',
+        materialId: editingMaterial?.id,
+        materialName,
+      });
       showSnackbar('Failed to update material', 'error');
     }
   };
@@ -201,7 +212,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material deleted successfully', 'success');
       setMaterialToDelete(null);
     } catch (error) {
-      console.error('Error deleting material:', error);
+      logger.error('Failed to delete material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'confirmDelete',
+        materialId: materialToDelete?.id,
+        materialName: materialToDelete?.name,
+      });
       showSnackbar('Failed to delete material', 'error');
     }
   };

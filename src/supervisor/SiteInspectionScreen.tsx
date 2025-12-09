@@ -37,6 +37,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { SyncService } from '../../services/sync/SyncService';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { logger } from '../services/LoggingService';
 
 interface InspectionWithSite {
   inspection: SiteInspectionModel;
@@ -157,7 +158,11 @@ const SiteInspectionScreen = () => {
 
       for (const inspection of fetchedInspections) {
         const site = await sitesCollection.find(inspection.siteId);
-        console.log('Inspection sync status:', inspection.id, inspection.appSyncStatus);
+        logger.debug('Inspection loaded', {
+          component: 'SiteInspectionScreen',
+          inspectionId: inspection.id,
+          syncStatus: inspection.appSyncStatus,
+        });
         inspectionsWithSites.push({
           inspection,
           site,
@@ -166,7 +171,11 @@ const SiteInspectionScreen = () => {
 
       setInspections(inspectionsWithSites);
     } catch (error) {
-      console.error('Error loading inspections:', error);
+      logger.error('Failed to load inspections', error as Error, {
+        component: 'SiteInspectionScreen',
+        action: 'loadInspections',
+        supervisorId,
+      });
       showSnackbar('Failed to load inspections', 'error');
     }
   };
@@ -177,18 +186,25 @@ const SiteInspectionScreen = () => {
 
       // Auto-sync after 2 seconds
       setTimeout(async () => {
-        console.log('🔄 Auto-sync triggered...');
+        logger.debug('Auto-sync triggered', { component: 'SiteInspectionScreen' });
         try {
           const syncResult = await SyncService.syncUp();
-          console.log('✅ Auto-sync result:', syncResult);
+          logger.debug('Auto-sync completed', {
+            component: 'SiteInspectionScreen',
+            syncResult,
+          });
 
           if (syncResult.success && syncResult.syncedRecords > 0) {
             // Silently reload inspections to update UI
             await loadInspections();
-            console.log('🔄 Inspections reloaded after auto-sync');
+            logger.debug('Inspections reloaded after sync', {
+              component: 'SiteInspectionScreen',
+            });
           }
         } catch (error) {
-          console.error('❌ Auto-sync error:', error);
+          logger.error('Auto-sync failed', error as Error, {
+            component: 'SiteInspectionScreen',
+          });
         }
       }, 2000);
     };
@@ -202,7 +218,11 @@ const SiteInspectionScreen = () => {
     try {
       // Perform sync operation to update sync status
       const syncResult = await SyncService.syncUp();
-      console.log('Sync result:', syncResult);
+      logger.info('Sync completed', {
+        component: 'SiteInspectionScreen',
+        action: 'onRefresh',
+        syncResult,
+      });
 
       // Reload inspections to show updated sync status
       await loadInspections();
@@ -211,7 +231,10 @@ const SiteInspectionScreen = () => {
         showSnackbar(`${syncResult.syncedRecords} records synced successfully`, 'success');
       }
     } catch (error) {
-      console.error('Error during refresh:', error);
+      logger.error('Refresh failed', error as Error, {
+        component: 'SiteInspectionScreen',
+        action: 'onRefresh',
+      });
       showSnackbar('Failed to sync data', 'error');
     }
     setRefreshing(false);
@@ -283,7 +306,11 @@ const SiteInspectionScreen = () => {
       loadInspections();
       setInspectionToDelete(null);
     } catch (error) {
-      console.error('Error deleting inspection:', error);
+      logger.error('Failed to delete inspection', error as Error, {
+        component: 'SiteInspectionScreen',
+        action: 'confirmDelete',
+        inspectionId: inspectionToDelete?.id,
+      });
       showSnackbar('Failed to delete inspection', 'error');
     }
   };
@@ -304,7 +331,10 @@ const SiteInspectionScreen = () => {
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        logger.warn('Camera permission request failed', {
+          component: 'SiteInspectionScreen',
+          error: String(err),
+        });
         return false;
       }
     }
@@ -453,7 +483,11 @@ const SiteInspectionScreen = () => {
       resetForm();
       loadInspections();
     } catch (error) {
-      console.error('Error saving inspection:', error);
+      logger.error('Failed to save inspection', error as Error, {
+        component: 'SiteInspectionScreen',
+        action: 'handleSave',
+        inspectionType,
+      });
       showSnackbar('Failed to save inspection', 'error');
     }
   };

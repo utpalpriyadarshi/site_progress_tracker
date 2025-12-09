@@ -18,6 +18,7 @@ import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
+import { logger } from '../services/LoggingService';
 import { useSiteContext } from './context/SiteContext';
 import { useSnackbar } from '../components/Snackbar';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
@@ -42,6 +43,9 @@ const SiteManagementScreenComponent = ({
   sites: SiteModel[];
   projects: any[];
 }) => {
+  // TESTING: Uncomment line below to test ErrorBoundary (remove after testing!)
+  // if (true) throw new Error('Test error for ErrorBoundary');
+
   const { supervisorId, setSelectedSiteId, projectId, projectName } = useSiteContext();
   const { showSnackbar } = useSnackbar();
 
@@ -178,7 +182,11 @@ const SiteManagementScreenComponent = ({
       });
       closeDialog();
     } catch (error) {
-      console.error('Error saving site:', error);
+      logger.error('Failed to save site', error as Error, {
+        component: 'SiteManagementScreen',
+        action: 'saveSite',
+        siteName,
+      });
       showSnackbar('Failed to save site: ' + (error as Error).message, 'error');
     }
   };

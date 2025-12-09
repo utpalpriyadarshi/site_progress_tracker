@@ -27,6 +27,7 @@ import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { logger } from '../services/LoggingService';
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -291,7 +292,11 @@ const ItemsManagementScreenComponent = ({
 
       setDialogVisible(false);
     } catch (error) {
-      console.error('Error saving item:', error);
+      logger.error('Failed to save item', error as Error, {
+        component: 'ItemsManagementScreen',
+        action: 'saveItem',
+        itemName,
+      });
       showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
     }
   };
@@ -313,7 +318,11 @@ const ItemsManagementScreenComponent = ({
       setShowDeleteDialog(false);
       setItemToDelete(null);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('Failed to delete item', error as Error, {
+        component: 'ItemsManagementScreen',
+        action: 'deleteItem',
+        itemId: itemToDelete?.id,
+      });
       showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
     }
   };

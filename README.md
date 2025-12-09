@@ -67,7 +67,60 @@ The Construction Site Progress Tracker is a mobile application that helps constr
 - **Site Inspection**: Comprehensive safety and quality checklists with photo documentation
 - **Automated Testing** (v1.3 - NEW): 35 tests with Jest covering critical functionality
 
+## Improvement Roadmaps
+
+### 📋 Supervisor Screens Improvement Plan
+A comprehensive roadmap for improving code quality, maintainability, and user experience of Supervisor screens. See **[SUPERVISOR_IMPROVEMENTS_ROADMAP.md](./SUPERVISOR_IMPROVEMENTS_ROADMAP.md)** for detailed implementation plan.
+
+**Key Improvements Planned:**
+- Break down large files (1,258 lines → <400 lines per file)
+- Refactor state management with useReducer
+- Add error boundaries for crash protection
+- Create shared hooks to eliminate code duplication
+- Improve performance with memoization and debouncing
+- Enhance accessibility and loading states
+
+**Estimated Time:** 106-140 hours (13-18 working days) across 3 phases
+
+---
+
 ## Recent Updates
+
+### v2.13 (December 2025) - LoggingService & ErrorBoundary Implementation 🛡️
+**Phase 1 Supervisor Improvements: Tasks 1.1 & 1.2 Complete**
+
+- ✅ **LoggingService Implementation** - Centralized structured logging system
+  - Replaced all `console.log/error/warn` with structured logging in Supervisor screens
+  - Four log levels: DEBUG, INFO, WARN, ERROR with contextual metadata
+  - Production-ready with integration points for Sentry/LogRocket
+  - 100% test coverage - All 7 tests passed
+  - See [LoggingService Documentation](./docs/architecture/LOGGING_SERVICE.md)
+
+- ✅ **ErrorBoundary Integration** - Graceful error handling & crash protection
+  - All 7 Supervisor screens wrapped with ErrorBoundary components
+  - Friendly error UI with "Try Again" recovery button
+  - Error isolation - failures in one screen don't crash the app
+  - Automatic error logging to LoggingService
+  - Development mode shows detailed error information
+  - See [ErrorBoundary Documentation](./docs/architecture/ERROR_BOUNDARY.md)
+
+- ✅ **Code Quality** - Task 1.1 & 1.2 from [Supervisor Improvements Roadmap](./SUPERVISOR_IMPROVEMENTS_ROADMAP.md)
+  - Zero console statements in all Supervisor screens (9 files)
+  - Professional error tracking with full context
+  - Improved debugging and monitoring capabilities
+  - See [Testing Guide](./TESTING_PHASE_1_TASKS_1.1_1.2.md) for test results
+
+**Next:** Task 1.3 - Breaking down large files (planned)
+
+---
+
+### v2.12 (December 2025) - UI/UX Improvements & Manager Dashboard Fixes 🎨
+- ✅ Fixed Manager dashboard infinite loading spinner (circular dependency)
+- ✅ Removed duplicate headers across all roles (9 screens)
+- ✅ Removed duplicate role switcher from Admin dashboard
+- ✅ Fixed missing logout button on RFQ tab
+- ✅ Added Manager user projectId assignment in database seeding
+- ✅ Cleaned up unused imports and console.logs
 
 ### v2.11 (December 2025) - Commercial Manager Role Implementation 💰
 

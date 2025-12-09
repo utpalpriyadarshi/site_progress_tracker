@@ -30,6 +30,7 @@ import { useSnackbar } from '../components/Snackbar';
 import FileViewer from 'react-native-file-viewer';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
+import { logger } from '../services/LoggingService';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -113,7 +114,12 @@ const ReportsHistoryScreen = () => {
       setReports(reportsWithDetails);
       applyFilters(reportsWithDetails, dateFilter, searchQuery);
     } catch (error) {
-      console.error('Error loading reports:', error);
+      logger.error('Failed to load reports', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'loadReports',
+        supervisorId,
+        selectedSiteId,
+      });
       showSnackbar('Failed to load reports', 'error');
     }
   };
@@ -213,7 +219,11 @@ const ReportsHistoryScreen = () => {
         showAppsSuggestions: true
       });
     } catch (error: any) {
-      console.error('[PDF] Error viewing PDF:', error);
+      logger.error('Failed to view PDF', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleViewPdf',
+        pdfPath,
+      });
 
       // If no PDF viewer app, suggest sharing instead
       if (error.message?.includes('No app associated') || error.message?.includes('mime type')) {
@@ -239,7 +249,12 @@ const ReportsHistoryScreen = () => {
       const filename = pdfPath.split('/').pop() || 'DailyReport.pdf';
       const cachePath = `${RNFS.CachesDirectoryPath}/${filename}`;
 
-      console.log('[PDF] Copying to cache:', cachePath);
+      logger.debug('Copying PDF to cache for sharing', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        pdfPath,
+        cachePath,
+      });
       await RNFS.copyFile(pdfPath, cachePath);
 
       const shareOptions = {
@@ -250,23 +265,39 @@ const ReportsHistoryScreen = () => {
         failOnCancel: false,
       };
 
-      console.log('[PDF] Sharing from cache:', cachePath);
+      logger.debug('Sharing PDF from cache', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        cachePath,
+      });
 
       const result = await Share.open(shareOptions);
-      console.log('[PDF] Share result:', result);
+      logger.info('PDF shared successfully', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        result,
+      });
 
       // Clean up cache file after sharing
       try {
         await RNFS.unlink(cachePath);
       } catch (cleanupError) {
-        console.log('[PDF] Cache cleanup skipped:', cleanupError);
+        logger.debug('PDF cache cleanup skipped', {
+          component: 'ReportsHistoryScreen',
+          action: 'handleSharePdf',
+          cleanupError,
+        });
       }
 
       if (result.success !== false) {
         showSnackbar('Report shared successfully!', 'success');
       }
     } catch (error: any) {
-      console.error('[PDF] Error sharing PDF:', error);
+      logger.error('Failed to share PDF', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        pdfPath,
+      });
 
       // Don't show error if user just cancelled
       if (error.message && !error.message.includes('User did not share') && !error.message.includes('cancelled')) {

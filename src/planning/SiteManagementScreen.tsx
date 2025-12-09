@@ -23,6 +23,7 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
+import { logger } from '../services/LoggingService';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -174,7 +175,11 @@ const SiteManagementScreenComponent = ({
       });
       closeDialog();
     } catch (error) {
-      console.error('Error saving site:', error);
+      logger.error('Error saving site', error as Error, {
+        component: 'PlanningsSiteManagementScreen',
+        action: 'handleSave',
+        editMode: editingSite ? 'update' : 'create',
+      });
       setSnackbarMessage('Failed to save site: ' + (error as Error).message);
       setSnackbarType('error');
       setSnackbarVisible(true);
@@ -200,7 +205,12 @@ const SiteManagementScreenComponent = ({
       setDeleteDialogVisible(false);
       setSiteToDelete(null);
     } catch (error) {
-      console.error('Error deleting site:', error);
+      logger.error('Error deleting site', error as Error, {
+        component: 'PlanningSiteManagementScreen',
+        action: 'handleDelete',
+        siteId: siteToDelete?.id,
+        siteName: siteToDelete?.name,
+      });
       setSnackbarMessage('Failed to delete site: ' + (error as Error).message);
       setSnackbarType('error');
       setSnackbarVisible(true);

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SiteModel from '../../../models/SiteModel';
 import { database } from '../../../models/database';
 import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
 
 interface SiteContextType {
   selectedSiteId: string | 'all';
@@ -42,32 +43,54 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
       if (!user || !user.userId) return;
 
       try {
-        console.log('[SiteContext] Loading project for user:', user.userId);
+        logger.debug('Loading project for user', {
+          component: 'SiteContext',
+          action: 'loadSupervisorProject',
+          userId: user.userId,
+        });
 
         // Fetch user from database to get project assignment
         const userRecord = await database.collections.get('users').find(user.userId);
 
         if (userRecord) {
           const projectId = (userRecord as any).projectId;
-          console.log('[SiteContext] User projectId:', projectId);
+          logger.debug('User project ID retrieved', {
+            component: 'SiteContext',
+            action: 'loadSupervisorProject',
+            userId: user.userId,
+            projectId,
+          });
 
           if (projectId) {
             // Fetch project details
             const project = await database.collections.get('projects').find(projectId);
             const projectName = (project as any).name;
 
-            console.log('[SiteContext] Setting project:', projectName);
+            logger.info('Setting supervisor project', {
+              component: 'SiteContext',
+              action: 'loadSupervisorProject',
+              projectId,
+              projectName,
+            });
 
             // Update context state and persist to AsyncStorage
             await setProjectId(projectId);
             await setProjectName(projectName);
             await setSupervisorId(user.userId);
           } else {
-            console.log('[SiteContext] No project assigned to user');
+            logger.warn('No project assigned to user', {
+              component: 'SiteContext',
+              action: 'loadSupervisorProject',
+              userId: user.userId,
+            });
           }
         }
       } catch (error) {
-        console.error('[SiteContext] Error loading supervisor project:', error);
+        logger.error('Failed to load supervisor project', error as Error, {
+          component: 'SiteContext',
+          action: 'loadSupervisorProject',
+          userId: user?.userId,
+        });
       }
     };
 
@@ -104,7 +127,10 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
           setProjectNameState(savedProjectName);
         }
       } catch (error) {
-        console.error('Error loading saved site selection:', error);
+        logger.error('Failed to load saved site selection', error as Error, {
+          component: 'SiteContext',
+          action: 'loadSavedSelection',
+        });
       }
     };
 
@@ -117,7 +143,11 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, siteId);
     } catch (error) {
-      console.error('Error saving site selection:', error);
+      logger.error('Failed to save site selection', error as Error, {
+        component: 'SiteContext',
+        action: 'setSelectedSiteId',
+        siteId,
+      });
     }
   };
 
@@ -127,7 +157,11 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.setItem(SUPERVISOR_ID_KEY, id);
     } catch (error) {
-      console.error('Error saving supervisor ID:', error);
+      logger.error('Failed to save supervisor ID', error as Error, {
+        component: 'SiteContext',
+        action: 'setSupervisorId',
+        supervisorId: id,
+      });
     }
   };
 
@@ -137,7 +171,11 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      console.error('Error saving project ID:', error);
+      logger.error('Failed to save project ID', error as Error, {
+        component: 'SiteContext',
+        action: 'setProjectId',
+        projectId: id,
+      });
     }
   };
 
@@ -147,7 +185,11 @@ export const SiteProvider: React.FC<SiteProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      console.error('Error saving project name:', error);
+      logger.error('Failed to save project name', error as Error, {
+        component: 'SiteContext',
+        action: 'setProjectName',
+        projectName: name,
+      });
     }
   };
 
