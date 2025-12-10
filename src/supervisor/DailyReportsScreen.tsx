@@ -5,8 +5,6 @@ import {
   ScrollView,
   RefreshControl,
   Image,
-  PermissionsAndroid,
-  Platform,
 } from 'react-native';
 import {
   Card,
@@ -22,7 +20,7 @@ import {
   Text,
   Menu,
 } from 'react-native-paper';
-import { launchCamera, launchImageLibrary, ImagePickerResponse, Asset } from 'react-native-image-picker';
+import { usePhotoUpload } from '../hooks/usePhotoUpload';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
@@ -64,9 +62,23 @@ const DailyReportsScreenComponent = ({
   const [showExceedsWarning, setShowExceedsWarning] = useState(false);
   const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
   const [pendingQuantity, setPendingQuantity] = useState(0);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
   const [itemPhotoCounts, setItemPhotoCounts] = useState<{ [itemId: string]: number }>({});
+
+  // Photo upload hook
+  const {
+    photos,
+    photoMenuVisible,
+    setPhotoMenuVisible,
+    handleTakePhoto,
+    handleSelectPhotos: handleChooseFromGallery,
+    handleRemovePhoto: removePhoto,
+    setPhotos,
+  } = usePhotoUpload({
+    maxPhotos: 10,
+    quality: 0.8,
+    onPhotoAdded: (count) => showSnackbar(`${count} photo(s) added`, 'success'),
+    onError: (error) => showSnackbar(error, 'error'),
+  });
 
   // Monitor network status
   useEffect(() => {
@@ -192,92 +204,6 @@ const DailyReportsScreenComponent = ({
     const currentValue = parseFloat(quantityInput) || 0;
     const newValue = Math.max(0, currentValue + amount);
     setQuantityInput(newValue.toString());
-  };
-
-  // Request camera permission (Android)
-  const requestCameraPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: 'Camera Permission',
-            message: 'App needs camera permission to take photos',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        logger.warn('Camera permission request failed', { component: 'DailyReportsScreen', error: String(err) });
-        return false;
-      }
-    }
-    return true;
-  };
-
-  // Handle camera capture
-  const handleTakePhoto = async () => {
-    setPhotoMenuVisible(false);
-
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      showSnackbar('Camera permission is required to take photos', 'warning');
-      return;
-    }
-
-    const result = await launchCamera({
-      mediaType: 'photo',
-      quality: 0.8,
-      saveToPhotos: true,
-    });
-
-    handleImagePickerResponse(result);
-  };
-
-  // Handle gallery selection
-  const handleChooseFromGallery = async () => {
-    setPhotoMenuVisible(false);
-
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.8,
-      selectionLimit: 5, // Allow multiple photos
-    });
-
-    handleImagePickerResponse(result);
-  };
-
-  // Process image picker response
-  const handleImagePickerResponse = (response: ImagePickerResponse) => {
-    if (response.didCancel) {
-      return;
-    }
-
-    if (response.errorCode) {
-      logger.error('ImagePicker error', new Error(response.errorMessage || 'Unknown error'), {
-        component: 'DailyReportsScreen',
-        action: 'handleAddPhoto',
-        errorCode: response.errorCode,
-      });
-      showSnackbar('Failed to capture photo', 'error');
-      return;
-    }
-
-    if (response.assets) {
-      const newPhotos = response.assets
-        .filter((asset: Asset) => asset.uri)
-        .map((asset: Asset) => asset.uri as string);
-
-      setPhotos(prevPhotos => [...prevPhotos, ...newPhotos]);
-      showSnackbar(`${newPhotos.length} photo(s) added`, 'success');
-    }
-  };
-
-  // Remove a photo
-  const removePhoto = (index: number) => {
-    setPhotos(prevPhotos => prevPhotos.filter((_, i) => i !== index));
   };
 
   const handleUpdateProgress = async () => {

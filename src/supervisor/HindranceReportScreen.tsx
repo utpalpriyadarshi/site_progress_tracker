@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
   Image,
-  TouchableOpacity,
-  PermissionsAndroid,
-  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -24,9 +21,8 @@ import {
   Text,
   IconButton,
   Menu,
-  Icon,
 } from 'react-native-paper';
-import { launchCamera, launchImageLibrary, ImagePickerResponse, Asset } from 'react-native-image-picker';
+import { usePhotoUpload } from '../hooks/usePhotoUpload';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import HindranceModel from '../../models/HindranceModel';
@@ -75,8 +71,21 @@ const HindranceReportScreen = () => {
   const [status, setStatus] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>('open');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [siteItems, setSiteItems] = useState<ItemModel[]>([]);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+
+  // Photo upload hook
+  const {
+    photos,
+    photoMenuVisible,
+    setPhotoMenuVisible,
+    handleTakePhoto,
+    handleSelectPhotos: handleSelectPhoto,
+    handleRemovePhoto,
+    setPhotos,
+  } = usePhotoUpload({
+    maxPhotos: 10,
+    quality: 0.8,
+    onError: (error) => showSnackbar(error, 'error'),
+  });
 
   // Load hindrances
   const loadHindrances = async () => {
@@ -157,12 +166,14 @@ const HindranceReportScreen = () => {
 
   useEffect(() => {
     loadHindrances();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supervisorId, selectedSiteId]);
 
   useEffect(() => {
     if (selectedSiteId && selectedSiteId !== 'all') {
       loadSiteItems(selectedSiteId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSiteId]);
 
   const syncPendingHindrances = async () => {
@@ -258,98 +269,6 @@ const HindranceReportScreen = () => {
       showSnackbar('Failed to delete hindrance', 'error');
     }
   };
-
-  // Photo handling functions
-  const requestCameraPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: 'Camera Permission',
-            message: 'App needs camera permission to take photos',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          }
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        logger.warn('Camera permission request failed', {
-          component: 'HindranceReportScreen',
-          error: String(err),
-        });
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const handleTakePhoto = async () => {
-    setPhotoMenuVisible(false);
-
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      showSnackbar('Camera permission is required to take photos', 'warning');
-      return;
-    }
-
-    const result = await launchCamera({
-      mediaType: 'photo',
-      quality: 0.8,
-      saveToPhotos: true,
-    });
-
-    if (result.didCancel) {
-      return;
-    }
-
-    if (result.errorCode) {
-      showSnackbar(result.errorMessage || 'Failed to take photo', 'error');
-      return;
-    }
-
-    if (result.assets && result.assets.length > 0) {
-      const photoUri = result.assets[0].uri;
-      if (photoUri) {
-        setPhotos([...photos, photoUri]);
-      }
-    }
-  };
-
-  const handleSelectPhoto = async () => {
-    setPhotoMenuVisible(false);
-
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.8,
-      selectionLimit: 5,
-    });
-
-    if (result.didCancel) {
-      return;
-    }
-
-    if (result.errorCode) {
-      showSnackbar(result.errorMessage || 'Failed to select photo', 'error');
-      return;
-    }
-
-    if (result.assets && result.assets.length > 0) {
-      const newPhotos = result.assets
-        .map((asset) => asset.uri)
-        .filter((uri): uri is string => !!uri);
-      setPhotos([...photos, ...newPhotos]);
-    }
-  };
-
-  const handleRemovePhoto = useCallback((index: number) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos.splice(index, 1);
-      return newPhotos;
-    });
-  }, []);
 
   const handleSave = async () => {
     if (!title.trim()) {
