@@ -6,12 +6,14 @@ import { ItemWithSite, ItemPhotoCounts } from '../types';
 import { ItemCard } from './ItemCard';
 import ItemModel from '../../../../models/ItemModel';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { SkeletonList } from '../../../components/skeletons';
 
 interface ItemsListProps {
   sites: SiteModel[];
   itemsWithSites: ItemWithSite[];
   itemPhotoCounts: ItemPhotoCounts;
   refreshing: boolean;
+  loading?: boolean;
   onRefresh: () => void;
   onUpdateItem: (item: ItemModel) => void;
 }
@@ -28,6 +30,7 @@ export const ItemsList: React.FC<ItemsListProps> = ({
   itemsWithSites,
   itemPhotoCounts,
   refreshing,
+  loading = false,
   onRefresh,
   onUpdateItem,
 }) => {
@@ -37,8 +40,17 @@ export const ItemsList: React.FC<ItemsListProps> = ({
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }>
-      {/* Show empty state if no sites */}
-      {sites.length === 0 ? (
+      {/* Show skeleton while loading */}
+      {loading ? (
+        <SkeletonList
+          count={3}
+          showAvatar
+          lines={2}
+          variant="default"
+          cardStyle={styles.siteCard}
+        />
+      ) : sites.length === 0 ? (
+        /* Show empty state if no sites */
         <EmptyState
           icon="map-marker-off"
           title="No Sites Assigned"

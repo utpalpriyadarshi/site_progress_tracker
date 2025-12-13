@@ -3,6 +3,7 @@ import { ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { InspectionListProps } from '../types';
 import { InspectionCard } from './InspectionCard';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { SkeletonList } from '../../../components/skeletons';
 
 /**
  * InspectionList Component
@@ -15,6 +16,7 @@ import { EmptyState } from '../../../components/common/EmptyState';
 export const InspectionList: React.FC<InspectionListProps> = ({
   inspections,
   refreshing,
+  loading = false,
   onRefresh,
   onEdit,
   onDelete,
@@ -27,7 +29,16 @@ export const InspectionList: React.FC<InspectionListProps> = ({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {inspections.length === 0 ? (
+      {loading ? (
+        <SkeletonList
+          count={3}
+          showAvatar
+          showImage
+          lines={3}
+          showActions
+          variant="detailed"
+        />
+      ) : inspections.length === 0 ? (
         <EmptyState
           icon="clipboard-text-outline"
           title="No Inspections"

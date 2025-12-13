@@ -78,6 +78,7 @@ export interface InspectionCardProps {
 export interface InspectionListProps {
   inspections: InspectionWithSite[];
   refreshing: boolean;
+  loading?: boolean;
   onRefresh: () => void;
   onEdit: (inspectionWithSite: InspectionWithSite) => void;
   onDelete: (inspection: SiteInspectionModel) => void;
