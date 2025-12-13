@@ -11,6 +11,7 @@ import { useHindranceForm } from './hooks/useHindranceForm';
 import { HindranceList } from './components/HindranceList';
 import { HindranceForm } from './components/HindranceForm';
 import { canAddHindrance } from './utils';
+import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
 const HindranceReportScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -48,7 +49,6 @@ const HindranceReportScreen = () => {
   // Form hook
   const {
     dialogVisible,
-    setDialogVisible,
     closeDialog,
     showDeleteDialog,
     hindranceToDelete,
@@ -63,6 +63,7 @@ const HindranceReportScreen = () => {
     selectedItemId,
     setSelectedItemId,
     editingHindrance,
+    isSaving,
     handleAdd,
     handleEdit,
     handleSave,
@@ -141,6 +142,12 @@ const HindranceReportScreen = () => {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         destructive={true}
+      />
+
+      {/* Loading Overlay */}
+      <LoadingOverlay
+        visible={isSaving}
+        message={hindranceToDelete ? "Deleting hindrance..." : "Saving hindrance..."}
       />
     </View>
   );

@@ -18,6 +18,7 @@ import { useReportSync } from './hooks/useReportSync';
 import { ReportSyncStatus } from './components/ReportSyncStatus';
 import { ItemsList } from './components/ItemsList';
 import { ProgressReportForm } from './components/ProgressReportForm';
+import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
 interface DailyReportsScreenComponentProps {
   sites: SiteModel[];
@@ -216,6 +217,12 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
           setShowOfflineConfirm(false);
         }}
         destructive={false}
+      />
+
+      {/* Loading Overlay */}
+      <LoadingOverlay
+        visible={isSyncing}
+        message="Submitting progress reports..."
       />
     </View>
   );

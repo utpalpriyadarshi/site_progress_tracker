@@ -17,6 +17,7 @@ import {
   InspectionWithSite,
   InspectionFormData,
 } from './site_inspection/types';
+import { LoadingOverlay } from '../components/common/LoadingOverlay';
 
 /**
  * SiteInspectionScreen
@@ -40,6 +41,7 @@ const SiteInspectionScreen = () => {
   const [editingInspection, setEditingInspection] = useState<SiteInspectionModel | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [inspectionToDelete, setInspectionToDelete] = useState<SiteInspectionModel | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Data loading hook
   const {
@@ -95,6 +97,7 @@ const SiteInspectionScreen = () => {
     if (!inspectionToDelete) return;
 
     setShowDeleteDialog(false);
+    setIsSaving(true);
     try {
       await database.write(async () => {
         await inspectionToDelete.markAsDeleted();
@@ -109,6 +112,8 @@ const SiteInspectionScreen = () => {
         inspectionId: inspectionToDelete?.id,
       });
       showSnackbar('Failed to delete inspection', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -131,6 +136,7 @@ const SiteInspectionScreen = () => {
       return;
     }
 
+    setIsSaving(true);
     try {
       const followUpTimestamp = data.followUpRequired && data.followUpDate
         ? new Date(data.followUpDate).getTime()
@@ -184,6 +190,8 @@ const SiteInspectionScreen = () => {
         inspectionType: data.inspectionType,
       });
       showSnackbar('Failed to save inspection', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -239,6 +247,12 @@ const SiteInspectionScreen = () => {
         style={styles.fab}
         onPress={handleAdd}
         label="New Inspection"
+      />
+
+      {/* Loading Overlay */}
+      <LoadingOverlay
+        visible={isSaving}
+        message={inspectionToDelete ? "Deleting inspection..." : "Saving inspection..."}
       />
     </View>
   );

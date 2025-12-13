@@ -1,9 +1,8 @@
 import React from 'react';
 import { ScrollView, RefreshControl, StyleSheet } from 'react-native';
-import { Card, Text } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { InspectionListProps } from '../types';
 import { InspectionCard } from './InspectionCard';
+import { EmptyState } from '../../../components/common/EmptyState';
 
 /**
  * InspectionList Component
@@ -29,17 +28,11 @@ export const InspectionList: React.FC<InspectionListProps> = ({
       }
     >
       {inspections.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Card.Content>
-            <MaterialCommunityIcons
-              name="clipboard-text-outline"
-              size={64}
-              color="#ccc"
-              style={styles.emptyIcon}
-            />
-            <Text style={styles.emptyText}>{emptyMessage}</Text>
-          </Card.Content>
-        </Card>
+        <EmptyState
+          icon="clipboard-text-outline"
+          title="No Inspections"
+          message={emptyMessage}
+        />
       ) : (
         inspections.map(({ inspection, site }) => (
           <InspectionCard
@@ -58,19 +51,5 @@ export const InspectionList: React.FC<InspectionListProps> = ({
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-  },
-  emptyCard: {
-    margin: 16,
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyIcon: {
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
   },
 });

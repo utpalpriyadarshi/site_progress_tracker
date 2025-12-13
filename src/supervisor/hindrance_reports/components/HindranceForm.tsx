@@ -8,11 +8,11 @@ import {
   SegmentedButtons,
   Chip,
   Button,
-  Menu,
   IconButton,
 } from 'react-native-paper';
 import ItemModel from '../../../../models/ItemModel';
 import { HindrancePriority, HindranceStatus } from '../types';
+import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
 
 interface HindranceFormProps {
   visible: boolean;
@@ -152,23 +152,27 @@ export const HindranceForm: React.FC<HindranceFormProps> = ({
 
               {/* Photo Picker */}
               <Text style={styles.label}>Photos (Optional)</Text>
-              <Menu
+              <Button
+                mode="outlined"
+                icon="camera"
+                onPress={() => onPhotoMenuToggle(true)}
+                style={styles.input}
+              >
+                Add Photos ({photos.length})
+              </Button>
+
+              <PhotoPickerDialog
                 visible={photoMenuVisible}
                 onDismiss={() => onPhotoMenuToggle(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    icon="camera"
-                    onPress={() => onPhotoMenuToggle(true)}
-                    style={styles.input}
-                  >
-                    Add Photos ({photos.length})
-                  </Button>
-                }
-              >
-                <Menu.Item onPress={onTakePhoto} leadingIcon="camera" title="Take Photo" />
-                <Menu.Item onPress={onSelectPhoto} leadingIcon="image" title="Select from Gallery" />
-              </Menu>
+                onTakePhoto={() => {
+                  onPhotoMenuToggle(false);
+                  onTakePhoto();
+                }}
+                onChooseFromGallery={() => {
+                  onPhotoMenuToggle(false);
+                  onSelectPhoto();
+                }}
+              />
 
               {/* Photo Gallery */}
               {photos.length > 0 && (

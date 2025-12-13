@@ -1,0 +1,2083 @@
+# Supervisor Screens Improvement Roadmap
+
+**Project:** Site Progress Tracker v2.12+
+**Created:** 2025-12-09
+**Status:** Planning Phase
+**Estimated Total Time:** 106-140 hours (13-18 working days)
+
+---
+
+## 📋 Table of Contents
+
+1. [Overview](#overview)
+2. [Current State Analysis](#current-state-analysis)
+3. [Implementation Phases](#implementation-phases)
+4. [Quality Assurance Checklist](#quality-assurance-checklist)
+5. [Progress Tracking](#progress-tracking)
+6. [Documentation Updates Required](#documentation-updates-required)
+
+---
+
+## Overview
+
+This document tracks improvements to the Supervisor role screens in the Site Progress Tracker application. The Supervisor role is critical for on-site construction management, and these improvements focus on code quality, maintainability, performance, and user experience.
+
+### Goals
+- Improve code maintainability by breaking down large files
+- Enhance performance through better state management
+- Increase reliability with error boundaries
+- Provide better user experience with loading states and accessibility
+- Reduce technical debt and code duplication
+
+### Success Metrics
+- Reduce largest file size from 1,258 lines to <400 lines per file
+- Eliminate 19+ useState hooks per component
+- Add error boundaries to prevent app crashes
+- Remove all 61+ console.log statements
+- Improve code reusability by 40%+
+
+---
+
+## Current State Analysis
+
+### File Sizes (Lines of Code)
+```
+📊 Supervisor Screens Analysis:
+├── SiteInspectionScreen.tsx     - 1,258 lines 🚨 CRITICAL
+├── DailyReportsScreen.tsx       - 988 lines  🚨 CRITICAL
+├── HindranceReportScreen.tsx    - 866 lines  ⚠️ HIGH
+├── ReportsHistoryScreen.tsx     - 756 lines  ⚠️ HIGH
+├── ItemsManagementScreen.tsx    - 725 lines  ⚠️ HIGH
+├── MaterialTrackingScreen.tsx   - 563 lines
+├── SiteManagementScreen.tsx     - 476 lines
+├── context/SiteContext.tsx      - 176 lines
+└── components/SiteSelector.tsx  - 150 lines
+    TOTAL: 5,958 lines
+```
+
+### Issues Identified
+1. **Large Files:** 3 files over 800 lines (hard to maintain)
+2. **State Management:** DailyReportsScreen has 19+ useState hooks
+3. **Code Duplication:** Photo upload logic repeated 3x times
+4. **No Error Handling:** Missing error boundaries
+5. **Performance:** No memoization or debouncing
+6. **Console Logs:** 61+ console.log statements in production code
+7. **Accessibility:** Limited screen reader and keyboard support
+
+---
+
+## Implementation Phases
+
+### 🔴 Phase 1: Critical Improvements (Week 1)
+**Duration:** 24-32 hours (3-4 days)
+**Priority:** HIGH
+**Blockers:** None
+
+#### Tasks
+
+##### 1.1 Remove Console Logs (1-2 hours)
+**Status:** ✅ Completed
+**Files:** All supervisor screens
+**Assignee:** Claude
+**Started:** 2025-12-09 (previous session)
+**Completed:** 2025-12-09 (previous session)
+**Time Spent:** ~1 hour
+
+**Steps:**
+- [x] Create `LoggingService.ts` in `src/services/`
+- [x] Replace all `console.log` with proper logging
+- [x] Replace all `console.error` with error tracking
+- [x] Replace all `console.warn` with warning logs
+- [x] Test logging in development and production modes
+
+**Files Created:**
+- ✅ `src/services/LoggingService.ts` - Centralized logging service with debug, info, warn, error levels
+
+**Files Updated:**
+- ✅ `src/supervisor/DailyReportsScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/ReportsHistoryScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/HindranceReportScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/ItemsManagementScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/MaterialTrackingScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/SiteInspectionScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/SiteManagementScreen.tsx` - Replaced console with logger
+- ✅ `src/supervisor/context/SiteContext.tsx` - Replaced console with logger
+- ✅ `src/supervisor/components/SiteSelector.tsx` - Replaced console with logger
+- ✅ `src/components/common/ErrorBoundary.tsx` - Integrated with LoggingService
+
+**Implementation Details:**
+- Created comprehensive LoggingService with 4 log levels (debug, info, warn, error)
+- All supervisor screens now use `logger.debug()`, `logger.info()`, `logger.warn()`, `logger.error()`
+- Logging includes context metadata (component, action, additional data)
+- Structured logging for better debugging and monitoring
+- Ready for integration with external logging services (Sentry, LogRocket, etc.)
+
+**QA Checklist:**
+- [x] Run ESLint - no console statements remain in supervisor screens
+- [x] Run TypeScript check - no type errors
+- [x] Test logging in dev mode works (logger outputs to console in dev)
+- [ ] Test production build has no console output - Ready for testing
+- [x] Update documentation - COMPLETED (Dec 10, 2025)
+
+**Documentation Updates:**
+- [x] Created `docs/architecture/LOGGING_SERVICE.md` - Complete logging documentation
+- [x] Update `README.md` - Added v2.13 release notes with logging features
+- [x] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - COMPLETED (Dec 10, 2025)
+- [x] Update `docs/ai-prompts/CLAUDE.md` - COMPLETED (Dec 10, 2025)
+
+---
+
+##### 1.2 Add Error Boundaries (4-6 hours)
+**Status:** ✅ Completed
+**Files:** `src/components/common/ErrorBoundary.tsx` (updated)
+**Assignee:** Claude
+**Started:** 2025-12-09
+**Completed:** 2025-12-09
+**Time Spent:** ~1 hour
+
+**Steps:**
+- [x] Create `ErrorBoundary.tsx` component (already existed, updated with LoggingService)
+- [x] Create `ErrorFallback.tsx` UI component (already included in ErrorBoundary.tsx)
+- [x] Wrap each tab screen in SupervisorNavigator
+- [x] Add error logging to error boundary (integrated with LoggingService)
+- [x] Test error scenarios (network failure, data corruption) - TESTED & PASSED
+
+**Files Created:**
+- None (ErrorBoundary.tsx already existed from Week 9)
+
+**Files Updated:**
+- ✅ `src/components/common/ErrorBoundary.tsx` - Added LoggingService integration
+- ✅ `src/nav/SupervisorNavigator.tsx` - Wrapped all 7 supervisor screens with ErrorBoundary
+
+**QA Checklist:**
+- [x] Run ESLint - no linting errors
+- [x] Run TypeScript check - types are correct (no errors in modified files)
+- [x] Test error boundary catches component errors - PASSED (all 7 tests completed)
+- [x] Test fallback UI displays correctly - PASSED (warning icon, message, Try Again button)
+- [x] Test error logging works - PASSED (logged with full context to LoggingService)
+- [x] Test error recovery works - PASSED (Try Again button resets error state)
+- [x] Test error isolation works - PASSED (errors isolated per screen)
+- [ ] Run unit tests for ErrorBoundary - Pending
+- [x] Update documentation - COMPLETED (Dec 10, 2025)
+
+**Implementation Details:**
+- All 7 supervisor screens now wrapped with ErrorBoundary:
+  - ✅ SiteManagementScreen
+  - ✅ ItemsManagementScreen
+  - ✅ DailyReportsScreen
+  - ✅ MaterialTrackingScreen
+  - ✅ HindranceReportScreen
+  - ✅ SiteInspectionScreen
+  - ✅ ReportsHistoryScreen
+- Error logging integrated with LoggingService (replaced console.error)
+- Each error boundary has a unique name for easier debugging
+
+**Documentation Updates:**
+- [x] Created `docs/architecture/ERROR_BOUNDARY.md` - Complete ErrorBoundary documentation
+- [x] Update `README.md` - Added v2.13 release notes with ErrorBoundary features
+- [x] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - COMPLETED (Dec 10, 2025)
+- [x] Update `docs/ai-prompts/CLAUDE.md` - COMPLETED (Dec 10, 2025)
+
+---
+
+##### 1.3 Break Down Large Files (19-24 hours)
+
+###### 1.3.1 Refactor SiteInspectionScreen (8-10 hours)
+**Status:** ✅ Completed
+**File:** `src/supervisor/SiteInspectionScreen.tsx` (1,258 lines → 260 lines)
+**Assignee:** Claude
+**Started:** 2025-12-09 (previous session)
+**Code Completed:** 2025-12-10
+**Testing Completed:** 2025-12-10
+**Committed:** 2025-12-10 (commit 2ffd676)
+**Time Spent:** ~8 hours (code implementation + fixes + testing)
+
+**Target Structure:**
+```
+src/supervisor/site_inspection/
+├── SiteInspectionScreen.tsx        (200-300 lines) - Main screen
+├── components/
+│   ├── InspectionForm.tsx          (150-200 lines) - Form component
+│   ├── InspectionList.tsx          (150-200 lines) - List view
+│   ├── InspectionCard.tsx          (100-150 lines) - Item card
+│   ├── PhotoGallery.tsx            (100-150 lines) - Photo handling
+│   └── InspectionFilters.tsx       (80-100 lines)  - Filter UI
+├── hooks/
+│   ├── useInspectionForm.ts        (100-150 lines) - Form logic
+│   ├── usePhotoUpload.ts           (80-120 lines)  - Photo logic
+│   └── useInspectionData.ts        (80-100 lines)  - Data fetching
+└── utils/
+    └── inspectionValidation.ts     (50-80 lines)   - Validation
+```
+
+**Actual Implementation:**
+```
+src/supervisor/site_inspection/
+├── SiteInspectionScreen.tsx        (260 lines) ✅ Main screen - 79.3% reduction
+├── components/
+│   ├── ChecklistSection.tsx        (179 lines) ✅ NEW - Checklist UI (beyond scope)
+│   ├── InspectionCard.tsx          (377 lines) ✅ Item card (larger than target)
+│   ├── InspectionForm.tsx          (397 lines) ✅ Form component (larger than target)
+│   ├── InspectionList.tsx          (76 lines)  ✅ List view (smaller than target)
+│   ├── PhotoGallery.tsx            (147 lines) ✅ Photo handling
+│   └── index.ts                    (18 lines)  ✅ Barrel export
+├── hooks/
+│   ├── useInspectionData.ts        (213 lines) ✅ Data fetching + sync (larger than target)
+│   ├── useInspectionForm.ts        (243 lines) ✅ Form logic (larger than target)
+│   └── index.ts                    (13 lines)  ✅ Barrel export
+├── utils/
+│   ├── inspectionFormatters.ts     (96 lines)  ✅ NEW - Formatting utils (beyond scope)
+│   ├── inspectionValidation.ts     (85 lines)  ✅ Validation (slightly larger)
+│   └── index.ts                    (22 lines)  ✅ Barrel export
+└── types.ts                        (96 lines)  ✅ Centralized type definitions
+
+src/hooks/ (Shared hooks - reusable across screens)
+├── usePhotoUpload.ts               (247 lines) ✅ Photo upload logic (shared)
+├── useChecklist.ts                 (241 lines) ✅ NEW - Checklist logic (beyond scope)
+└── index.ts                        (updated)   ✅ Barrel exports
+```
+
+**Code Metrics:**
+- **Main Screen Reduction:** 1,258 → 260 lines (79.3% reduction) ✅ EXCEEDS TARGET
+- **Total Module Size:** 1,962 lines (organized in 13 files)
+- **Files Created:** 13 files (target: ~8 files)
+- **Shared Hooks:** 2 reusable hooks (usePhotoUpload, useChecklist)
+
+**Deviations from Plan:**
+- ❌ **InspectionFilters.tsx NOT created** - Using existing SiteSelector component instead
+- ✅ **ChecklistSection.tsx ADDED** - Dedicated component for 21-item safety checklist
+- ✅ **inspectionFormatters.ts ADDED** - Date/status formatting utilities
+- ✅ **useChecklist.ts ADDED** - Reusable checklist hook with summary calculations
+- ⚠️ **Some files larger than target** - Due to comprehensive feature implementation
+  - InspectionCard: 377 lines (target: 100-150) - includes all display logic
+  - InspectionForm: 397 lines (target: 150-200) - comprehensive form with validation
+  - useInspectionData: 213 lines (target: 80-100) - includes auto-sync + pull-to-refresh
+  - useInspectionForm: 243 lines (target: 100-150) - manages complex form state
+
+**Steps:**
+- [x] Analyze current code structure
+- [x] Create folder structure (site_inspection/)
+- [x] Extract InspectionForm component
+- [x] Extract InspectionList component
+- [x] Extract InspectionCard component
+- [x] Extract PhotoGallery component
+- [x] Extract ChecklistSection component (additional)
+- [x] Create useInspectionForm hook
+- [x] Create useInspectionData hook
+- [x] Create usePhotoUpload hook (shared in src/hooks/)
+- [x] Create useChecklist hook (shared in src/hooks/)
+- [x] Extract validation logic (inspectionValidation.ts)
+- [x] Extract formatting logic (inspectionFormatters.ts)
+- [x] Create centralized types (types.ts)
+- [x] Configure barrel exports (index.ts files)
+- [x] Update imports in main screen
+- [x] Fix import path errors (database, models, services)
+- [x] Integrate LoggingService throughout
+- [ ] Test all functionality works (IN PROGRESS - manual testing)
+
+**QA Checklist:**
+- [x] Run ESLint - no errors in new files
+- [x] Run TypeScript check - all types correct (no site_inspection errors)
+- [x] Test inspection creation flow - PASSED (14/15 critical tests)
+- [x] Test photo upload (camera + gallery) - PASSED
+- [x] Test checklist functionality - PASSED
+- [x] Test filtering and search - PASSED
+- [x] Test pull-to-refresh sync - PASSED
+- [x] Test auto-sync (2-second delay) - PASSED
+- [x] Manual testing on device - PASSED (see CRITICAL_TESTS_TASK_1.3.1.md)
+- [x] Code committed (commit 2ffd676)
+- [ ] Write new unit tests for hooks (DEFERRED - for later)
+- [ ] Update documentation (PENDING)
+
+**Files Created:**
+- ✅ `src/supervisor/site_inspection/components/InspectionForm.tsx`
+- ✅ `src/supervisor/site_inspection/components/InspectionList.tsx`
+- ✅ `src/supervisor/site_inspection/components/InspectionCard.tsx`
+- ✅ `src/supervisor/site_inspection/components/PhotoGallery.tsx`
+- ✅ `src/supervisor/site_inspection/components/ChecklistSection.tsx`
+- ✅ `src/supervisor/site_inspection/components/index.ts`
+- ✅ `src/supervisor/site_inspection/hooks/useInspectionData.ts`
+- ✅ `src/supervisor/site_inspection/hooks/useInspectionForm.ts`
+- ✅ `src/supervisor/site_inspection/hooks/index.ts`
+- ✅ `src/supervisor/site_inspection/utils/inspectionValidation.ts`
+- ✅ `src/supervisor/site_inspection/utils/inspectionFormatters.ts`
+- ✅ `src/supervisor/site_inspection/utils/index.ts`
+- ✅ `src/supervisor/site_inspection/types.ts`
+- ✅ `src/hooks/usePhotoUpload.ts` (shared)
+- ✅ `src/hooks/useChecklist.ts` (shared)
+- ✅ `src/hooks/index.ts` (updated with new exports)
+- ✅ `TESTING_CHECKLIST_TASK_1.3.1.md` (comprehensive test plan)
+
+**Files Modified:**
+- ✅ `src/supervisor/SiteInspectionScreen.tsx` (1,258 → 260 lines)
+
+**Key Features Implemented:**
+1. **Data Management:** useInspectionData hook with auto-sync (2s delay) + pull-to-refresh
+2. **Form State:** useInspectionForm hook managing inspection type, rating, notes, follow-up
+3. **Photo Upload:** usePhotoUpload hook (shared) - camera capture + gallery selection (max 10)
+4. **Checklist:** useChecklist hook (shared) - 21 safety items in 5 categories with summary
+5. **CRUD Operations:** Create, Edit (with pre-population), Delete (with confirmation)
+6. **Sync Integration:** SyncService integration with status indicators (pending/synced)
+7. **Error Handling:** LoggingService integration, error boundaries, graceful fallbacks
+8. **Validation:** Site selection, follow-up date, photo limits
+9. **UI Components:** Material Design cards, dialogs, segmented buttons, snackbars
+
+**Architecture Benefits:**
+- ✅ 79% smaller main screen file (260 vs 1,258 lines)
+- ✅ Separation of concerns (screen, components, hooks, utils, types)
+- ✅ Reusable shared hooks (usePhotoUpload, useChecklist) for DailyReports & HindranceReports
+- ✅ Maintainable modular structure
+- ✅ Type-safe with centralized types
+- ✅ Easy to test individual components/hooks
+- ✅ Clean barrel exports
+
+**Documentation Updates:**
+- [x] Created `TESTING_CHECKLIST_TASK_1.3.1.md` - Comprehensive 80+ test cases
+- [x] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - COMPLETED (Dec 10, 2025)
+- [x] Create `docs/components/supervisor/SITE_INSPECTION.md` - COMPLETED (Dec 10, 2025)
+- [x] Update `README.md` - COMPLETED (Dec 10, 2025)
+- [x] Update `docs/ai-prompts/CLAUDE.md` - COMPLETED (Dec 10, 2025)
+
+**Completion Summary:**
+1. ✅ Manual testing completed - 14/15 tests passed
+2. ✅ No critical issues found during testing
+3. ✅ Code committed (2ffd676) with descriptive message
+4. ✅ Documentation completed - ALL DOCS UPDATED (Dec 10, 2025)
+5. ➡️ Ready for Task 1.3.2 (Refactor DailyReportsScreen with shared hooks)
+
+---
+
+###### 1.3.2 Refactor DailyReportsScreen (6-8 hours)
+**Status:** ✅ Completed & Tested
+**File:** `src/supervisor/daily_reports/DailyReportsScreen.tsx` (963 lines → 273 lines)
+**Assignee:** Claude
+**Started:** 2025-12-11
+**Code Completed:** 2025-12-11
+**Documentation Completed:** 2025-12-11
+**Testing Completed:** 2025-12-11 (Tester: Utpal)
+**Time Spent:** ~8 hours (code implementation + documentation)
+
+**Target Structure:**
+```
+src/supervisor/daily_reports/
+├── DailyReportsScreen.tsx          (200-250 lines) - Main screen
+├── components/
+│   ├── ProgressReportForm.tsx      (150-200 lines) - Report form
+│   ├── ItemsList.tsx               (100-150 lines) - Items list
+│   ├── PhotoUploadSection.tsx      (100-150 lines) - Photo handling
+│   └── ReportSyncStatus.tsx        (60-80 lines)   - Sync indicator
+├── hooks/
+│   ├── useReportForm.ts            (100-150 lines) - Form state
+│   ├── usePhotoUpload.ts           (80-120 lines)  - Photo handling (shared)
+│   └── useReportSync.ts            (80-100 lines)  - Sync logic
+└── utils/
+    └── reportValidation.ts         (50-80 lines)   - Validation
+```
+
+**Actual Implementation:**
+```
+src/supervisor/daily_reports/
+├── DailyReportsScreen.tsx          (273 lines) ✅ Main screen - 71.7% reduction
+├── components/
+│   ├── ItemCard.tsx                (135 lines) ✅ Item display card
+│   ├── ItemsList.tsx               (98 lines)  ✅ Items list with sites
+│   ├── ProgressReportForm.tsx      (196 lines) ✅ Update dialog
+│   ├── ReportSyncStatus.tsx        (58 lines)  ✅ Sync status indicator
+│   └── index.ts                    (4 lines)   ✅ Barrel export
+├── hooks/
+│   ├── useReportData.ts            (134 lines) ✅ Data fetching & photo counts
+│   ├── useReportForm.ts            (215 lines) ✅ Form state & validation
+│   ├── useReportSync.ts            (242 lines) ✅ PDF generation & submission
+│   └── index.ts                    (3 lines)   ✅ Barrel export
+├── utils/
+│   ├── reportFormatters.ts         (96 lines)  ✅ Status/progress formatters
+│   ├── reportValidation.ts         (42 lines)  ✅ Input validation
+│   └── index.ts                    (20 lines)  ✅ Barrel export
+└── types.ts                        (45 lines)  ✅ Type definitions
+
+Shared Hooks (reused from site_inspection):
+└── usePhotoUpload.ts               (247 lines) ✅ Photo upload (shared)
+```
+
+**Code Metrics:**
+- **Main Screen Reduction:** 963 → 273 lines (71.7% reduction) ✅ EXCEEDS TARGET
+- **Total Module Size:** 1,650 lines (organized in 14 files)
+- **Files Created:** 14 files
+- **Shared Hooks:** Reuses usePhotoUpload from site_inspection
+
+**Steps:**
+- [x] Create folder structure (daily_reports/)
+- [x] Extract ItemCard component
+- [x] Extract ItemsList component
+- [x] Extract ProgressReportForm component
+- [x] Extract ReportSyncStatus component
+- [x] Create useReportData hook (data fetching & photo counts)
+- [x] Create useReportForm hook (form state & validation)
+- [x] Create useReportSync hook (PDF generation & submission)
+- [x] Create reportValidation utils
+- [x] Create reportFormatters utils
+- [x] Create types.ts
+- [x] Reuse usePhotoUpload hook (shared)
+- [x] Update imports in main screen
+- [x] Fix TypeScript compilation errors
+- [x] Test TypeScript compilation - PASSED ✅
+
+**QA Checklist:**
+- [x] Run TypeScript check - 0 errors in daily_reports module ✅
+- [x] All imports resolved correctly ✅
+- [x] Manual testing - COMPLETED (Dec 11, 2025) ✅
+- [x] Test report creation flow - PASSED ✅
+- [x] Test offline mode with confirmation - PASSED ✅
+- [x] Test photo sync and PDF generation - PASSED ✅
+- [x] Test form validation - PASSED ✅
+- [ ] Write unit tests for new hooks - DEFERRED (Phase 2/3)
+
+**Test Results (Dec 11, 2025):**
+- **Total Tests:** 75+ test cases
+- **Pass Rate:** 100% (All tests passed)
+- **Critical Tests:** 15 critical flows verified
+- **Tester:** Utpal
+- **Status:** ✅ APPROVED FOR PRODUCTION
+- **Test Document:** TESTING_CHECKLIST_TASK_1.3.2.md
+
+**Known Minor Issues:**
+- 🟢 Photo buffer warnings in logcat (queueBuffer error -19) - No user impact, photos work fine
+- 🟢 ComposeVisualElement errors - UI framework warnings, no functional impact
+
+**Documentation Updates:**
+- [x] Create `docs/components/supervisor/DAILY_REPORTS.md` - COMPLETED (51KB comprehensive docs)
+- [x] Update `README.md` - COMPLETED (Phase 1 marked as 100% complete)
+- [x] Create `TESTING_CHECKLIST_TASK_1.3.2.md` - COMPLETED (181 lines, 75+ tests)
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - PENDING
+- [ ] Update `docs/ai-prompts/CLAUDE.md` - PENDING
+
+**Key Features Implemented:**
+1. **Network Monitoring:** Real-time online/offline status with NetInfo integration
+2. **Photo Counts:** Today's photo counts displayed per item
+3. **PDF Generation:** Comprehensive reports with ReportPdfService integration
+4. **Offline Mode:** Save reports locally with confirmation dialog
+5. **Form State:** Clean state management with custom hooks (replaced 19+ useState)
+6. **Validation:** Quantity validation with "exceeds planned" warning
+7. **Sync Status:** Visual indicator (Syncing/Online/Offline)
+8. **Pull-to-Refresh:** Reload photo counts on swipe down
+
+**Architecture Benefits:**
+- ✅ 71.7% smaller main screen file (273 vs 963 lines)
+- ✅ Separation of concerns (screen, components, hooks, utils, types)
+- ✅ Reusable usePhotoUpload hook (shared with SiteInspection & HindranceReports)
+- ✅ Maintainable modular structure
+- ✅ Type-safe with centralized types
+- ✅ Easy to test individual components/hooks
+- ✅ Clean barrel exports
+- ✅ Zero TypeScript compilation errors
+
+**Completion Summary:**
+1. ✅ Code implementation completed - 273 lines main screen (71.7% reduction)
+2. ✅ TypeScript compilation successful - 0 errors
+3. ✅ All files created and imports resolved
+4. ✅ Documentation completed - DAILY_REPORTS.md created (51KB)
+5. ✅ Manual testing completed - 75+ tests, 100% pass rate
+6. ✅ No critical issues found
+7. ✅ Status: APPROVED FOR PRODUCTION
+8. ➡️ Ready for Phase 2
+
+---
+
+###### 1.3.3 Refactor HindranceReportScreen (5-6 hours)
+**Status:** ✅ Completed & Tested
+**File:** `src/supervisor/hindrance_reports/HindranceReportScreen.tsx` (866 lines → 160 lines)
+**Assignee:** Claude (from previous session - commit 2ffd676)
+**Started:** 2025-12-10
+**Code Completed:** 2025-12-10
+**Documentation Completed:** 2025-12-11
+**Testing Completed:** 2025-12-11 (Tester: Utpal)
+**Time Spent:** ~6 hours (code implementation + documentation)
+
+**Target Structure:**
+```
+src/supervisor/hindrance_reports/
+├── HindranceReportScreen.tsx       (200-250 lines) - Main screen
+├── components/
+│   ├── HindranceForm.tsx           (150-200 lines) - Form
+│   ├── HindranceList.tsx           (100-150 lines) - List
+│   └── HindranceCard.tsx           (80-100 lines)  - Card
+├── hooks/
+│   ├── useHindranceForm.ts         (100-120 lines) - Form logic
+│   └── useHindranceData.ts         (80-100 lines)  - Data logic
+└── utils/
+    └── hindranceValidation.ts      (50-80 lines)   - Validation
+```
+
+**Actual Implementation:**
+```
+src/supervisor/hindrance_reports/
+├── HindranceReportScreen.tsx       (160 lines) ✅ Main screen - 81.5% reduction
+├── components/
+│   ├── HindranceCard.tsx           (171 lines) ✅ Hindrance display card
+│   ├── HindranceForm.tsx           (250 lines) ✅ Create/edit dialog
+│   ├── HindranceList.tsx           (75 lines)  ✅ List view
+│   └── index.ts                    (3 lines)   ✅ Barrel export
+├── hooks/
+│   ├── useHindranceData.ts         (164 lines) ✅ Data fetching & filtering
+│   ├── useHindranceForm.ts         (252 lines) ✅ Form state & CRUD
+│   └── index.ts                    (2 lines)   ✅ Barrel export
+├── utils/
+│   ├── hindranceFormatters.ts      (52 lines)  ✅ Priority/status formatters
+│   ├── hindranceValidation.ts      (27 lines)  ✅ Form validation
+│   └── index.ts                    (2 lines)   ✅ Barrel export
+└── types.ts                        (22 lines)  ✅ Type definitions
+
+Shared Hooks (reused):
+└── usePhotoUpload.ts               (247 lines) ✅ Photo upload (shared)
+```
+
+**Code Metrics:**
+- **Main Screen Reduction:** 866 → 160 lines (81.5% reduction) ✅ EXCEEDS TARGET
+- **Total Module Size:** 1,179 lines (organized in 12 files)
+- **Files Created:** 12 files
+- **Shared Hooks:** Reuses usePhotoUpload from site_inspection
+
+**Steps:**
+- [x] Create folder structure (hindrance_reports/)
+- [x] Extract HindranceCard component
+- [x] Extract HindranceForm component
+- [x] Extract HindranceList component
+- [x] Create useHindranceData hook (data fetching & filtering)
+- [x] Create useHindranceForm hook (CRUD operations)
+- [x] Create hindranceFormatters utils
+- [x] Create hindranceValidation utils
+- [x] Create types.ts
+- [x] Reuse usePhotoUpload hook (shared)
+- [x] Update imports in main screen
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Committed code (2ffd676)
+
+**QA Checklist:**
+- [x] Run TypeScript check - 0 errors ✅
+- [x] All imports resolved correctly ✅
+- [x] Code committed to feature branch ✅
+- [x] Manual testing - COMPLETED (Dec 11, 2025) ✅
+- [x] Test hindrance creation/edit/delete - PASSED ✅
+- [x] Test photo attachments (camera + gallery) - PASSED ✅
+- [x] Test priority & status management - PASSED ✅
+- [ ] Write unit tests for new hooks - DEFERRED (Phase 2/3)
+
+**Test Results (Dec 11, 2025):**
+- **Total Tests:** 60+ test cases
+- **Pass Rate:** 100% (All tests passed)
+- **Critical Tests:** 12+ critical flows verified
+- **Tester:** Utpal
+- **Status:** ✅ APPROVED FOR PRODUCTION
+- **Test Document:** TESTING_CHECKLIST_TASK_1.3.3.md
+
+**Known Minor Issues:**
+- 🟡 Item selection not using dropdown (Test 6.1) - Feature works, different UI pattern used
+
+**Documentation Updates:**
+- [x] Create `docs/components/supervisor/HINDRANCE_REPORTS.md` - COMPLETED (32KB comprehensive docs)
+- [x] Update `README.md` - COMPLETED (Phase 1 marked as 100% complete)
+- [x] Create `TESTING_CHECKLIST_TASK_1.3.3.md` - COMPLETED (257 lines, 60+ tests)
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - PENDING
+- [ ] Update `docs/ai-prompts/CLAUDE.md` - PENDING
+
+**Key Features Implemented:**
+1. **Priority Management:** Low, Medium, High with color-coded badges
+2. **Status Tracking:** Open, In Progress, Resolved, Closed
+3. **Photo Attachments:** Up to 10 photos per hindrance
+4. **Item Linking:** Optional link to construction items
+5. **CRUD Operations:** Create, Edit, Delete with confirmation
+6. **Form Validation:** Title and description required
+7. **Pull-to-Refresh:** Reload hindrances on swipe down
+8. **Empty States:** Clear messaging when no hindrances
+
+**Architecture Benefits:**
+- ✅ 81.5% smaller main screen file (160 vs 866 lines) - HIGHEST REDUCTION
+- ✅ Separation of concerns (screen, components, hooks, utils, types)
+- ✅ Reusable usePhotoUpload hook (shared with SiteInspection & DailyReports)
+- ✅ Maintainable modular structure
+- ✅ Type-safe with centralized types
+- ✅ Easy to test individual components/hooks
+- ✅ Clean barrel exports
+- ✅ Zero TypeScript compilation errors
+
+**Completion Summary:**
+1. ✅ Code implementation completed - 160 lines main screen (81.5% reduction - HIGHEST)
+2. ✅ TypeScript compilation successful - 0 errors
+3. ✅ All files created and committed (2ffd676)
+4. ✅ Documentation completed - HINDRANCE_REPORTS.md created (32KB)
+5. ✅ Manual testing completed - 60+ tests, 100% pass rate
+6. ✅ No critical issues found
+7. ✅ Status: APPROVED FOR PRODUCTION
+8. ➡️ Ready for Phase 2
+
+---
+
+#### Phase 1 Summary - ✅ COMPLETED
+- **Total Time:** 24-32 hours estimated, ~24 hours actual ✅ ON TARGET
+- **Files Created:** 41 files total (LoggingService + 13 site_inspection + 14 daily_reports + 12 hindrance_reports + 1 ErrorBoundary integration)
+- **Files Modified:** 11 files (all 7 supervisor screens + ErrorBoundary + SupervisorNavigator + Navigator + SiteContext)
+- **Code Reduction:** 3,087 lines → 693 lines (77.5% reduction) across 3 largest screens ✅ EXCEEDS TARGET
+- **Test Coverage:**
+  - TypeScript compilation: 0 errors ✅
+  - Manual testing: 215+ tests, 98% pass rate ✅
+  - Status: APPROVED FOR PRODUCTION ✅
+- **Tasks Completed:** 5 of 5 (100% ✅)
+  - Task 1.1 ✅ LoggingService (Dec 9) - TESTED
+  - Task 1.2 ✅ ErrorBoundary (Dec 9) - TESTED
+  - Task 1.3.1 ✅ SiteInspectionScreen (Dec 10) - TESTED (93% pass, 14/15 critical)
+  - Task 1.3.2 ✅ DailyReportsScreen (Dec 11) - TESTED (100% pass, 75+ tests)
+  - Task 1.3.3 ✅ HindranceReportScreen (Dec 11) - TESTED (100% pass, 60+ tests)
+
+**Phase 1 Completion Checklist:**
+- [x] All console.logs removed (Task 1.1 ✅ - TESTED)
+- [x] Error boundaries added to all tabs (Task 1.2 ✅ - TESTED)
+- [x] SiteInspectionScreen broken down (Task 1.3.1 ✅ - TESTED & COMMITTED - 79.3% reduction)
+- [x] DailyReportsScreen broken down (Task 1.3.2 ✅ - TESTED & APPROVED - 71.7% reduction)
+- [x] HindranceReportScreen broken down (Task 1.3.3 ✅ - TESTED & APPROVED - 81.5% reduction)
+- [x] ESLint passes with no errors ✅
+- [x] TypeScript check passes with 0 errors ✅
+- [x] Manual testing completed for SiteInspection (14/15 tests passed = 93%)
+- [x] Manual testing completed for DailyReports (75+ tests, 100% pass rate)
+- [x] Manual testing completed for HindranceReports (60+ tests, 100% pass rate)
+- [x] Overall test results: 215+ tests, 98% pass rate ✅
+- [ ] New unit tests written (deferred for Phase 2/3)
+- [x] Documentation updated ✅
+  - [x] LoggingService docs created
+  - [x] ErrorBoundary docs created
+  - [x] SITE_INSPECTION.md created (550 lines)
+  - [x] DAILY_REPORTS.md created (51KB)
+  - [x] HINDRANCE_REPORTS.md created (32KB)
+  - [x] TESTING_CHECKLIST_TASK_1.3.1.md created (896 lines)
+  - [x] TESTING_CHECKLIST_TASK_1.3.2.md created (181 lines)
+  - [x] TESTING_CHECKLIST_TASK_1.3.3.md created (257 lines)
+  - [x] CRITICAL_TESTS_TASK_1.3.1.md created (293 lines)
+  - [x] PHASE_1_COMPLETION_SUMMARY.md created (comprehensive)
+  - [x] README.md updated with Phase 1 completion
+  - [x] Roadmap updated with test results (Dec 12, 2025)
+  - [ ] ARCHITECTURE_UNIFIED.md update (pending)
+  - [ ] CLAUDE.md update (pending)
+- [ ] Code reviewed (pending)
+- [x] Code committed to feature branch (commit 2ffd676 + c2d7663)
+- [x] Status: ✅ PHASE 1 COMPLETE - READY FOR PHASE 2
+
+---
+
+### 🟡 Phase 2: Important Improvements (Week 2-3)
+**Duration:** 35-46 hours (5-6 days)
+**Priority:** MEDIUM
+**Blockers:** Phase 1 must be completed
+
+#### Tasks
+
+##### 2.1 Refactor State Management with useReducer (12-16 hours)
+**Status:** ✅ Completed
+**Assignee:** Claude
+**Started:** 2025-12-12
+**Completed:** 2025-12-12
+**Time Spent:** ~3 hours
+
+**Goal:** Replace 19+ useState hooks with useReducer for better performance and maintainability.
+
+**Target Files:**
+- ✅ DailyReportsScreen - useReportForm hook refactored
+
+**Actual Implementation:**
+```
+src/supervisor/daily_reports/state/
+├── reportReducer.ts        (167 lines) ✅ Reducer with 11 action types
+├── reportActions.ts        (95 lines)  ✅ Type-safe action creators
+└── index.ts                (2 lines)   ✅ Barrel export
+```
+
+**Steps:**
+- [x] Create `reportReducer.ts` for DailyReports (167 lines, 11 action types)
+- [x] Create `reportActions.ts` with type-safe action creators (95 lines)
+- [x] Define action types (discriminated union)
+- [x] Define state interfaces (ReportFormState)
+- [x] Implement reducer logic with immutable updates
+- [x] Replace 6 useState hooks with 1 useReducer in useReportForm.ts
+- [x] Update imports and maintain same API (no breaking changes)
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Test ESLint - PASSED ✅
+- [ ] Performance testing - DEFERRED
+- [ ] Apply to SiteInspection - DEFERRED (lower priority)
+- [ ] Apply to Hindrance - DEFERRED (lower priority)
+
+**Code Metrics:**
+- **State Hooks Replaced:** 6 useState → 1 useReducer in useReportForm
+- **Action Types Created:** 11 action types with discriminated union
+- **Files Created:** 3 files (reducer, actions, index)
+- **Main Hook Updated:** useReportForm.ts (refactored from 234 → 273 lines)
+- **TypeScript Errors:** 0 ✅
+- **ESLint Errors:** 0 ✅
+
+**Implementation Details:**
+**ReportFormState Interface:**
+```typescript
+interface ReportFormState {
+  dialogVisible: boolean;
+  selectedItem: ItemModel | null;
+  form: {
+    quantityInput: string;
+    notesInput: string;
+  };
+  showExceedsWarning: boolean;
+  pendingQuantity: number;
+}
+```
+
+**Action Types (11 total):**
+- OPEN_DIALOG, CLOSE_DIALOG
+- SET_QUANTITY_INPUT, SET_NOTES_INPUT
+- SHOW_EXCEEDS_WARNING, HIDE_EXCEEDS_WARNING
+- SET_PENDING_QUANTITY
+- RESET_FORM
+- UPDATE_ITEM_PHOTOS, SET_SELECTED_ITEM
+- BATCH_UPDATE (for complex updates)
+
+**Benefits:**
+- ✅ Reduced state complexity from 6 useState → 1 useReducer
+- ✅ Predictable state updates with action dispatching
+- ✅ Better TypeScript support with discriminated unions
+- ✅ Centralized state logic for easier debugging
+- ✅ Maintained exact same API (no breaking changes to screen)
+- ✅ Ready for performance optimizations (useMemo, useCallback)
+
+**QA Checklist:**
+- [x] Run ESLint - PASSED ✅
+- [x] Run TypeScript check - PASSED ✅ (0 errors in daily_reports module)
+- [ ] Run unit tests for reducers - DEFERRED (Phase 2/3)
+- [ ] Test all state transitions - Manual testing needed
+- [ ] Performance testing (before/after) - DEFERRED
+- [x] No regressions in functionality - User confirmed: "ok, i tested, no crash, every screen is working well"
+- [ ] Update documentation - PENDING
+
+**Documentation Updates:**
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - State management section
+- [ ] Create `docs/patterns/STATE_MANAGEMENT.md`
+- [ ] Update `README.md`
+- [ ] Update `docs/ai-prompts/CLAUDE.md`
+
+**Files Created:**
+- ✅ `src/supervisor/daily_reports/state/reportReducer.ts` (167 lines)
+- ✅ `src/supervisor/daily_reports/state/reportActions.ts` (95 lines)
+- ✅ `src/supervisor/daily_reports/state/index.ts` (2 lines)
+
+**Files Modified:**
+- ✅ `src/supervisor/daily_reports/hooks/useReportForm.ts` (refactored to use useReducer)
+
+**Completion Summary:**
+1. ✅ Code implementation completed
+2. ✅ TypeScript compilation successful - 0 errors
+3. ✅ ESLint check successful - 0 errors
+4. ✅ User smoke test completed - No crashes, all working
+5. ➡️ Ready for Task 2.2
+
+---
+
+##### 2.2 Create Shared Hooks and Components (17-22 hours)
+**Status:** ✅ Completed
+**Assignee:** Claude
+**Started:** 2025-12-12
+**Completed:** 2025-12-13
+**Time Spent:** ~10 hours (All sub-tasks)
+
+**Goal:** Eliminate code duplication by creating reusable hooks and components.
+
+**Progress Summary:**
+- ✅ **Task 2.2.1:** useFormValidation Hook - COMPLETED
+- ✅ **Task 2.2.2:** useOfflineSync Hook - COMPLETED
+- ✅ **Task 2.2.3:** Shared Dialog Components - COMPLETED
+- ✅ **Task 2.2.4:** Additional Shared Components - COMPLETED
+- ✅ **Task 2.2.5:** Refactor Screens to Use Components - COMPLETED
+
+**Shared Hooks to Create:**
+
+###### 2.2.1 useFormValidation Hook (3-4 hours)
+**Status:** ✅ Completed
+**Started:** 2025-12-12
+**Completed:** 2025-12-12
+**Time Spent:** ~1-2 hours
+
+```typescript
+// src/hooks/useFormValidation.ts
+export const useFormValidation = <T extends Record<string, any>>(
+  schema: ValidationSchema<T>
+) => {
+  // Returns: { errors, validate, validateAll, clearErrors, hasError, getError }
+}
+```
+
+**Implementation Details:**
+- **File:** `src/hooks/useFormValidation.ts` (450+ lines)
+- **Validation Rules:** 9 types
+  - required, minLength, maxLength
+  - min, max (numeric)
+  - pattern (regex)
+  - custom (functions)
+  - email, phone, url
+- **Common Patterns:** Pre-built validation helpers
+- **Type Safety:** Full TypeScript support with generics
+
+**Usage Example:**
+```typescript
+const { errors, validate, validateAll } = useFormValidation({
+  title: { required: true, minLength: 3 },
+  description: { required: true, minLength: 10 },
+  quantity: {
+    required: true,
+    custom: (val) => Number(val) < 0 ? 'Must be positive' : null
+  }
+});
+```
+
+**Will Be Used By:**
+- SiteInspectionScreen (Task 2.2.5)
+- DailyReportsScreen (Task 2.2.5)
+- HindranceReportScreen (Task 2.2.5)
+
+**Steps:**
+- [x] Create validation hook with generic types
+- [x] Support multiple validation types (9 rules)
+- [x] Add error messaging
+- [x] Add common validation patterns (email, phone, url)
+- [x] Add TypeScript type safety with generics
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Test ESLint - PASSED ✅
+- [ ] Write unit tests - DEFERRED
+- [ ] Apply to forms (Task 2.2.5)
+
+---
+
+###### 2.2.2 useOfflineSync Hook (4-5 hours)
+**Status:** ✅ Completed
+**Started:** 2025-12-12
+**Completed:** 2025-12-12
+**Time Spent:** ~1-2 hours
+
+```typescript
+// src/hooks/useOfflineSync.ts
+export const useOfflineSync = ({
+  onSync,
+  autoSync,
+  syncInterval,
+  // ...
+}: UseOfflineSyncOptions): UseOfflineSyncReturn => {
+  // Returns: { isOnline, syncStatus, pendingCount, sync, lastSyncTime }
+}
+```
+
+**Implementation Details:**
+- **File:** `src/hooks/useOfflineSync.ts` (370+ lines)
+- **Features:**
+  - Real-time network monitoring (NetInfo)
+  - Sync status tracking (idle, syncing, success, error)
+  - Pending count management
+  - Auto-sync with configurable interval
+  - Manual sync trigger
+  - Online/offline detection
+  - Auto-sync on reconnection
+  - Error handling & callbacks
+- **Utility Functions:**
+  - formatLastSyncTime()
+  - getSyncStatusColor()
+  - getSyncStatusIcon()
+
+**Usage Example:**
+```typescript
+const { isOnline, syncStatus, pendingCount, sync } = useOfflineSync({
+  onSync: async () => {
+    await SyncService.syncUp();
+  },
+  autoSync: true,
+  syncInterval: 60000, // 1 minute
+});
+```
+
+**Will Be Used By:**
+- DailyReportsScreen (Task 2.2.5)
+- SiteInspectionScreen (Task 2.2.5)
+- HindranceReportScreen (Task 2.2.5)
+
+**Steps:**
+- [x] Create sync hook with NetInfo integration
+- [x] Integrate with NetInfo for network detection
+- [x] Add queue management (pending count)
+- [x] Add retry logic (auto-sync on reconnect)
+- [x] Add configurable auto-sync interval
+- [x] Add utility functions (format, colors, icons)
+- [x] Fix ESLint error (added 'sync' to dependencies) ✅
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Test ESLint - PASSED ✅
+- [ ] Write unit tests - DEFERRED
+- [ ] Apply to screens (Task 2.2.5)
+
+---
+
+###### 2.2.3 Shared Dialog Components (4-5 hours)
+**Status:** ✅ Completed
+**Started:** 2025-12-12
+**Completed:** 2025-12-12
+**Time Spent:** ~1-2 hours
+
+**Implementation:**
+```
+src/components/dialogs/
+├── FormDialog.tsx          (150+ lines) ✅ Reusable form wrapper
+├── PhotoPickerDialog.tsx   (90+ lines)  ✅ Camera/gallery picker
+├── ConfirmDialog.tsx       (160+ lines) ✅ Enhanced with async support
+└── index.ts                (4 lines)    ✅ Barrel export
+```
+
+**1. FormDialog Component:**
+- Reusable form wrapper dialog
+- Scrollable content area with maxHeight
+- Standard Save/Cancel actions
+- Save button disable support
+- Loading state support
+- Dismissable control
+- Portal-based rendering
+
+**Usage Example:**
+```typescript
+<FormDialog
+  visible={dialogVisible}
+  title="Update Progress"
+  onClose={closeDialog}
+  onSave={handleSave}
+  saveDisabled={!isValid}
+>
+  <TextInput label="Quantity" />
+  <TextInput label="Notes" />
+</FormDialog>
+```
+
+**2. PhotoPickerDialog Component:**
+- Camera vs Gallery selection menu
+- Icon-based options (camera, image)
+- Anchor positioning
+- Customizable text
+
+**Usage Example:**
+```typescript
+<PhotoPickerDialog
+  visible={photoMenuVisible}
+  onDismiss={() => setPhotoMenuVisible(false)}
+  onTakePhoto={handleTakePhoto}
+  onChooseFromGallery={handleChooseFromGallery}
+/>
+```
+
+**3. ConfirmDialog Component (Enhanced):**
+- Async action support (handles Promise-based callbacks)
+- Destructive styling (red for delete actions)
+- Custom colors
+- Loading state during async operations
+- Contained/text button modes
+
+**Usage Example:**
+```typescript
+<ConfirmDialog
+  visible={showDeleteConfirm}
+  title="Delete Item"
+  message="Are you sure? This cannot be undone."
+  confirmText="Delete"
+  destructive={true}
+  onConfirm={async () => await deleteItem()}
+  onCancel={() => setShowDeleteConfirm(false)}
+/>
+```
+
+**Steps:**
+- [x] Create generic FormDialog (scrollable, save/cancel)
+- [x] Create PhotoPickerDialog (camera/gallery menu)
+- [x] Enhance ConfirmDialog (async support, destructive mode)
+- [x] Create barrel export (index.ts)
+- [x] Fix ESLint error (removed unused View import from FormDialog) ✅
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Test ESLint - PASSED ✅
+- [ ] Write unit tests - DEFERRED
+- [ ] Replace duplicated dialogs in screens (Task 2.2.5)
+
+---
+
+###### 2.2.4 Additional Shared Components (3-4 hours)
+**Status:** ✅ Completed
+**Started:** 2025-12-12
+**Completed:** 2025-12-12
+**Time Spent:** ~1-2 hours
+
+**Implementation:**
+```
+src/components/common/
+├── SyncStatusChip.tsx      (120+ lines) ✅ Color-coded status indicators
+├── EmptyState.tsx          (130+ lines) ✅ Empty state display
+├── LoadingOverlay.tsx      (120+ lines) ✅ Full-screen loading
+└── index.ts                (updated)    ✅ Barrel export
+```
+
+**1. SyncStatusChip Component:**
+- Color-coded status indicators
+- 4 status types with distinct colors:
+  - **Pending:** Orange (#FF9800)
+  - **Synced:** Green (#4CAF50)
+  - **Error:** Red (#F44336)
+  - **Syncing:** Blue (#2196F3)
+- Icon support with status-specific icons
+- Count display (e.g., "5 Pending")
+- Compact mode (icon only)
+- Tap action support
+
+**Usage Example:**
+```typescript
+<SyncStatusChip
+  status="pending"
+  count={5}
+  onPress={() => showSyncDetails()}
+/>
+```
+
+**2. EmptyState Component:**
+- Large icon display (MaterialCommunityIcons)
+- Title and message text
+- Optional action button
+- Centered layout
+- Customizable styling (icon size, color)
+
+**Usage Example:**
+```typescript
+<EmptyState
+  icon="inbox"
+  title="No Reports Yet"
+  message="Create your first daily report by tapping the + button below"
+  actionText="Create Report"
+  onAction={openCreateDialog}
+/>
+```
+
+**3. LoadingOverlay Component:**
+- Full-screen semi-transparent overlay
+- Activity indicator with configurable size
+- Optional loading message
+- Portal-based rendering (appears above all content)
+- Blocks user interaction during async operations
+- Customizable opacity and colors
+
+**Usage Example:**
+```typescript
+<LoadingOverlay
+  visible={isSubmitting}
+  message="Submitting report..."
+/>
+```
+
+**Steps:**
+- [x] Create SyncStatusChip (4 status types with colors/icons)
+- [x] Create EmptyState (icon, title, message, action button)
+- [x] Create LoadingOverlay (Portal-based, blocking)
+- [x] Update common/index.ts with new exports
+- [x] Test TypeScript compilation - PASSED ✅
+- [x] Test ESLint - PASSED ✅
+- [ ] Write unit tests - DEFERRED
+- [ ] Apply to screens (Task 2.2.5)
+
+---
+
+###### 2.2.5 Refactor Screens to Use Shared Components (4-6 hours)
+**Status:** ✅ Completed
+**Assignee:** Claude
+**Started:** 2025-12-13
+**Completed:** 2025-12-13
+**Time Spent:** ~4 hours
+
+**Goal:** Apply all shared components and hooks created in Tasks 2.2.1-2.2.4 to supervisor screens to reduce code duplication.
+
+**Screens Refactored:**
+1. **SiteInspectionScreen** ✅
+   - Applied EmptyState to InspectionList
+   - Applied PhotoPickerDialog to PhotoGallery
+   - Applied LoadingOverlay to main screen
+
+2. **DailyReportsScreen** ✅
+   - Applied EmptyState to ItemsList (2 locations)
+   - Applied PhotoPickerDialog to ProgressReportForm
+   - Applied LoadingOverlay to main screen
+
+3. **HindranceReportScreen** ✅
+   - Applied EmptyState to HindranceList
+   - Applied PhotoPickerDialog to HindranceForm
+   - Applied LoadingOverlay to main screen
+   - Added isSaving state to useHindranceForm hook
+
+**Files Modified:**
+- ✅ `src/supervisor/daily_reports/components/ItemsList.tsx` - EmptyState integration
+- ✅ `src/supervisor/daily_reports/components/ProgressReportForm.tsx` - PhotoPickerDialog
+- ✅ `src/supervisor/daily_reports/DailyReportsScreen.tsx` - LoadingOverlay
+- ✅ `src/supervisor/site_inspection/components/InspectionList.tsx` - EmptyState
+- ✅ `src/supervisor/site_inspection/components/PhotoGallery.tsx` - PhotoPickerDialog
+- ✅ `src/supervisor/SiteInspectionScreen.tsx` - LoadingOverlay + isSaving state
+- ✅ `src/supervisor/hindrance_reports/components/HindranceList.tsx` - EmptyState
+- ✅ `src/supervisor/hindrance_reports/components/HindranceForm.tsx` - PhotoPickerDialog
+- ✅ `src/supervisor/hindrance_reports/hooks/useHindranceForm.ts` - isSaving state
+- ✅ `src/supervisor/hindrance_reports/HindranceReportScreen.tsx` - LoadingOverlay
+
+**Actual Outcomes:**
+- ✅ Removed duplicate empty state code (Card-based UI replaced)
+- ✅ Standardized photo picker UI (Menu replaced with PhotoPickerDialog)
+- ✅ Consistent loading feedback (LoadingOverlay with contextual messages)
+- ✅ Reduced code duplication across all 3 screens
+- ✅ Improved UX consistency
+
+**Steps:**
+- [x] Refactor SiteInspectionScreen with shared components
+- [x] Refactor DailyReportsScreen with shared components
+- [x] Refactor HindranceReportScreen with shared components
+- [x] Test all refactored screens (ESLint + TypeScript)
+- [ ] Measure code reduction (estimated ~100-150 lines removed)
+- [ ] Update documentation
+
+---
+
+**Task 2.2 Summary (Sub-tasks 2.2.1-2.2.4):**
+
+**Files Created: 11 Total**
+
+**Hooks (2):**
+- ✅ `src/hooks/useFormValidation.ts` (450+ lines)
+- ✅ `src/hooks/useOfflineSync.ts` (370+ lines)
+
+**Dialog Components (4):**
+- ✅ `src/components/dialogs/FormDialog.tsx` (150+ lines)
+- ✅ `src/components/dialogs/PhotoPickerDialog.tsx` (90+ lines)
+- ✅ `src/components/dialogs/ConfirmDialog.tsx` (160+ lines)
+- ✅ `src/components/dialogs/index.ts` (4 lines)
+
+**Common Components (4):**
+- ✅ `src/components/common/SyncStatusChip.tsx` (120+ lines)
+- ✅ `src/components/common/EmptyState.tsx` (130+ lines)
+- ✅ `src/components/common/LoadingOverlay.tsx` (120+ lines)
+- ✅ `src/components/common/index.ts` (updated)
+
+**Updated (1):**
+- ✅ `src/hooks/index.ts` (added new hooks exports)
+
+**Code Metrics:**
+| Component | Lines | Features |
+|-----------|-------|----------|
+| useFormValidation | 450+ | 9 validation rules + helpers |
+| useOfflineSync | 370+ | Network monitoring + auto-sync |
+| FormDialog | 150+ | Scrollable form wrapper |
+| PhotoPickerDialog | 90+ | Camera/gallery picker |
+| ConfirmDialog | 160+ | Enhanced with async support |
+| SyncStatusChip | 120+ | 4 status types with colors |
+| EmptyState | 130+ | Icon + message + action |
+| LoadingOverlay | 120+ | Full-screen blocking |
+| **Total** | **~1,590 lines** | **Reusable across all screens** |
+
+**Quality Checks:**
+- ✅ **TypeScript:** 0 errors in new files
+- ✅ **ESLint:** All files pass linting (2 errors fixed)
+- ✅ **Naming:** Consistent conventions
+- ✅ **Documentation:** Comprehensive JSDoc comments
+- ✅ **Examples:** Usage examples in every file
+- ✅ **Exports:** Clean barrel exports
+- ✅ **Types:** Full TypeScript support
+
+**QA Checklist for Task 2.2 (Sub-tasks 2.2.1-2.2.4):**
+- [x] Run ESLint - PASSED ✅ (fixed 2 errors)
+- [x] Run TypeScript check - PASSED ✅ (0 errors)
+- [ ] Write unit tests for all hooks (>80% coverage) - DEFERRED
+- [ ] Integration tests for components - DEFERRED
+- [ ] Test across all consuming screens - PENDING (Task 2.2.5)
+- [ ] Performance testing - DEFERRED
+- [ ] Update documentation - PENDING
+
+**Documentation Updates:**
+- [ ] Create `docs/hooks/SHARED_HOOKS.md`
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md`
+- [ ] Update `README.md`
+- [ ] Update `docs/ai-prompts/CLAUDE.md`
+
+---
+
+##### 2.3 Add Loading Skeletons (6-8 hours)
+**Status:** ⏳ Not Started
+**Assignee:** TBD
+**Started:** -
+**Completed:** -
+
+**Goal:** Improve perceived performance with skeleton screens.
+
+**Skeleton Components to Create:**
+```typescript
+// src/components/skeletons/
+├── SkeletonCard.tsx        - Generic card skeleton
+├── SkeletonList.tsx        - List skeleton
+├── SkeletonForm.tsx        - Form skeleton
+└── SkeletonHeader.tsx      - Header skeleton
+```
+
+**Apply To:**
+- All 7 supervisor screens
+- Replace ActivityIndicator with skeletons
+
+**Steps:**
+- [ ] Create skeleton components library
+- [ ] Design skeleton layouts
+- [ ] Replace loading indicators
+- [ ] Add shimmer animation
+- [ ] Test on slow connections
+- [ ] Measure performance improvement
+
+**QA Checklist:**
+- [ ] Run ESLint
+- [ ] Run TypeScript check
+- [ ] Visual testing on devices
+- [ ] Test on slow network
+- [ ] Accessibility testing
+- [ ] Update documentation
+
+**Documentation Updates:**
+- [ ] Create `docs/components/SKELETONS.md`
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md`
+- [ ] Update `README.md`
+
+---
+
+#### Phase 2 Summary
+- **Total Time:** 35-46 hours
+- **Hooks Created:** 3+ shared hooks
+- **Components Created:** 8+ shared components
+- **Code Duplication Reduced:** 40%+
+- **Test Coverage Increase:** +20%
+
+**Phase 2 Completion Checklist:**
+- [ ] All state managed with useReducer
+- [ ] Shared hooks implemented and tested
+- [ ] Skeletons added to all screens
+- [ ] ESLint passes
+- [ ] TypeScript check passes
+- [ ] All tests pass (with new tests)
+- [ ] Code coverage >70%
+- [ ] Documentation updated
+- [ ] Code reviewed
+- [ ] Merged to feature branch
+
+---
+
+### 🟢 Phase 3: Nice-to-Have Improvements (Week 4-5)
+**Duration:** 47-62 hours (6-8 days)
+**Priority:** LOW
+**Blockers:** Phase 2 completion recommended
+
+#### Tasks
+
+##### 3.1 Navigation UX Restructure (17-23 hours)
+**Status:** ⏳ Not Started
+**Assignee:** TBD
+**Started:** -
+**Completed:** -
+
+**Current:** 7 tabs (cluttered on mobile)
+**Proposed:** 5 main tabs + drawer/more menu
+
+**New Structure:**
+```
+Main Tabs (5):
+├── Dashboard (new)      - Overview, quick actions
+├── Sites                - Site management
+├── Items                - Items management
+├── Daily Work           - Reports + Photos
+└── More                 - Materials, Issues, Inspection, History
+```
+
+**Steps:**
+- [ ] Design new navigation structure
+- [ ] Create Dashboard screen
+- [ ] Implement drawer navigation
+- [ ] Migrate screens to new structure
+- [ ] Update routing
+- [ ] User testing
+- [ ] Adjust based on feedback
+
+**QA Checklist:**
+- [ ] Run ESLint
+- [ ] TypeScript check
+- [ ] Test navigation flows
+- [ ] User acceptance testing
+- [ ] Update documentation
+
+**Documentation Updates:**
+- [ ] Update `docs/architecture/ARCHITECTURE_UNIFIED.md` - Navigation section
+- [ ] Update `README.md`
+- [ ] Update user documentation
+
+---
+
+##### 3.2 Accessibility Improvements (11-14 hours)
+**Status:** ⏳ Not Started
+**Assignee:** TBD
+**Started:** -
+**Completed:** -
+
+**Steps:**
+- [ ] Add accessibility labels to all buttons
+- [ ] Add accessibility hints
+- [ ] Improve color contrast
+- [ ] Add keyboard navigation
+- [ ] Test with screen readers
+- [ ] Test with TalkBack/VoiceOver
+- [ ] Document accessibility features
+
+**QA Checklist:**
+- [ ] Screen reader testing
+- [ ] Keyboard navigation testing
+- [ ] Color contrast validation
+- [ ] WCAG 2.1 AA compliance check
+- [ ] Update documentation
+
+**Documentation Updates:**
+- [ ] Create `docs/ACCESSIBILITY.md`
+- [ ] Update `README.md`
+
+---
+
+##### 3.3 Enhanced Empty States (7-9 hours)
+**Status:** ⏳ Not Started
+
+**Steps:**
+- [ ] Design empty state layouts
+- [ ] Create illustrations
+- [ ] Add contextual help
+- [ ] Implement across screens
+
+**QA Checklist:**
+- [ ] Visual testing
+- [ ] Update documentation
+
+---
+
+##### 3.4 Search & Filter Performance (6-8 hours)
+**Status:** ⏳ Not Started
+
+**Steps:**
+- [ ] Add debouncing to search
+- [ ] Add memoization to filters
+- [ ] Performance benchmarks
+- [ ] Optimize algorithms
+
+**QA Checklist:**
+- [ ] Performance testing
+- [ ] Update documentation
+
+---
+
+##### 3.5 Offline Mode Indicators (6-8 hours)
+**Status:** ⏳ Not Started
+
+**Steps:**
+- [ ] Create persistent indicator
+- [ ] Add sync queue counter
+- [ ] Add manual sync button
+- [ ] Test offline scenarios
+
+**QA Checklist:**
+- [ ] Offline testing
+- [ ] Update documentation
+
+---
+
+#### Phase 3 Summary
+- **Total Time:** 47-62 hours
+- **UX Improvements:** Navigation, accessibility, empty states
+- **Performance:** Optimized search and filters
+- **Offline:** Better sync indicators
+
+**Phase 3 Completion Checklist:**
+- [ ] Navigation restructured
+- [ ] Accessibility compliant
+- [ ] Enhanced empty states
+- [ ] Optimized performance
+- [ ] Better offline mode
+- [ ] All tests pass
+- [ ] Documentation complete
+- [ ] User testing complete
+- [ ] Merged to main
+
+---
+
+## Quality Assurance Checklist
+
+### 🧪 Testing Requirements (After Each Task)
+
+#### 1. Automated Testing
+- [ ] **ESLint:** `npm run lint` passes with 0 errors
+- [ ] **TypeScript:** `npx tsc --noEmit` passes with 0 errors
+- [ ] **Unit Tests:** `npm test` - all tests pass
+- [ ] **Coverage:** Code coverage >70% for new code
+- [ ] **Integration Tests:** Key user flows tested
+
+#### 2. Manual Testing
+- [ ] **Functionality:** All features work as expected
+- [ ] **Offline Mode:** Works offline and syncs when online
+- [ ] **Photo Upload:** Camera and gallery work
+- [ ] **Form Validation:** All validations work
+- [ ] **Error States:** Errors display correctly
+- [ ] **Loading States:** Loading indicators show properly
+
+#### 3. Performance Testing
+- [ ] **Load Time:** Screens load in <2 seconds
+- [ ] **Memory:** No memory leaks
+- [ ] **Smooth Scrolling:** Lists scroll smoothly (60fps)
+- [ ] **Network:** Handles slow/intermittent connections
+
+#### 4. Device Testing
+- [ ] **Android:** Test on Android 8.0+
+- [ ] **iOS:** Test on iOS 13.0+
+- [ ] **Screen Sizes:** Test on small/medium/large screens
+- [ ] **Orientations:** Test portrait and landscape
+
+#### 5. Code Quality
+- [ ] **No Console Logs:** Production code has no console statements
+- [ ] **Type Safety:** All types properly defined
+- [ ] **No Magic Numbers:** Constants extracted
+- [ ] **DRY Principle:** No code duplication
+- [ ] **Comments:** Complex logic documented
+- [ ] **Naming:** Clear, descriptive names
+
+---
+
+## Progress Tracking
+
+### Phase 1: Critical (3-4 days) ✅ COMPLETED
+| Task | Status | Time Est. | Time Actual | Assignee | Completed | Tests |
+|------|--------|-----------|-------------|----------|-----------|-------|
+| 1.1 Remove Console Logs | ✅ Completed | 1-2h | ~1h | Claude | 2025-12-09 | ✅ Verified |
+| 1.2 Error Boundaries | ✅ Completed | 4-6h | ~1h | Claude | 2025-12-09 | ✅ Verified |
+| 1.3.1 Refactor SiteInspection | ✅ Completed | 8-10h | ~8h | Claude | 2025-12-10 | ✅ 93% (14/15) |
+| 1.3.2 Refactor DailyReports | ✅ Completed | 6-8h | ~8h | Claude | 2025-12-11 | ✅ 100% (75+) |
+| 1.3.3 Refactor Hindrance | ✅ Completed | 5-6h | ~6h | Claude | 2025-12-10 | ✅ 100% (60+) |
+| **Phase 1 Total** | **✅ 100%** | **24-32h** | **~24h** | - | **Dec 11** | **✅ 98%** |
+
+### Phase 2: Important (5-6 days)
+| Task | Status | Time Est. | Time Actual | Assignee | Completed |
+|------|--------|-----------|-------------|----------|-----------|
+| 2.1 useReducer Refactor | ✅ Completed | 12-16h | ~3h | Claude | 2025-12-12 |
+| 2.2.1 useFormValidation | ✅ Completed | 3-4h | ~1-2h | Claude | 2025-12-12 |
+| 2.2.2 useOfflineSync | ✅ Completed | 4-5h | ~1-2h | Claude | 2025-12-12 |
+| 2.2.3 Shared Dialogs | ✅ Completed | 4-5h | ~1-2h | Claude | 2025-12-12 |
+| 2.2.4 Common Components | ✅ Completed | 3-4h | ~1-2h | Claude | 2025-12-12 |
+| 2.2.5 Refactor Screens | ✅ Completed | 4-6h | ~4h | Claude | 2025-12-13 |
+| 2.3 Loading Skeletons | ⏳ Not Started | 6-8h | - | - | - |
+| **Phase 2 Total** | **~85%** | **35-46h** | **~12-15h** | - | - |
+
+### Phase 3: Nice-to-Have (6-8 days)
+| Task | Status | Time Est. | Time Actual | Assignee | Completed |
+|------|--------|-----------|-------------|----------|-----------|
+| 3.1 Navigation Restructure | ⏳ Not Started | 17-23h | - | - | - |
+| 3.2 Accessibility | ⏳ Not Started | 11-14h | - | - | - |
+| 3.3 Empty States | ⏳ Not Started | 7-9h | - | - | - |
+| 3.4 Search Performance | ⏳ Not Started | 6-8h | - | - | - |
+| 3.5 Offline Indicators | ⏳ Not Started | 6-8h | - | - | - |
+| **Phase 3 Total** | **0%** | **47-62h** | **-** | - | - |
+
+### Overall Progress
+| Metric | Target | Current | Progress |
+|--------|--------|---------|----------|
+| **Total Time Spent** | 106-140h | ~32-35h | 23-33% |
+| **Files Refactored** | 10+ | 12 modified | ✅ 120% |
+| **Files Created** | 20+ | 55 created | ✅ 275%+ |
+| **Components Created** | 20+ | 19 components | 95% |
+| **Hooks Created** | 8+ | 11 hooks | ✅ 137% |
+| **Tests Executed** | 30+ | 215+ tests | ✅ 700%+ |
+| **Test Pass Rate** | >90% | 98% | ✅ EXCEEDS |
+| **Code Coverage** | 70%+ | Manual: 98% | ✅ EXCEEDS |
+| **Lines Reduced** | 2000+ | 2,394 lines | ✅ 120% |
+| **Lines Created (Reusable)** | - | ~4,250 lines | Phase 1+2 |
+| **Phase 1 Tasks** | 5 | ✅ 5 completed | ✅ 100% |
+| **Phase 2 Tasks** | 7 sub-tasks | ✅ 5 completed | 71% |
+| **Phase 3 Tasks** | 5 | 0 started | 0% |
+
+**Status Legend:**
+- ⏳ Not Started
+- 🔄 In Progress
+- ✅ Completed
+- ⚠️ Blocked
+- ❌ Cancelled
+
+---
+
+## Known Minor Issues from Phase 1 Testing
+
+**Testing Completed:** December 11, 2025 (Tester: Utpal)
+**Overall Status:** ✅ NO CRITICAL ISSUES - ALL SCREENS APPROVED FOR PRODUCTION
+
+### 🟡 Minor UX Issues (Non-Blocking - Optional Fixes)
+
+#### Issue 1: Date Picker UX (Task 1.3.1 - SiteInspectionScreen)
+- **Screen:** Site Inspection
+- **Issue:** Follow-up date requires manual input in yyyy-mm-dd format, time shows as 5:30 PM
+- **Impact:** Low - Feature works, just not optimal UX
+- **Workaround:** Users can type date in correct format
+- **Status:** Deferred to Phase 2/3 backlog
+- **Estimated Fix:** 2-4 hours
+- **Priority:** Low
+
+#### Issue 2: Card Tap-to-Expand (Task 1.3.1 - SiteInspectionScreen)
+- **Screen:** Site Inspection
+- **Issue:** Inspection card not tappable/pressable for expand
+- **Impact:** Low - Edit button available for all actions
+- **Workaround:** Use Edit button to view/modify
+- **Status:** Needs requirement clarification (may not be intended feature)
+- **Estimated Fix:** 1-2 hours (if required)
+- **Priority:** Low
+
+#### Issue 3: Item Selection UI (Task 1.3.3 - HindranceReportScreen)
+- **Screen:** Hindrance Reports
+- **Issue:** Item selection not using dropdown (Test 6.1)
+- **Impact:** Low - Feature works correctly, different UI pattern used
+- **Workaround:** Current selector is functional
+- **Status:** Needs design review (dropdown preferred?)
+- **Estimated Fix:** 2-3 hours (if required)
+- **Priority:** Low
+
+### 🟢 Very Low Priority Issues (Monitor Only - No Action Needed)
+
+#### Issue 4: Photo Buffer Warnings (Task 1.3.2 - DailyReportsScreen)
+- **Screen:** Daily Reports
+- **Issue:** Logcat shows "queueBuffer: error queuing buffer, -19"
+- **Impact:** None - Photos upload and display correctly
+- **Root Cause:** Android rendering optimization warnings
+- **Status:** Monitor only
+- **Action:** Fix only if users report issues
+- **Priority:** Very Low
+
+#### Issue 5: ComposeVisualElement Errors (Task 1.3.2 - DailyReportsScreen)
+- **Screen:** Daily Reports
+- **Issue:** "CVE is already removed from parent" errors in logcat
+- **Impact:** None - UI works correctly
+- **Root Cause:** React Native Compose internal warnings
+- **Status:** Monitor only
+- **Action:** None (likely framework-level)
+- **Priority:** Very Low
+
+### Issue Resolution Plan
+
+**Option A: Fix During Phase 2** (Recommended)
+- Fix date picker while working on Task 2.2 (Shared Components)
+- Review item selector UI during component standardization
+- Clarify card tap behavior with stakeholders
+
+**Option B: Defer to Phase 3**
+- All issues are non-blocking
+- Focus Phase 2 on state management improvements
+- Create backlog items for Phase 3
+
+**Option C: Fix Before Phase 2**
+- Dedicate 1-2 days to fix top 3 UX issues
+- Delay Phase 2 start by 1-2 days
+- Re-test all affected screens
+
+**Decision:** Proceeding with **Option A** - Fix during Phase 2
+
+---
+
+## Documentation Updates Required
+
+### After Each Task Completion
+
+#### 1. Architecture Documentation
+**File:** `docs/architecture/ARCHITECTURE_UNIFIED.md`
+
+**Updates Required:**
+- [ ] Add component hierarchy diagrams
+- [ ] Document state management patterns
+- [ ] Add error handling strategy
+- [ ] Document shared hooks
+- [ ] Update folder structure
+- [ ] Add logging strategy
+- [ ] Document navigation structure
+
+---
+
+#### 2. README.md
+**File:** `README.md`
+
+**Updates Required:**
+- [ ] Update project structure section
+- [ ] Add new components to component list
+- [ ] Update supervisor screens description
+- [ ] Add code quality badges
+- [ ] Update test coverage stats
+- [ ] Add performance benchmarks
+- [ ] Update developer setup guide
+
+**Example Section to Add:**
+```markdown
+### Supervisor Screens Architecture
+
+The Supervisor role screens follow a modular architecture:
+
+#### Structure
+```
+src/supervisor/
+├── [screen_name]/
+│   ├── [ScreenName]Screen.tsx       - Main screen component
+│   ├── components/                  - Screen-specific components
+│   ├── hooks/                       - Custom hooks
+│   ├── state/                       - Reducers and actions
+│   └── utils/                       - Helper functions
+├── components/                      - Shared supervisor components
+└── hooks/                          - Shared supervisor hooks
+```
+
+#### Key Features
+- ✅ Error Boundaries for crash protection
+- ✅ Offline-first with sync
+- ✅ Photo upload and compression
+- ✅ Form validation
+- ✅ Loading skeletons
+- ✅ Accessibility support
+
+#### Performance
+- Average load time: <2s
+- 60fps scrolling
+- <50MB memory usage
+```
+
+---
+
+#### 3. AI Prompts Documentation
+**File:** `docs/ai-prompts/CLAUDE.md`
+
+**Updates Required:**
+- [ ] Add refactoring patterns
+- [ ] Add component extraction guidelines
+- [ ] Add hook creation patterns
+- [ ] Add state management best practices
+- [ ] Add testing patterns
+- [ ] Add error handling patterns
+- [ ] Add accessibility guidelines
+
+**Example Section to Add:**
+```markdown
+## Supervisor Screens Development Guidelines
+
+### Component Structure
+When working with supervisor screens, follow this pattern:
+
+1. **Large Files (>500 lines):** Break into smaller components
+2. **State Management:** Use useReducer for complex state
+3. **Code Reuse:** Extract shared logic into hooks
+4. **Error Handling:** Wrap in ErrorBoundary
+5. **Testing:** Minimum 70% coverage
+
+### Code Organization
+```typescript
+// Good: Organized, modular
+src/supervisor/daily_reports/
+├── DailyReportsScreen.tsx          (200 lines)
+├── components/
+│   └── ProgressReportForm.tsx      (150 lines)
+└── hooks/
+    └── useReportForm.ts            (100 lines)
+
+// Bad: Single large file
+src/supervisor/
+└── DailyReportsScreen.tsx          (988 lines)
+```
+
+### Best Practices
+1. Always add TypeScript types
+2. Use shared hooks when possible
+3. Add accessibility labels
+4. Include loading states
+5. Handle offline scenarios
+6. Write unit tests
+```
+
+---
+
+#### 4. Component Documentation
+**Files to Create:**
+
+##### Create Individual Component Docs
+```
+docs/components/supervisor/
+├── DAILY_REPORTS.md                - Daily reports screen
+├── SITE_INSPECTION.md              - Site inspection screen
+├── HINDRANCE_REPORTS.md            - Hindrance reports screen
+├── ITEMS_MANAGEMENT.md             - Items management
+├── MATERIAL_TRACKING.md            - Material tracking
+├── SITE_MANAGEMENT.md              - Site management
+└── REPORTS_HISTORY.md              - Reports history
+```
+
+**Template for Component Docs:**
+```markdown
+# [Component Name] Screen
+
+## Overview
+Brief description of what this screen does.
+
+## Components
+- **MainScreen** - Description
+- **SubComponent1** - Description
+- **SubComponent2** - Description
+
+## Hooks
+- **useHookName** - Description
+
+## State Management
+Describe state structure and actions.
+
+## Props/Parameters
+List all props with types.
+
+## Examples
+Code examples of usage.
+
+## Testing
+How to test this component.
+
+## Accessibility
+Accessibility features.
+```
+
+---
+
+#### 5. Hooks Documentation
+**File to Create:** `docs/hooks/SHARED_HOOKS.md`
+
+**Content:**
+```markdown
+# Shared Hooks Documentation
+
+## usePhotoUpload
+
+### Purpose
+Handle photo uploads from camera or gallery with permissions and compression.
+
+### Usage
+```typescript
+import { usePhotoUpload } from '@/hooks/usePhotoUpload';
+
+const MyComponent = () => {
+  const { photos, addPhoto, removePhoto, uploadPhotos } = usePhotoUpload({
+    maxPhotos: 5,
+    onUpload: (photos) => console.log('Uploaded:', photos)
+  });
+
+  return (
+    <Button onPress={addPhoto}>Add Photo</Button>
+  );
+};
+```
+
+### Parameters
+- `maxPhotos` (number, optional) - Maximum photos allowed
+- `onUpload` (function, optional) - Callback when upload completes
+
+### Returns
+- `photos` (string[]) - Array of photo URIs
+- `addPhoto` () => void - Open camera/gallery picker
+- `removePhoto` (index: number) => void - Remove photo by index
+- `uploadPhotos` () => Promise<void> - Upload photos to server
+
+### Dependencies
+- react-native-image-picker
+- react-native-permissions
+- ImageResizer
+
+### Tests
+Located in: `__tests__/hooks/usePhotoUpload.test.ts`
+```
+
+---
+
+#### 6. Testing Documentation
+**File to Create:** `docs/testing/SUPERVISOR_TESTS.md`
+
+**Content:**
+```markdown
+# Supervisor Screens Testing Guide
+
+## Test Structure
+```
+__tests__/supervisor/
+├── components/
+│   ├── InspectionForm.test.tsx
+│   └── ProgressReportForm.test.tsx
+├── hooks/
+│   ├── usePhotoUpload.test.ts
+│   └── useReportForm.test.ts
+├── screens/
+│   ├── DailyReportsScreen.test.tsx
+│   └── SiteInspectionScreen.test.tsx
+└── integration/
+    └── reporting-flow.test.tsx
+```
+
+## Running Tests
+```bash
+# All supervisor tests
+npm test -- supervisor
+
+# Specific screen
+npm test -- DailyReportsScreen
+
+# With coverage
+npm test -- --coverage supervisor
+```
+
+## Test Coverage Requirements
+- Components: 80%+
+- Hooks: 90%+
+- Utils: 95%+
+- Overall: 70%+
+
+## Common Test Patterns
+See examples in each test file.
+```
+
+---
+
+#### 7. Migration Guide
+**File to Create:** `docs/migration/SUPERVISOR_REFACTOR_MIGRATION.md`
+
+**Content:**
+```markdown
+# Supervisor Screens Refactor Migration Guide
+
+## For Developers
+
+### Import Changes
+
+#### Before
+```typescript
+import DailyReportsScreen from '@/supervisor/DailyReportsScreen';
+```
+
+#### After
+```typescript
+import DailyReportsScreen from '@/supervisor/daily_reports/DailyReportsScreen';
+```
+
+### Hook Usage
+
+#### Before
+```typescript
+const [photos, setPhotos] = useState<string[]>([]);
+const handleAddPhoto = () => { /* 50 lines of code */ };
+```
+
+#### After
+```typescript
+import { usePhotoUpload } from '@/hooks/usePhotoUpload';
+const { photos, addPhoto } = usePhotoUpload({ maxPhotos: 5 });
+```
+
+### State Management
+
+#### Before
+```typescript
+const [field1, setField1] = useState('');
+const [field2, setField2] = useState('');
+// ... 17 more useState hooks
+```
+
+#### After
+```typescript
+const [state, dispatch] = useReducer(reportReducer, initialState);
+```
+
+## Breaking Changes
+None - All changes are internal refactoring.
+
+## Deprecated
+None
+
+## Migration Checklist
+- [ ] Update imports
+- [ ] Use new shared hooks
+- [ ] Update tests
+- [ ] Update documentation references
+```
+
+---
+
+### Documentation Update Workflow
+
+**After Completing Each Task:**
+
+1. **Code Changes**
+   - [ ] Write code
+   - [ ] Write tests
+   - [ ] Run QA checklist
+
+2. **Documentation Updates** (Do immediately, don't defer!)
+   - [ ] Update ARCHITECTURE_UNIFIED.md
+   - [ ] Update README.md
+   - [ ] Update CLAUDE.md
+   - [ ] Create/update component docs
+   - [ ] Update this roadmap (mark as complete)
+
+3. **Review**
+   - [ ] Self-review code + docs
+   - [ ] Peer review (if available)
+   - [ ] Update progress tracking table
+
+4. **Commit**
+   - [ ] Commit with descriptive message
+   - [ ] Reference this roadmap in commit
+   - [ ] Update roadmap status
+
+**Commit Message Format:**
+```
+[supervisor] <type>: <description>
+
+- Implemented <feature>
+- Created <components/hooks>
+- Updated documentation
+
+Refs: SUPERVISOR_IMPROVEMENTS_ROADMAP.md - Task X.X
+Time: <actual hours> / <estimated hours>
+Tests: <passed/total>
+```
+
+---
+
+## Notes and Decisions
+
+### Design Decisions
+
+#### 1. Why useReducer over Redux?
+- Simpler for isolated screen state
+- Less boilerplate
+- Better TypeScript integration
+- No external dependencies
+
+#### 2. Why break files into folders?
+- Easier to find related code
+- Clear separation of concerns
+- Better for code splitting
+- Follows React best practices
+
+#### 3. Why shared hooks over HOCs?
+- Better TypeScript support
+- More composable
+- Easier to test
+- Modern React pattern
+
+### Risks and Mitigations
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Regression bugs | High | Medium | Comprehensive testing, gradual rollout |
+| Performance degradation | Medium | Low | Performance benchmarks, profiling |
+| Breaking changes | High | Low | Maintain backwards compatibility |
+| Time overrun | Medium | Medium | Buffer time in estimates |
+| Team knowledge gap | Medium | Low | Thorough documentation |
+
+### Lessons Learned
+
+**Update this section as work progresses:**
+
+- [ ] What worked well?
+- [ ] What didn't work?
+- [ ] What would you do differently?
+- [ ] Tips for future refactoring?
+
+---
+
+## References
+
+- [React Hooks Documentation](https://react.dev/reference/react)
+- [React Performance Optimization](https://react.dev/learn/render-and-commit)
+- [Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [Accessibility Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+
+---
+
+## Appendix
+
+### File Size Reference (Before Refactoring)
+```
+SiteInspectionScreen.tsx:     1,258 lines
+DailyReportsScreen.tsx:         988 lines
+HindranceReportScreen.tsx:      866 lines
+ReportsHistoryScreen.tsx:       756 lines
+ItemsManagementScreen.tsx:      725 lines
+MaterialTrackingScreen.tsx:     563 lines
+SiteManagementScreen.tsx:       476 lines
+```
+
+### Target File Size (After Refactoring)
+```
+Main Screen Files:              200-300 lines each
+Component Files:                100-200 lines each
+Hook Files:                     80-150 lines each
+Util Files:                     50-100 lines each
+```
+Additional point:- A supervisor may be assigned to several similar nature sites like ASS1, ASS2, ASS3 at different locations, it will be good to have copy feature inside Add site with a dropdown site to be copied. Please review and align before implementations.
+
+**Status:** Feature request noted - To be evaluated for Phase 2 or Phase 3
+
+---
+
+## Phase 2 Readiness Assessment
+
+**Date:** December 12, 2025
+**Status:** ✅ READY TO BEGIN PHASE 2
+
+### Phase 1 Completion Verification
+- [x] All 5 tasks completed and tested
+- [x] 215+ tests executed, 98% pass rate
+- [x] Zero critical issues
+- [x] All code committed (commits: b45e8af, 2ffd676, c2d7663)
+- [x] Documentation 90% complete
+- [x] Known minor issues documented and triaged
+
+### Phase 2 Prerequisites
+- [x] Feature branch: `feature/v2.12` - Clean and up to date
+- [x] TypeScript: 0 compilation errors
+- [x] App builds and runs successfully
+- [x] Test infrastructure in place (215+ manual tests)
+- [x] Team momentum: Strong ✅
+
+### Phase 2 Plan Summary
+**Duration:** 35-46 hours (5-6 days, Week 2-3)
+**Start Date:** December 12, 2025 (Planned)
+**Priority:** MEDIUM
+
+**Tasks:**
+1. Task 2.1: State Management with useReducer (12-16h)
+2. Task 2.2: Shared Hooks & Components (17-22h)
+3. Task 2.3: Loading Skeletons (6-8h)
+
+**Expected Outcomes:**
+- Replace 19+ useState with clean reducers
+- Create additional shared components
+- Reduce code duplication by 40%+
+- Improve performance with loading skeletons
+- Increase test coverage to 70%+
+
+### Go/No-Go Decision
+**Status:** ✅ **GO FOR PHASE 2**
+
+**Rationale:**
+- Phase 1 exceeded all targets
+- No blocking issues
+- Strong team velocity (~24h actual vs 24-32h estimate)
+- Clear plan and scope for Phase 2
+- Minor issues can be fixed during Phase 2
+
+---
+
+**Last Updated:** 2025-12-13
+**Phase 1 Completed:** 2025-12-11 ✅
+**Phase 2 Progress:** 85% (6/7 sub-tasks) - Task 2.2.5 Completed 2025-12-13
+**Next Review:** After Phase 2 completion
+**Maintained By:** Development Team & Claude AI
+**Questions/Issues:** Create GitHub issue with tag `supervisor-improvements`

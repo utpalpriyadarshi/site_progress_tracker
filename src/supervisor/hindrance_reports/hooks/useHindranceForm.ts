@@ -29,6 +29,7 @@ export const useHindranceForm = ({
   const [editingHindrance, setEditingHindrance] = useState<HindranceModel | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [hindranceToDelete, setHindranceToDelete] = useState<HindranceModel | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -87,6 +88,7 @@ export const useHindranceForm = ({
       return;
     }
 
+    setIsSaving(true);
     try {
       let savedHindrance: HindranceModel | null = null;
 
@@ -164,6 +166,8 @@ export const useHindranceForm = ({
         description,
       });
       onError('Failed to save hindrance');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -178,6 +182,7 @@ export const useHindranceForm = ({
     if (!hindranceToDelete) return;
 
     setShowDeleteDialog(false);
+    setIsSaving(true);
     try {
       await database.write(async () => {
         await hindranceToDelete.markAsDeleted();
@@ -192,6 +197,8 @@ export const useHindranceForm = ({
         hindranceId: hindranceToDelete?.id,
       });
       onError('Failed to delete hindrance');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -239,6 +246,9 @@ export const useHindranceForm = ({
     selectedItemId,
     setSelectedItemId,
     editingHindrance,
+
+    // Loading state
+    isSaving,
 
     // Actions
     handleAdd,

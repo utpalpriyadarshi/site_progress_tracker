@@ -1,9 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Card, Title, Paragraph } from 'react-native-paper';
 import { HindranceWithDetails } from '../types';
 import { HindranceCard } from './HindranceCard';
 import HindranceModel from '../../../../models/HindranceModel';
+import { EmptyState } from '../../../components/common/EmptyState';
 
 interface HindranceListProps {
   hindrances: HindranceWithDetails[];
@@ -30,16 +30,13 @@ export const HindranceList: React.FC<HindranceListProps> = ({
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <Card style={styles.emptyCard}>
-          <Card.Content>
-            <Title>No Hindrances</Title>
-            <Paragraph>
-              {selectedSiteId === 'all'
-                ? 'Select a site to view hindrances'
-                : 'No hindrances reported for this site'}
-            </Paragraph>
-          </Card.Content>
-        </Card>
+        <EmptyState
+          icon="alert-circle-outline"
+          title="No Hindrances"
+          message={selectedSiteId === 'all'
+            ? 'Select a site to view hindrances'
+            : 'No hindrances reported for this site'}
+        />
       </ScrollView>
     );
   }
@@ -56,7 +53,7 @@ export const HindranceList: React.FC<HindranceListProps> = ({
           key={hindranceWithDetails.hindrance.id}
           hindranceWithDetails={hindranceWithDetails}
           onEdit={onEdit}
-          onDelete={(id) => onDelete(hindranceWithDetails.hindrance)}
+          onDelete={() => onDelete(hindranceWithDetails.hindrance)}
         />
       ))}
     </ScrollView>
@@ -66,10 +63,5 @@ export const HindranceList: React.FC<HindranceListProps> = ({
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-  },
-  emptyCard: {
-    margin: 16,
-    alignItems: 'center',
-    padding: 20,
   },
 });

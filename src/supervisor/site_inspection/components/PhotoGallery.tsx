@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Text, Menu, IconButton } from 'react-native-paper';
+import { Text, IconButton } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { PhotoGalleryProps } from '../types';
+import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
 
 /**
  * Memoized photo thumbnail component for performance
@@ -64,30 +65,28 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         ))}
 
         {photos.length < maxPhotos && (
-          <Menu
-            visible={photoMenuVisible}
-            onDismiss={() => setPhotoMenuVisible(false)}
-            anchor={
-              <TouchableOpacity
-                style={styles.addPhotoButton}
-                onPress={() => setPhotoMenuVisible(true)}
-              >
-                <MaterialCommunityIcons name="camera-plus" size={40} color="#666" />
-                <Text style={styles.addPhotoText}>Add Photo</Text>
-              </TouchableOpacity>
-            }
-          >
-            <Menu.Item
-              onPress={onTakePhoto}
-              leadingIcon="camera"
-              title="Take Photo"
+          <>
+            <TouchableOpacity
+              style={styles.addPhotoButton}
+              onPress={() => setPhotoMenuVisible(true)}
+            >
+              <MaterialCommunityIcons name="camera-plus" size={40} color="#666" />
+              <Text style={styles.addPhotoText}>Add Photo</Text>
+            </TouchableOpacity>
+
+            <PhotoPickerDialog
+              visible={photoMenuVisible}
+              onDismiss={() => setPhotoMenuVisible(false)}
+              onTakePhoto={() => {
+                setPhotoMenuVisible(false);
+                onTakePhoto();
+              }}
+              onChooseFromGallery={() => {
+                setPhotoMenuVisible(false);
+                onSelectPhoto();
+              }}
             />
-            <Menu.Item
-              onPress={onSelectPhoto}
-              leadingIcon="image"
-              title="Choose from Gallery"
-            />
-          </Menu>
+          </>
         )}
       </View>
     </View>

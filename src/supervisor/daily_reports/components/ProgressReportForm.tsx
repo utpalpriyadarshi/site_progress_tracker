@@ -8,9 +8,9 @@ import {
   IconButton,
   Button,
   Text,
-  Menu,
 } from 'react-native-paper';
 import ItemModel from '../../../../models/ItemModel';
+import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
 
 interface ProgressReportFormProps {
   visible: boolean;
@@ -110,29 +110,26 @@ export const ProgressReportForm: React.FC<ProgressReportFormProps> = ({
                   📸 Photos ({photos.length})
                 </Text>
 
-                <Menu
+                <Button
+                  mode="outlined"
+                  icon="camera"
+                  onPress={() => onPhotoMenuToggle(true)}
+                  style={styles.addPhotoButton}>
+                  Add Photos
+                </Button>
+
+                <PhotoPickerDialog
                   visible={photoMenuVisible}
                   onDismiss={() => onPhotoMenuToggle(false)}
-                  anchor={
-                    <Button
-                      mode="outlined"
-                      icon="camera"
-                      onPress={() => onPhotoMenuToggle(true)}
-                      style={styles.addPhotoButton}>
-                      Add Photos
-                    </Button>
-                  }>
-                  <Menu.Item
-                    onPress={onTakePhoto}
-                    title="Take Photo"
-                    leadingIcon="camera"
-                  />
-                  <Menu.Item
-                    onPress={onChooseFromGallery}
-                    title="Choose from Gallery"
-                    leadingIcon="image"
-                  />
-                </Menu>
+                  onTakePhoto={() => {
+                    onPhotoMenuToggle(false);
+                    onTakePhoto();
+                  }}
+                  onChooseFromGallery={() => {
+                    onPhotoMenuToggle(false);
+                    onChooseFromGallery();
+                  }}
+                />
 
                 {/* Photo Gallery */}
                 {photos.length > 0 && (

@@ -1,10 +1,11 @@
 import React from 'react';
 import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
-import { Card, Paragraph, IconButton } from 'react-native-paper';
+import { Card, IconButton } from 'react-native-paper';
 import SiteModel from '../../../../models/SiteModel';
 import { ItemWithSite, ItemPhotoCounts } from '../types';
 import { ItemCard } from './ItemCard';
 import ItemModel from '../../../../models/ItemModel';
+import { EmptyState } from '../../../components/common/EmptyState';
 
 interface ItemsListProps {
   sites: SiteModel[];
@@ -38,11 +39,11 @@ export const ItemsList: React.FC<ItemsListProps> = ({
       }>
       {/* Show empty state if no sites */}
       {sites.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Card.Content>
-            <Paragraph>No sites assigned to you yet.</Paragraph>
-          </Card.Content>
-        </Card>
+        <EmptyState
+          icon="map-marker-off"
+          title="No Sites Assigned"
+          message="You don't have any sites assigned yet. Contact your administrator to get started."
+        />
       ) : (
         /* Display sites with their items */
         sites.map(site => {
@@ -59,9 +60,14 @@ export const ItemsList: React.FC<ItemsListProps> = ({
               />
               <Card.Content>
                 {siteItems.length === 0 ? (
-                  <Paragraph style={styles.noItems}>
-                    No items for this site
-                  </Paragraph>
+                  <View style={styles.siteEmptyState}>
+                    <EmptyState
+                      icon="package-variant"
+                      title="No Items"
+                      message="No construction items assigned to this site yet."
+                      iconSize={48}
+                    />
+                  </View>
                 ) : (
                   siteItems.map(({ item }) => (
                     <ItemCard
@@ -90,12 +96,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     elevation: 2,
   },
-  emptyCard: {
-    margin: 16,
-    elevation: 2,
-  },
-  noItems: {
-    fontStyle: 'italic',
-    color: '#666',
+  siteEmptyState: {
+    paddingVertical: 16,
   },
 });
