@@ -47,3 +47,29 @@ export type {
   UseChecklistOptions,
   UseChecklistReturn,
 } from './useChecklist';
+
+// Form validation hook (Phase 2, Task 2.2.1)
+export {
+  useFormValidation,
+  ValidationPatterns,
+  CommonValidations,
+} from './useFormValidation';
+export type {
+  ValidationRule,
+  ValidationSchema,
+  ValidationErrors,
+} from './useFormValidation';
+
+// Offline sync hook (Phase 2, Task 2.2.2)
+export {
+  useOfflineSync,
+  formatLastSyncTime,
+  getSyncStatusColor,
+  getSyncStatusIcon,
+} from './useOfflineSync';
+export type {
+  SyncStatus,
+  SyncResult,
+  UseOfflineSyncOptions,
+  UseOfflineSyncReturn,
+} from './useOfflineSync';

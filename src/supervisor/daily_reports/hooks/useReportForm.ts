@@ -1,8 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useReducer, useCallback } from 'react';
 import { database } from '../../../../models/database';
 import ItemModel from '../../../../models/ItemModel';
 import { logger } from '../../../services/LoggingService';
 import { validateProgressUpdate, exceedsPlannedQuantity, determineItemStatus } from '../utils';
+import {
+  reportFormReducer,
+  initialReportFormState,
+  openDialog as openDialogAction,
+  closeDialog as closeDialogAction,
+  setQuantityInput as setQuantityInputAction,
+  setNotesInput as setNotesInputAction,
+  incrementQuantity as incrementQuantityAction,
+  showExceedsWarning as showExceedsWarningAction,
+  hideExceedsWarning as hideExceedsWarningAction,
+} from '../state';
 
 interface UseReportFormParams {
   supervisorId: string;
@@ -39,14 +50,17 @@ interface UseReportFormReturn {
 }
 
 /**
- * useReportForm Hook
+ * useReportForm Hook (Refactored with useReducer)
  *
  * Manages form state for updating item progress
+ * - Replaced 6 useState hooks with 1 useReducer
  * - Handles dialog visibility
  * - Manages form inputs (quantity, notes)
  * - Validates input
  * - Saves progress to database
  * - Creates progress logs
+ *
+ * @version 2.0 - Refactored with useReducer (Phase 2, Task 2.1)
  */
 export const useReportForm = ({
   supervisorId,
@@ -56,32 +70,57 @@ export const useReportForm = ({
   photos,
   setPhotos,
 }: UseReportFormParams): UseReportFormReturn => {
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ItemModel | null>(null);
-  const [quantityInput, setQuantityInput] = useState('');
-  const [notesInput, setNotesInput] = useState('');
-  const [showExceedsWarning, setShowExceedsWarning] = useState(false);
-  const [pendingQuantity, setPendingQuantity] = useState(0);
+  // ==================== State Management with useReducer ====================
+  const [state, dispatch] = useReducer(reportFormReducer, initialReportFormState);
+
+  // ==================== Wrapper Functions for Dispatch ====================
+
+  /**
+   * Set dialog visibility
+   */
+  const setDialogVisible = useCallback((visible: boolean) => {
+    dispatch({ type: 'SET_DIALOG_VISIBLE', payload: visible });
+  }, []);
+
+  /**
+   * Set quantity input
+   */
+  const setQuantityInput = useCallback((value: string) => {
+    dispatch(setQuantityInputAction(value));
+  }, []);
+
+  /**
+   * Set notes input
+   */
+  const setNotesInput = useCallback((value: string) => {
+    dispatch(setNotesInputAction(value));
+  }, []);
+
+  /**
+   * Set show exceeds warning
+   */
+  const setShowExceedsWarning = useCallback((show: boolean) => {
+    dispatch({ type: 'SET_SHOW_EXCEEDS_WARNING', payload: show });
+  }, []);
+
+  // ==================== Action Functions ====================
 
   /**
    * Open the update dialog for an item
    */
-  const openUpdateDialog = useCallback((item: ItemModel) => {
-    setSelectedItem(item);
-    setQuantityInput(item.completedQuantity.toString());
-    setNotesInput('');
-    setPhotos([]);
-    setDialogVisible(true);
-  }, [setPhotos]);
+  const openUpdateDialog = useCallback(
+    (item: ItemModel) => {
+      dispatch(openDialogAction(item));
+      setPhotos([]);
+    },
+    [setPhotos]
+  );
 
   /**
    * Close the dialog and reset form
    */
   const closeDialog = useCallback(() => {
-    setDialogVisible(false);
-    setSelectedItem(null);
-    setQuantityInput('');
-    setNotesInput('');
+    dispatch(closeDialogAction());
     setPhotos([]);
   }, [setPhotos]);
 
@@ -89,105 +128,104 @@ export const useReportForm = ({
    * Increment or decrement quantity
    */
   const incrementQuantity = useCallback((amount: number) => {
-    setQuantityInput(prev => {
-      const currentValue = parseFloat(prev) || 0;
-      const newValue = Math.max(0, currentValue + amount);
-      return newValue.toString();
-    });
+    dispatch(incrementQuantityAction(amount));
   }, []);
 
   /**
    * Save progress to database
    */
-  const saveProgress = useCallback(async (newQuantity: number) => {
-    if (!selectedItem) return;
+  const saveProgress = useCallback(
+    async (newQuantity: number) => {
+      if (!state.selectedItem) return;
 
-    try {
-      const plannedQty = selectedItem.plannedQuantity;
+      try {
+        const plannedQty = state.selectedItem.plannedQuantity;
 
-      await database.write(async () => {
-        // Update item's completed quantity and status
-        try {
-          await selectedItem.update((item: any) => {
-            item.completedQuantity = newQuantity;
-            item.status = determineItemStatus(newQuantity, plannedQty);
-          });
-
-          logger.debug('Item progress updated successfully', {
-            component: 'useReportForm',
-            action: 'updateProgress',
-            itemId: selectedItem.id,
-          });
-        } catch (updateError) {
-          logger.error('Failed to update item progress', updateError as Error, {
-            component: 'useReportForm',
-            action: 'updateProgress',
-            itemId: selectedItem.id,
-          });
-          throw updateError;
-        }
-
-        // Create a progress log entry (pending until report is submitted)
-        try {
-          const photosJson = JSON.stringify(photos);
-
-          await database.collections
-            .get('progress_logs')
-            .create((log: any) => {
-              log.itemId = selectedItem.id;
-              log.date = new Date().getTime();
-              log.completedQuantity = newQuantity;
-              log.reportedBy = supervisorId;
-              log.photos = photosJson;
-              log.notes = notesInput || '';
-              log.appSyncStatus = 'pending';
+        await database.write(async () => {
+          // Update item's completed quantity and status
+          try {
+            await state.selectedItem!.update((item: any) => {
+              item.completedQuantity = newQuantity;
+              item.status = determineItemStatus(newQuantity, plannedQty);
             });
 
-          logger.debug('Progress log created successfully', {
-            component: 'useReportForm',
-            action: 'updateProgress',
-            itemId: selectedItem.id,
-            photoCount: photos.length,
-          });
-        } catch (logError) {
-          logger.error('Failed to create progress log', logError as Error, {
-            component: 'useReportForm',
-            action: 'updateProgress',
-            itemId: selectedItem.id,
-          });
-          throw logError;
-        }
-      });
+            logger.debug('Item progress updated successfully', {
+              component: 'useReportForm',
+              action: 'updateProgress',
+              itemId: state.selectedItem!.id,
+            });
+          } catch (updateError) {
+            logger.error('Failed to update item progress', updateError as Error, {
+              component: 'useReportForm',
+              action: 'updateProgress',
+              itemId: state.selectedItem!.id,
+            });
+            throw updateError;
+          }
 
-      onSuccess(
-        'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report'
-      );
+          // Create a progress log entry (pending until report is submitted)
+          try {
+            const photosJson = JSON.stringify(photos);
 
-      // Reload photo counts to update the UI
-      await onLoadPhotoCounts();
+            await database.collections
+              .get('progress_logs')
+              .create((log: any) => {
+                log.itemId = state.selectedItem!.id;
+                log.date = new Date().getTime();
+                log.completedQuantity = newQuantity;
+                log.reportedBy = supervisorId;
+                log.photos = photosJson;
+                log.notes = state.form.notesInput || '';
+                log.appSyncStatus = 'pending';
+              });
 
-      closeDialog();
-    } catch (error) {
-      logger.error('Failed to update progress', error as Error, {
-        component: 'useReportForm',
-        action: 'updateProgress',
-        itemId: selectedItem?.id,
-      });
-      onError('Failed to update progress: ' + (error as Error).message);
-    }
-  }, [selectedItem, supervisorId, photos, notesInput, onSuccess, onError, onLoadPhotoCounts, closeDialog]);
+            logger.debug('Progress log created successfully', {
+              component: 'useReportForm',
+              action: 'updateProgress',
+              itemId: state.selectedItem!.id,
+              photoCount: photos.length,
+            });
+          } catch (logError) {
+            logger.error('Failed to create progress log', logError as Error, {
+              component: 'useReportForm',
+              action: 'updateProgress',
+              itemId: state.selectedItem!.id,
+            });
+            throw logError;
+          }
+        });
+
+        onSuccess(
+          'Progress updated successfully. Click "Submit Progress Reports" to finalize your daily report'
+        );
+
+        // Reload photo counts to update the UI
+        await onLoadPhotoCounts();
+
+        closeDialog();
+      } catch (error) {
+        logger.error('Failed to update progress', error as Error, {
+          component: 'useReportForm',
+          action: 'updateProgress',
+          itemId: state.selectedItem?.id,
+        });
+        onError('Failed to update progress: ' + (error as Error).message);
+      }
+    },
+    [state.selectedItem, state.form.notesInput, supervisorId, photos, onSuccess, onError, onLoadPhotoCounts, closeDialog]
+  );
 
   /**
    * Handle update progress button click
    * Validates input and shows warning if quantity exceeds planned
    */
   const handleUpdateProgress = useCallback(async () => {
-    if (!selectedItem) return;
+    if (!state.selectedItem) return;
 
     // Validate form
     const error = validateProgressUpdate({
-      quantity: quantityInput,
-      item: selectedItem,
+      quantity: state.form.quantityInput,
+      item: state.selectedItem,
     });
 
     if (error) {
@@ -195,34 +233,35 @@ export const useReportForm = ({
       return;
     }
 
-    const newQuantity = parseFloat(quantityInput) || 0;
+    const newQuantity = parseFloat(state.form.quantityInput) || 0;
 
     // Check if quantity exceeds planned
-    if (exceedsPlannedQuantity(newQuantity, selectedItem.plannedQuantity)) {
-      setPendingQuantity(newQuantity);
-      setShowExceedsWarning(true);
+    if (exceedsPlannedQuantity(newQuantity, state.selectedItem.plannedQuantity)) {
+      dispatch(showExceedsWarningAction(newQuantity));
     } else {
       await saveProgress(newQuantity);
     }
-  }, [selectedItem, quantityInput, onError, saveProgress]);
+  }, [state.selectedItem, state.form.quantityInput, onError, saveProgress]);
+
+  // ==================== Return Interface ====================
 
   return {
     // Dialog state
-    dialogVisible,
+    dialogVisible: state.dialogVisible,
     setDialogVisible,
     closeDialog,
 
     // Form fields
-    selectedItem,
-    quantityInput,
+    selectedItem: state.selectedItem,
+    quantityInput: state.form.quantityInput,
     setQuantityInput,
-    notesInput,
+    notesInput: state.form.notesInput,
     setNotesInput,
 
     // Warning dialogs
-    showExceedsWarning,
+    showExceedsWarning: state.showExceedsWarning,
     setShowExceedsWarning,
-    pendingQuantity,
+    pendingQuantity: state.pendingQuantity,
 
     // Actions
     openUpdateDialog,
