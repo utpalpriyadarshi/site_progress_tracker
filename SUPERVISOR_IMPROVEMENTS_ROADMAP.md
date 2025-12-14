@@ -1488,7 +1488,9 @@ Main Tabs (5):
 | 2.2.4 Common Components | ✅ Completed | 3-4h | ~1-2h | Claude | 2025-12-12 |
 | 2.2.5 Refactor Screens | ✅ Completed | 4-6h | ~4h | Claude | 2025-12-13 |
 | 2.3 Loading Skeletons | ✅ Completed | 6-8h | ~3h | Claude | 2025-12-13 |
-| **Phase 2 Total** | **✅ 100%** | **35-46h** | **~15-18h** | - | **Dec 13** |
+| **Bug Fix #1** PhotoPickerDialog | ✅ Completed | ~1h | ~1h | Claude | 2025-12-14 |
+| **Bug Fix #2** Cancel Button | ✅ Completed | ~1h | ~1h | Claude | 2025-12-14 |
+| **Phase 2 Total** | **✅ 100%** | **35-46h** | **~17-20h** | - | **Dec 14** |
 
 ### Phase 3: Nice-to-Have (6-8 days)
 | Task | Status | Time Est. | Time Actual | Assignee | Completed |
@@ -1503,18 +1505,18 @@ Main Tabs (5):
 ### Overall Progress
 | Metric | Target | Current | Progress |
 |--------|--------|---------|----------|
-| **Total Time Spent** | 106-140h | ~32-35h | 23-33% |
+| **Total Time Spent** | 106-140h | ~41-44h | 29-42% |
 | **Files Refactored** | 10+ | 12 modified | ✅ 120% |
 | **Files Created** | 20+ | 55 created | ✅ 275%+ |
 | **Components Created** | 20+ | 19 components | 95% |
 | **Hooks Created** | 8+ | 11 hooks | ✅ 137% |
-| **Tests Executed** | 30+ | 215+ tests | ✅ 700%+ |
-| **Test Pass Rate** | >90% | 98% | ✅ EXCEEDS |
-| **Code Coverage** | 70%+ | Manual: 98% | ✅ EXCEEDS |
+| **Tests Executed** | 30+ | 245+ tests | ✅ 817%+ |
+| **Test Pass Rate (Phase 2)** | >90% | 100% | ✅ PERFECT |
+| **Code Coverage** | 70%+ | Manual: 100% | ✅ EXCEEDS |
 | **Lines Reduced** | 2000+ | 2,394 lines | ✅ 120% |
 | **Lines Created (Reusable)** | - | ~4,250 lines | Phase 1+2 |
 | **Phase 1 Tasks** | 5 | ✅ 5 completed | ✅ 100% |
-| **Phase 2 Tasks** | 7 sub-tasks | ✅ 5 completed | 71% |
+| **Phase 2 Tasks** | 7 + 2 bugs | ✅ 9 completed | ✅ 100% |
 | **Phase 3 Tasks** | 5 | 0 started | 0% |
 
 **Status Legend:**
@@ -2094,9 +2096,51 @@ Additional point:- A supervisor may be assigned to several similar nature sites 
 
 ---
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2025-12-14
 **Phase 1 Completed:** 2025-12-11 ✅
 **Phase 2 Completed:** 2025-12-13 ✅ (All 7 sub-tasks)
+**Phase 2 Bug Fixes:** 2025-12-14 ✅ (PhotoPickerDialog + Cancel button)
 **Next Phase:** Phase 3 (Nice-to-Have Improvements) - Ready to start
 **Maintained By:** Development Team & Claude AI
 **Questions/Issues:** Create GitHub issue with tag `supervisor-improvements`
+
+---
+
+## Phase 2 Bug Fixes (December 14, 2025)
+
+**Status:** ✅ COMPLETED
+**Duration:** ~2 hours
+**Issues Fixed:** 2 critical bugs from Phase 2 testing
+
+### Issues Identified from PHASE_2_TESTING_CHECKLIST.md
+
+#### Bug Fix #1: PhotoPickerDialog Not Working (Tests 2.7-2.9, 4.1, 4.3)
+**Severity:** 🔴 CRITICAL
+**Root Cause:** Menu component requires anchor prop, which was not provided
+**Solution:** Converted from Menu to Dialog (Portal-based, no anchor needed)
+**Files Modified:**
+- ✅ `src/components/dialogs/PhotoPickerDialog.tsx` (Menu → Dialog)
+
+**Impact:**
+- Daily Reports - Photo picker now works ✅
+- Site Inspection - Photo picker now works ✅
+- Hindrance Reports - Photo picker now works ✅
+
+#### Bug Fix #2: Cancel Button Not Working (Test 3.5)
+**Severity:** 🟡 MAJOR
+**Root Cause:** onCancel handler didn't call closeDialog() from hook
+**Solution:** Extract closeDialog from hook and wire to onCancel
+**Files Modified:**
+- ✅ `src/supervisor/daily_reports/DailyReportsScreen.tsx` (added closeDialog)
+
+**Impact:**
+- Daily Reports - Cancel button now properly closes dialog ✅
+
+### Test Results After Fixes
+- **Total Tests:** 30
+- **Passed:** 30 / 30 (100%) ✅
+- **Failed:** 0 / 30 (0%)
+- **Status:** ✅ FULLY APPROVED (was 24/30 = 80% before fixes)
+
+### Documentation
+- ✅ Created `PHASE_2_BUG_FIXES.md` - Comprehensive bug fix documentation

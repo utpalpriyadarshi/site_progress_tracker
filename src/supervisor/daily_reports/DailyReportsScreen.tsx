@@ -81,6 +81,7 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
   // Form state hook
   const {
     dialogVisible,
+    closeDialog,
     selectedItem,
     quantityInput,
     setQuantityInput,
@@ -178,11 +179,7 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
         onChooseFromGallery={handleChooseFromGallery}
         onRemovePhoto={removePhoto}
         onSave={handleUpdateProgress}
-        onCancel={() => {
-          setPhotos([]);
-          setQuantityInput('');
-          setNotesInput('');
-        }}
+        onCancel={closeDialog}
       />
 
       {/* Warning: Quantity Exceeds Planned */}
