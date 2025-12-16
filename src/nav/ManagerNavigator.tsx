@@ -9,8 +9,7 @@ import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
 import BomManagementScreen from '../manager/BomManagementScreen';
-import RoleSwitcher from '../auth/RoleSwitcher';
-import { useAuth, UserRole } from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { ManagerProvider } from '../manager/context/ManagerContext';
 import { BomProvider } from '../manager/context/BomContext';
 
@@ -52,25 +51,6 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
     );
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      admin: 'Admin',
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-      design_engineer: 'DesignEngineer',
-      commercial_manager: 'CommercialManager',
-    };
-
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: roleMap[newRole] }],
-      })
-    );
-  };
-
   return (
     <ManagerProvider>
       <BomProvider>
@@ -96,12 +76,9 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-            <RoleSwitcher onRoleChange={handleRoleChange} />
-            <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
-              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+            <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+          </TouchableOpacity>
         ),
       })}
     >

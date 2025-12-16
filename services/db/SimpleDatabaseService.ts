@@ -233,6 +233,17 @@ export class SimpleDatabaseService {
         console.log('Commercial Manager assigned to project:', sampleProject.id);
       }
 
+      // ✅ Assign Manager to project (v2.10)
+      const managerUsers = await database.collections.get('users').query(Q.where('username', 'manager')).fetch();
+      if (managerUsers.length > 0) {
+        await database.write(async () => {
+          await managerUsers[0].update((user: any) => {
+            user.projectId = sampleProject.id;
+          });
+        });
+        console.log('Manager assigned to project:', sampleProject.id);
+      }
+
       // ✅ Create default site
       const sampleSite = await database.write(async () => {
         return await database.collections.get('sites').create((site: any) => {

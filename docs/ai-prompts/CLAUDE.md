@@ -478,6 +478,436 @@ const materialItems = await database.collections
   .fetch();
 ```
 
+## Logging & Error Handling (v2.13)
+
+### LoggingService Pattern
+
+**Location**: `src/services/LoggingService.ts`
+
+**Purpose**: Centralized logging for production-ready debugging and error tracking.
+
+**When to Use**:
+- **NEVER use `console.log`** in production code
+- **ALWAYS use `logger.debug()`** for development debugging
+- **ALWAYS use `logger.error()`** with Error objects for error tracking
+- **Use `logger.info()`** for important events (saves, updates, deletes)
+- **Use `logger.warn()`** for warning conditions (validation failures, deprecated usage)
+
+**Usage Pattern**:
+```typescript
+import { logger } from '../services/LoggingService';
+
+// Debug (only shows in development)
+logger.debug('Component mounted', {
+  component: 'SiteInspectionScreen',
+  action: 'componentDidMount'
+});
+
+// Info - Important events
+logger.info('Inspection created successfully', {
+  component: 'SiteInspectionScreen',
+  action: 'handleSave',
+  inspectionId: inspection.id,
+  siteId: inspection.siteId
+});
+
+// Warning - Validation failures
+logger.warn('Site not selected', {
+  component: 'SiteInspectionScreen',
+  action: 'handleAdd'
+});
+
+// Error - With Error object and context
+try {
+  await database.write(async () => {
+    await inspection.create();
+  });
+} catch (error) {
+  logger.error('Failed to create inspection', error as Error, {
+    component: 'SiteInspectionScreen',
+    action: 'handleSave',
+    formData: { type, rating, notes }
+  });
+  showSnackbar('Failed to create inspection', 'error');
+}
+```
+
+**Context Metadata**:
+Always include:
+- `component`: Component/screen name
+- `action`: Function/method name
+- Additional relevant data (IDs, form data, etc.)
+
+**Benefits**:
+- Environment-aware (console in dev, silent in production)
+- Ready for integration with external services (Sentry, LogRocket)
+- Structured logging for better debugging
+- Error stack traces preserved
+
+### ErrorBoundary Pattern
+
+**Location**: `src/components/common/ErrorBoundary.tsx`
+
+**Purpose**: Catch JavaScript errors in component tree and prevent app crashes.
+
+**When to Use**:
+- Wrap each major screen/tab in SupervisorNavigator, ManagerNavigator, etc.
+- Wrap complex components that may throw errors
+- Provide unique names for each boundary for debugging
+
+**Usage Pattern**:
+```typescript
+// In SupervisorNavigator.tsx
+import ErrorBoundary from '../components/common/ErrorBoundary';
+
+<Tab.Screen
+  name="SiteInspection"
+  children={() => (
+    <ErrorBoundary name="SiteInspectionScreen">
+      <SiteInspectionScreen />
+    </ErrorBoundary>
+  )}
+/>
+```
+
+**Features**:
+- Graceful fallback UI with "Try Again" button
+- Automatic error logging to LoggingService
+- Error isolation per screen (one screen crashes, others continue)
+- Component stack traces for debugging
+- User-friendly error messages
+
+**Testing**:
+```typescript
+// Simulate error for testing
+const Component = () => {
+  throw new Error('Test error');
+  return <View />;
+};
+
+// ErrorBoundary will catch and display fallback UI
+```
+
+## Supervisor Screens Refactoring Guidelines (v2.13)
+
+### Modular Architecture Pattern
+
+**Goal**: Break down large screens (800+ lines) into maintainable, reusable, testable modules.
+
+**Target**: Main screen files should be 200-300 lines maximum.
+
+### Folder Structure
+
+When refactoring a large screen, create the following structure:
+
+```
+src/supervisor/{screen_name}/
+├── {ScreenName}Screen.tsx       (200-300 lines) - Main coordinator
+├── components/                   - UI components
+│   ├── {Feature}Form.tsx         - Form dialogs
+│   ├── {Feature}List.tsx         - List views
+│   ├── {Feature}Card.tsx         - Item cards
+│   ├── PhotoGallery.tsx          - Photo handling
+│   └── index.ts                  - Barrel exports
+├── hooks/                        - Custom hooks
+│   ├── use{Feature}Data.ts       - Data fetching/CRUD
+│   ├── use{Feature}Form.ts       - Form state management
+│   └── index.ts                  - Barrel exports
+├── utils/                        - Utilities
+│   ├── {feature}Validation.ts    - Form validation
+│   ├── {feature}Formatters.ts    - Data formatting
+│   └── index.ts                  - Barrel exports
+└── types.ts                      - Centralized types
+```
+
+### Example: SiteInspectionScreen Refactoring (v2.13 - Task 1.3.1 ✅)
+
+**Before**: 1,258 lines in single file
+**After**: 260 lines main screen + 13 modular files (79.3% reduction)
+
+**Structure Created**:
+```
+src/supervisor/site_inspection/
+├── SiteInspectionScreen.tsx  (260 lines)
+├── components/
+│   ├── InspectionForm.tsx    (397 lines)
+│   ├── InspectionList.tsx    (76 lines)
+│   ├── InspectionCard.tsx    (377 lines)
+│   ├── PhotoGallery.tsx      (147 lines)
+│   ├── ChecklistSection.tsx  (179 lines)
+│   └── index.ts
+├── hooks/
+│   ├── useInspectionData.ts  (213 lines)
+│   ├── useInspectionForm.ts  (243 lines)
+│   └── index.ts
+├── utils/
+│   ├── inspectionValidation.ts (85 lines)
+│   ├── inspectionFormatters.ts (96 lines)
+│   └── index.ts
+└── types.ts (96 lines)
+```
+
+### Shared Hooks Pattern (src/hooks/)
+
+**Purpose**: Extract reusable logic that multiple screens can share.
+
+**Created in v2.13**:
+1. **usePhotoUpload** (247 lines) - Photo capture/gallery for all supervisor screens
+2. **useChecklist** (241 lines) - Checklist management with summary calculations
+
+**When to Create Shared Hooks**:
+- Logic is used by 2+ screens
+- Logic is self-contained and reusable
+- Logic can be tested independently
+
+**Example: usePhotoUpload**
+```typescript
+// src/hooks/usePhotoUpload.ts
+export const usePhotoUpload = (maxPhotos: number = 10) => {
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const addPhoto = async () => {
+    // Handle camera/gallery logic
+    // Handle permissions
+    // Enforce photo limits
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const canAddMorePhotos = photos.length < maxPhotos;
+
+  return {
+    photos,
+    setPhotos,
+    addPhoto,
+    removePhoto,
+    canAddMorePhotos
+  };
+};
+
+// Usage in multiple screens
+import { usePhotoUpload } from '../../hooks';
+
+const { photos, addPhoto, removePhoto } = usePhotoUpload(10);
+```
+
+### Component Extraction Guidelines
+
+**When to Extract a Component**:
+- UI section is 50+ lines
+- Logic is complex or self-contained
+- Component will be reused
+- Component has its own state/props
+
+**Component Responsibilities** (Single Responsibility Principle):
+- **Form Components**: Handle input, validation, save/cancel
+- **List Components**: Display items, handle refresh
+- **Card Components**: Display single item, provide actions
+- **Dialog Components**: Modal dialogs for create/edit/delete
+
+### Custom Hook Guidelines
+
+**When to Create a Custom Hook**:
+- Logic manages state (useState, useEffect)
+- Logic is reusable across components
+- Logic is complex enough to benefit from isolation
+- Logic interacts with database or services
+
+**Hook Responsibilities**:
+- **Data Hooks**: Fetch, cache, refresh data from database
+- **Form Hooks**: Manage form state, validation, submission
+- **Feature Hooks**: Manage feature-specific logic (photo upload, checklist)
+
+**Hook Naming Convention**: `use{Feature}{Purpose}`
+- `useInspectionData` - Data fetching for inspections
+- `useInspectionForm` - Form state for inspections
+- `usePhotoUpload` - Photo upload logic
+
+### Validation & Formatting Utils
+
+**When to Create Utils**:
+- Pure functions (no state, no side effects)
+- Reusable across components/hooks
+- Formatting, validation, calculations
+
+**Utils Naming Convention**: `{feature}{Purpose}.ts`
+- `inspectionValidation.ts` - Validation functions
+- `inspectionFormatters.ts` - Formatting functions
+
+**Example**:
+```typescript
+// utils/inspectionValidation.ts
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage?: string;
+}
+
+export const validateSiteSelection = (
+  siteId: string | null
+): ValidationResult => {
+  if (!siteId) {
+    return {
+      isValid: false,
+      errorMessage: 'Please select a site'
+    };
+  }
+  return { isValid: true };
+};
+
+// utils/inspectionFormatters.ts
+export const formatInspectionDate = (timestamp: number): string => {
+  return new Date(timestamp).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+```
+
+### Barrel Exports Pattern
+
+**Purpose**: Simplify imports with index.ts files.
+
+**Pattern**:
+```typescript
+// components/index.ts
+export { default as InspectionForm } from './InspectionForm';
+export { default as InspectionList } from './InspectionList';
+export { default as InspectionCard } from './InspectionCard';
+export { default as PhotoGallery } from './PhotoGallery';
+export { default as ChecklistSection } from './ChecklistSection';
+
+// hooks/index.ts
+export { useInspectionData } from './useInspectionData';
+export { useInspectionForm } from './useInspectionForm';
+
+// utils/index.ts
+export * from './inspectionValidation';
+export * from './inspectionFormatters';
+
+// Usage in main screen
+import {
+  InspectionForm,
+  InspectionList,
+  InspectionCard
+} from './components';
+
+import {
+  useInspectionData,
+  useInspectionForm
+} from './hooks';
+
+import {
+  validateSiteSelection,
+  formatInspectionDate
+} from './utils';
+```
+
+### Integration with LoggingService
+
+**Pattern**: Add logging throughout refactored modules.
+
+```typescript
+// In hooks/useInspectionData.ts
+import { logger } from '../../../services/LoggingService';
+
+export const useInspectionData = (selectedSiteId: string | null) => {
+  const loadInspections = async () => {
+    try {
+      logger.debug('Loading inspections', {
+        component: 'useInspectionData',
+        action: 'loadInspections',
+        siteId: selectedSiteId
+      });
+
+      const inspections = await database.collections
+        .get('site_inspections')
+        .query(Q.where('site_id', selectedSiteId))
+        .fetch();
+
+      logger.info('Inspections loaded successfully', {
+        component: 'useInspectionData',
+        action: 'loadInspections',
+        count: inspections.length
+      });
+
+      return inspections;
+    } catch (error) {
+      logger.error('Failed to load inspections', error as Error, {
+        component: 'useInspectionData',
+        action: 'loadInspections',
+        siteId: selectedSiteId
+      });
+      throw error;
+    }
+  };
+
+  return { loadInspections };
+};
+```
+
+### Refactoring Checklist
+
+When refactoring a large screen:
+
+1. **Analysis** (30 min)
+   - [ ] Read entire file, understand structure
+   - [ ] Identify components (UI sections)
+   - [ ] Identify hooks (state management)
+   - [ ] Identify utils (pure functions)
+   - [ ] Identify types (interfaces, types)
+
+2. **Planning** (30 min)
+   - [ ] Design folder structure
+   - [ ] List components to create
+   - [ ] List hooks to create
+   - [ ] List utils to create
+   - [ ] Identify shared logic (src/hooks/)
+
+3. **Extraction** (4-6 hours)
+   - [ ] Create types.ts first
+   - [ ] Extract utils (no dependencies)
+   - [ ] Extract hooks (use types, utils)
+   - [ ] Extract components (use hooks, types, utils)
+   - [ ] Update main screen (import from modules)
+   - [ ] Create barrel exports (index.ts)
+
+4. **Integration** (1-2 hours)
+   - [ ] Replace console.log with logger
+   - [ ] Fix import paths (../../../../ → relative)
+   - [ ] Fix TypeScript errors
+   - [ ] Test all functionality
+
+5. **Testing** (2-3 hours)
+   - [ ] Test create flow
+   - [ ] Test edit flow
+   - [ ] Test delete flow
+   - [ ] Test validation
+   - [ ] Test error handling
+   - [ ] Test sync integration
+
+6. **Documentation** (1-2 hours)
+   - [ ] Create component documentation (docs/components/)
+   - [ ] Update ARCHITECTURE_UNIFIED.md
+   - [ ] Update README.md
+   - [ ] Update SUPERVISOR_IMPROVEMENTS_ROADMAP.md
+   - [ ] Write commit message
+
+**Total Time**: 8-14 hours per screen
+
+### Benefits of Modular Architecture
+
+- ✅ **Maintainability**: Easier to find and fix bugs (small files)
+- ✅ **Reusability**: Shared hooks reduce code duplication (40%+)
+- ✅ **Testability**: Components/hooks tested independently
+- ✅ **Separation of Concerns**: Clear boundaries (UI, logic, data)
+- ✅ **Type Safety**: Centralized type definitions
+- ✅ **Clean Imports**: Barrel exports simplify imports
+- ✅ **Scalability**: Easy to add new features
+- ✅ **Team Collaboration**: Multiple developers can work on same screen
+
 ## Development Best Practices
 
 ### Before Every Commit Checklist

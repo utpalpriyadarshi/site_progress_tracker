@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   TextInput,
   Portal,
@@ -27,7 +26,11 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { CopyItemsDialog, DuplicateItemsDialog } from '../components/dialogs';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { logger } from '../services/LoggingService';
+import { SupervisorHeader, EmptyState } from '../components/common';
+import { useDebounce } from '../hooks';
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -70,6 +73,7 @@ const ItemsManagementScreenComponent = ({
 
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
   const [selectedStatus, setSelectedStatus] = useState<string[]>(['all']);
   const [selectedPhases, setSelectedPhases] = useState<string[]>(['all']);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'progress'>('name');
@@ -81,6 +85,15 @@ const ItemsManagementScreenComponent = ({
   const [editingItem, setEditingItem] = useState<ItemModel | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
+
+  // Copy feature state
+  const [overflowMenuVisible, setOverflowMenuVisible] = useState(false);
+  const [copyDialogVisible, setCopyDialogVisible] = useState(false);
+  const [duplicateDialogVisible, setDuplicateDialogVisible] = useState(false);
+  const [duplicateItems, setDuplicateItems] = useState<string[]>([]);
+  const [pendingCopyCallback, setPendingCopyCallback] = useState<
+    ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
+  >(null);
 
   // Form fields
   const [itemName, setItemName] = useState('');
@@ -106,7 +119,7 @@ const ItemsManagementScreenComponent = ({
     { value: 'numbers', label: 'nos' },
   ];
 
-  // Combined filtering and sorting logic
+  // Combined filtering and sorting logic (memoized for performance)
   const displayedItems = useMemo(() => {
     let result = items;
 
@@ -115,9 +128,9 @@ const ItemsManagementScreenComponent = ({
       result = result.filter(item => item.siteId === selectedSiteId);
     }
 
-    // 2. Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // 2. Search filter (using debounced value for better performance)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(item =>
         item.name.toLowerCase().includes(query)
       );
@@ -156,7 +169,7 @@ const ItemsManagementScreenComponent = ({
     });
 
     return result;
-  }, [items, selectedSiteId, searchQuery, selectedStatus, selectedPhases, sortBy, sortDirection]);
+  }, [items, selectedSiteId, debouncedSearchQuery, selectedStatus, selectedPhases, sortBy, sortDirection]);
 
   // Update filteredItems when displayedItems changes
   useEffect(() => {
@@ -197,10 +210,57 @@ const ItemsManagementScreenComponent = ({
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return searchQuery.trim() !== '' ||
+    return debouncedSearchQuery.trim() !== '' ||
            !selectedStatus.includes('all') ||
            !selectedPhases.includes('all');
-  }, [searchQuery, selectedStatus, selectedPhases]);
+  }, [debouncedSearchQuery, selectedStatus, selectedPhases]);
+
+  // Check if copy is available (need items in current site)
+  const canCopy = useMemo(() => {
+    if (selectedSiteId === 'all') return false;
+    const siteItems = items.filter(item => item.siteId === selectedSiteId);
+    return siteItems.length > 0;
+  }, [selectedSiteId, items]);
+
+  // Copy feature handlers
+  const handleCopySuccess = (copiedCount: number, destinationSiteName: string) => {
+    showSnackbar(
+      `✓ ${copiedCount} items copied to ${destinationSiteName}`,
+      'success'
+    );
+    setCopyDialogVisible(false);
+  };
+
+  const handleDuplicatesFound = (
+    duplicates: string[],
+    proceedWithCopy: (skipDuplicates: boolean, selectedDuplicates: string[]) => void
+  ) => {
+    setDuplicateItems(duplicates);
+    setPendingCopyCallback(() => proceedWithCopy);
+    setDuplicateDialogVisible(true);
+  };
+
+  const handleSkipDuplicates = (namesToSkip: string[]) => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(true, namesToSkip);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
+
+  const handleCreateAllDuplicates = () => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(false, []);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
+
+  const handleDuplicateCancel = () => {
+    setDuplicateDialogVisible(false);
+    setCopyDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
 
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
@@ -292,7 +352,11 @@ const ItemsManagementScreenComponent = ({
 
       setDialogVisible(false);
     } catch (error) {
-      console.error('Error saving item:', error);
+      logger.error('Failed to save item', error as Error, {
+        component: 'ItemsManagementScreen',
+        action: 'saveItem',
+        itemName,
+      });
       showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
     }
   };
@@ -314,7 +378,11 @@ const ItemsManagementScreenComponent = ({
       setShowDeleteDialog(false);
       setItemToDelete(null);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('Failed to delete item', error as Error, {
+        component: 'ItemsManagementScreen',
+        action: 'deleteItem',
+        itemId: itemToDelete?.id,
+      });
       showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
     }
   };
@@ -344,8 +412,37 @@ const ItemsManagementScreenComponent = ({
 
   return (
     <View style={styles.container}>
+      <SupervisorHeader
+        title="Manage Items"
+        rightActions={
+          <Menu
+            visible={overflowMenuVisible}
+            onDismiss={() => setOverflowMenuVisible(false)}
+            anchor={
+              <IconButton
+                icon="dots-vertical"
+                onPress={() => setOverflowMenuVisible(true)}
+              />
+            }
+          >
+            <Menu.Item
+              onPress={() => {
+                setOverflowMenuVisible(false);
+                if (canCopy) {
+                  setCopyDialogVisible(true);
+                } else {
+                  showSnackbar('Please select a site with items to copy', 'warning');
+                }
+              }}
+              title="Copy Items to Another Site"
+              leadingIcon="content-copy"
+              disabled={!canCopy}
+            />
+          </Menu>
+        }
+      />
+
       <View style={styles.header}>
-        <Title>Items Management</Title>
         <Button
           mode="contained"
           icon="plus"
@@ -405,17 +502,56 @@ const ItemsManagementScreenComponent = ({
 
       <ScrollView style={styles.scrollView}>
         {filteredItems.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text>
-                {hasActiveFilters
-                  ? 'No items match your filters. Try adjusting the search or filters.'
-                  : selectedSiteId === 'all'
-                  ? 'No items found. Select a site and create your first item!'
-                  : 'No items for this site. Add your first work item!'}
-              </Text>
-            </Card.Content>
-          </Card>
+          <EmptyState
+            icon={
+              hasActiveFilters
+                ? 'filter-variant'
+                : selectedSiteId === 'all'
+                ? 'map-marker-outline'
+                : 'package-variant-closed-plus'
+            }
+            title={
+              hasActiveFilters
+                ? 'No Items Found'
+                : selectedSiteId === 'all'
+                ? 'Select a Site'
+                : 'No Work Items Yet'
+            }
+            message={
+              hasActiveFilters
+                ? 'No items match your current search or filter criteria.'
+                : selectedSiteId === 'all'
+                ? 'Please select a specific site to view and manage work items.'
+                : 'Add your first work item to start tracking progress for this site.'
+            }
+            helpText={
+              hasActiveFilters || selectedSiteId === 'all'
+                ? undefined
+                : 'Work items represent specific tasks or activities. Track quantities, phases, and progress for each item.'
+            }
+            tips={
+              hasActiveFilters || selectedSiteId === 'all'
+                ? undefined
+                : [
+                    'Assign items to specific project phases',
+                    'Track planned vs actual quantities',
+                    'Monitor progress with status updates',
+                  ]
+            }
+            variant={hasActiveFilters ? 'search' : 'default'}
+            actionText={selectedSiteId === 'all' || hasActiveFilters ? undefined : 'Create Item'}
+            onAction={selectedSiteId === 'all' || hasActiveFilters ? undefined : openAddDialog}
+            secondaryActionText={hasActiveFilters ? 'Clear Filters' : undefined}
+            onSecondaryAction={
+              hasActiveFilters
+                ? () => {
+                    setSearchQuery('');
+                    setSelectedStatus(['all']);
+                    setSelectedPhases(['all']);
+                  }
+                : undefined
+            }
+          />
         ) : (
           filteredItems.map((item) => {
             const progress = getProgressPercentage(item);
@@ -584,6 +720,30 @@ const ItemsManagementScreenComponent = ({
           setItemToDelete(null);
         }}
         destructive={true}
+      />
+
+      {/* Copy Items Dialog */}
+      <CopyItemsDialog
+        visible={copyDialogVisible}
+        sourceSiteId={selectedSiteId === 'all' ? '' : selectedSiteId}
+        sourceSiteName={
+          _sites.find(s => s.id === selectedSiteId)?.name || 'Current Site'
+        }
+        sourceItemCount={
+          items.filter(item => item.siteId === selectedSiteId).length
+        }
+        onClose={() => setCopyDialogVisible(false)}
+        onSuccess={handleCopySuccess}
+        onDuplicatesFound={handleDuplicatesFound}
+      />
+
+      {/* Duplicate Items Dialog */}
+      <DuplicateItemsDialog
+        visible={duplicateDialogVisible}
+        duplicateNames={duplicateItems}
+        onSkip={handleSkipDuplicates}
+        onCreateAll={handleCreateAllDuplicates}
+        onCancel={handleDuplicateCancel}
       />
     </View>
   );

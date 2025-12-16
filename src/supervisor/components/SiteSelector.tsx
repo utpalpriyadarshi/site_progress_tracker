@@ -5,6 +5,7 @@ import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../../models/SiteModel';
 import { useSiteContext } from '../context/SiteContext';
+import { logger } from '../../services/LoggingService';
 
 interface SiteSelectorProps {
   style?: any;
@@ -39,7 +40,10 @@ const SiteSelector: React.FC<SiteSelectorProps> = ({ style }) => {
           }
         }
       } catch (error) {
-        console.error('Error fetching sites:', error);
+        logger.error('Error fetching sites for supervisor', error as Error, {
+          component: 'SiteSelector',
+          supervisorId,
+        });
       }
     };
 

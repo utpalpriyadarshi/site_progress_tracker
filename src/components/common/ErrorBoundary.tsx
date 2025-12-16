@@ -9,6 +9,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { logger } from '../../services/LoggingService';
 
 // ============================================================================
 // Types
@@ -69,8 +70,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { onError, name } = this.props;
 
-    // Log error
-    console.error(`Error caught by ${name || 'ErrorBoundary'}:`, error, errorInfo);
+    // Log error to LoggingService
+    logger.error(`Error caught by ${name || 'ErrorBoundary'}`, error, {
+      component: name || 'ErrorBoundary',
+      action: 'componentDidCatch',
+      componentStack: errorInfo.componentStack,
+    });
 
     // Update state with error info
     this.setState({
@@ -81,9 +86,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (onError) {
       onError(error, errorInfo);
     }
-
-    // TODO: Send error to logging service (e.g., Sentry, LogRocket)
-    // this.logErrorToService(error, errorInfo);
   }
 
   handleRetry = (): void => {

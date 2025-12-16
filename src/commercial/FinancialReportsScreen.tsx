@@ -274,7 +274,6 @@ const FinancialReportsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
-        <Text style={styles.subtitle}>Financial Reports</Text>
       </View>
 
       {/* Date Range Filter */}

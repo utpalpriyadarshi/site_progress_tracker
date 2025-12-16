@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -10,6 +10,8 @@ import ItemModel from '../../models/ItemModel';
 import { Portal, Dialog, Button, TextInput, Menu, IconButton } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { logger } from '../services/LoggingService';
+import { SupervisorHeader, EmptyState } from '../components/common';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -150,7 +152,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material created successfully', 'success');
       closeDialog();
     } catch (error) {
-      console.error('Error creating material:', error);
+      logger.error('Failed to create material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'handleCreateMaterial',
+        materialName,
+        selectedItemId,
+      });
       showSnackbar('Failed to create material', 'error');
     }
   };
@@ -179,7 +186,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material updated successfully', 'success');
       closeDialog();
     } catch (error) {
-      console.error('Error updating material:', error);
+      logger.error('Failed to update material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'handleUpdateMaterial',
+        materialId: editingMaterial?.id,
+        materialName,
+      });
       showSnackbar('Failed to update material', 'error');
     }
   };
@@ -201,7 +213,12 @@ const MaterialTrackingScreenComponent = ({
       showSnackbar('Material deleted successfully', 'success');
       setMaterialToDelete(null);
     } catch (error) {
-      console.error('Error deleting material:', error);
+      logger.error('Failed to delete material', error as Error, {
+        component: 'MaterialTrackingScreen',
+        action: 'confirmDelete',
+        materialId: materialToDelete?.id,
+        materialName: materialToDelete?.name,
+      });
       showSnackbar('Failed to delete material', 'error');
     }
   };
@@ -258,10 +275,7 @@ const MaterialTrackingScreenComponent = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Material Tracking</Text>
-        <Text style={styles.subtitle}>Track material usage and identify shortages</Text>
-      </View>
+      <SupervisorHeader title="Material Tracking" />
 
       {/* Site Selector */}
       <View style={styles.selectorContainer}>
@@ -282,12 +296,32 @@ const MaterialTrackingScreenComponent = ({
       </View>
 
       {filteredMaterials.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No materials found for selected site</Text>
-          {selectedSiteId !== 'all' && (
-            <Text style={styles.emptyHint}>Tap "Add Material" to create one</Text>
-          )}
-        </View>
+        <EmptyState
+          icon={selectedSiteId === 'all' ? 'map-marker-outline' : 'package-variant'}
+          title={selectedSiteId === 'all' ? 'Select a Site' : 'No Materials Yet'}
+          message={
+            selectedSiteId === 'all'
+              ? 'Please select a specific site to view and manage materials.'
+              : 'Track construction materials, quantities, and suppliers for this site.'
+          }
+          helpText={
+            selectedSiteId === 'all'
+              ? undefined
+              : 'Materials management helps track inventory, deliveries, and usage for better project control.'
+          }
+          tips={
+            selectedSiteId === 'all'
+              ? undefined
+              : [
+                  'Link materials to specific work items',
+                  'Track ordered, delivered, and used quantities',
+                  'Monitor material status and suppliers',
+                ]
+          }
+          variant="default"
+          actionText={selectedSiteId === 'all' ? undefined : 'Add Material'}
+          onAction={selectedSiteId === 'all' ? undefined : openAddDialog}
+        />
       ) : (
         <FlatList
           data={filteredMaterials}
