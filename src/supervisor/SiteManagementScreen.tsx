@@ -18,9 +18,12 @@ import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
+import { logger } from '../services/LoggingService';
 import { useSiteContext } from './context/SiteContext';
 import { useSnackbar } from '../components/Snackbar';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { SupervisorHeader, EmptyState } from '../components/common';
+import { useDebounce } from '../hooks';
 
 // Activity filter options
 const ACTIVITY_FILTERS: FilterOption[] = [
@@ -32,7 +35,7 @@ const ACTIVITY_FILTERS: FilterOption[] = [
 // Sort options
 const SORT_OPTIONS: SortOption[] = [
   { id: 'name', label: 'Name', icon: 'format-letter-case' },
-  { id: 'date', label: 'Creation Date', icon: 'calendar' },
+  // Note: Sites don't have creation date field in the model, only name sort available
 ];
 
 const SiteManagementScreenComponent = ({
@@ -42,13 +45,17 @@ const SiteManagementScreenComponent = ({
   sites: SiteModel[];
   projects: any[];
 }) => {
+  // TESTING: Uncomment line below to test ErrorBoundary (remove after testing!)
+  // if (true) throw new Error('Test error for ErrorBoundary');
+
   const { supervisorId, setSelectedSiteId, projectId, projectName } = useSiteContext();
   const { showSnackbar } = useSnackbar();
 
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
   const [selectedActivity, setSelectedActivity] = useState<string[]>(['all']);
-  const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
+  const [sortBy, setSortBy] = useState<'name'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Existing state
@@ -57,13 +64,13 @@ const SiteManagementScreenComponent = ({
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
 
-  // Combined filtering and sorting logic
+  // Combined filtering and sorting logic (memoized for performance)
   const displayedSites = useMemo(() => {
     let result = sites;
 
-    // 1. Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // 1. Search filter (using debounced value for better performance)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(site =>
         site.name.toLowerCase().includes(query) ||
         site.location.toLowerCase().includes(query)
@@ -80,21 +87,14 @@ const SiteManagementScreenComponent = ({
       // For demo purposes, all sites are considered active.
     }
 
-    // 3. Sort
+    // 3. Sort (currently only by name, sites don't track creation date)
     result = [...result].sort((a, b) => {
-      let comparison = 0;
-
-      if (sortBy === 'name') {
-        comparison = a.name.localeCompare(b.name);
-      } else if (sortBy === 'date') {
-        comparison = a.createdAt - b.createdAt;
-      }
-
+      const comparison = a.name.localeCompare(b.name);
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return result;
-  }, [sites, searchQuery, selectedActivity, sortBy, sortDirection]);
+  }, [sites, debouncedSearchQuery, selectedActivity, sortBy, sortDirection]);
 
   // Filter toggle handler
   const handleActivityToggle = (id: string) => {
@@ -116,11 +116,11 @@ const SiteManagementScreenComponent = ({
     setSortDirection('asc');
   };
 
-  // Check if any filters are active
+  // Check if any filters are active (memoized for performance)
   const hasActiveFilters = useMemo(() => {
-    return searchQuery.trim() !== '' ||
+    return debouncedSearchQuery.trim() !== '' ||
            !selectedActivity.includes('all');
-  }, [searchQuery, selectedActivity]);
+  }, [debouncedSearchQuery, selectedActivity]);
 
   const openAddDialog = () => {
     setEditingSite(null);
@@ -178,13 +178,19 @@ const SiteManagementScreenComponent = ({
       });
       closeDialog();
     } catch (error) {
-      console.error('Error saving site:', error);
+      logger.error('Failed to save site', error as Error, {
+        component: 'SiteManagementScreen',
+        action: 'saveSite',
+        siteName,
+      });
       showSnackbar('Failed to save site: ' + (error as Error).message, 'error');
     }
   };
 
   return (
     <View style={styles.container}>
+      <SupervisorHeader title="Manage Sites" />
+
       {/* Project Header - Shows supervisor's assigned project */}
       {projectName && (
         <Card style={styles.projectCard}>
@@ -201,7 +207,6 @@ const SiteManagementScreenComponent = ({
       )}
 
       <View style={styles.header}>
-        <Title>Site Management</Title>
         <Button
           mode="contained"
           icon="plus"
@@ -249,15 +254,41 @@ const SiteManagementScreenComponent = ({
 
       <ScrollView style={styles.scrollView}>
         {displayedSites.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text>
-                {hasActiveFilters
-                  ? 'No sites match your filters. Try adjusting the search or filters.'
-                  : 'No sites found. Create your first site!'}
-              </Text>
-            </Card.Content>
-          </Card>
+          <EmptyState
+            icon={hasActiveFilters ? 'filter-variant' : 'map-marker-plus-outline'}
+            title={hasActiveFilters ? 'No Sites Found' : 'No Sites Yet'}
+            message={
+              hasActiveFilters
+                ? 'No sites match your current search or filter criteria.'
+                : 'Get started by creating your first construction site.'
+            }
+            helpText={
+              hasActiveFilters
+                ? undefined
+                : 'Sites are locations where construction work is performed. You can track progress, manage items, and generate reports for each site.'
+            }
+            tips={
+              hasActiveFilters
+                ? undefined
+                : [
+                    'Each site can have multiple work items and daily reports',
+                    'Sites are linked to your assigned project',
+                    'You can edit site details anytime',
+                  ]
+            }
+            variant={hasActiveFilters ? 'search' : 'default'}
+            actionText={hasActiveFilters ? undefined : 'Create Site'}
+            onAction={hasActiveFilters ? undefined : openAddDialog}
+            secondaryActionText={hasActiveFilters ? 'Clear Filters' : undefined}
+            onSecondaryAction={
+              hasActiveFilters
+                ? () => {
+                    setSearchQuery('');
+                    setSelectedActivity(['all']);
+                  }
+                : undefined
+            }
+          />
         ) : (
           displayedSites.map((site) => {
             const project = projects.find((p) => p.id === site.projectId);

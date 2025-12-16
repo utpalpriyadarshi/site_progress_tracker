@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   TextInput,
   Portal,
@@ -21,10 +20,10 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
+import { logger } from '../services/LoggingService';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -176,7 +175,11 @@ const SiteManagementScreenComponent = ({
       });
       closeDialog();
     } catch (error) {
-      console.error('Error saving site:', error);
+      logger.error('Error saving site', error as Error, {
+        component: 'PlanningsSiteManagementScreen',
+        action: 'handleSave',
+        editMode: editingSite ? 'update' : 'create',
+      });
       setSnackbarMessage('Failed to save site: ' + (error as Error).message);
       setSnackbarType('error');
       setSnackbarVisible(true);
@@ -202,7 +205,12 @@ const SiteManagementScreenComponent = ({
       setDeleteDialogVisible(false);
       setSiteToDelete(null);
     } catch (error) {
-      console.error('Error deleting site:', error);
+      logger.error('Error deleting site', error as Error, {
+        component: 'PlanningSiteManagementScreen',
+        action: 'handleDelete',
+        siteId: siteToDelete?.id,
+        siteName: siteToDelete?.name,
+      });
       setSnackbarMessage('Failed to delete site: ' + (error as Error).message);
       setSnackbarType('error');
       setSnackbarVisible(true);
@@ -219,7 +227,6 @@ const SiteManagementScreenComponent = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Title>Site Management</Title>
         <Button
           mode="contained"
           icon="plus"

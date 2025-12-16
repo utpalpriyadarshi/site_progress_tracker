@@ -320,7 +320,6 @@ const CommercialDashboardScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
-        <Text style={styles.subtitle}>Financial Dashboard</Text>
       </View>
 
       {/* Alerts */}

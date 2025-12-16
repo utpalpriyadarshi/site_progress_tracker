@@ -7,8 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import DesignEngineerDashboardScreen from '../design_engineer/DesignEngineerDashboardScreen';
 import DoorsPackageManagementScreen from '../design_engineer/DoorsPackageManagementScreen';
 import DesignRfqManagementScreen from '../design_engineer/DesignRfqManagementScreen';
-import RoleSwitcher from '../auth/RoleSwitcher';
-import { useAuth, UserRole } from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { DesignEngineerProvider } from '../design_engineer/context/DesignEngineerContext';
 
 export type RootStackParamList = {
@@ -47,25 +46,6 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
     );
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    const roleMap: Record<UserRole, keyof RootStackParamList> = {
-      admin: 'Admin',
-      supervisor: 'Supervisor',
-      manager: 'Manager',
-      planning: 'Planning',
-      logistics: 'Logistics',
-      design_engineer: 'DesignEngineer',
-      commercial_manager: 'CommercialManager',
-    };
-
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: roleMap[newRole] }],
-      })
-    );
-  };
-
   return (
     <DesignEngineerProvider>
       <Tab.Navigator
@@ -86,12 +66,9 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <RoleSwitcher onRoleChange={handleRoleChange} />
-              <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 10 }}>
-                <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+            </TouchableOpacity>
           ),
         })}
       >

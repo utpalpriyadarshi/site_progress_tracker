@@ -18,6 +18,8 @@ import {
   IconButton,
   Searchbar,
 } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import DailyReportModel from '../../models/DailyReportModel';
@@ -30,6 +32,10 @@ import { useSnackbar } from '../components/Snackbar';
 import FileViewer from 'react-native-file-viewer';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
+import { logger } from '../services/LoggingService';
+import { SupervisorHeader, EmptyState } from '../components/common';
+import { useDebounce } from '../hooks';
+import type { SupervisorDrawerParamList } from '../nav/SupervisorDrawerNavigator';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -41,6 +47,7 @@ interface ReportWithDetails {
 const ReportsHistoryScreen = () => {
   const { selectedSiteId, supervisorId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
+  const navigation = useNavigation<DrawerNavigationProp<SupervisorDrawerParamList>>();
   const [refreshing, setRefreshing] = useState(false);
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [filteredReports, setFilteredReports] = useState<ReportWithDetails[]>([]);
@@ -48,6 +55,7 @@ const ReportsHistoryScreen = () => {
   const [detailDialogVisible, setDetailDialogVisible] = useState(false);
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
 
   // Load reports
   const loadReports = async () => {
@@ -111,9 +119,14 @@ const ReportsHistoryScreen = () => {
       }
 
       setReports(reportsWithDetails);
-      applyFilters(reportsWithDetails, dateFilter, searchQuery);
+      applyFilters(reportsWithDetails, dateFilter, debouncedSearchQuery);
     } catch (error) {
-      console.error('Error loading reports:', error);
+      logger.error('Failed to load reports', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'loadReports',
+        supervisorId,
+        selectedSiteId,
+      });
       showSnackbar('Failed to load reports', 'error');
     }
   };
@@ -180,9 +193,10 @@ const ReportsHistoryScreen = () => {
     loadReports();
   }, [supervisorId, selectedSiteId]);
 
+  // Apply filters when date filter or debounced search changes (optimized for performance)
   useEffect(() => {
-    applyFilters(reports, dateFilter, searchQuery);
-  }, [dateFilter, searchQuery]);
+    applyFilters(reports, dateFilter, debouncedSearchQuery);
+  }, [dateFilter, debouncedSearchQuery]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -213,7 +227,11 @@ const ReportsHistoryScreen = () => {
         showAppsSuggestions: true
       });
     } catch (error: any) {
-      console.error('[PDF] Error viewing PDF:', error);
+      logger.error('Failed to view PDF', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleViewPdf',
+        pdfPath,
+      });
 
       // If no PDF viewer app, suggest sharing instead
       if (error.message?.includes('No app associated') || error.message?.includes('mime type')) {
@@ -239,7 +257,12 @@ const ReportsHistoryScreen = () => {
       const filename = pdfPath.split('/').pop() || 'DailyReport.pdf';
       const cachePath = `${RNFS.CachesDirectoryPath}/${filename}`;
 
-      console.log('[PDF] Copying to cache:', cachePath);
+      logger.debug('Copying PDF to cache for sharing', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        pdfPath,
+        cachePath,
+      });
       await RNFS.copyFile(pdfPath, cachePath);
 
       const shareOptions = {
@@ -250,23 +273,39 @@ const ReportsHistoryScreen = () => {
         failOnCancel: false,
       };
 
-      console.log('[PDF] Sharing from cache:', cachePath);
+      logger.debug('Sharing PDF from cache', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        cachePath,
+      });
 
       const result = await Share.open(shareOptions);
-      console.log('[PDF] Share result:', result);
+      logger.info('PDF shared successfully', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        result,
+      });
 
       // Clean up cache file after sharing
       try {
         await RNFS.unlink(cachePath);
       } catch (cleanupError) {
-        console.log('[PDF] Cache cleanup skipped:', cleanupError);
+        logger.debug('PDF cache cleanup skipped', {
+          component: 'ReportsHistoryScreen',
+          action: 'handleSharePdf',
+          cleanupError,
+        });
       }
 
       if (result.success !== false) {
         showSnackbar('Report shared successfully!', 'success');
       }
     } catch (error: any) {
-      console.error('[PDF] Error sharing PDF:', error);
+      logger.error('Failed to share PDF', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleSharePdf',
+        pdfPath,
+      });
 
       // Don't show error if user just cancelled
       if (error.message && !error.message.includes('User did not share') && !error.message.includes('cancelled')) {
@@ -326,8 +365,20 @@ const ReportsHistoryScreen = () => {
     }
   };
 
+  /**
+   * Navigate to Daily Work tab to create reports
+   */
+  const handleCreateReport = () => {
+    // Navigate to Daily Work tab via drawer navigator
+    navigation.navigate('SupervisorTabs' as any, {
+      screen: 'DailyWork',
+    } as any);
+  };
+
   return (
     <View style={styles.container}>
+      <SupervisorHeader title="Reports History" />
+
       {/* Site Selector */}
       <SiteSelector />
 
@@ -385,18 +436,48 @@ const ReportsHistoryScreen = () => {
         }
       >
         {filteredReports.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Title>📋 No Reports Found</Title>
-              <Paragraph>
-                {searchQuery
-                  ? 'No reports match your search criteria.'
-                  : selectedSiteId === 'all'
-                  ? 'No reports have been submitted yet.'
-                  : 'No reports found for this site.'}
-              </Paragraph>
-            </Card.Content>
-          </Card>
+          <EmptyState
+            icon={
+              searchQuery
+                ? 'magnify'
+                : selectedSiteId === 'all'
+                ? 'clipboard-text-outline'
+                : 'clipboard-text-off-outline'
+            }
+            title={
+              searchQuery
+                ? 'No Reports Found'
+                : selectedSiteId === 'all'
+                ? 'No Reports Yet'
+                : 'No Reports for This Site'
+            }
+            message={
+              searchQuery
+                ? 'No reports match your search criteria. Try different keywords.'
+                : selectedSiteId === 'all'
+                ? 'No daily reports have been submitted yet. Reports will appear here once created.'
+                : 'No daily reports found for this site. Reports will appear once submitted.'
+            }
+            helpText={
+              searchQuery || selectedSiteId === 'all'
+                ? undefined
+                : 'Daily reports document work progress, materials used, and site conditions. Submit reports from the Daily Work tab.'
+            }
+            tips={
+              searchQuery || selectedSiteId === 'all'
+                ? undefined
+                : [
+                    'Reports are generated from daily progress updates',
+                    'View, share, or download PDF reports',
+                    'Filter by site to find specific reports',
+                  ]
+            }
+            variant={searchQuery ? 'search' : 'default'}
+            actionText={searchQuery || selectedSiteId === 'all' ? undefined : 'Create Report'}
+            onAction={searchQuery || selectedSiteId === 'all' ? undefined : handleCreateReport}
+            secondaryActionText={searchQuery ? 'Clear Search' : undefined}
+            onSecondaryAction={searchQuery ? () => setSearchQuery('') : undefined}
+          />
         ) : (
           filteredReports.map(({ report, site, progressLogs, items }) => (
             <Card key={report.id} style={styles.reportCard}>
@@ -477,7 +558,7 @@ const ReportsHistoryScreen = () => {
               <Card.Actions>
                 <Button
                   icon="eye"
-                  onPress={() => handleViewDetails({ report, site, progressLogs })}
+                  onPress={() => handleViewDetails({ report, site, progressLogs, items })}
                 >
                   View Details
                 </Button>

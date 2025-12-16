@@ -533,12 +533,6 @@ const LogisticsDashboardScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Logistics Dashboard</Text>
-        <Text style={styles.subtitle}>Executive Overview & Performance</Text>
-      </View>
-
       {/* Project Selector */}
       {renderProjectSelector()}
 

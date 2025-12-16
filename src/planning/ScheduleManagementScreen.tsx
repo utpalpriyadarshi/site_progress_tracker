@@ -2,18 +2,15 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   Card,
-  Title,
   Button,
   Text,
   Chip,
-  IconButton,
   Searchbar,
   ProgressBar,
   Switch,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Q } from '@nozbe/watermelondb';
 import ItemModel from '../../models/ItemModel';
 
 /**
@@ -114,8 +111,6 @@ const ScheduleManagementScreenComponent = ({
       {/* Header Card with Filters */}
       <Card style={styles.headerCard}>
         <Card.Content>
-          <Title>Schedule Management</Title>
-
           {/* Project Selector */}
           <Text style={styles.label}>Project:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
