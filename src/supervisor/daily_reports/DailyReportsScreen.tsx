@@ -18,7 +18,7 @@ import { useReportSync } from './hooks/useReportSync';
 import { ReportSyncStatus } from './components/ReportSyncStatus';
 import { ItemsList } from './components/ItemsList';
 import { ProgressReportForm } from './components/ProgressReportForm';
-import { LoadingOverlay } from '../../components/common/LoadingOverlay';
+import { LoadingOverlay, SupervisorHeader } from '../../components/common';
 
 interface DailyReportsScreenComponentProps {
   sites: SiteModel[];
@@ -128,10 +128,12 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
 
   return (
     <View style={styles.container}>
-      {/* Header with sync status */}
-      <View style={styles.header}>
-        <ReportSyncStatus isOnline={isOnline} isSyncing={isSyncing} />
-      </View>
+      <SupervisorHeader
+        title="Daily Work"
+        rightActions={
+          <ReportSyncStatus isOnline={isOnline} isSyncing={isSyncing} />
+        }
+      />
 
       {/* Site Selector */}
       <View style={styles.selectorContainer}>

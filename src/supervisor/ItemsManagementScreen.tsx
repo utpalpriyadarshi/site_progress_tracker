@@ -28,6 +28,8 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
+import { SupervisorHeader, EmptyState } from '../components/common';
+import { useDebounce } from '../hooks';
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -70,6 +72,7 @@ const ItemsManagementScreenComponent = ({
 
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
   const [selectedStatus, setSelectedStatus] = useState<string[]>(['all']);
   const [selectedPhases, setSelectedPhases] = useState<string[]>(['all']);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'progress'>('name');
@@ -106,7 +109,7 @@ const ItemsManagementScreenComponent = ({
     { value: 'numbers', label: 'nos' },
   ];
 
-  // Combined filtering and sorting logic
+  // Combined filtering and sorting logic (memoized for performance)
   const displayedItems = useMemo(() => {
     let result = items;
 
@@ -115,9 +118,9 @@ const ItemsManagementScreenComponent = ({
       result = result.filter(item => item.siteId === selectedSiteId);
     }
 
-    // 2. Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // 2. Search filter (using debounced value for better performance)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(item =>
         item.name.toLowerCase().includes(query)
       );
@@ -156,7 +159,7 @@ const ItemsManagementScreenComponent = ({
     });
 
     return result;
-  }, [items, selectedSiteId, searchQuery, selectedStatus, selectedPhases, sortBy, sortDirection]);
+  }, [items, selectedSiteId, debouncedSearchQuery, selectedStatus, selectedPhases, sortBy, sortDirection]);
 
   // Update filteredItems when displayedItems changes
   useEffect(() => {
@@ -197,10 +200,10 @@ const ItemsManagementScreenComponent = ({
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return searchQuery.trim() !== '' ||
+    return debouncedSearchQuery.trim() !== '' ||
            !selectedStatus.includes('all') ||
            !selectedPhases.includes('all');
-  }, [searchQuery, selectedStatus, selectedPhases]);
+  }, [debouncedSearchQuery, selectedStatus, selectedPhases]);
 
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
@@ -352,6 +355,8 @@ const ItemsManagementScreenComponent = ({
 
   return (
     <View style={styles.container}>
+      <SupervisorHeader title="Manage Items" />
+
       <View style={styles.header}>
         <Button
           mode="contained"
@@ -412,17 +417,56 @@ const ItemsManagementScreenComponent = ({
 
       <ScrollView style={styles.scrollView}>
         {filteredItems.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text>
-                {hasActiveFilters
-                  ? 'No items match your filters. Try adjusting the search or filters.'
-                  : selectedSiteId === 'all'
-                  ? 'No items found. Select a site and create your first item!'
-                  : 'No items for this site. Add your first work item!'}
-              </Text>
-            </Card.Content>
-          </Card>
+          <EmptyState
+            icon={
+              hasActiveFilters
+                ? 'filter-variant'
+                : selectedSiteId === 'all'
+                ? 'map-marker-outline'
+                : 'package-variant-closed-plus'
+            }
+            title={
+              hasActiveFilters
+                ? 'No Items Found'
+                : selectedSiteId === 'all'
+                ? 'Select a Site'
+                : 'No Work Items Yet'
+            }
+            message={
+              hasActiveFilters
+                ? 'No items match your current search or filter criteria.'
+                : selectedSiteId === 'all'
+                ? 'Please select a specific site to view and manage work items.'
+                : 'Add your first work item to start tracking progress for this site.'
+            }
+            helpText={
+              hasActiveFilters || selectedSiteId === 'all'
+                ? undefined
+                : 'Work items represent specific tasks or activities. Track quantities, phases, and progress for each item.'
+            }
+            tips={
+              hasActiveFilters || selectedSiteId === 'all'
+                ? undefined
+                : [
+                    'Assign items to specific project phases',
+                    'Track planned vs actual quantities',
+                    'Monitor progress with status updates',
+                  ]
+            }
+            variant={hasActiveFilters ? 'search' : 'default'}
+            actionText={selectedSiteId === 'all' || hasActiveFilters ? undefined : 'Create Item'}
+            onAction={selectedSiteId === 'all' || hasActiveFilters ? undefined : openAddDialog}
+            secondaryActionText={hasActiveFilters ? 'Clear Filters' : undefined}
+            onSecondaryAction={
+              hasActiveFilters
+                ? () => {
+                    setSearchQuery('');
+                    setSelectedStatus(['all']);
+                    setSelectedPhases(['all']);
+                  }
+                : undefined
+            }
+          />
         ) : (
           filteredItems.map((item) => {
             const progress = getProgressPercentage(item);

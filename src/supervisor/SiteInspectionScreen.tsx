@@ -17,7 +17,9 @@ import {
   InspectionWithSite,
   InspectionFormData,
 } from './site_inspection/types';
-import { LoadingOverlay } from '../components/common/LoadingOverlay';
+import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../components/common';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import { SyncService } from '../../services/sync/SyncService';
 
 /**
  * SiteInspectionScreen
@@ -43,6 +45,27 @@ const SiteInspectionScreen = () => {
   const [inspectionToDelete, setInspectionToDelete] = useState<SiteInspectionModel | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Offline sync management
+  const {
+    isOnline,
+    syncStatus,
+    pendingCount,
+    sync: manualSync,
+    setPendingCount,
+  } = useOfflineSync({
+    onSync: async () => {
+      await SyncService.syncUp();
+      return { success: true };
+    },
+    autoSync: false,
+    onSyncSuccess: () => {
+      showSnackbar('Data synced successfully', 'success');
+      reload();
+    },
+    onSyncError: (error) => showSnackbar(typeof error === 'string' ? error : 'Sync failed', 'error'),
+    componentName: 'SiteInspectionScreen',
+  });
+
   // Data loading hook
   const {
     inspections,
@@ -56,6 +79,12 @@ const SiteInspectionScreen = () => {
     onError: (msg) => showSnackbar(msg, 'error'),
     onSyncSuccess: (count) => showSnackbar(`${count} records synced successfully`, 'success'),
   });
+
+  // Update pending count when inspections change
+  React.useEffect(() => {
+    const pending = inspections.filter(({ inspection }) => inspection.appSyncStatus === 'pending').length;
+    setPendingCount(pending);
+  }, [inspections, setPendingCount]);
 
   /**
    * Handle add inspection button
@@ -205,6 +234,28 @@ const SiteInspectionScreen = () => {
 
   return (
     <View style={styles.container}>
+      <SupervisorHeader
+        title="Site Inspection"
+        rightActions={
+          <SyncButton
+            syncStatus={syncStatus}
+            isOnline={isOnline}
+            pendingCount={pendingCount}
+            onPress={manualSync}
+            variant="icon"
+            showPendingCount
+          />
+        }
+      />
+
+      {/* Offline Indicator Banner */}
+      <OfflineIndicator
+        isOnline={isOnline}
+        pendingCount={pendingCount}
+        onSync={manualSync}
+        showWhenPending
+      />
+
       {/* Site Selector */}
       <SiteSelector />
 

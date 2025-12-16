@@ -11,11 +11,34 @@ import { useHindranceForm } from './hooks/useHindranceForm';
 import { HindranceList } from './components/HindranceList';
 import { HindranceForm } from './components/HindranceForm';
 import { canAddHindrance } from './utils';
-import { LoadingOverlay } from '../../components/common/LoadingOverlay';
+import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../../components/common';
+import { useOfflineSync } from '../../hooks/useOfflineSync';
+import { SyncService } from '../../../services/sync/SyncService';
 
 const HindranceReportScreen = () => {
   const { showSnackbar } = useSnackbar();
   const { selectedSiteId, supervisorId, projectId } = useSiteContext();
+
+  // Offline sync management
+  const {
+    isOnline,
+    syncStatus,
+    pendingCount,
+    sync: manualSync,
+    setPendingCount,
+  } = useOfflineSync({
+    onSync: async () => {
+      await SyncService.syncUp();
+      return { success: true };
+    },
+    autoSync: false,
+    onSyncSuccess: () => {
+      showSnackbar('Data synced successfully', 'success');
+      loadHindrances();
+    },
+    onSyncError: (error) => showSnackbar(typeof error === 'string' ? error : 'Sync failed', 'error'),
+    componentName: 'HindranceReportScreen',
+  });
 
   // Photo upload hook
   const {
@@ -80,8 +103,36 @@ const HindranceReportScreen = () => {
     setPhotos,
   });
 
+  // Update pending count when hindrances change
+  React.useEffect(() => {
+    const pending = hindrances.filter(h => h.hindrance.appSyncStatus === 'pending').length;
+    setPendingCount(pending);
+  }, [hindrances, setPendingCount]);
+
   return (
     <View style={styles.container}>
+      <SupervisorHeader
+        title="Hindrance Reports"
+        rightActions={
+          <SyncButton
+            syncStatus={syncStatus}
+            isOnline={isOnline}
+            pendingCount={pendingCount}
+            onPress={manualSync}
+            variant="icon"
+            showPendingCount
+          />
+        }
+      />
+
+      {/* Offline Indicator Banner */}
+      <OfflineIndicator
+        isOnline={isOnline}
+        pendingCount={pendingCount}
+        onSync={manualSync}
+        showWhenPending
+      />
+
       {/* Site Selector */}
       <SiteSelector />
 

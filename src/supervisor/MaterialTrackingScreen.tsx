@@ -11,6 +11,7 @@ import { Portal, Dialog, Button, TextInput, Menu, IconButton } from 'react-nativ
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { logger } from '../services/LoggingService';
+import { SupervisorHeader, EmptyState } from '../components/common';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -274,6 +275,8 @@ const MaterialTrackingScreenComponent = ({
 
   return (
     <View style={styles.container}>
+      <SupervisorHeader title="Material Tracking" />
+
       {/* Site Selector */}
       <View style={styles.selectorContainer}>
         <SiteSelector />
@@ -293,12 +296,32 @@ const MaterialTrackingScreenComponent = ({
       </View>
 
       {filteredMaterials.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No materials found for selected site</Text>
-          {selectedSiteId !== 'all' && (
-            <Text style={styles.emptyHint}>Tap "Add Material" to create one</Text>
-          )}
-        </View>
+        <EmptyState
+          icon={selectedSiteId === 'all' ? 'map-marker-outline' : 'package-variant'}
+          title={selectedSiteId === 'all' ? 'Select a Site' : 'No Materials Yet'}
+          message={
+            selectedSiteId === 'all'
+              ? 'Please select a specific site to view and manage materials.'
+              : 'Track construction materials, quantities, and suppliers for this site.'
+          }
+          helpText={
+            selectedSiteId === 'all'
+              ? undefined
+              : 'Materials management helps track inventory, deliveries, and usage for better project control.'
+          }
+          tips={
+            selectedSiteId === 'all'
+              ? undefined
+              : [
+                  'Link materials to specific work items',
+                  'Track ordered, delivered, and used quantities',
+                  'Monitor material status and suppliers',
+                ]
+          }
+          variant="default"
+          actionText={selectedSiteId === 'all' ? undefined : 'Add Material'}
+          onAction={selectedSiteId === 'all' ? undefined : openAddDialog}
+        />
       ) : (
         <FlatList
           data={filteredMaterials}

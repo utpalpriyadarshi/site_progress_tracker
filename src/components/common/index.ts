@@ -25,3 +25,15 @@ export type { LoadingOverlayProps } from './LoadingOverlay';
 
 // Error Boundary (existing)
 export { default as ErrorBoundary } from './ErrorBoundary';
+
+// Supervisor Header
+export { SupervisorHeader } from './SupervisorHeader';
+export type { SupervisorHeaderProps } from './SupervisorHeader';
+
+// Offline Indicator (Phase 3, Task 3.5)
+export { OfflineIndicator } from './OfflineIndicator';
+export type { OfflineIndicatorProps } from './OfflineIndicator';
+
+// Sync Button (Phase 3, Task 3.5)
+export { SyncButton } from './SyncButton';
+export type { SyncButtonProps } from './SyncButton';
