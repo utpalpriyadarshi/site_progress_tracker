@@ -19,3 +19,9 @@ export type { PhotoPickerDialogProps } from './PhotoPickerDialog';
 
 export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
+
+export { CopyItemsDialog } from './CopyItemsDialog';
+export type { CopyItemsDialogProps } from './CopyItemsDialog';
+
+export { DuplicateItemsDialog } from './DuplicateItemsDialog';
+export type { DuplicateItemsDialogProps } from './DuplicateItemsDialog';

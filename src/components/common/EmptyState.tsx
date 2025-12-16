@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 16,
-    opacity: 0.6,
+    opacity: 0.75, // Increased from 0.6 for better outdoor readability
     lineHeight: 20,
     maxWidth: 320,
     fontStyle: 'italic',

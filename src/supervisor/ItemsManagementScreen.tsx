@@ -26,6 +26,7 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { CopyItemsDialog, DuplicateItemsDialog } from '../components/dialogs';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
@@ -84,6 +85,15 @@ const ItemsManagementScreenComponent = ({
   const [editingItem, setEditingItem] = useState<ItemModel | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
+
+  // Copy feature state
+  const [overflowMenuVisible, setOverflowMenuVisible] = useState(false);
+  const [copyDialogVisible, setCopyDialogVisible] = useState(false);
+  const [duplicateDialogVisible, setDuplicateDialogVisible] = useState(false);
+  const [duplicateItems, setDuplicateItems] = useState<string[]>([]);
+  const [pendingCopyCallback, setPendingCopyCallback] = useState<
+    ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
+  >(null);
 
   // Form fields
   const [itemName, setItemName] = useState('');
@@ -204,6 +214,53 @@ const ItemsManagementScreenComponent = ({
            !selectedStatus.includes('all') ||
            !selectedPhases.includes('all');
   }, [debouncedSearchQuery, selectedStatus, selectedPhases]);
+
+  // Check if copy is available (need items in current site)
+  const canCopy = useMemo(() => {
+    if (selectedSiteId === 'all') return false;
+    const siteItems = items.filter(item => item.siteId === selectedSiteId);
+    return siteItems.length > 0;
+  }, [selectedSiteId, items]);
+
+  // Copy feature handlers
+  const handleCopySuccess = (copiedCount: number, destinationSiteName: string) => {
+    showSnackbar(
+      `✓ ${copiedCount} items copied to ${destinationSiteName}`,
+      'success'
+    );
+    setCopyDialogVisible(false);
+  };
+
+  const handleDuplicatesFound = (
+    duplicates: string[],
+    proceedWithCopy: (skipDuplicates: boolean, selectedDuplicates: string[]) => void
+  ) => {
+    setDuplicateItems(duplicates);
+    setPendingCopyCallback(() => proceedWithCopy);
+    setDuplicateDialogVisible(true);
+  };
+
+  const handleSkipDuplicates = (namesToSkip: string[]) => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(true, namesToSkip);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
+
+  const handleCreateAllDuplicates = () => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(false, []);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
+
+  const handleDuplicateCancel = () => {
+    setDuplicateDialogVisible(false);
+    setCopyDialogVisible(false);
+    setPendingCopyCallback(null);
+  };
 
   const openAddDialog = () => {
     if (selectedSiteId === 'all') {
@@ -355,7 +412,35 @@ const ItemsManagementScreenComponent = ({
 
   return (
     <View style={styles.container}>
-      <SupervisorHeader title="Manage Items" />
+      <SupervisorHeader
+        title="Manage Items"
+        rightActions={
+          <Menu
+            visible={overflowMenuVisible}
+            onDismiss={() => setOverflowMenuVisible(false)}
+            anchor={
+              <IconButton
+                icon="dots-vertical"
+                onPress={() => setOverflowMenuVisible(true)}
+              />
+            }
+          >
+            <Menu.Item
+              onPress={() => {
+                setOverflowMenuVisible(false);
+                if (canCopy) {
+                  setCopyDialogVisible(true);
+                } else {
+                  showSnackbar('Please select a site with items to copy', 'warning');
+                }
+              }}
+              title="Copy Items to Another Site"
+              leadingIcon="content-copy"
+              disabled={!canCopy}
+            />
+          </Menu>
+        }
+      />
 
       <View style={styles.header}>
         <Button
@@ -635,6 +720,30 @@ const ItemsManagementScreenComponent = ({
           setItemToDelete(null);
         }}
         destructive={true}
+      />
+
+      {/* Copy Items Dialog */}
+      <CopyItemsDialog
+        visible={copyDialogVisible}
+        sourceSiteId={selectedSiteId === 'all' ? '' : selectedSiteId}
+        sourceSiteName={
+          _sites.find(s => s.id === selectedSiteId)?.name || 'Current Site'
+        }
+        sourceItemCount={
+          items.filter(item => item.siteId === selectedSiteId).length
+        }
+        onClose={() => setCopyDialogVisible(false)}
+        onSuccess={handleCopySuccess}
+        onDuplicatesFound={handleDuplicatesFound}
+      />
+
+      {/* Duplicate Items Dialog */}
+      <DuplicateItemsDialog
+        visible={duplicateDialogVisible}
+        duplicateNames={duplicateItems}
+        onSkip={handleSkipDuplicates}
+        onCreateAll={handleCreateAllDuplicates}
+        onCancel={handleDuplicateCancel}
       />
     </View>
   );

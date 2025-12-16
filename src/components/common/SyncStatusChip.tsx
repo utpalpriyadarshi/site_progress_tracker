@@ -121,7 +121,7 @@ export const SyncStatusChip: React.FC<SyncStatusChipProps> = ({
         styles.chip,
         {
           borderColor: config.color,
-          backgroundColor: `${config.color}15`, // 15 = ~8% opacity in hex
+          backgroundColor: `${config.color}28`, // 28 = ~15% opacity in hex (improved outdoor readability)
         },
       ]}
       textStyle={[styles.text, { color: config.textColor }]}
