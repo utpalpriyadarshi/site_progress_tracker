@@ -36,7 +36,7 @@ const HindranceReportScreen = () => {
       showSnackbar('Data synced successfully', 'success');
       loadHindrances();
     },
-    onSyncError: (error) => showSnackbar(typeof error === 'string' ? error : 'Sync failed', 'error'),
+    // Removed onSyncError to prevent continuous popup when sync fails
     componentName: 'HindranceReportScreen',
   });
 

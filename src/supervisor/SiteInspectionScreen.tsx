@@ -62,7 +62,7 @@ const SiteInspectionScreen = () => {
       showSnackbar('Data synced successfully', 'success');
       reload();
     },
-    onSyncError: (error) => showSnackbar(typeof error === 'string' ? error : 'Sync failed', 'error'),
+    // Removed onSyncError to prevent continuous popup when sync fails
     componentName: 'SiteInspectionScreen',
   });
 

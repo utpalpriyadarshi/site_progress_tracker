@@ -421,6 +421,7 @@ const ItemsManagementScreenComponent = ({
             anchor={
               <IconButton
                 icon="dots-vertical"
+                iconColor="#fff"
                 onPress={() => setOverflowMenuVisible(true)}
               />
             }
