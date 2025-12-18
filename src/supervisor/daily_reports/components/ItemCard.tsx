@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   photoChip: {
     backgroundColor: '#E3F2FD',
-    height: 28,
+    height: 32,
   },
   photoChipText: {
     color: '#1976D2',

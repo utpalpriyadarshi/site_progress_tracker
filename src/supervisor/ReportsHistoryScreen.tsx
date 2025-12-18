@@ -315,8 +315,8 @@ const ReportsHistoryScreen = () => {
   };
 
   const handleShare = (report: DailyReportModel) => {
-    if (!report.pdfPath) {
-      showSnackbar('PDF not available for this report', 'warning');
+    if (!report.pdfPath || report.pdfPath.trim() === '') {
+      showSnackbar('PDF not available for this report. The PDF may have failed to generate during submission.', 'warning');
       return;
     }
     handleSharePdf(report.pdfPath, report);
@@ -565,7 +565,7 @@ const ReportsHistoryScreen = () => {
                 <Button
                   icon="share-variant"
                   onPress={() => handleShare(report)}
-                  disabled={!report.pdfPath}
+                  disabled={!report.pdfPath || report.pdfPath.trim() === ''}
                 >
                   Share
                 </Button>
@@ -650,7 +650,7 @@ const ReportsHistoryScreen = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            {selectedReport?.report.pdfPath && (
+            {selectedReport?.report.pdfPath && selectedReport.report.pdfPath.trim() !== '' ? (
               <>
                 <Button
                   icon="file-pdf-box"
@@ -667,6 +667,10 @@ const ReportsHistoryScreen = () => {
                   Share
                 </Button>
               </>
+            ) : (
+              <Text style={{ color: '#999', fontSize: 12, padding: 8 }}>
+                PDF not available (generation may have failed)
+              </Text>
             )}
             <Button onPress={handleCloseDialog}>Close</Button>
           </Dialog.Actions>

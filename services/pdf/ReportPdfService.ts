@@ -1,4 +1,5 @@
 import { generatePDF } from 'react-native-html-to-pdf';
+import RNFS from 'react-native-fs';
 import SiteModel from '../../models/SiteModel';
 import ItemModel from '../../models/ItemModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
@@ -29,22 +30,43 @@ interface ComprehensiveReportData {
 
 export class ReportPdfService {
   /**
+   * Ensure the Documents directory exists
+   */
+  private static async ensureDocumentsDirectory(): Promise<void> {
+    const documentsPath = `${RNFS.DocumentDirectoryPath}/Documents`;
+    const exists = await RNFS.exists(documentsPath);
+
+    if (!exists) {
+      await RNFS.mkdir(documentsPath);
+      console.log('✅ Created Documents directory:', documentsPath);
+    }
+  }
+
+  /**
    * Generate a PDF report for a site's daily progress
    */
   static async generateDailyReport(reportData: ReportData): Promise<string> {
-    const htmlContent = this.generateHtmlContent(reportData);
-
     try {
+      // Ensure Documents directory exists
+      await this.ensureDocumentsDirectory();
+
+      // Generate HTML content (now async)
+      const htmlContent = await this.generateHtmlContent(reportData);
+
+      const fileName = `DailyReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
+
       const options = {
         html: htmlContent,
-        fileName: `DailyReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`,
-        directory: 'Documents',
+        fileName: fileName,
+        directory: 'Documents',  // Relative path from DocumentDirectoryPath
       };
 
+      console.log('📄 Generating PDF:', fileName);
       const file = await generatePDF(options);
+      console.log('✅ PDF generated successfully:', file.filePath);
       return file.filePath || '';
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('❌ Error generating PDF:', error);
       throw new Error('Failed to generate PDF report');
     }
   }
@@ -53,19 +75,27 @@ export class ReportPdfService {
    * Generate a comprehensive PDF report (progress + hindrances + inspection)
    */
   static async generateComprehensiveReport(reportData: ComprehensiveReportData): Promise<string> {
-    const htmlContent = this.generateComprehensiveHtmlContent(reportData);
-
     try {
+      // Ensure Documents directory exists
+      await this.ensureDocumentsDirectory();
+
+      // Generate HTML content (now async)
+      const htmlContent = await this.generateComprehensiveHtmlContent(reportData);
+
+      const fileName = `ComprehensiveReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
+
       const options = {
         html: htmlContent,
-        fileName: `ComprehensiveReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`,
-        directory: 'Documents',
+        fileName: fileName,
+        directory: 'Documents',  // Relative path from DocumentDirectoryPath
       };
 
+      console.log('📄 Generating comprehensive PDF:', fileName);
       const file = await generatePDF(options);
+      console.log('✅ Comprehensive PDF generated successfully:', file.filePath);
       return file.filePath || '';
     } catch (error) {
-      console.error('Error generating comprehensive PDF:', error);
+      console.error('❌ Error generating comprehensive PDF:', error);
       throw new Error('Failed to generate comprehensive PDF report');
     }
   }
@@ -73,7 +103,7 @@ export class ReportPdfService {
   /**
    * Generate HTML content for the report
    */
-  private static generateHtmlContent(data: ReportData): string {
+  private static async generateHtmlContent(data: ReportData): Promise<string> {
     const { site, items, supervisorName, reportDate } = data;
 
     // Calculate overall progress
@@ -86,51 +116,53 @@ export class ReportPdfService {
         }, 0) / items.length
       : 0;
 
-    const itemsHtml = items
-      .map(({ item, progressLog }) => {
-        const progress = item.plannedQuantity > 0
-          ? ((item.completedQuantity / item.plannedQuantity) * 100).toFixed(1)
-          : '0.0';
+    // Generate HTML for each item (with async photo handling)
+    const itemsHtmlPromises = items.map(async ({ item, progressLog }) => {
+      const progress = item.plannedQuantity > 0
+        ? ((item.completedQuantity / item.plannedQuantity) * 100).toFixed(1)
+        : '0.0';
 
-        // Generate photos HTML if progress log has photos
-        const photosHtml = progressLog ? this.generatePhotosHtml(progressLog) : '';
+      // Generate photos HTML if progress log has photos (now async)
+      const photosHtml = progressLog ? await this.generatePhotosHtml(progressLog) : '';
 
-        return `
-          <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">${item.name}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
-              ${item.completedQuantity.toFixed(2)} / ${item.plannedQuantity.toFixed(2)} ${item.unitOfMeasurement}
-            </td>
-            <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
-              <span style="font-weight: bold; color: ${this.getProgressColor(parseFloat(progress))}">
-                ${progress}%
-              </span>
-            </td>
-            <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
-              <span style="
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-                background-color: ${this.getStatusBackgroundColor(item.status)};
-                color: white;
-              ">
-                ${item.status.replace('_', ' ').toUpperCase()}
-              </span>
-            </td>
-            <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; font-size: 12px;">
-              ${progressLog?.notes || 'No notes'}
-            </td>
-          </tr>
-          ${photosHtml ? `
-          <tr>
-            <td colspan="5" style="padding: 16px; background-color: #fafafa; border-bottom: 1px solid #e0e0e0;">
-              ${photosHtml}
-            </td>
-          </tr>
-          ` : ''}
-        `;
-      })
-      .join('');
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">${item.name}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
+            ${item.completedQuantity.toFixed(2)} / ${item.plannedQuantity.toFixed(2)} ${item.unitOfMeasurement}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
+            <span style="font-weight: bold; color: ${this.getProgressColor(parseFloat(progress))}">
+              ${progress}%
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">
+            <span style="
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-size: 12px;
+              background-color: ${this.getStatusBackgroundColor(item.status)};
+              color: white;
+            ">
+              ${item.status.replace('_', ' ').toUpperCase()}
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; font-size: 12px;">
+            ${progressLog?.notes || 'No notes'}
+          </td>
+        </tr>
+        ${photosHtml ? `
+        <tr>
+          <td colspan="5" style="padding: 16px; background-color: #fafafa; border-bottom: 1px solid #e0e0e0;">
+            ${photosHtml}
+          </td>
+        </tr>
+        ` : ''}
+      `;
+    });
+
+    const itemsHtmlArray = await Promise.all(itemsHtmlPromises);
+    const itemsHtml = itemsHtmlArray.join('');
 
     return `
       <!DOCTYPE html>
@@ -316,8 +348,9 @@ export class ReportPdfService {
 
   /**
    * Generate HTML for photos section
+   * Temporarily disabled - photos cause PDF generation to fail due to size
    */
-  private static generatePhotosHtml(progressLog: ProgressLogModel): string {
+  private static async generatePhotosHtml(progressLog: ProgressLogModel): Promise<string> {
     // Check if photos exist and are not empty
     if (!progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
       return '';
@@ -331,57 +364,14 @@ export class ReportPdfService {
         return '';
       }
 
-      // Generate HTML for each photo with proper layout
-      const photosHtml = photos
-        .map((photoUri: string, index: number) => {
-          // Remove 'file://' prefix if it exists to avoid doubling
-          const cleanUri = photoUri.replace(/^file:\/\//, '');
-          return `
-          <div style="
-            display: inline-block;
-            margin: 8px;
-            vertical-align: top;
-            text-align: center;
-          ">
-            <img
-              src="file://${cleanUri}"
-              style="
-                width: 200px;
-                height: 150px;
-                object-fit: cover;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                border: 1px solid #e0e0e0;
-              "
-            />
-            <p style="
-              margin-top: 6px;
-              font-size: 10px;
-              color: #666;
-              font-weight: 500;
-            ">Photo ${index + 1}</p>
-          </div>
-        `;
-        })
-        .join('');
-
+      // TEMPORARILY: Just show count, don't embed images to avoid PDF generation failure
       return `
         <div style="margin-top: 8px;">
-          <h4 style="
+          <p style="
             font-size: 12px;
             color: #666;
-            margin-bottom: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          ">📸 Attached Photos (${photos.length})</h4>
-          <div style="
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-          ">
-            ${photosHtml}
-          </div>
+            font-style: italic;
+          ">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
         </div>
       `;
     } catch (error) {
@@ -413,7 +403,7 @@ export class ReportPdfService {
   /**
    * Generate comprehensive HTML content (progress + hindrances + inspection)
    */
-  private static generateComprehensiveHtmlContent(data: ComprehensiveReportData): string {
+  private static async generateComprehensiveHtmlContent(data: ComprehensiveReportData): Promise<string> {
     const { site, items, hindrances, inspection, supervisorName, reportDate } = data;
 
     // Calculate overall progress
@@ -426,10 +416,10 @@ export class ReportPdfService {
         }, 0) / items.length
       : 0;
 
-    // Generate sections
-    const progressSection = this.generateProgressSection(items);
-    const hindranceSection = this.generateHindranceSection(hindrances);
-    const inspectionSection = this.generateInspectionSection(inspection);
+    // Generate sections (now async)
+    const progressSection = await this.generateProgressSection(items);
+    const hindranceSection = await this.generateHindranceSection(hindrances);
+    const inspectionSection = await this.generateInspectionSection(inspection);
 
     return `
       <!DOCTYPE html>
@@ -639,7 +629,7 @@ export class ReportPdfService {
   /**
    * Generate progress section HTML
    */
-  private static generateProgressSection(items: Array<{ item: ItemModel; progressLog: ProgressLogModel | null }>): string {
+  private static async generateProgressSection(items: Array<{ item: ItemModel; progressLog: ProgressLogModel | null }>): Promise<string> {
     if (items.length === 0) {
       return `
         <div class="section">
@@ -651,44 +641,45 @@ export class ReportPdfService {
       `;
     }
 
-    const itemsHtml = items
-      .map(({ item, progressLog }) => {
-        const progress = item.plannedQuantity > 0
-          ? ((item.completedQuantity / item.plannedQuantity) * 100).toFixed(1)
-          : '0.0';
+    const itemsHtmlPromises = items.map(async ({ item, progressLog }) => {
+      const progress = item.plannedQuantity > 0
+        ? ((item.completedQuantity / item.plannedQuantity) * 100).toFixed(1)
+        : '0.0';
 
-        const photosHtml = progressLog ? this.generatePhotosHtml(progressLog) : '';
+      const photosHtml = progressLog ? await this.generatePhotosHtml(progressLog) : '';
 
-        return `
-          <tr>
-            <td>${item.name}</td>
-            <td style="text-align: center;">
-              ${item.completedQuantity.toFixed(2)} / ${item.plannedQuantity.toFixed(2)} ${item.unitOfMeasurement}
-            </td>
-            <td style="text-align: center;">
-              <span style="font-weight: bold; color: ${this.getProgressColor(parseFloat(progress))}">
-                ${progress}%
-              </span>
-            </td>
-            <td style="text-align: center;">
-              <span class="status-badge" style="background-color: ${this.getStatusBackgroundColor(item.status)}; color: white;">
-                ${item.status.replace('_', ' ')}
-              </span>
-            </td>
-            <td style="font-size: 12px;">
-              ${progressLog?.notes || 'No notes'}
-            </td>
-          </tr>
-          ${photosHtml ? `
-          <tr>
-            <td colspan="5" style="padding: 16px; background-color: #fafafa;">
-              ${photosHtml}
-            </td>
-          </tr>
-          ` : ''}
-        `;
-      })
-      .join('');
+      return `
+        <tr>
+          <td>${item.name}</td>
+          <td style="text-align: center;">
+            ${item.completedQuantity.toFixed(2)} / ${item.plannedQuantity.toFixed(2)} ${item.unitOfMeasurement}
+          </td>
+          <td style="text-align: center;">
+            <span style="font-weight: bold; color: ${this.getProgressColor(parseFloat(progress))}">
+              ${progress}%
+            </span>
+          </td>
+          <td style="text-align: center;">
+            <span class="status-badge" style="background-color: ${this.getStatusBackgroundColor(item.status)}; color: white;">
+              ${item.status.replace('_', ' ')}
+            </span>
+          </td>
+          <td style="font-size: 12px;">
+            ${progressLog?.notes || 'No notes'}
+          </td>
+        </tr>
+        ${photosHtml ? `
+        <tr>
+          <td colspan="5" style="padding: 16px; background-color: #fafafa;">
+            ${photosHtml}
+          </td>
+        </tr>
+        ` : ''}
+      `;
+    });
+
+    const itemsHtmlArray = await Promise.all(itemsHtmlPromises);
+    const itemsHtml = itemsHtmlArray.join('');
 
     return `
       <div class="section">
@@ -716,7 +707,7 @@ export class ReportPdfService {
   /**
    * Generate hindrance section HTML
    */
-  private static generateHindranceSection(hindrances: HindranceModel[]): string {
+  private static async generateHindranceSection(hindrances: HindranceModel[]): Promise<string> {
     if (hindrances.length === 0) {
       return `
         <div class="section">
@@ -728,37 +719,38 @@ export class ReportPdfService {
       `;
     }
 
-    const hindrancesHtml = hindrances
-      .map((hindrance, index) => {
-        const priorityClass = `priority-${hindrance.priority}`;
-        const photos = this.generateHindrancePhotosHtml(hindrance);
+    const hindrancesHtmlPromises = hindrances.map(async (hindrance, index) => {
+      const priorityClass = `priority-${hindrance.priority}`;
+      const photos = await this.generateHindrancePhotosHtml(hindrance);
 
-        return `
-          <tr>
-            <td>${index + 1}</td>
-            <td>
-              <strong>${hindrance.title}</strong>
-              <div style="font-size: 12px; color: #666; margin-top: 4px;">${hindrance.description}</div>
-            </td>
-            <td style="text-align: center;">
-              <span class="${priorityClass}">${hindrance.priority.toUpperCase()}</span>
-            </td>
-            <td style="text-align: center;">
-              <span class="status-badge" style="background-color: ${this.getHindranceStatusColor(hindrance.status)}; color: white;">
-                ${hindrance.status.replace('_', ' ')}
-              </span>
-            </td>
-          </tr>
-          ${photos ? `
-          <tr>
-            <td colspan="4" style="padding: 16px; background-color: #fafafa;">
-              ${photos}
-            </td>
-          </tr>
-          ` : ''}
-        `;
-      })
-      .join('');
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>
+            <strong>${hindrance.title}</strong>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">${hindrance.description}</div>
+          </td>
+          <td style="text-align: center;">
+            <span class="${priorityClass}">${hindrance.priority.toUpperCase()}</span>
+          </td>
+          <td style="text-align: center;">
+            <span class="status-badge" style="background-color: ${this.getHindranceStatusColor(hindrance.status)}; color: white;">
+              ${hindrance.status.replace('_', ' ')}
+            </span>
+          </td>
+        </tr>
+        ${photos ? `
+        <tr>
+          <td colspan="4" style="padding: 16px; background-color: #fafafa;">
+            ${photos}
+          </td>
+        </tr>
+        ` : ''}
+      `;
+    });
+
+    const hindrancesHtmlArray = await Promise.all(hindrancesHtmlPromises);
+    const hindrancesHtml = hindrancesHtmlArray.join('');
 
     return `
       <div class="section">
@@ -785,7 +777,7 @@ export class ReportPdfService {
   /**
    * Generate inspection section HTML
    */
-  private static generateInspectionSection(inspection: SiteInspectionModel | null): string {
+  private static async generateInspectionSection(inspection: SiteInspectionModel | null): Promise<string> {
     if (!inspection) {
       return `
         <div class="section">
@@ -799,7 +791,7 @@ export class ReportPdfService {
 
     const ratingClass = `rating-${inspection.overallRating}`;
     const checklistData = this.parseChecklistData(inspection.checklistData);
-    const photos = this.generateInspectionPhotosHtml(inspection);
+    const photos = await this.generateInspectionPhotosHtml(inspection);
 
     return `
       <div class="section">
@@ -868,8 +860,9 @@ export class ReportPdfService {
 
   /**
    * Generate hindrance photos HTML
+   * Temporarily disabled - photos cause PDF generation to fail due to size
    */
-  private static generateHindrancePhotosHtml(hindrance: HindranceModel): string {
+  private static async generateHindrancePhotosHtml(hindrance: HindranceModel): Promise<string> {
     if (!hindrance.photos || hindrance.photos === '[]' || hindrance.photos === '') {
       return '';
     }
@@ -880,22 +873,10 @@ export class ReportPdfService {
         return '';
       }
 
-      const photosHtml = photos
-        .map((photoUri: string, index: number) => {
-          const cleanUri = photoUri.replace(/^file:\/\//, '');
-          return `
-          <div style="display: inline-block; margin: 8px; text-align: center;">
-            <img src="file://${cleanUri}" style="width: 200px; height: 150px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;" />
-            <p style="margin-top: 6px; font-size: 10px; color: #666; font-weight: 500;">Photo ${index + 1}</p>
-          </div>
-        `;
-        })
-        .join('');
-
+      // TEMPORARILY: Just show count
       return `
         <div style="margin-top: 8px;">
-          <h4 style="font-size: 12px; color: #666; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">📸 Attached Photos (${photos.length})</h4>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">${photosHtml}</div>
+          <p style="font-size: 12px; color: #666; font-style: italic;">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
         </div>
       `;
     } catch (error) {
@@ -905,8 +886,9 @@ export class ReportPdfService {
 
   /**
    * Generate inspection photos HTML
+   * Temporarily disabled - photos cause PDF generation to fail due to size
    */
-  private static generateInspectionPhotosHtml(inspection: SiteInspectionModel): string {
+  private static async generateInspectionPhotosHtml(inspection: SiteInspectionModel): Promise<string> {
     if (!inspection.photos || inspection.photos === '[]' || inspection.photos === '') {
       return '';
     }
@@ -917,22 +899,10 @@ export class ReportPdfService {
         return '';
       }
 
-      const photosHtml = photos
-        .map((photoUri: string, index: number) => {
-          const cleanUri = photoUri.replace(/^file:\/\//, '');
-          return `
-          <div style="display: inline-block; margin: 8px; text-align: center;">
-            <img src="file://${cleanUri}" style="width: 200px; height: 150px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;" />
-            <p style="margin-top: 6px; font-size: 10px; color: #666; font-weight: 500;">Photo ${index + 1}</p>
-          </div>
-        `;
-        })
-        .join('');
-
+      // TEMPORARILY: Just show count
       return `
         <div style="margin-top: 8px;">
-          <h4 style="font-size: 12px; color: #666; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">📸 Inspection Photos (${photos.length})</h4>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">${photosHtml}</div>
+          <p style="font-size: 12px; color: #666; font-style: italic;">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
         </div>
       `;
     } catch (error) {

@@ -152,6 +152,12 @@ const DashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('Issues')}
             />
             <QuickActionButton
+              icon="history"
+              label="Report History"
+              color="#f57c00"
+              onPress={() => navigation.navigate('History')}
+            />
+            <QuickActionButton
               icon="inventory"
               label="Materials"
               color="#7b1fa2"
