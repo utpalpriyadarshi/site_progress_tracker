@@ -6,6 +6,8 @@
  * In production: can be extended to send to error tracking service (Sentry, etc.)
  */
 
+import RNFS from 'react-native-fs';
+
 export enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
@@ -24,6 +26,43 @@ interface LogContext {
 
 class LoggingService {
   private isDevelopment = __DEV__;
+  private logFilePath = `${RNFS.DocumentDirectoryPath}/app_logs.txt`;
+  private fileLoggingEnabled = true; // Set to false to disable file logging
+
+  /**
+   * Write log to file for debugging when DevTools/console not available
+   */
+  private async writeToFile(logMessage: string): Promise<void> {
+    if (!this.fileLoggingEnabled) return;
+
+    try {
+      // Append to log file
+      await RNFS.appendFile(this.logFilePath, logMessage + '\n', 'utf8');
+    } catch (error) {
+      // Silently fail if file write fails (don't want to break app)
+    }
+  }
+
+  /**
+   * Clear log file (useful for testing)
+   */
+  async clearLogFile(): Promise<void> {
+    try {
+      const exists = await RNFS.exists(this.logFilePath);
+      if (exists) {
+        await RNFS.unlink(this.logFilePath);
+      }
+    } catch (error) {
+      // Silently fail
+    }
+  }
+
+  /**
+   * Get log file path for export/viewing
+   */
+  getLogFilePath(): string {
+    return this.logFilePath;
+  }
 
   /**
    * Log debug information (only in development)
@@ -73,6 +112,9 @@ class LoggingService {
     const timestamp = new Date().toISOString();
     const contextString = context ? ` | ${JSON.stringify(context)}` : '';
     const logMessage = `[${timestamp}] [${level}] ${message}${contextString}`;
+
+    // Write to file (async, non-blocking)
+    this.writeToFile(logMessage);
 
     // In development, use console with appropriate level
     if (this.isDevelopment) {
