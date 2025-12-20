@@ -121,6 +121,11 @@ export const useReportSync = ({
 
           // Generate PDF report
           let pdfPath = '';
+          // v33: PDF error tracking
+          let pdfErrorMessage: string | undefined;
+          let pdfErrorTimestamp: number | undefined;
+          let pdfPhotoCount: number | undefined;
+
           try {
             const itemsWithLogs = siteItems.map(item => ({
               item,
@@ -167,12 +172,42 @@ export const useReportSync = ({
               siteId,
             });
           } catch (pdfError) {
+            // Count photos for diagnostics
+            const photoCount = siteLogs.reduce((total, log) => {
+              const photos = (log as any).photos || '[]';
+              try {
+                const photosArray = JSON.parse(photos);
+                return total + (Array.isArray(photosArray) ? photosArray.length : 0);
+              } catch {
+                return total;
+              }
+            }, 0);
+
+            // Store error info for database (v33)
+            pdfPath = ''; // PDF generation failed
+            pdfErrorMessage = (pdfError as Error).message || 'Unknown PDF error';
+            pdfErrorTimestamp = Date.now();
+            pdfPhotoCount = photoCount;
+
             logger.error('PDF generation failed', pdfError as Error, {
               component: 'useReportSync',
               action: 'submitReports',
               siteId,
+              siteName: site.name,
+              reportDate: new Date(startOfDay).toISOString(),
+              itemCount: siteLogs.length,
+              photoCount,
+              hasPhotos: photoCount > 0,
+              errorType: (pdfError as Error).name,
+              errorMessage: (pdfError as Error).message,
+              stack: (pdfError as Error).stack?.split('\n').slice(0, 3).join('\n'), // First 3 lines
             });
-            onWarning('Report saved but PDF generation failed');
+
+            onWarning(
+              photoCount > 0
+                ? `Report saved but PDF generation failed (${photoCount} photos may be causing issues)`
+                : 'Report saved but PDF generation failed'
+            );
             // Continue even if PDF generation fails
           }
 
@@ -186,6 +221,10 @@ export const useReportSync = ({
             report.totalProgress = totalProgress;
             report.pdfPath = pdfPath;
             report.notes = `${siteLogs.length} items updated`;
+            // v33: PDF error tracking
+            report.pdfErrorMessage = pdfErrorMessage;
+            report.pdfErrorTimestamp = pdfErrorTimestamp;
+            report.pdfPhotoCount = pdfPhotoCount;
             report.appSyncStatus = isOnline ? 'synced' : 'pending';
           });
 

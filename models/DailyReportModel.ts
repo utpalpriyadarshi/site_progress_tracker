@@ -18,6 +18,12 @@ export default class DailyReportModel extends Model {
   @field('total_progress') totalProgress!: number; // overall progress percentage
   @field('pdf_path') pdfPath!: string; // local path to generated PDF
   @field('notes') notes!: string; // overall report notes/summary
+
+  // v33: PDF error tracking (Phase A: Share Button Photo Issue fix)
+  @field('pdf_error_message') pdfErrorMessage?: string; // error message when PDF generation fails
+  @field('pdf_error_timestamp') pdfErrorTimestamp?: number; // timestamp when PDF error occurred
+  @field('pdf_photo_count') pdfPhotoCount?: number; // number of photos in report (for debugging)
+
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking
 }
