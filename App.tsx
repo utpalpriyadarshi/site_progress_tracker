@@ -13,6 +13,7 @@ import MainNavigator from './src/nav/MainNavigator';
 
 // Import database service
 import { SimpleDatabaseService } from './services/db/SimpleDatabaseService';
+import { database } from './models/database';
 
 // Import Snackbar provider
 import { SnackbarProvider } from './src/components/Snackbar';
@@ -23,6 +24,10 @@ import { checkLatestSession } from './scripts/testCheckSessions';
 // Week 8, Day 3-4: Import network and sync managers
 import NetworkMonitor from './services/network/NetworkMonitor';
 import AutoSyncManager from './services/sync/AutoSyncManager';
+
+// Phase B: Background PDF Queue for async PDF generation
+import { backgroundPdfQueue } from './services/BackgroundPdfQueue';
+import { logger } from './src/services/LoggingService';
 
 function App() {
   const [isReady, setIsReady] = useState(false);
@@ -45,10 +50,26 @@ function App() {
     NetworkMonitor.initialize();
     AutoSyncManager.initialize();
 
+    // Phase B: Initialize background PDF queue
+    backgroundPdfQueue.initialize(database);
+    backgroundPdfQueue.startProcessing(10000); // Process every 10 seconds
+
+    logger.info('BackgroundPdfQueue started', {
+      component: 'App',
+      action: 'useEffect',
+    });
+
     // Cleanup on unmount
     return () => {
       NetworkMonitor.cleanup();
       AutoSyncManager.stop();
+
+      // Phase B: Stop PDF queue processing
+      backgroundPdfQueue.stopProcessing();
+      logger.info('BackgroundPdfQueue stopped', {
+        component: 'App',
+        action: 'useEffect:cleanup',
+      });
     };
   }, []);
 

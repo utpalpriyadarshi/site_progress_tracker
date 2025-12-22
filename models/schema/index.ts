@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 32, // Added vendor_name to invoices table (v2.11 fix)
+  version: 34, // Added PDF generation status for async queue (Phase B: Share Button Photo Issue fix)
   tables: [
     tableSchema({
       name: 'projects',
@@ -137,6 +137,14 @@ export default appSchema({
         { name: 'total_progress', type: 'number' }, // overall progress percentage
         { name: 'pdf_path', type: 'string', isOptional: true }, // local path to PDF
         { name: 'notes', type: 'string', isOptional: true }, // overall report notes
+        // v33: PDF error tracking (Phase A: Share Button Photo Issue fix)
+        { name: 'pdf_error_message', type: 'string', isOptional: true }, // error message when PDF fails
+        { name: 'pdf_error_timestamp', type: 'number', isOptional: true }, // when PDF error occurred
+        { name: 'pdf_photo_count', type: 'number', isOptional: true }, // photo count for debugging
+        // v34: PDF generation status (Phase B: Share Button Photo Issue fix - Async PDF)
+        { name: 'pdf_generation_status', type: 'string' }, // pending, generating, completed, failed, skipped
+        { name: 'pdf_generation_attempts', type: 'number' }, // retry counter
+        { name: 'pdf_last_attempt_timestamp', type: 'number', isOptional: true }, // last attempt timestamp
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],

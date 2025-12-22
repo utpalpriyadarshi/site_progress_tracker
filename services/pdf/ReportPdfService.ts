@@ -5,6 +5,7 @@ import ItemModel from '../../models/ItemModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
 import HindranceModel from '../../models/HindranceModel';
 import SiteInspectionModel from '../../models/SiteInspectionModel';
+import { logger } from '../../src/services/LoggingService';
 
 interface ReportData {
   site: SiteModel;
@@ -30,6 +31,204 @@ interface ComprehensiveReportData {
 
 export class ReportPdfService {
   /**
+   * Calculate total photo count across all items
+   */
+  private static calculatePhotoCount(items: Array<{ item: ItemModel; progressLog: ProgressLogModel | null }>): number {
+    return items.reduce((total, { progressLog }) => {
+      if (!progressLog || !progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
+        return total;
+      }
+      try {
+        const photos = JSON.parse(progressLog.photos);
+        return total + (Array.isArray(photos) ? photos.length : 0);
+      } catch {
+        return total;
+      }
+    }, 0);
+  }
+
+  /**
+   * Collects metadata about photos for diagnostics
+   */
+  private static async collectPhotoMetadata(items: Array<{ item: ItemModel; progressLog: ProgressLogModel | null }>): Promise<{
+    totalSize: number;
+    photoDetails: Array<{
+      itemIndex: number;
+      photoIndex: number;
+      path: string;
+      exists: boolean;
+      size: number;
+      extension: string;
+    }>;
+    errors: string[];
+  }> {
+    const result = {
+      totalSize: 0,
+      photoDetails: [] as Array<{
+        itemIndex: number;
+        photoIndex: number;
+        path: string;
+        exists: boolean;
+        size: number;
+        extension: string;
+      }>,
+      errors: [] as string[],
+    };
+
+    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+      const { progressLog } = items[itemIndex];
+
+      if (!progressLog || !progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
+        continue;
+      }
+
+      try {
+        const photos = JSON.parse(progressLog.photos);
+
+        if (!Array.isArray(photos)) {
+          continue;
+        }
+
+        for (let photoIndex = 0; photoIndex < photos.length; photoIndex++) {
+          const photo = photos[photoIndex];
+          const photoPath = typeof photo === 'string' ? photo : photo?.uri;
+
+          if (!photoPath) {
+            continue;
+          }
+
+          try {
+            // Check if file exists and get size
+            const exists = await RNFS.exists(photoPath);
+            let size = 0;
+
+            if (exists) {
+              const stat = await RNFS.stat(photoPath);
+              size = parseInt(stat.size, 10);
+              result.totalSize += size;
+            }
+
+            const extension = photoPath.toLowerCase().split('.').pop() || 'unknown';
+
+            result.photoDetails.push({
+              itemIndex,
+              photoIndex,
+              path: photoPath.substring(Math.max(0, photoPath.length - 40)), // Last 40 chars
+              exists,
+              size,
+              extension,
+            });
+
+          } catch (error) {
+            result.errors.push(
+              `Item ${itemIndex}, Photo ${photoIndex}: ${(error as Error).message}`
+            );
+          }
+        }
+      } catch (parseError) {
+        result.errors.push(`Item ${itemIndex}: JSON parsing failed - ${(parseError as Error).message}`);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Validates photo paths and logs suspicious entries
+   */
+  private static validatePhotoPaths(items: Array<{ item: ItemModel; progressLog: ProgressLogModel | null }>): {
+    totalPhotos: number;
+    validPhotos: number;
+    invalidPhotos: string[];
+    warnings: string[];
+  } {
+    const result = {
+      totalPhotos: 0,
+      validPhotos: 0,
+      invalidPhotos: [] as string[],
+      warnings: [] as string[],
+    };
+
+    items.forEach(({ item, progressLog }, itemIndex) => {
+      logger.debug('Validating photo paths for item', {
+        component: 'ReportPdfService',
+        action: 'validatePhotoPaths',
+        itemIndex,
+        itemName: item.name,
+        hasProgressLog: !!progressLog,
+        photosField: progressLog?.photos?.substring(0, 100),
+        photosLength: progressLog?.photos?.length,
+      });
+
+      if (!progressLog || !progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
+        return;
+      }
+
+      try {
+        const photos = JSON.parse(progressLog.photos);
+
+        logger.debug('Photos parsed successfully', {
+          component: 'ReportPdfService',
+          action: 'validatePhotoPaths',
+          itemName: item.name,
+          isArray: Array.isArray(photos),
+          photoCount: Array.isArray(photos) ? photos.length : 0,
+        });
+
+        if (!Array.isArray(photos)) {
+          result.invalidPhotos.push(`Item ${itemIndex} (${item.name}): Photos is not an array`);
+          return;
+        }
+
+        photos.forEach((photo: any, photoIndex: number) => {
+          result.totalPhotos++;
+          logger.debug('Photo counted', {
+            component: 'ReportPdfService',
+            action: 'validatePhotoPaths',
+            itemName: item.name,
+            photoIndex,
+            totalPhotosNow: result.totalPhotos,
+          });
+
+          // Check if path exists
+          const photoPath = typeof photo === 'string' ? photo : photo?.uri;
+
+          if (!photoPath || photoPath.trim() === '') {
+            result.invalidPhotos.push(`Item ${itemIndex} (${item.name}), Photo ${photoIndex}: Empty path`);
+            return;
+          }
+
+          // Check file extension
+          const ext = photoPath.toLowerCase().split('.').pop();
+          if (!['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(ext || '')) {
+            result.warnings.push(`Item ${itemIndex} (${item.name}), Photo ${photoIndex}: Unexpected extension .${ext}`);
+          }
+
+          // Check path format
+          if (!photoPath.startsWith('file://') && !photoPath.startsWith('/')) {
+            result.warnings.push(`Item ${itemIndex} (${item.name}), Photo ${photoIndex}: Unusual path format ${photoPath.substring(0, 20)}...`);
+          }
+
+          result.validPhotos++;
+        });
+      } catch (error) {
+        result.invalidPhotos.push(`Item ${itemIndex} (${item.name}): JSON parsing failed - ${(error as Error).message}`);
+      }
+    });
+
+    logger.debug('Photo validation completed', {
+      component: 'ReportPdfService',
+      action: 'validatePhotoPaths',
+      totalPhotos: result.totalPhotos,
+      validPhotos: result.validPhotos,
+      invalidPhotosCount: result.invalidPhotos.length,
+      warningsCount: result.warnings.length,
+    });
+
+    return result;
+  }
+
+  /**
    * Ensure the Documents directory exists
    */
   private static async ensureDocumentsDirectory(): Promise<void> {
@@ -38,7 +237,11 @@ export class ReportPdfService {
 
     if (!exists) {
       await RNFS.mkdir(documentsPath);
-      console.log('✅ Created Documents directory:', documentsPath);
+      logger.info('Created Documents directory', {
+        component: 'ReportPdfService',
+        action: 'ensureDocumentsDirectory',
+        documentsPath,
+      });
     }
   }
 
@@ -46,14 +249,17 @@ export class ReportPdfService {
    * Generate a PDF report for a site's daily progress
    */
   static async generateDailyReport(reportData: ReportData): Promise<string> {
+    const fileName = `DailyReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
+
     try {
       // Ensure Documents directory exists
       await this.ensureDocumentsDirectory();
 
+      // Collect photo metadata
+      const photoMetadata = await this.collectPhotoMetadata(reportData.items);
+
       // Generate HTML content (now async)
       const htmlContent = await this.generateHtmlContent(reportData);
-
-      const fileName = `DailyReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
 
       const options = {
         html: htmlContent,
@@ -61,12 +267,51 @@ export class ReportPdfService {
         directory: 'Documents',  // Relative path from DocumentDirectoryPath
       };
 
-      console.log('📄 Generating PDF:', fileName);
+      logger.info('Starting PDF generation', {
+        component: 'ReportPdfService',
+        action: 'generateDailyReport',
+        fileName,
+        siteName: reportData.site.name,
+        itemCount: reportData.items.length,
+        photoCount: this.calculatePhotoCount(reportData.items),
+        totalPhotoSize: photoMetadata.totalSize,
+        totalPhotoSizeMB: (photoMetadata.totalSize / 1024 / 1024).toFixed(2),
+        photoDetails: photoMetadata.photoDetails.slice(0, 10),
+        metadataErrors: photoMetadata.errors,
+      });
+
       const file = await generatePDF(options);
-      console.log('✅ PDF generated successfully:', file.filePath);
+
+      logger.info('PDF generated successfully', {
+        component: 'ReportPdfService',
+        action: 'generateDailyReport',
+        fileName,
+        filePath: file.filePath,
+      });
+
       return file.filePath || '';
     } catch (error) {
-      console.error('❌ Error generating PDF:', error);
+      // Collect photo metadata for error diagnostics
+      let photoMetadata;
+      try {
+        photoMetadata = await this.collectPhotoMetadata(reportData.items);
+      } catch (metadataError) {
+        // If metadata collection fails, use defaults
+        photoMetadata = { totalSize: 0, photoDetails: [], errors: ['Metadata collection failed'] };
+      }
+
+      logger.error('PDF generation failed', error as Error, {
+        component: 'ReportPdfService',
+        action: 'generateDailyReport',
+        fileName,
+        siteName: reportData.site.name,
+        itemCount: reportData.items.length,
+        photoCount: this.calculatePhotoCount(reportData.items),
+        totalPhotoSize: photoMetadata.totalSize,
+        totalPhotoSizeMB: (photoMetadata.totalSize / 1024 / 1024).toFixed(2),
+        photoDetails: photoMetadata.photoDetails.slice(0, 5),
+        metadataErrors: photoMetadata.errors,
+      });
       throw new Error('Failed to generate PDF report');
     }
   }
@@ -75,14 +320,62 @@ export class ReportPdfService {
    * Generate a comprehensive PDF report (progress + hindrances + inspection)
    */
   static async generateComprehensiveReport(reportData: ComprehensiveReportData): Promise<string> {
+    const fileName = `ComprehensiveReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
+
     try {
       // Ensure Documents directory exists
       await this.ensureDocumentsDirectory();
 
+      // Validate photo paths
+      const photoValidation = this.validatePhotoPaths(reportData.items);
+
+      // Collect photo metadata
+      const photoMetadata = await this.collectPhotoMetadata(reportData.items);
+
+      logger.info('Starting comprehensive PDF generation', {
+        component: 'ReportPdfService',
+        action: 'generateComprehensiveReport',
+        fileName,
+        siteName: reportData.site.name,
+        itemCount: reportData.items.length,
+
+        // Validation results
+        totalPhotos: photoValidation.totalPhotos,
+        validPhotos: photoValidation.validPhotos,
+        invalidPhotos: photoValidation.invalidPhotos.length,
+        warnings: photoValidation.warnings.length,
+
+        // Photo metadata
+        totalPhotoSize: photoMetadata.totalSize,
+        totalPhotoSizeMB: (photoMetadata.totalSize / 1024 / 1024).toFixed(2),
+        photoDetails: photoMetadata.photoDetails.slice(0, 10), // First 10 photos
+        metadataErrors: photoMetadata.errors,
+
+        hindranceCount: reportData.hindrances.length,
+        hasInspection: !!reportData.inspection,
+      });
+
+      // Log validation issues if any
+      if (photoValidation.invalidPhotos.length > 0) {
+        logger.warn('Invalid photo paths detected', {
+          component: 'ReportPdfService',
+          action: 'generateComprehensiveReport',
+          fileName,
+          invalidPaths: photoValidation.invalidPhotos,
+        });
+      }
+
+      if (photoValidation.warnings.length > 0) {
+        logger.warn('Photo path warnings', {
+          component: 'ReportPdfService',
+          action: 'generateComprehensiveReport',
+          fileName,
+          warnings: photoValidation.warnings,
+        });
+      }
+
       // Generate HTML content (now async)
       const htmlContent = await this.generateComprehensiveHtmlContent(reportData);
-
-      const fileName = `ComprehensiveReport_${reportData.site.name.replace(/\s/g, '_')}_${this.formatDate(reportData.reportDate)}`;
 
       const options = {
         html: htmlContent,
@@ -90,12 +383,40 @@ export class ReportPdfService {
         directory: 'Documents',  // Relative path from DocumentDirectoryPath
       };
 
-      console.log('📄 Generating comprehensive PDF:', fileName);
       const file = await generatePDF(options);
-      console.log('✅ Comprehensive PDF generated successfully:', file.filePath);
+
+      logger.info('Comprehensive PDF generated successfully', {
+        component: 'ReportPdfService',
+        action: 'generateComprehensiveReport',
+        fileName,
+        filePath: file.filePath,
+      });
+
       return file.filePath || '';
     } catch (error) {
-      console.error('❌ Error generating comprehensive PDF:', error);
+      // Collect photo metadata for error diagnostics
+      let photoMetadata;
+      try {
+        photoMetadata = await this.collectPhotoMetadata(reportData.items);
+      } catch (metadataError) {
+        // If metadata collection fails, use defaults
+        photoMetadata = { totalSize: 0, photoDetails: [], errors: ['Metadata collection failed'] };
+      }
+
+      logger.error('Comprehensive PDF generation failed', error as Error, {
+        component: 'ReportPdfService',
+        action: 'generateComprehensiveReport',
+        fileName,
+        siteName: reportData.site.name,
+        itemCount: reportData.items.length,
+        photoCount: this.calculatePhotoCount(reportData.items),
+        totalPhotoSize: photoMetadata.totalSize,
+        totalPhotoSizeMB: (photoMetadata.totalSize / 1024 / 1024).toFixed(2),
+        photoDetails: photoMetadata.photoDetails.slice(0, 5), // First 5 photos for error log
+        metadataErrors: photoMetadata.errors,
+        hindranceCount: reportData.hindrances.length,
+        hasInspection: !!reportData.inspection,
+      });
       throw new Error('Failed to generate comprehensive PDF report');
     }
   }
@@ -375,7 +696,11 @@ export class ReportPdfService {
         </div>
       `;
     } catch (error) {
-      console.error('Error parsing photos JSON:', error);
+      logger.error('Error parsing photos JSON', error as Error, {
+        component: 'ReportPdfService',
+        action: 'generatePhotosHtml',
+        photosData: progressLog.photos,
+      });
       return '';
     }
   }

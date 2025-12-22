@@ -35,6 +35,9 @@ export interface LoadingOverlayProps {
   /** Optional loading message */
   message?: string;
 
+  /** Optional sub-message (Phase B: for additional context) */
+  subMessage?: string;
+
   /** Indicator size (default: 'large') */
   size?: 'small' | 'large' | number;
 
@@ -53,6 +56,7 @@ export interface LoadingOverlayProps {
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   visible,
   message = 'Loading...',
+  subMessage,
   size = 'large',
   indicatorColor,
   overlayOpacity = 0.7,
@@ -83,6 +87,13 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
           {message && (
             <Text variant="bodyLarge" style={styles.message}>
               {message}
+            </Text>
+          )}
+
+          {/* Sub-message (Phase B: additional context) */}
+          {subMessage && (
+            <Text variant="bodySmall" style={styles.subMessage}>
+              {subMessage}
             </Text>
           )}
         </View>
@@ -122,5 +133,11 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     color: '#333',
+  },
+  subMessage: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 8,
+    fontSize: 12,
   },
 });

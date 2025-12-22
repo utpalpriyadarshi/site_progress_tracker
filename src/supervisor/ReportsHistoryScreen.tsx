@@ -36,6 +36,8 @@ import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
 import { useDebounce } from '../hooks';
 import type { SupervisorDrawerParamList } from '../nav/SupervisorDrawerNavigator';
+import { PdfStatusChip } from '../components/PdfStatusChip';
+import { backgroundPdfQueue } from '../../services/BackgroundPdfQueue';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -193,6 +195,21 @@ const ReportsHistoryScreen = () => {
     loadReports();
   }, [supervisorId, selectedSiteId]);
 
+  // Phase B: Subscribe to report updates to refresh UI when PDF status changes
+  useEffect(() => {
+    const reportsCollection = database.collections.get<DailyReportModel>('daily_reports');
+
+    const subscription = reportsCollection
+      .query()
+      .observe()
+      .subscribe(() => {
+        // Reload reports when any report changes (e.g., PDF status update)
+        loadReports();
+      });
+
+    return () => subscription.unsubscribe();
+  }, [supervisorId, selectedSiteId]);
+
   // Apply filters when date filter or debounced search changes (optimized for performance)
   useEffect(() => {
     applyFilters(reports, dateFilter, debouncedSearchQuery);
@@ -320,6 +337,29 @@ const ReportsHistoryScreen = () => {
       return;
     }
     handleSharePdf(report.pdfPath, report);
+  };
+
+  // Phase B: Handle PDF retry
+  const handleRetryPdf = async (reportId: string) => {
+    try {
+      await backgroundPdfQueue.retryPdfGeneration(reportId);
+
+      showSnackbar('PDF generation retrying...', 'info');
+
+      logger.info('PDF retry initiated from UI', {
+        component: 'ReportsHistoryScreen',
+        action: 'handleRetryPdf',
+        reportId,
+      });
+    } catch (error) {
+      showSnackbar('Failed to retry PDF generation', 'error');
+
+      logger.error('PDF retry failed', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleRetryPdf',
+        reportId,
+      });
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -490,10 +530,18 @@ const ReportsHistoryScreen = () => {
                     </Text>
                   </View>
                   <View style={styles.headerRight}>
+                    {/* Phase B: PDF Status Chip (center) and Sync Status Chip (right) */}
+                    <PdfStatusChip
+                      status={report.pdfGenerationStatus}
+                      attempts={report.pdfGenerationAttempts}
+                      onRetry={() => handleRetryPdf(report.id)}
+                      size="small"
+                    />
                     <Chip
                       icon={getSyncStatusIcon(report.appSyncStatus)}
                       style={{
                         backgroundColor: getSyncStatusColor(report.appSyncStatus),
+                        marginLeft: 8,
                       }}
                       textStyle={{ color: 'white' }}
                     >
@@ -565,7 +613,11 @@ const ReportsHistoryScreen = () => {
                 <Button
                   icon="share-variant"
                   onPress={() => handleShare(report)}
-                  disabled={!report.pdfPath || report.pdfPath.trim() === ''}
+                  disabled={
+                    report.pdfGenerationStatus !== 'completed' ||
+                    !report.pdfPath ||
+                    report.pdfPath.trim() === ''
+                  }
                 >
                   Share
                 </Button>
@@ -650,7 +702,9 @@ const ReportsHistoryScreen = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            {selectedReport?.report.pdfPath && selectedReport.report.pdfPath.trim() !== '' ? (
+            {selectedReport?.report.pdfGenerationStatus === 'completed' &&
+             selectedReport?.report.pdfPath &&
+             selectedReport.report.pdfPath.trim() !== '' ? (
               <>
                 <Button
                   icon="file-pdf-box"
@@ -668,9 +722,21 @@ const ReportsHistoryScreen = () => {
                 </Button>
               </>
             ) : (
-              <Text style={{ color: '#999', fontSize: 12, padding: 8 }}>
-                PDF not available (generation may have failed)
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+                {selectedReport?.report && (
+                  <PdfStatusChip
+                    status={selectedReport.report.pdfGenerationStatus}
+                    attempts={selectedReport.report.pdfGenerationAttempts}
+                    onRetry={() => handleRetryPdf(selectedReport.report.id)}
+                    size="medium"
+                  />
+                )}
+                {selectedReport?.report.pdfGenerationStatus === 'failed' && (
+                  <Text style={{ color: '#999', fontSize: 11, marginLeft: 8 }}>
+                    Tap chip to retry
+                  </Text>
+                )}
+              </View>
             )}
             <Button onPress={handleCloseDialog}>Close</Button>
           </Dialog.Actions>
@@ -724,6 +790,9 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     marginLeft: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   siteName: {
     fontSize: 18,
