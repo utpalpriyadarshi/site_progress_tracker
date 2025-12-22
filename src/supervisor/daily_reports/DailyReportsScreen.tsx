@@ -218,10 +218,11 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
         destructive={false}
       />
 
-      {/* Loading Overlay */}
+      {/* Loading Overlay - Phase B: Updated with PDF background generation message */}
       <LoadingOverlay
         visible={isSyncing}
         message="Submitting progress reports..."
+        subMessage="PDF will generate in background"
       />
     </View>
   );

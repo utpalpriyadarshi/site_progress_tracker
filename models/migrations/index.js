@@ -3,6 +3,7 @@ import { v30Migration } from './v30_add_manager_tables';
 import { v31Migration } from './v31_add_multi_role_tables';
 import { v32Migration } from './v32_add_vendor_name_to_invoices';
 import { v33Migration } from './v33_add_pdf_error_tracking';
+import { v34Migration } from './v34_add_pdf_generation_status';
 
 export default schemaMigrations({
   migrations: [
@@ -568,5 +569,7 @@ export default schemaMigrations({
     v32Migration,
     // v33: Add PDF error tracking to daily_reports (Phase A: Share Button Photo Issue fix)
     v33Migration,
+    // v34: Add PDF generation status for async queue (Phase B: Share Button Photo Issue fix)
+    v34Migration,
   ],
 });

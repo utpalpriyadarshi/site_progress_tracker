@@ -150,12 +150,30 @@ export class ReportPdfService {
     };
 
     items.forEach(({ item, progressLog }, itemIndex) => {
+      logger.debug('Validating photo paths for item', {
+        component: 'ReportPdfService',
+        action: 'validatePhotoPaths',
+        itemIndex,
+        itemName: item.name,
+        hasProgressLog: !!progressLog,
+        photosField: progressLog?.photos?.substring(0, 100),
+        photosLength: progressLog?.photos?.length,
+      });
+
       if (!progressLog || !progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
         return;
       }
 
       try {
         const photos = JSON.parse(progressLog.photos);
+
+        logger.debug('Photos parsed successfully', {
+          component: 'ReportPdfService',
+          action: 'validatePhotoPaths',
+          itemName: item.name,
+          isArray: Array.isArray(photos),
+          photoCount: Array.isArray(photos) ? photos.length : 0,
+        });
 
         if (!Array.isArray(photos)) {
           result.invalidPhotos.push(`Item ${itemIndex} (${item.name}): Photos is not an array`);
@@ -164,6 +182,13 @@ export class ReportPdfService {
 
         photos.forEach((photo: any, photoIndex: number) => {
           result.totalPhotos++;
+          logger.debug('Photo counted', {
+            component: 'ReportPdfService',
+            action: 'validatePhotoPaths',
+            itemName: item.name,
+            photoIndex,
+            totalPhotosNow: result.totalPhotos,
+          });
 
           // Check if path exists
           const photoPath = typeof photo === 'string' ? photo : photo?.uri;
@@ -189,6 +214,15 @@ export class ReportPdfService {
       } catch (error) {
         result.invalidPhotos.push(`Item ${itemIndex} (${item.name}): JSON parsing failed - ${(error as Error).message}`);
       }
+    });
+
+    logger.debug('Photo validation completed', {
+      component: 'ReportPdfService',
+      action: 'validatePhotoPaths',
+      totalPhotos: result.totalPhotos,
+      validPhotos: result.validPhotos,
+      invalidPhotosCount: result.invalidPhotos.length,
+      warningsCount: result.warnings.length,
     });
 
     return result;

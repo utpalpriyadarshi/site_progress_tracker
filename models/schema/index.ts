@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 33, // Added PDF error tracking to daily_reports (Phase A: Share Button Photo Issue fix)
+  version: 34, // Added PDF generation status for async queue (Phase B: Share Button Photo Issue fix)
   tables: [
     tableSchema({
       name: 'projects',
@@ -141,6 +141,10 @@ export default appSchema({
         { name: 'pdf_error_message', type: 'string', isOptional: true }, // error message when PDF fails
         { name: 'pdf_error_timestamp', type: 'number', isOptional: true }, // when PDF error occurred
         { name: 'pdf_photo_count', type: 'number', isOptional: true }, // photo count for debugging
+        // v34: PDF generation status (Phase B: Share Button Photo Issue fix - Async PDF)
+        { name: 'pdf_generation_status', type: 'string' }, // pending, generating, completed, failed, skipped
+        { name: 'pdf_generation_attempts', type: 'number' }, // retry counter
+        { name: 'pdf_last_attempt_timestamp', type: 'number', isOptional: true }, // last attempt timestamp
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],

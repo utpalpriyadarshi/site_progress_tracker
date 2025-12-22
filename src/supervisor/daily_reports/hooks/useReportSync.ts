@@ -9,6 +9,7 @@ import ProgressLogModel from '../../../../models/ProgressLogModel';
 import { ReportPdfService } from '../../../../services/pdf/ReportPdfService';
 import { logger } from '../../../services/LoggingService';
 import { ReportSubmissionResult } from '../types';
+import { backgroundPdfQueue } from '../../../../services/BackgroundPdfQueue';
 
 interface UseReportSyncParams {
   supervisorId: string;
@@ -98,6 +99,7 @@ export const useReportSync = ({
       // Generate reports for each site
       let totalReportsGenerated = 0;
       const reportPaths: string[] = [];
+      const createdReportIds: Array<{ id: string; siteName: string }> = []; // Store report IDs for enqueueing
 
       await database.write(async () => {
         for (const siteId of Object.keys(logsBySite)) {
@@ -119,114 +121,40 @@ export const useReportSync = ({
                 }, 0) / siteItems.length
               : 0;
 
-          // Generate PDF report
-          let pdfPath = '';
-          // v33: PDF error tracking
-          let pdfErrorMessage: string | undefined;
-          let pdfErrorTimestamp: number | undefined;
-          let pdfPhotoCount: number | undefined;
-
-          try {
-            const itemsWithLogs = siteItems.map(item => ({
-              item,
-              progressLog:
-                (siteLogs.find(
-                  log => (log as any).itemId === item.id
-                ) as ProgressLogModel) || null,
-            }));
-
-            // Collect today's hindrances for this site
-            const todayHindrances = (await database.collections
-              .get('hindrances')
-              .query(
-                Q.where('site_id', siteId),
-                Q.where('reported_at', Q.gte(startOfDay)),
-                Q.where('reported_at', Q.lte(endOfDay))
-              )
-              .fetch()) as HindranceModel[];
-
-            // Collect today's inspection for this site
-            const todayInspections = (await database.collections
-              .get('site_inspections')
-              .query(
-                Q.where('site_id', siteId),
-                Q.where('inspection_date', Q.gte(startOfDay)),
-                Q.where('inspection_date', Q.lte(endOfDay))
-              )
-              .fetch()) as SiteInspectionModel[];
-
-            pdfPath = await ReportPdfService.generateComprehensiveReport({
-              site,
-              items: itemsWithLogs,
-              hindrances: todayHindrances,
-              inspection: todayInspections[0] || null,
-              supervisorName: `Supervisor ${supervisorId}`,
-              reportDate: new Date(),
-            });
-            reportPaths.push(pdfPath);
-
-            logger.info('PDF report generated successfully', {
-              component: 'useReportSync',
-              action: 'submitReports',
-              pdfPath,
-              siteId,
-            });
-          } catch (pdfError) {
-            // Count photos for diagnostics
-            const photoCount = siteLogs.reduce((total, log) => {
-              const photos = (log as any).photos || '[]';
-              try {
-                const photosArray = JSON.parse(photos);
-                return total + (Array.isArray(photosArray) ? photosArray.length : 0);
-              } catch {
-                return total;
-              }
-            }, 0);
-
-            // Store error info for database (v33)
-            pdfPath = ''; // PDF generation failed
-            pdfErrorMessage = (pdfError as Error).message || 'Unknown PDF error';
-            pdfErrorTimestamp = Date.now();
-            pdfPhotoCount = photoCount;
-
-            logger.error('PDF generation failed', pdfError as Error, {
-              component: 'useReportSync',
-              action: 'submitReports',
-              siteId,
-              siteName: site.name,
-              reportDate: new Date(startOfDay).toISOString(),
-              itemCount: siteLogs.length,
-              photoCount,
-              hasPhotos: photoCount > 0,
-              errorType: (pdfError as Error).name,
-              errorMessage: (pdfError as Error).message,
-              stack: (pdfError as Error).stack?.split('\n').slice(0, 3).join('\n'), // First 3 lines
-            });
-
-            onWarning(
-              photoCount > 0
-                ? `Report saved but PDF generation failed (${photoCount} photos may be causing issues)`
-                : 'Report saved but PDF generation failed'
-            );
-            // Continue even if PDF generation fails
-          }
-
-          // Create daily report record
-          await database.collections.get('daily_reports').create((report: any) => {
+          // Phase B: Create daily report record WITHOUT PDF (async generation)
+          // PDF will be generated in background by BackgroundPdfQueue
+          const createdReport = await database.collections.get('daily_reports').create((report: any) => {
             report.siteId = siteId;
             report.supervisorId = supervisorId;
             report.reportDate = startOfDay;
             report.submittedAt = new Date().getTime();
             report.totalItems = siteLogs.length;
             report.totalProgress = totalProgress;
-            report.pdfPath = pdfPath;
+            report.pdfPath = ''; // Will be filled by background queue
             report.notes = `${siteLogs.length} items updated`;
-            // v33: PDF error tracking
-            report.pdfErrorMessage = pdfErrorMessage;
-            report.pdfErrorTimestamp = pdfErrorTimestamp;
-            report.pdfPhotoCount = pdfPhotoCount;
+            // v34: PDF generation status (Phase B)
+            report.pdfGenerationStatus = 'pending';
+            report.pdfGenerationAttempts = 0;
+            report.pdfLastAttemptTimestamp = null;
+            // v33: PDF error tracking (will be filled if generation fails)
+            report.pdfErrorMessage = null;
+            report.pdfErrorTimestamp = null;
+            report.pdfPhotoCount = null;
             report.appSyncStatus = isOnline ? 'synced' : 'pending';
           });
+
+          logger.info('Report created, will queue for PDF generation', {
+            component: 'useReportSync',
+            action: 'submitReports',
+            reportId: createdReport.id,
+            siteId,
+            siteName: site.name,
+            reportDate: new Date(startOfDay).toISOString(),
+          });
+
+          // Store report ID for enqueueing AFTER transaction completes
+          // (to avoid WatermelonDB nested transaction deadlock)
+          createdReportIds.push({ id: createdReport.id, siteName: site.name });
 
           totalReportsGenerated++;
         }
@@ -241,9 +169,34 @@ export const useReportSync = ({
         }
       });
 
+      // IMPORTANT: Enqueue reports for PDF generation AFTER transaction completes
+      // This prevents WatermelonDB nested transaction deadlock
+      for (const { id: reportId, siteName } of createdReportIds) {
+        try {
+          await backgroundPdfQueue.enqueueReport(reportId);
+          reportPaths.push('queued'); // Mark as queued for success message
+
+          logger.info('Report enqueued for PDF generation', {
+            component: 'useReportSync',
+            action: 'submitReports:enqueue',
+            reportId,
+            siteName,
+          });
+        } catch (queueError) {
+          logger.error('Failed to enqueue PDF generation', queueError as Error, {
+            component: 'useReportSync',
+            action: 'submitReports:enqueue',
+            reportId,
+            siteName,
+          });
+          // Don't fail the whole submission if queueing fails
+          // The report is still saved, just PDF generation will be skipped
+        }
+      }
+
       const reportDate = new Date().toLocaleDateString();
       const pdfStatus =
-        reportPaths.length > 0 ? ` - ${reportPaths.length} PDF(s) generated` : '';
+        reportPaths.length > 0 ? ` - PDF generating in background...` : '';
       const message = isOnline
         ? `${totalReportsGenerated} daily report(s) submitted - ${progressLogs.length} updates for ${reportDate}${pdfStatus}`
         : `${totalReportsGenerated} report(s) saved locally - ${progressLogs.length} updates for ${reportDate}${pdfStatus}`;
