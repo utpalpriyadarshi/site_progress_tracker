@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Card,
@@ -587,9 +588,13 @@ const ReportsHistoryScreen = () => {
                       ) : null;
                     })}
                     {progressLogs.length > 3 && (
-                      <Text style={styles.moreItems}>
-                        +{progressLogs.length - 3} more... (tap View Details)
-                      </Text>
+                      <TouchableOpacity
+                        onPress={() => handleViewDetails({ report, site, progressLogs, items })}
+                      >
+                        <Text style={styles.moreItems}>
+                          +{progressLogs.length - 3} more... (tap to view details)
+                        </Text>
+                      </TouchableOpacity>
                     )}
                   </>
                 )}
@@ -852,6 +857,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 4,
     paddingLeft: 8,
+    textDecorationLine: 'underline',
   },
   dialog: {
     maxHeight: '80%',

@@ -36,10 +36,13 @@ const generateAlerts = async (supervisorId: string): Promise<Alert[]> => {
   const alerts: Alert[] = [];
 
   try {
-    // Alert 1: Items exceeding planned quantity
+    // Alert 1: Items exceeding planned quantity - ONLY from supervisor's sites
     const exceedingItems = await database.collections
       .get('items')
-      .query(Q.where('completed_quantity', Q.gt(Q.column('planned_quantity'))))
+      .query(
+        Q.where('completed_quantity', Q.gt(Q.column('planned_quantity'))),
+        Q.on('sites', 'supervisor_id', supervisorId)
+      )
       .fetch();
 
     if (exceedingItems.length > 0) {
@@ -51,10 +54,13 @@ const generateAlerts = async (supervisorId: string): Promise<Alert[]> => {
       });
     }
 
-    // Alert 2: Pending items (could add threshold-based alerts here)
+    // Alert 2: Pending items (could add threshold-based alerts here) - ONLY from supervisor's sites
     const pendingItems = await database.collections
       .get('items')
-      .query(Q.where('completed_quantity', Q.lt(Q.column('planned_quantity'))))
+      .query(
+        Q.where('completed_quantity', Q.lt(Q.column('planned_quantity'))),
+        Q.on('sites', 'supervisor_id', supervisorId)
+      )
       .fetch();
 
     if (pendingItems.length > 10) {
@@ -104,10 +110,13 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
             .query(Q.where('date', Q.gte(startOfTodayTimestamp)))
             .fetch(),
 
-          // Pending items (completed < planned)
+          // Pending items (completed < planned) - ONLY from supervisor's sites
           database.collections
             .get('items')
-            .query(Q.where('completed_quantity', Q.lt(Q.column('planned_quantity'))))
+            .query(
+              Q.where('completed_quantity', Q.lt(Q.column('planned_quantity'))),
+              Q.on('sites', 'supervisor_id', supervisorId)
+            )
             .fetch(),
 
           // Today's submitted reports

@@ -8,6 +8,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { database } from '../../models/database';
 import PasswordMigrationService from '../../services/auth/PasswordMigrationService';
 import { SimpleDatabaseService } from '../../services/db/SimpleDatabaseService';
+import { migrateCategoryNames, verifyCategoryMigration } from '../../scripts/migrateCategoryNames';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -38,6 +39,7 @@ const AdminDashboardScreen = () => {
     percentComplete: 0,
   });
   const [isMigrating, setIsMigrating] = useState(false);
+  const [isMigratingCategories, setIsMigratingCategories] = useState(false);
 
   // Load statistics
   useEffect(() => {
@@ -143,6 +145,48 @@ const AdminDashboardScreen = () => {
               Alert.alert('Migration Error', `Failed: ${error}`);
             } finally {
               setIsMigrating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCategoryMigration = async () => {
+    Alert.alert(
+      'Migrate Category Names',
+      'This will rename:\n• "Finishing" → "Handing Over"\n• "Framing" → "Punch List"\n\nExisting items will remain linked to their categories. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Migrate',
+          style: 'default',
+          onPress: async () => {
+            setIsMigratingCategories(true);
+            try {
+              console.log('🔄 Starting category migration...');
+
+              // Run migration
+              await migrateCategoryNames();
+
+              // Verify migration
+              await verifyCategoryMigration();
+
+              // Reload stats to reflect changes
+              await loadStats();
+
+              Alert.alert(
+                'Migration Successful',
+                'Category names have been updated successfully!\n\nNew names:\n• "Handing Over" (was "Finishing")\n• "Punch List" (was "Framing")\n\nAll items remain linked correctly.'
+              );
+            } catch (error) {
+              console.error('❌ Category migration failed:', error);
+              Alert.alert(
+                'Migration Error',
+                `Failed to migrate categories: ${error}\n\nCheck console for details.`
+              );
+            } finally {
+              setIsMigratingCategories(false);
             }
           },
         },
@@ -301,6 +345,41 @@ const AdminDashboardScreen = () => {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#FFC107" />
               <Paragraph style={{ marginLeft: 10 }}>Migrating passwords...</Paragraph>
+            </View>
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* Category Migration Card (v2.18) */}
+      <Card style={[styles.card, { backgroundColor: '#E3F2FD' }]}>
+        <Card.Content>
+          <Title>📋 Category Names Migration (v2.18)</Title>
+          <Paragraph style={styles.cardDescription}>
+            Update category names to reflect construction sequence
+          </Paragraph>
+          <View style={styles.migrationStats}>
+            <Paragraph style={{ fontWeight: 'bold', marginBottom: 5 }}>Changes:</Paragraph>
+            <Paragraph>• "Finishing" → "Handing Over"</Paragraph>
+            <Paragraph>• "Framing" → "Punch List"</Paragraph>
+            <Paragraph style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
+              ✓ Safe - only renames categories{'\n'}
+              ✓ Non-destructive - items remain linked{'\n'}
+              ✓ Reversible - can be rolled back
+            </Paragraph>
+          </View>
+          <Button
+            mode="contained"
+            onPress={handleCategoryMigration}
+            style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+            disabled={isMigratingCategories}
+            loading={isMigratingCategories}
+          >
+            {isMigratingCategories ? 'Migrating...' : 'Migrate Category Names'}
+          </Button>
+          {isMigratingCategories && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#2196F3" />
+              <Paragraph style={{ marginLeft: 10 }}>Updating categories...</Paragraph>
             </View>
           )}
         </Card.Content>

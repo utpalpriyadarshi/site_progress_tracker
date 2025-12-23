@@ -256,7 +256,8 @@ export class SimpleDatabaseService {
       });
       console.log('DEBUG: Site created with ID:', sampleSite.id, 'Raw supervisor_id:', (sampleSite as any)._raw.supervisor_id);
 
-      // ✅ Create default categories
+      // ✅ Create default categories (in logical construction sequence)
+      // 1. Foundation Work
       const foundationCategory = await database.write(async () => {
         return await database.collections.get('categories').create((category: any) => {
           category.name = 'Foundation Work';
@@ -264,42 +265,7 @@ export class SimpleDatabaseService {
         });
       });
 
-      const framingCategory = await database.write(async () => {
-        return await database.collections.get('categories').create((category: any) => {
-          category.name = 'Framing';
-          category.description = 'Structural framing tasks';
-        });
-      });
-
-      const finishingCategory = await database.write(async () => {
-        return await database.collections.get('categories').create((category: any) => {
-          category.name = 'Finishing';
-          category.description = 'Finishing and detailing tasks';
-        });
-      });
-
-      const installationCategory = await database.write(async () => {
-        return await database.collections.get('categories').create((category: any) => {
-          category.name = 'Installation';
-          category.description = 'Installation and assembly tasks';
-        });
-      });
-
-      const testingCategory = await database.write(async () => {
-        return await database.collections.get('categories').create((category: any) => {
-          category.name = 'Testing';
-          category.description = 'Testing and quality assurance';
-        });
-      });
-
-      const commissioningCategory = await database.write(async () => {
-        return await database.collections.get('categories').create((category: any) => {
-          category.name = 'Commissioning';
-          category.description = 'Commissioning and handover tasks';
-        });
-      });
-
-      // ✅ Create categories for Mumbai Metro test data
+      // 2. Civil Works
       const civilWorksCategory = await database.write(async () => {
         return await database.collections.get('categories').create((category: any) => {
           category.name = 'Civil Works';
@@ -307,6 +273,7 @@ export class SimpleDatabaseService {
         });
       });
 
+      // 3. MEP (Mechanical, Electrical, Plumbing)
       const mepCategory = await database.write(async () => {
         return await database.collections.get('categories').create((category: any) => {
           category.name = 'MEP (Mechanical, Electrical, Plumbing)';
@@ -314,10 +281,51 @@ export class SimpleDatabaseService {
         });
       });
 
+      // 4. Architectural Finishes
       const architecturalFinishesCategory = await database.write(async () => {
         return await database.collections.get('categories').create((category: any) => {
           category.name = 'Architectural Finishes';
           category.description = 'Flooring, wall finishes, ceiling, painting';
+        });
+      });
+
+      // 5. Installation
+      const installationCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Installation';
+          category.description = 'Installation and assembly tasks';
+        });
+      });
+
+      // 6. Testing
+      const testingCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Testing';
+          category.description = 'Testing and quality assurance';
+        });
+      });
+
+      // 7. Commissioning
+      const commissioningCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Commissioning';
+          category.description = 'Commissioning and handover tasks';
+        });
+      });
+
+      // 8. Punch List
+      const punchListCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Punch List';
+          category.description = 'Final inspection and defect rectification';
+        });
+      });
+
+      // 9. Handing Over (Final)
+      const handingOverCategory = await database.write(async () => {
+        return await database.collections.get('categories').create((category: any) => {
+          category.name = 'Handing Over';
+          category.description = 'Final handover and closeout tasks';
         });
       });
 
@@ -355,7 +363,7 @@ export class SimpleDatabaseService {
       const steelFrameworkItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
           item.name = 'Steel Framework';
-          item.categoryId = framingCategory.id;
+          item.categoryId = punchListCategory.id;
           item.siteId = sampleSite.id;
           item.plannedQuantity = 50;
           item.completedQuantity = 0;
@@ -370,7 +378,7 @@ export class SimpleDatabaseService {
       const dryWallItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
           item.name = 'Drywall Installation';
-          item.categoryId = finishingCategory.id;
+          item.categoryId = handingOverCategory.id;
           item.siteId = sampleSite.id;
           item.plannedQuantity = 1000;
           item.completedQuantity = 0;
@@ -415,7 +423,7 @@ export class SimpleDatabaseService {
       const roofingItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
           item.name = 'Roofing Work';
-          item.categoryId = framingCategory.id;
+          item.categoryId = punchListCategory.id;
           item.siteId = sampleSite.id;
           item.plannedQuantity = 500;
           item.completedQuantity = 0;
@@ -430,7 +438,7 @@ export class SimpleDatabaseService {
       const paintingItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
           item.name = 'Painting & Finishing';
-          item.categoryId = finishingCategory.id;
+          item.categoryId = handingOverCategory.id;
           item.siteId = sampleSite.id;
           item.plannedQuantity = 1200;
           item.completedQuantity = 0;
@@ -445,7 +453,7 @@ export class SimpleDatabaseService {
       const flooringItem = await database.write(async () => {
         return await database.collections.get('items').create((item: any) => {
           item.name = 'Flooring Installation';
-          item.categoryId = finishingCategory.id;
+          item.categoryId = handingOverCategory.id;
           item.siteId = sampleSite.id;
           item.plannedQuantity = 800;
           item.completedQuantity = 0;
