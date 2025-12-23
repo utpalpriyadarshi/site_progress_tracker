@@ -120,6 +120,7 @@ const DashboardScreen: React.FC = () => {
             icon="description"
             color="#7b1fa2"
             loading={loading}
+            onPress={() => navigation.navigate('History')}
           />
         </View>
 

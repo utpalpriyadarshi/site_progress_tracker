@@ -31,6 +31,7 @@ import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../c
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
 import { useDebounce } from '../hooks';
+import { sortCategoriesByOrder } from '../utils/categoryOrder';
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -118,6 +119,11 @@ const ItemsManagementScreenComponent = ({
     { value: 'kg', label: 'kg' },
     { value: 'numbers', label: 'nos' },
   ];
+
+  // Sort categories by predefined order (memoized)
+  const sortedCategories = useMemo(() => {
+    return sortCategoriesByOrder(categories);
+  }, [categories]);
 
   // Combined filtering and sorting logic (memoized for performance)
   const displayedItems = useMemo(() => {
@@ -273,7 +279,7 @@ const ItemsManagementScreenComponent = ({
     setPlannedQuantity('');
     setCompletedQuantity('0');
     setUnitOfMeasurement('cubic_meters');
-    setSelectedCategoryId(categories[0]?.id || '');
+    setSelectedCategoryId(sortedCategories[0]?.id || '');
     setPlannedStartDate('');
     setPlannedEndDate('');
     setWeightage('');
@@ -623,7 +629,7 @@ const ItemsManagementScreenComponent = ({
 
               <Text style={styles.label}>Category *</Text>
               <View style={styles.categoryButtons}>
-                {categories.map((category) => (
+                {sortedCategories.map((category) => (
                   <Chip
                     key={category.id}
                     selected={selectedCategoryId === category.id}
