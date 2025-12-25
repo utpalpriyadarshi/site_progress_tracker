@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers) with comprehensive progress tracking, reporting, material management, financial management, and advanced planning capabilities.
 
-**Current Version**: v2.15 (Bug Fixes & UI Improvements)
+**Current Version**: v2.18 (Password Reset & Supervisor Dashboard Enhancements)
 **Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: December 17, 2025
+**Last Updated**: December 25, 2025
 
 ---
 
@@ -97,9 +97,15 @@ site_progress_tracker/
 │       └── AutoSyncManager.ts    # Auto-sync triggers & state management (398 lines)
 ├── src/                          # Application source code (ACTIVE)
 │   ├── services/                 # Shared application services (v2.13 - NEW)
-│   │   └── LoggingService.ts     # Centralized logging (60 lines, 4 log levels)
-│   ├── auth/                     # Authentication screens
-│   │   └── LoginScreen.tsx       # User login screen
+│   │   ├── LoggingService.ts     # Centralized logging (60 lines, 4 log levels)
+│   │   ├── PasswordResetService.ts # Password reset with email delivery (v2.18 - NEW)
+│   │   └── supabase/             # Supabase integration (v2.18 - NEW)
+│   │       ├── supabaseClient.ts # Supabase client configuration
+│   │       └── SupabaseAuthService.ts # Supabase authentication service
+│   ├── auth/                     # Authentication screens (v2.18 - Enhanced)
+│   │   ├── LoginScreen.tsx       # User login screen
+│   │   ├── ForgotPasswordScreen.tsx # Forgot password screen (v2.18 - NEW)
+│   │   └── ResetPasswordScreen.tsx  # Reset password screen (v2.18 - NEW)
 │   ├── logistics/                # Logistics-specific screens (10 screens - v2.4)
 │   │   ├── LogisticsDashboardScreen.tsx   # KPI dashboard with DOORS metrics
 │   │   ├── MaterialTrackingScreen.tsx     # BOM-integrated material tracking
@@ -273,6 +279,15 @@ site_progress_tracker/
 │       └── demoData/                    # Demo data seeders
 │           ├── DoorsSeeder.ts           # DOORS demo data (v2.4)
 │           └── RfqSeeder.ts             # RFQ demo data (v2.4)
+├── supabase/                     # Supabase backend services (v2.18 - NEW)
+│   └── functions/                # Supabase Edge Functions
+│       ├── .vscode/              # VS Code Deno configuration
+│       │   └── settings.json     # Deno settings for IDE
+│       ├── import_map.json       # Deno module resolution
+│       └── send-reset-email/     # Password reset email function
+│           ├── index.ts          # Edge Function code (TypeScript/Deno)
+│           ├── deno.json         # Deno compiler options
+│           └── README.md         # Deployment documentation
 ├── __tests__/                    # Test files (v1.3+)
 │   ├── models/                   # Model tests
 │   │   ├── ItemModel.test.ts     # ItemModel tests (26 tests)
@@ -992,6 +1007,72 @@ MainNavigator (Stack)
 - Database-based authentication with role assignment
 - Admin role for system administration and user management
 - Role switcher for admins to test different role views
+
+### 1.3. Self-Service Password Reset (v2.18 - NEW)
+
+Complete password reset functionality with email delivery via Supabase and Resend API.
+
+#### Password Reset Flow
+1. **Forgot Password Screen**: User enters email address
+2. **Token Generation**: Secure UUID token created with 1-hour expiry
+3. **Email Delivery**: Professional HTML email sent via Resend API (Supabase Edge Function)
+4. **Deep Linking**: Email link opens app to Reset Password screen
+5. **Password Validation**: Strength indicator and validation rules
+6. **Database Update**: Password hash updated in WatermelonDB with bcrypt
+
+#### Components (`src/auth/` and `src/services/`)
+- **ForgotPasswordScreen.tsx**: Email input with validation and user feedback
+- **ResetPasswordScreen.tsx**: New password entry with strength indicator
+- **PasswordResetService.ts**: Core reset logic with token management
+- **supabase/supabaseClient.ts**: Supabase client configuration
+- **supabase/SupabaseAuthService.ts**: Supabase authentication service
+
+#### Supabase Edge Function (`supabase/functions/send-reset-email/`)
+- **index.ts**: Deno/TypeScript function for email delivery
+- **Integration**: Resend API (free tier: 3,000 emails/month)
+- **Security**: API key stored in Supabase environment variables
+- **Template**: Professional HTML email with reset link
+
+#### Security Features
+- **Token System**:
+  - Cryptographically secure UUID tokens
+  - 1-hour expiry enforcement
+  - One-time use (marked as used after reset)
+  - Stored in Supabase `password_reset_tokens` table
+- **Password Security**:
+  - Bcrypt hashing (8 salt rounds)
+  - Strength validation (8+ chars, uppercase, lowercase, number)
+  - Password confirmation matching
+- **Deep Linking**:
+  - Custom myapp:// scheme (Android intent filter)
+  - Query parameter parsing for token and email
+  - React Navigation deep linking configuration
+
+#### Database Schema (Supabase)
+```sql
+CREATE TABLE password_reset_tokens (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+#### Navigation Integration
+- **MainNavigator.tsx**: Deep linking with custom query parameter parser
+- **AuthNavigator.tsx**: Added ForgotPassword and ResetPassword screens
+- **AndroidManifest.xml**: Deep link intent filter for myapp://reset-password
+
+#### Testing Status
+- ✅ Password reset for multiple users (admin, supervisor)
+- ✅ Email delivery via Resend API
+- ✅ Token validation and expiry
+- ✅ Deep linking from email
+- ✅ Login with new password
+- ✅ Old password invalidation
+- ✅ Production ready - 100% complete
 
 ### 1.5. Error Boundaries & Error Handling (v2.13)
 
