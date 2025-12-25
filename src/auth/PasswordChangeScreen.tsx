@@ -11,7 +11,7 @@ import {
 } from 'react-native-paper';
 import { useAuth } from './AuthContext';
 import { useSnackbar } from '../components/Snackbar';
-import { PasswordResetService } from '../../services/auth/PasswordResetService';
+import { PasswordResetService } from '../services/PasswordResetService';
 import {
   validatePasswordStrength,
   calculatePasswordStrength,
