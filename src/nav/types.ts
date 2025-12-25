@@ -11,6 +11,11 @@ export type RootStackParamList = {
 
 export type AuthStackParamList = {
   Login: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: {
+    token?: string;
+    email?: string;
+  };
   RoleSelection: {
     userId: string;
     username: string;

@@ -23,7 +23,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import bcrypt from 'react-native-bcrypt';
 import PasswordValidator from '../../services/auth/PasswordValidator';
-import { PasswordResetService } from '../../services/auth/PasswordResetService';
+import { PasswordResetService } from '../services/PasswordResetService';
 import {
   validatePasswordStrength,
   calculatePasswordStrength,

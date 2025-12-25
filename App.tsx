@@ -29,6 +29,9 @@ import AutoSyncManager from './services/sync/AutoSyncManager';
 import { backgroundPdfQueue } from './services/BackgroundPdfQueue';
 import { logger } from './src/services/LoggingService';
 
+// Supabase Connection Test (VERIFIED WORKING - Disabled for production)
+// import { testSupabaseConnection } from './src/services/supabase/testConnection';
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 
@@ -58,6 +61,9 @@ function App() {
       component: 'App',
       action: 'useEffect',
     });
+
+    // Test Supabase connection (VERIFIED WORKING - Disabled for production)
+    // testSupabaseConnection();
 
     // Cleanup on unmount
     return () => {
