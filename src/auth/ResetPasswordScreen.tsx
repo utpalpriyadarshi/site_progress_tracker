@@ -19,20 +19,10 @@ export const ResetPasswordScreen: React.FC = () => {
   const [tokenValid, setTokenValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 ResetPasswordScreen mounted');
-    console.log('🔍 Route params:', JSON.stringify(params, null, 2));
-    console.log('🔍 Token:', params?.token);
-    console.log('🔍 Email:', params?.email);
-  }, []);
-
   // Validate token on mount
   useEffect(() => {
     const validateToken = async () => {
-      console.log('🔍 Starting token validation...');
       if (!params?.token || !params?.email) {
-        console.log('❌ Missing token or email in params');
         setErrorMessage('Invalid reset link. Missing token or email.');
         setTokenValid(false);
         setValidatingToken(false);

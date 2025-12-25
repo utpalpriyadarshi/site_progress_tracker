@@ -60,18 +60,14 @@ const linking: any = {
   },
   // Custom state parser to handle query parameters
   getStateFromPath: (path: string, options: any) => {
-    console.log('🔍 getStateFromPath called with:', path);
-
     // Extract query parameters
     const queryParams = parseQueryParams(path);
-    console.log('🔍 Parsed query params:', JSON.stringify(queryParams));
 
     // Remove query string from path for default parsing
     const pathWithoutQuery = path.split('?')[0];
 
     // Get default state from path
     const state = getStateFromPath(pathWithoutQuery, options);
-    console.log('🔍 State from path:', JSON.stringify(state));
 
     // If this is the reset-password route, inject query params
     if (path.includes('reset-password') && state) {
@@ -84,7 +80,6 @@ const linking: any = {
                 ...nestedRoute.params,
                 ...queryParams,
               };
-              console.log('🔍 Injected params into ResetPassword:', nestedRoute.params);
             }
           });
         }
@@ -98,15 +93,7 @@ const linking: any = {
 const MainNavigator = () => {
   return (
     <AuthProvider>
-      <NavigationContainer
-        linking={linking}
-        onStateChange={(state) => {
-          console.log('🔍 Navigation state changed:', JSON.stringify(state, null, 2));
-        }}
-        onReady={() => {
-          console.log('🔍 Navigation is ready');
-        }}
-      >
+      <NavigationContainer linking={linking}>
         <Stack.Navigator
           initialRouteName="Auth"
           screenOptions={{
