@@ -1,5 +1,13 @@
 // Supabase Edge Function to send password reset emails via Resend
+// @ts-ignore: Deno runtime import (VS Code may show error, but works in Supabase)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+
+// Deno global type declaration for VS Code compatibility
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
@@ -8,14 +16,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+interface PasswordResetRequest {
+  email: string;
+  token: string;
+  resetLink: string;
+}
+
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { email, token, resetLink } = await req.json()
+    const { email, resetLink } = await req.json() as PasswordResetRequest
 
     console.log('Sending password reset email to:', email)
 
@@ -144,10 +158,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error sending email:', error)
 
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send email'
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Failed to send email'
+        error: errorMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
