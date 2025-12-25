@@ -25,11 +25,11 @@ async function updateAdminEmail() {
 
     await database.write(async () => {
       await admin.update((user: any) => {
-        user.email = 'priyadarshi2001@yahoo.com'; // Change this to your email
+        user.email = 'utpalpryadarshi@gmail.com'; // Updated to match Resend email
       });
     });
 
-    console.log('✅ Admin email updated to: priyadarshi2001@yahoo.com');
+    console.log('✅ Admin email updated to: utpalpryadarshi@gmail.com');
     console.log('You can now test password reset with this email!');
   } catch (error) {
     console.error('Error updating email:', error);

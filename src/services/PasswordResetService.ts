@@ -173,10 +173,8 @@ class PasswordResetService {
             action: 'sendPasswordResetRequest',
             email,
           });
-
           // Don't fail the whole request if email fails
           // Token is still created and valid
-          console.warn('⚠️ Email sending failed, but token was created. Link:', resetLink);
         } else {
           logger.info('Password reset email sent successfully', {
             component: 'PasswordResetService',
@@ -192,7 +190,6 @@ class PasswordResetService {
           email,
         });
         // Continue anyway - token is created
-        console.warn('⚠️ Email function error, but token was created. Link:', resetLink);
       }
 
       return {
