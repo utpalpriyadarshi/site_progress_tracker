@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 // Define an interface for the project health data
 interface ProjectHealth {
@@ -202,4 +203,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectOverviewScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ProjectOverviewScreenWithBoundary = () => (
+  <ErrorBoundary name="ProjectOverviewScreen">
+    <ProjectOverviewScreen />
+  </ErrorBoundary>
+);
+
+export default ProjectOverviewScreenWithBoundary;

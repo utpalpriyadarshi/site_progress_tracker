@@ -22,6 +22,7 @@ import { ConfirmDialog } from '../components/Dialog';
 // import DocumentPicker from 'react-native-document-picker'; // Temporarily disabled - compatibility issue
 import { BomImportExportService } from '../services/BomImportExportService';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * BomManagementScreen - Redesigned to match Supervisor pattern
@@ -1454,4 +1455,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BomManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const BomManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="BomManagementScreen">
+    <BomManagementScreen />
+  </ErrorBoundary>
+);
+
+export default BomManagementScreenWithBoundary;

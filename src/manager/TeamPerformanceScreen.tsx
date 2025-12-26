@@ -24,6 +24,7 @@ import { useManagerContext } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface SupervisorPerformance {
   userId: string;
@@ -589,4 +590,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TeamPerformanceScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const TeamPerformanceScreenWithBoundary = () => (
+  <ErrorBoundary name="TeamPerformanceScreen">
+    <TeamPerformanceScreen />
+  </ErrorBoundary>
+);
+
+export default TeamPerformanceScreenWithBoundary;

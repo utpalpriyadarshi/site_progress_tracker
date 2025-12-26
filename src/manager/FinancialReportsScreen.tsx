@@ -23,6 +23,7 @@ import { Q } from '@nozbe/watermelondb';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface FinancialData {
   // Budget Metrics
@@ -946,4 +947,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FinancialReportsScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const FinancialReportsScreenWithBoundary = () => (
+  <ErrorBoundary name="FinancialReportsScreen">
+    <FinancialReportsScreen />
+  </ErrorBoundary>
+);
+
+export default FinancialReportsScreenWithBoundary;

@@ -25,6 +25,7 @@ import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface Milestone {
   id: string;
@@ -970,4 +971,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MilestoneManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const MilestoneManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="MilestoneManagementScreen">
+    <MilestoneManagementScreen />
+  </ErrorBoundary>
+);
+
+export default MilestoneManagementScreenWithBoundary;

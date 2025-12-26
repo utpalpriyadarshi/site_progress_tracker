@@ -18,6 +18,7 @@ import TeamManagementService from '../../services/team/TeamManagementService';
 import { Q } from '@nozbe/watermelondb';
 import TeamMemberAssignment from './components/TeamMemberAssignment';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * TeamManagementScreen
@@ -951,4 +952,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TeamManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const TeamManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="TeamManagementScreen">
+    <TeamManagementScreen />
+  </ErrorBoundary>
+);
+
+export default TeamManagementScreenWithBoundary;

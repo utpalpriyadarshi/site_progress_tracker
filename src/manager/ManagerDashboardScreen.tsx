@@ -33,6 +33,7 @@ import { useManagerContext } from './context/ManagerContext';
 import { Q } from '@nozbe/watermelondb';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -3172,4 +3173,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ManagerDashboardScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ManagerDashboardScreenWithBoundary = () => (
+  <ErrorBoundary name="ManagerDashboardScreen">
+    <ManagerDashboardScreen />
+  </ErrorBoundary>
+);
+
+export default ManagerDashboardScreenWithBoundary;
