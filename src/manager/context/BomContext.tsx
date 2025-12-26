@@ -3,6 +3,7 @@ import { database } from '../../../models/database';
 import BomModel from '../../../models/BomModel';
 import BomItemModel from '../../../models/BomItemModel';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../../services/LoggingService';
 
 /**
  * BomContext
@@ -234,7 +235,7 @@ export const BomProvider = ({ children }: { children: ReactNode }) => {
       const bom = await database.collections.get<BomModel>('boms').find(bomId);
       return bom;
     } catch (error) {
-      console.error('Error fetching BOM by ID:', error);
+      logger.error('Error fetching BOM by ID', error as Error);
       return null;
     }
   }, []);

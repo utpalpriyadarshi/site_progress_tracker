@@ -22,6 +22,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
+import { logger } from '../services/LoggingService';
 
 interface FinancialData {
   // Budget Metrics
@@ -255,7 +256,7 @@ const FinancialReportsScreen = () => {
         subcontractorCost,
       });
     } catch (error) {
-      console.error('[FinancialReports] Error loading financial data:', error);
+      logger.error('[FinancialReports] Error loading financial data', error as Error);
       Alert.alert('Error', 'Failed to load financial data');
     } finally {
       setLoading(false);
@@ -399,7 +400,7 @@ const FinancialReportsScreen = () => {
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('[FinancialReports] Export error:', error);
+      logger.error('[FinancialReports] Export error', error as Error);
       Alert.alert('Export Failed', 'Failed to export financial report');
     } finally {
       setExporting(false);

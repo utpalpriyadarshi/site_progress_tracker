@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { logger } from '../../services/LoggingService';
 // Note: You'll need to install these packages:
 // npm install react-native-document-picker
 // npm install xlsx
@@ -214,7 +215,7 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
           });
           successCount++;
         } catch (error) {
-          console.error(`Failed to import item ${item.itemCode}:`, error);
+          logger.error(`Failed to import item ${item.itemCode}`, error as Error);
           failCount++;
         }
       }
@@ -228,7 +229,7 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
       onImportComplete(successCount);
     } catch (error) {
       Alert.alert('Error', 'Failed to import items');
-      console.error('Import error:', error);
+      logger.error('Import error', error as Error);
     } finally {
       setImporting(false);
     }

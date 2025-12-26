@@ -32,6 +32,7 @@ import { database } from '../../models/database';
 import { useManagerContext } from './context/ManagerContext';
 import { Q } from '@nozbe/watermelondb';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { logger } from '../services/LoggingService';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -275,7 +276,7 @@ const ManagerDashboardScreen = () => {
         loadHandoverData(),
       ]);
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading data:', error);
+      logger.error('[ManagerDashboard] Error loading data', error as Error);
     } finally {
       setLoading(false);
     }
@@ -312,7 +313,7 @@ const ManagerDashboardScreen = () => {
         budget: (project as any).budget,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading project info:', error);
+      logger.error('[ManagerDashboard] Error loading project info', error as Error);
     }
   };
 
@@ -433,7 +434,7 @@ const ManagerDashboardScreen = () => {
         activeSupervisors,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating stats:', error);
+      logger.error('[ManagerDashboard] Error calculating stats', error as Error);
     }
   };
 
@@ -517,7 +518,7 @@ const ManagerDashboardScreen = () => {
 
       return Math.round(hybridProgress * 10) / 10; // Round to 1 decimal
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating hybrid progress:', error);
+      logger.error('[ManagerDashboard] Error calculating hybrid progress', error as Error);
       return 0;
     }
   };
@@ -540,7 +541,7 @@ const ManagerDashboardScreen = () => {
       const utilization = projectInfo.budget > 0 ? (totalSpent / projectInfo.budget) * 100 : 0;
       return Math.round(utilization * 10) / 10; // Round to 1 decimal
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating budget utilization:', error);
+      logger.error('[ManagerDashboard] Error calculating budget utilization', error as Error);
       return 0;
     }
   };
@@ -671,7 +672,7 @@ const ManagerDashboardScreen = () => {
         rfqsAwarded,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading engineering data:', error);
+      logger.error('[ManagerDashboard] Error loading engineering data', error as Error);
     }
   };
 
@@ -798,7 +799,7 @@ const ManagerDashboardScreen = () => {
 
       setSitesProgress(sitesData);
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading sites progress:', error);
+      logger.error('[ManagerDashboard] Error loading sites progress', error as Error);
     }
   };
 
@@ -948,7 +949,7 @@ const ManagerDashboardScreen = () => {
         delayedDeliveries,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading equipment/materials data:', error);
+      logger.error('[ManagerDashboard] Error loading equipment/materials data', error as Error);
     }
   };
 
@@ -1029,7 +1030,7 @@ const ManagerDashboardScreen = () => {
         bomActualCost,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading financial data:', error);
+      logger.error('[ManagerDashboard] Error loading financial data', error as Error);
     }
   };
 
@@ -1179,7 +1180,7 @@ const ManagerDashboardScreen = () => {
         inspectionsFailed,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading testing/commissioning data:', error);
+      logger.error('[ManagerDashboard] Error loading testing/commissioning data', error as Error);
     }
   };
 
@@ -1316,7 +1317,7 @@ const ManagerDashboardScreen = () => {
         punchListCompletion,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading handover data:', error);
+      logger.error('[ManagerDashboard] Error loading handover data', error as Error);
     }
   };
 
