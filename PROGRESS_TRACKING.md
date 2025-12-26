@@ -151,13 +151,15 @@
 ## 🔄 In Progress Tasks
 
 ### Active Tasks
-- 🔄 **Manager Phase 1 Task 1.3.1** - Refactor ManagerDashboardScreen (Next)
-  - Branch: TBD
+- 🔄 **Manager Phase 1 Task 1.3.1** - Refactor ManagerDashboardScreen (In Progress - Phase 1/4)
+  - Branch: `manager/phase1-task1.3.1-refactor-dashboard`
   - Developer: Developer 1
-  - Status: Ready to start
-  - Current File Size: 3,174 lines
+  - Status: Phase 1 complete (components extracted)
+  - Current File Size: 3,183 lines
   - Target: <300 lines
   - Estimated: 10-12 hours
+  - Progress: ~25% (Phase 1 of 4 completed)
+  - Files Created: 3 (KPICard, ProjectHeader, dashboardFormatters)
 
 ---
 
