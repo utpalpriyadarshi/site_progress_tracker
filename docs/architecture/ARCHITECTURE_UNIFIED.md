@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers) with comprehensive progress tracking, reporting, material management, financial management, and advanced planning capabilities.
 
-**Current Version**: v2.18 (Password Reset & Supervisor Dashboard Enhancements)
+**Current Version**: v2.20 (Manager Role Refactoring - IN PROGRESS)
 **Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: December 25, 2025
+**Last Updated**: December 27, 2025
 
 ---
 
