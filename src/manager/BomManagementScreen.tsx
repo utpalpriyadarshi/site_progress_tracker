@@ -21,6 +21,8 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 // import DocumentPicker from 'react-native-document-picker'; // Temporarily disabled - compatibility issue
 import { BomImportExportService } from '../services/BomImportExportService';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * BomManagementScreen - Redesigned to match Supervisor pattern
@@ -216,7 +218,7 @@ const BomManagementScreenComponent = ({
       });
       closeBomDialog();
     } catch (error) {
-      console.error('Error saving BOM:', error);
+      logger.error('Error saving BOM', error as Error);
       showSnackbar('Failed to save BOM: ' + (error as Error).message, 'error');
     }
   };
@@ -244,7 +246,7 @@ const BomManagementScreenComponent = ({
       showSnackbar('BOM deleted successfully', 'success');
       setBomToDelete(null);
     } catch (error) {
-      console.error('Error deleting BOM:', error);
+      logger.error('Error deleting BOM', error as Error);
       showSnackbar('Failed to delete BOM: ' + (error as Error).message, 'error');
     }
   };
@@ -311,7 +313,7 @@ const BomManagementScreenComponent = ({
       // Switch to execution tab to show the new BOM
       setActiveTab('execution');
     } catch (error) {
-      console.error('Error copying BOM:', error);
+      logger.error('Error copying BOM', error as Error);
       showSnackbar('Failed to copy BOM: ' + (error as Error).message, 'error');
     }
   };
@@ -336,7 +338,7 @@ const BomManagementScreenComponent = ({
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Error exporting BOM:', error);
+      logger.error('Error exporting BOM', error as Error);
       showSnackbar('Failed to export BOM: ' + (error as Error).message, 'error');
     }
   };
@@ -392,7 +394,7 @@ const BomManagementScreenComponent = ({
         // User cancelled
         return;
       }
-      console.error('Error importing BOM:', error);
+      logger.error('Error importing BOM', error as Error);
       showSnackbar('Failed to import BOM: ' + error.message, 'error');
     }
     */
@@ -468,7 +470,7 @@ const BomManagementScreenComponent = ({
 
       showSnackbar(`BOM imported successfully with ${importResult.validRows} items!`, 'success');
     } catch (error) {
-      console.error('Error creating BOM from import:', error);
+      logger.error('Error creating BOM from import', error as Error);
       showSnackbar('Failed to create BOM: ' + (error as Error).message, 'error');
     }
   };
@@ -586,7 +588,7 @@ const BomManagementScreenComponent = ({
       });
       closeItemDialog();
     } catch (error) {
-      console.error('Error saving item:', error);
+      logger.error('Error saving item', error as Error);
       showSnackbar('Failed to save item: ' + (error as Error).message, 'error');
     }
   };
@@ -618,7 +620,7 @@ const BomManagementScreenComponent = ({
       showSnackbar('Item deleted successfully', 'success');
       setItemToDelete(null);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('Error deleting item', error as Error);
       showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
     }
   };
@@ -1453,4 +1455,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BomManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const BomManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="BomManagementScreen">
+    <BomManagementScreen />
+  </ErrorBoundary>
+);
+
+export default BomManagementScreenWithBoundary;

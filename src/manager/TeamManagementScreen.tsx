@@ -17,6 +17,8 @@ import SiteModel from '../../models/SiteModel';
 import TeamManagementService from '../../services/team/TeamManagementService';
 import { Q } from '@nozbe/watermelondb';
 import TeamMemberAssignment from './components/TeamMemberAssignment';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * TeamManagementScreen
@@ -95,7 +97,7 @@ const TeamManagementScreen = () => {
 
       setTeams(loadedTeams);
     } catch (error) {
-      console.error('Error loading teams:', error);
+      logger.error('Error loading teams', error as Error);
       Alert.alert('Error', 'Failed to load teams');
     } finally {
       setLoading(false);
@@ -110,7 +112,7 @@ const TeamManagementScreen = () => {
         .fetch();
       setSites(loadedSites);
     } catch (error) {
-      console.error('Error loading sites:', error);
+      logger.error('Error loading sites', error as Error);
     }
   };
 
@@ -119,7 +121,7 @@ const TeamManagementScreen = () => {
       const members = await TeamManagementService.getTeamMembers(teamId);
       setTeamMembers(members);
     } catch (error) {
-      console.error('Error loading team members:', error);
+      logger.error('Error loading team members', error as Error);
     }
   };
 
@@ -148,7 +150,7 @@ const TeamManagementScreen = () => {
 
       Alert.alert('Success', 'Team created successfully');
     } catch (error) {
-      console.error('Error creating team:', error);
+      logger.error('Error creating team', error as Error);
       Alert.alert('Error', 'Failed to create team');
     }
   };
@@ -186,7 +188,7 @@ const TeamManagementScreen = () => {
 
       Alert.alert('Success', 'Team updated successfully');
     } catch (error) {
-      console.error('Error updating team:', error);
+      logger.error('Error updating team', error as Error);
       Alert.alert('Error', 'Failed to update team');
     }
   };
@@ -207,7 +209,7 @@ const TeamManagementScreen = () => {
               loadTeams();
               Alert.alert('Success', 'Team disbanded successfully');
             } catch (error) {
-              console.error('Error disbanding team:', error);
+              logger.error('Error disbanding team', error as Error);
               Alert.alert('Error', 'Failed to disband team');
             }
           },
@@ -950,4 +952,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TeamManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const TeamManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="TeamManagementScreen">
+    <TeamManagementScreen />
+  </ErrorBoundary>
+);
+
+export default TeamManagementScreenWithBoundary;

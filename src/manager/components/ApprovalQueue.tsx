@@ -14,6 +14,7 @@ import { database } from '../../../models/database';
 import ResourceRequestModel from '../../../models/ResourceRequestModel';
 import SiteModel from '../../../models/SiteModel';
 import ResourceRequestService from '../../../services/resource/ResourceRequestService';
+import { logger } from '../../services/LoggingService';
 
 interface ApprovalQueueProps {
   currentUserId: string;
@@ -53,7 +54,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
       setLoading(true);
       await Promise.all([loadRequests(), loadSites()]);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data', error as Error);
       Alert.alert('Error', 'Failed to load requests');
     } finally {
       setLoading(false);
@@ -99,7 +100,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
 
       setRequests(loadedRequests);
     } catch (error) {
-      console.error('Error loading requests:', error);
+      logger.error('Error loading requests', error as Error);
       throw error;
     }
   };
@@ -112,7 +113,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
         .fetch();
       setSites(loadedSites);
     } catch (error) {
-      console.error('Error loading sites:', error);
+      logger.error('Error loading sites', error as Error);
     }
   };
 
@@ -136,7 +137,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
               Alert.alert('Success', 'Request approved successfully');
               loadRequests();
             } catch (error) {
-              console.error('Error approving request:', error);
+              logger.error('Error approving request', error as Error);
               Alert.alert('Error', 'Failed to approve request');
             }
           },
@@ -172,7 +173,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
       setRejectionReason('');
       loadRequests();
     } catch (error) {
-      console.error('Error rejecting request:', error);
+      logger.error('Error rejecting request', error as Error);
       Alert.alert('Error', 'Failed to reject request');
     }
   };

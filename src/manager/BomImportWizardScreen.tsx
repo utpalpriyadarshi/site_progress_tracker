@@ -36,6 +36,7 @@ import {
   ParsedBomRow,
 } from '../utils/BomFileParser';
 import { database } from '../../models/database';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -1069,4 +1070,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BomImportWizardScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const BomImportWizardScreenWithBoundary = () => (
+  <ErrorBoundary name="BomImportWizardScreen">
+    <BomImportWizardScreen />
+  </ErrorBoundary>
+);
+
+export default BomImportWizardScreenWithBoundary;

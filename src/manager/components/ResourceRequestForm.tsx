@@ -11,6 +11,7 @@ import {
 import { database } from '../../../models/database';
 import SiteModel from '../../../models/SiteModel';
 import ResourceRequestService from '../../../services/resource/ResourceRequestService';
+import { logger } from '../../services/LoggingService';
 
 interface ResourceRequestFormProps {
   onSuccess?: () => void;
@@ -66,7 +67,7 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
         .fetch();
       setSites(loadedSites);
     } catch (error) {
-      console.error('Error loading sites:', error);
+      logger.error('Error loading sites', error as Error);
     }
   };
 
@@ -133,7 +134,7 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
         onSuccess();
       }
     } catch (error) {
-      console.error('Error creating resource request:', error);
+      logger.error('Error creating resource request', error as Error);
       Alert.alert('Error', 'Failed to submit resource request');
     } finally {
       setSubmitting(false);

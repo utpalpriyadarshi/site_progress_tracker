@@ -23,6 +23,8 @@ import {
 import { useManagerContext } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface SupervisorPerformance {
   userId: string;
@@ -71,7 +73,7 @@ const TeamPerformanceScreen = () => {
         .fetch();
 
       if (supervisorRole.length === 0) {
-        console.error('[TeamPerformance] Supervisor role not found');
+        logger.error('[TeamPerformance] Supervisor role not found');
         setLoading(false);
         setRefreshing(false);
         return;
@@ -215,7 +217,7 @@ const TeamPerformanceScreen = () => {
         avgProductivity,
       });
     } catch (error) {
-      console.error('[TeamPerformance] Error loading data:', error);
+      logger.error('[TeamPerformance] Error loading data', error as Error);
     }
   }, [projectId]);
 
@@ -588,4 +590,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TeamPerformanceScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const TeamPerformanceScreenWithBoundary = () => (
+  <ErrorBoundary name="TeamPerformanceScreen">
+    <TeamPerformanceScreen />
+  </ErrorBoundary>
+);
+
+export default TeamPerformanceScreenWithBoundary;

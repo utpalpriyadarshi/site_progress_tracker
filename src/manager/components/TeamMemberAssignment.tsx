@@ -15,6 +15,7 @@ import { Q } from '@nozbe/watermelondb';
 import TeamManagementService from '../../../services/team/TeamManagementService';
 import TeamModel from '../../../models/TeamModel';
 import TeamMemberModel from '../../../models/TeamMemberModel';
+import { logger } from '../../services/LoggingService';
 
 interface TeamMemberAssignmentProps {
   visible: boolean;
@@ -92,7 +93,7 @@ export default function TeamMemberAssignment({
       const available = mockUsers.filter((u) => !assignedUserIds.includes(u.id));
       setAvailableUsers(available);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data', error as Error);
       Alert.alert('Error', 'Failed to load data');
     } finally {
       setLoading(false);
@@ -116,7 +117,7 @@ export default function TeamMemberAssignment({
       onAssigned();
       await loadData(); // Reload data
     } catch (error) {
-      console.error('Error assigning member:', error);
+      logger.error('Error assigning member', error as Error);
       Alert.alert('Error', 'Failed to assign team member');
     } finally {
       setIsAssigning(false);
@@ -140,7 +141,7 @@ export default function TeamMemberAssignment({
               onAssigned();
               loadData();
             } catch (error) {
-              console.error('Error removing member:', error);
+              logger.error('Error removing member', error as Error);
               Alert.alert('Error', 'Failed to remove team member');
             } finally {
               setLoading(false);

@@ -32,6 +32,19 @@ import { database } from '../../models/database';
 import { useManagerContext } from './context/ManagerContext';
 import { Q } from '@nozbe/watermelondb';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import {
+  KPICard,
+  ProjectHeader,
+  EngineeringSection,
+  SiteProgressSection,
+  EquipmentMaterialsSection,
+  FinancialSection,
+  TestingCommissioningSection,
+  HandoverSection,
+} from './dashboard/components';
+import { formatCurrency } from './dashboard/utils/dashboardFormatters';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -275,7 +288,7 @@ const ManagerDashboardScreen = () => {
         loadHandoverData(),
       ]);
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading data:', error);
+      logger.error('[ManagerDashboard] Error loading data', error as Error);
     } finally {
       setLoading(false);
     }
@@ -312,7 +325,7 @@ const ManagerDashboardScreen = () => {
         budget: (project as any).budget,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading project info:', error);
+      logger.error('[ManagerDashboard] Error loading project info', error as Error);
     }
   };
 
@@ -433,7 +446,7 @@ const ManagerDashboardScreen = () => {
         activeSupervisors,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating stats:', error);
+      logger.error('[ManagerDashboard] Error calculating stats', error as Error);
     }
   };
 
@@ -517,7 +530,7 @@ const ManagerDashboardScreen = () => {
 
       return Math.round(hybridProgress * 10) / 10; // Round to 1 decimal
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating hybrid progress:', error);
+      logger.error('[ManagerDashboard] Error calculating hybrid progress', error as Error);
       return 0;
     }
   };
@@ -540,7 +553,7 @@ const ManagerDashboardScreen = () => {
       const utilization = projectInfo.budget > 0 ? (totalSpent / projectInfo.budget) * 100 : 0;
       return Math.round(utilization * 10) / 10; // Round to 1 decimal
     } catch (error) {
-      console.error('[ManagerDashboard] Error calculating budget utilization:', error);
+      logger.error('[ManagerDashboard] Error calculating budget utilization', error as Error);
       return 0;
     }
   };
@@ -671,7 +684,7 @@ const ManagerDashboardScreen = () => {
         rfqsAwarded,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading engineering data:', error);
+      logger.error('[ManagerDashboard] Error loading engineering data', error as Error);
     }
   };
 
@@ -798,7 +811,7 @@ const ManagerDashboardScreen = () => {
 
       setSitesProgress(sitesData);
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading sites progress:', error);
+      logger.error('[ManagerDashboard] Error loading sites progress', error as Error);
     }
   };
 
@@ -948,7 +961,7 @@ const ManagerDashboardScreen = () => {
         delayedDeliveries,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading equipment/materials data:', error);
+      logger.error('[ManagerDashboard] Error loading equipment/materials data', error as Error);
     }
   };
 
@@ -1029,7 +1042,7 @@ const ManagerDashboardScreen = () => {
         bomActualCost,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading financial data:', error);
+      logger.error('[ManagerDashboard] Error loading financial data', error as Error);
     }
   };
 
@@ -1179,7 +1192,7 @@ const ManagerDashboardScreen = () => {
         inspectionsFailed,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading testing/commissioning data:', error);
+      logger.error('[ManagerDashboard] Error loading testing/commissioning data', error as Error);
     }
   };
 
@@ -1316,784 +1329,8 @@ const ManagerDashboardScreen = () => {
         punchListCompletion,
       });
     } catch (error) {
-      console.error('[ManagerDashboard] Error loading handover data:', error);
+      logger.error('[ManagerDashboard] Error loading handover data', error as Error);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const renderEngineeringProgress = () => {
-    const { pm200Progress, pm200Status, totalDoors, doorsApproved, doorsUnderReview, doorsOpenIssues, totalRequirements, compliantRequirements, totalRfqs, rfqsQuotesReceived, rfqsUnderEvaluation, rfqsAwarded } = engineeringData;
-
-    const compliancePercentage = totalRequirements > 0
-      ? Math.round((compliantRequirements / totalRequirements) * 100)
-      : 0;
-
-    return (
-      <>
-        {/* 2.1 Engineering Overview */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Engineering Overview (PM200)</Title>
-            <View style={styles.engineeringRow}>
-              <View style={styles.engineeringMetric}>
-                <Title style={styles.metricValue}>{pm200Progress}%</Title>
-                <Paragraph style={styles.metricLabel}>Design Completion</Paragraph>
-              </View>
-              <View style={styles.engineeringMetric}>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm200Status === 'completed'
-                          ? '#4CAF50'
-                          : pm200Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 12 }}
-                >
-                  {pm200Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-                <Paragraph style={styles.metricLabel}>Status</Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 2.2 DOORS Packages */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>DOORS Packages</Title>
-            <View style={styles.doorsRow}>
-              <View style={styles.doorsMetric}>
-                <Title style={styles.metricValue}>{totalDoors}</Title>
-                <Paragraph style={styles.metricLabel}>Total Packages</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.doorsMetric}>
-                <Paragraph style={styles.doorsCount}>✅ {doorsApproved} Approved</Paragraph>
-                <Paragraph style={styles.doorsCount}>🔄 {doorsUnderReview} Under Review</Paragraph>
-                <Paragraph style={styles.doorsCount}>⚠️ {doorsOpenIssues} Open Issues</Paragraph>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.complianceRow}>
-              <Paragraph style={styles.complianceLabel}>Requirements Compliance:</Paragraph>
-              <Paragraph style={styles.complianceValue}>
-                {compliantRequirements}/{totalRequirements} ({compliancePercentage}%)
-              </Paragraph>
-            </View>
-            <ProgressBar
-              progress={compliancePercentage / 100}
-              color={compliancePercentage >= 80 ? '#4CAF50' : compliancePercentage >= 50 ? '#FFC107' : '#F44336'}
-              style={styles.progressBar}
-            />
-          </Card.Content>
-        </Card>
-
-        {/* 2.3 RFQ Status */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>RFQ Status (Procurement)</Title>
-            <View style={styles.rfqRow}>
-              <View style={styles.rfqMetric}>
-                <Title style={styles.metricValue}>{totalRfqs}</Title>
-                <Paragraph style={styles.metricLabel}>Total RFQs</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.rfqMetric}>
-                <Paragraph style={styles.rfqCount}>📨 {rfqsQuotesReceived} Quotes Received</Paragraph>
-                <Paragraph style={styles.rfqCount}>⚖️ {rfqsUnderEvaluation} Under Evaluation</Paragraph>
-                <Paragraph style={styles.rfqCount}>✅ {rfqsAwarded} Awarded</Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-      </>
-    );
-  };
-
-  const renderSiteProgress = () => {
-    if (sitesProgress.length === 0) {
-      return (
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Paragraph style={styles.emptyText}>No sites found for this project</Paragraph>
-          </Card.Content>
-        </Card>
-      );
-    }
-
-    return (
-      <>
-        {sitesProgress.map((site) => (
-          <Card key={site.siteId} style={styles.siteCard}>
-            <Card.Content>
-              <View style={styles.siteHeader}>
-                <View style={styles.siteHeaderLeft}>
-                  <Title style={styles.siteName}>{site.siteName}</Title>
-                  <Paragraph style={styles.supervisorText}>
-                    👷 {site.supervisorName}
-                  </Paragraph>
-                </View>
-                <Chip
-                  style={[
-                    styles.siteStatusChip,
-                    {
-                      backgroundColor:
-                        site.status === 'on_track'
-                          ? '#4CAF50'
-                          : site.status === 'at_risk'
-                          ? '#FFC107'
-                          : '#F44336',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}
-                >
-                  {site.status === 'on_track'
-                    ? 'ON TRACK'
-                    : site.status === 'at_risk'
-                    ? 'AT RISK'
-                    : 'DELAYED'}
-                </Chip>
-              </View>
-
-              <Divider style={styles.divider} />
-
-              {/* Progress Section */}
-              <View style={styles.siteProgressSection}>
-                <View style={styles.siteProgressLeft}>
-                  <Title style={styles.siteProgressValue}>{site.overallProgress}%</Title>
-                  <Paragraph style={styles.siteProgressLabel}>Overall Progress</Paragraph>
-                  <Paragraph style={styles.siteProgressFormula}>
-                    ({site.itemsProgress}% items × 0.6 + {site.milestonesProgress}% milestones × 0.4)
-                  </Paragraph>
-                </View>
-
-                <View style={styles.siteProgressRight}>
-                  <View style={styles.siteMetric}>
-                    <Paragraph style={styles.siteMetricValue}>{site.criticalIssues}</Paragraph>
-                    <Paragraph style={styles.siteMetricLabel}>Critical Issues</Paragraph>
-                  </View>
-                </View>
-              </View>
-
-              {/* Progress Bar */}
-              <ProgressBar
-                progress={site.overallProgress / 100}
-                color={
-                  site.status === 'on_track'
-                    ? '#4CAF50'
-                    : site.status === 'at_risk'
-                    ? '#FFC107'
-                    : '#F44336'
-                }
-                style={styles.progressBar}
-              />
-            </Card.Content>
-          </Card>
-        ))}
-      </>
-    );
-  };
-
-  const renderEquipmentMaterials = () => {
-    const {
-      pm300Progress,
-      pm300Status,
-      pm400Progress,
-      pm400Status,
-      totalPOs,
-      posDraft,
-      posIssued,
-      posInProgress,
-      posDelivered,
-      posClosed,
-      totalPOValue,
-      upcomingDeliveries,
-      delayedDeliveries,
-    } = equipmentData;
-
-    return (
-      <>
-        {/* 4.1 Procurement Pipeline (PM300 & PM400) */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Procurement & Manufacturing Pipeline</Title>
-            <View style={styles.pipelineRow}>
-              {/* PM300 */}
-              <View style={styles.pipelineItem}>
-                <Paragraph style={styles.pipelineLabel}>Procurement (PM300)</Paragraph>
-                <Title style={styles.pipelineValue}>{pm300Progress}%</Title>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm300Status === 'completed'
-                          ? '#4CAF50'
-                          : pm300Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {pm300Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-              </View>
-
-              <Divider style={styles.verticalDivider} />
-
-              {/* PM400 */}
-              <View style={styles.pipelineItem}>
-                <Paragraph style={styles.pipelineLabel}>Manufacturing (PM400)</Paragraph>
-                <Title style={styles.pipelineValue}>{pm400Progress}%</Title>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm400Status === 'completed'
-                          ? '#4CAF50'
-                          : pm400Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {pm400Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 4.2 Purchase Orders Summary */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Purchase Orders</Title>
-            <View style={styles.poSummaryRow}>
-              <View style={styles.poSummaryLeft}>
-                <Title style={styles.poTotalValue}>{formatCurrency(totalPOValue)}</Title>
-                <Paragraph style={styles.poTotalLabel}>Total PO Value</Paragraph>
-                <Paragraph style={styles.poCount}>{totalPOs} Purchase Orders</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.poSummaryRight}>
-                <Paragraph style={styles.poStatusItem}>📝 {posDraft} Draft</Paragraph>
-                <Paragraph style={styles.poStatusItem}>📤 {posIssued} Issued</Paragraph>
-                <Paragraph style={styles.poStatusItem}>⏳ {posInProgress} In Progress</Paragraph>
-                <Paragraph style={styles.poStatusItem}>📦 {posDelivered} Delivered</Paragraph>
-                <Paragraph style={styles.poStatusItem}>✅ {posClosed} Closed</Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 4.3 Delivery Schedule */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Delivery Schedule</Title>
-            <View style={styles.deliveryRow}>
-              <View style={styles.deliveryMetric}>
-                <Title style={styles.deliveryValue}>{upcomingDeliveries}</Title>
-                <Paragraph style={styles.deliveryLabel}>Upcoming (30 days)</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.deliveryMetric}>
-                <Title style={[styles.deliveryValue, { color: delayedDeliveries > 0 ? '#F44336' : '#666' }]}>
-                  {delayedDeliveries}
-                </Title>
-                <Paragraph style={styles.deliveryLabel}>Delayed Deliveries</Paragraph>
-              </View>
-            </View>
-            {delayedDeliveries > 0 && (
-              <Paragraph style={styles.warningText}>
-                ⚠️ {delayedDeliveries} deliveries are past their expected date
-              </Paragraph>
-            )}
-          </Card.Content>
-        </Card>
-      </>
-    );
-  };
-
-  const renderFinancialSummary = () => {
-    const {
-      projectBudget,
-      budgetAllocated,
-      budgetSpent,
-      budgetRemaining,
-      budgetUtilization,
-      contractValue,
-      estimatedCost,
-      actualCost,
-      projectedProfit,
-      profitMargin,
-      totalBOMs,
-      bomsDraft,
-      bomsApproved,
-      bomsLocked,
-      bomTotalCost,
-      bomActualCost,
-    } = financialData;
-
-    const bomCostVariance = bomTotalCost - bomActualCost;
-    const bomVariancePercent =
-      bomTotalCost > 0 ? ((bomCostVariance / bomTotalCost) * 100) : 0;
-
-    return (
-      <>
-        {/* 5.1 Budget Overview */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Budget Overview</Title>
-            <View style={styles.budgetRow}>
-              <View style={styles.budgetMetric}>
-                <Title style={styles.budgetValue}>{formatCurrency(projectBudget)}</Title>
-                <Paragraph style={styles.budgetLabel}>Total Budget</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.budgetMetric}>
-                <Paragraph style={styles.budgetItem}>
-                  Allocated: {formatCurrency(budgetAllocated)}
-                </Paragraph>
-                <Paragraph style={styles.budgetItem}>
-                  Spent: {formatCurrency(budgetSpent)}
-                </Paragraph>
-                <Paragraph style={styles.budgetItem}>
-                  Remaining: {formatCurrency(budgetRemaining)}
-                </Paragraph>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.utilizationRow}>
-              <Paragraph style={styles.utilizationLabel}>Budget Utilization:</Paragraph>
-              <Paragraph
-                style={[
-                  styles.utilizationValue,
-                  { color: budgetUtilization > 100 ? '#F44336' : '#4CAF50' },
-                ]}
-              >
-                {budgetUtilization}%
-              </Paragraph>
-            </View>
-            <ProgressBar
-              progress={Math.min(budgetUtilization / 100, 1)}
-              color={budgetUtilization > 100 ? '#F44336' : budgetUtilization > 90 ? '#FFC107' : '#4CAF50'}
-              style={styles.progressBar}
-            />
-          </Card.Content>
-        </Card>
-
-        {/* 5.2 Profitability */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Profitability</Title>
-            <View style={styles.profitRow}>
-              <View style={styles.profitLeft}>
-                <Paragraph style={styles.profitLabel}>Contract Value:</Paragraph>
-                <Title style={styles.profitValue}>{formatCurrency(contractValue)}</Title>
-              </View>
-              <View style={styles.profitRight}>
-                <Paragraph style={styles.profitItem}>
-                  Estimated Cost: {formatCurrency(estimatedCost)}
-                </Paragraph>
-                <Paragraph style={styles.profitItem}>
-                  Actual Cost: {formatCurrency(actualCost)}
-                </Paragraph>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.marginRow}>
-              <View style={styles.marginMetric}>
-                <Title style={[styles.marginValue, { color: projectedProfit >= 0 ? '#4CAF50' : '#F44336' }]}>
-                  {formatCurrency(projectedProfit)}
-                </Title>
-                <Paragraph style={styles.marginLabel}>Projected Profit/Loss</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.marginMetric}>
-                <Title style={[styles.marginValue, { color: profitMargin >= 0 ? '#4CAF50' : '#F44336' }]}>
-                  {profitMargin}%
-                </Title>
-                <Paragraph style={styles.marginLabel}>Profit Margin</Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 5.3 BOM Summary */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>BOM Summary</Title>
-            <View style={styles.bomRow}>
-              <View style={styles.bomLeft}>
-                <Title style={styles.bomTotal}>{totalBOMs}</Title>
-                <Paragraph style={styles.bomLabel}>Total BOMs</Paragraph>
-                <Paragraph style={styles.bomStatus}>
-                  📝 {bomsDraft} Draft | ✅ {bomsApproved} Approved | 🔒 {bomsLocked} Locked
-                </Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.bomRight}>
-                <Paragraph style={styles.bomCostLabel}>BOM Total Cost:</Paragraph>
-                <Title style={styles.bomCostValue}>{formatCurrency(bomTotalCost)}</Title>
-                <Paragraph style={styles.bomCostLabel}>Actual Cost:</Paragraph>
-                <Paragraph style={styles.bomActual}>{formatCurrency(bomActualCost)}</Paragraph>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.varianceRow}>
-              <Paragraph style={styles.varianceLabel}>Cost Variance:</Paragraph>
-              <Paragraph
-                style={[
-                  styles.varianceValue,
-                  { color: bomCostVariance >= 0 ? '#4CAF50' : '#F44336' },
-                ]}
-              >
-                {formatCurrency(Math.abs(bomCostVariance))} ({bomCostVariance >= 0 ? '+' : '-'}
-                {Math.abs(Math.round(bomVariancePercent * 10) / 10)}%)
-              </Paragraph>
-            </View>
-          </Card.Content>
-        </Card>
-      </>
-    );
-  };
-
-  const renderTestingCommissioning = () => {
-    const {
-      pm500Progress,
-      pm500Status,
-      pm600Progress,
-      pm600Status,
-      itemsInPreCommissioning,
-      itemsInCommissioning,
-      testsCompleted,
-      testsPending,
-      systemsEnergized,
-      systemsOperational,
-      totalInspections,
-      inspectionsPassed,
-      inspectionsFailed,
-    } = testingCommissioningData;
-
-    const passRate = totalInspections > 0 ? Math.round((inspectionsPassed / totalInspections) * 100) : 0;
-
-    return (
-      <>
-        {/* 6.1 Pre-commissioning (PM500) & Commissioning (PM600) */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Pre-commissioning & Commissioning Overview</Title>
-            <View style={styles.testingRow}>
-              {/* PM500 */}
-              <View style={styles.testingItem}>
-                <Paragraph style={styles.testingLabel}>Pre-commissioning (PM500)</Paragraph>
-                <Title style={styles.testingValue}>{pm500Progress}%</Title>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm500Status === 'completed'
-                          ? '#4CAF50'
-                          : pm500Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {pm500Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-                <Paragraph style={styles.testingCount}>
-                  {itemsInPreCommissioning} Items in Phase
-                </Paragraph>
-              </View>
-
-              <Divider style={styles.verticalDivider} />
-
-              {/* PM600 */}
-              <View style={styles.testingItem}>
-                <Paragraph style={styles.testingLabel}>Commissioning (PM600)</Paragraph>
-                <Title style={styles.testingValue}>{pm600Progress}%</Title>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm600Status === 'completed'
-                          ? '#4CAF50'
-                          : pm600Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {pm600Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-                <Paragraph style={styles.testingCount}>
-                  {itemsInCommissioning} Items in Phase
-                </Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 6.2 Testing & Systems Status */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Testing & Systems Status</Title>
-            <View style={styles.systemsRow}>
-              <View style={styles.systemsLeft}>
-                <Paragraph style={styles.systemsLabel}>Tests Progress:</Paragraph>
-                <Paragraph style={styles.systemsItem}>
-                  ✅ {testsCompleted} Completed
-                </Paragraph>
-                <Paragraph style={styles.systemsItem}>
-                  ⏳ {testsPending} Pending
-                </Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.systemsRight}>
-                <Paragraph style={styles.systemsLabel}>Systems Status:</Paragraph>
-                <Paragraph style={styles.systemsItem}>
-                  ⚡ {systemsEnergized} Energized
-                </Paragraph>
-                <Paragraph style={styles.systemsItem}>
-                  ✅ {systemsOperational} Operational
-                </Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 6.3 Quality Inspections */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Quality Inspections</Title>
-            <View style={styles.inspectionRow}>
-              <View style={styles.inspectionLeft}>
-                <Title style={styles.inspectionTotal}>{totalInspections}</Title>
-                <Paragraph style={styles.inspectionLabel}>Total Inspections</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.inspectionRight}>
-                <Paragraph style={styles.inspectionItem}>
-                  ✅ {inspectionsPassed} Passed
-                </Paragraph>
-                <Paragraph style={styles.inspectionItem}>
-                  ❌ {inspectionsFailed} Failed
-                </Paragraph>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.passRateRow}>
-              <Paragraph style={styles.passRateLabel}>Pass Rate:</Paragraph>
-              <Paragraph
-                style={[
-                  styles.passRateValue,
-                  { color: passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336' },
-                ]}
-              >
-                {passRate}%
-              </Paragraph>
-            </View>
-            <ProgressBar
-              progress={passRate / 100}
-              color={passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336'}
-              style={styles.progressBar}
-            />
-            {inspectionsFailed > 0 && (
-              <Paragraph style={styles.warningText}>
-                ⚠️ {inspectionsFailed} inspections require rework
-              </Paragraph>
-            )}
-          </Card.Content>
-        </Card>
-      </>
-    );
-  };
-
-  const renderHandover = () => {
-    const {
-      pm700Progress,
-      pm700Status,
-      sitesReadyForHandover,
-      sitesHandedOver,
-      totalSites,
-      documentationComplete,
-      documentationPending,
-      documentationPercentage,
-      totalPunchItems,
-      punchItemsClosed,
-      punchItemsOpen,
-      punchItemsCritical,
-      punchListCompletion,
-    } = handoverData;
-
-    return (
-      <>
-        {/* 7.1 PM700 Overview & Site Status */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Handover Overview (PM700)</Title>
-            <View style={styles.handoverOverviewRow}>
-              <View style={styles.handoverOverviewLeft}>
-                <Title style={styles.handoverProgress}>{pm700Progress}%</Title>
-                <Paragraph style={styles.handoverLabel}>PM700 Progress</Paragraph>
-                <Chip
-                  style={[
-                    styles.statusChip,
-                    {
-                      backgroundColor:
-                        pm700Status === 'completed'
-                          ? '#4CAF50'
-                          : pm700Status === 'in_progress'
-                          ? '#2196F3'
-                          : '#9E9E9E',
-                    },
-                  ]}
-                  textStyle={{ color: '#fff', fontSize: 11 }}
-                >
-                  {pm700Status.replace('_', ' ').toUpperCase()}
-                </Chip>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.handoverOverviewRight}>
-                <Paragraph style={styles.handoverSiteLabel}>Site Status:</Paragraph>
-                <Paragraph style={styles.handoverSiteItem}>
-                  ✅ {sitesHandedOver} Handed Over
-                </Paragraph>
-                <Paragraph style={styles.handoverSiteItem}>
-                  🎯 {sitesReadyForHandover} Ready
-                </Paragraph>
-                <Paragraph style={styles.handoverSiteItem}>
-                  📊 {totalSites} Total Sites
-                </Paragraph>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 7.2 Documentation Status */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Documentation Status</Title>
-            <View style={styles.documentationRow}>
-              <View style={styles.documentationLeft}>
-                <Title style={styles.documentationTotal}>{documentationComplete}</Title>
-                <Paragraph style={styles.documentationLabel}>Items Documented</Paragraph>
-                <Paragraph style={styles.documentationPending}>
-                  {documentationPending} Pending
-                </Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.documentationRight}>
-                <Paragraph style={styles.documentationPercentageLabel}>
-                  Completion:
-                </Paragraph>
-                <Title style={styles.documentationPercentageValue}>
-                  {documentationPercentage}%
-                </Title>
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <ProgressBar
-              progress={documentationPercentage / 100}
-              color={
-                documentationPercentage >= 90
-                  ? '#4CAF50'
-                  : documentationPercentage >= 70
-                  ? '#FFC107'
-                  : '#F44336'
-              }
-              style={styles.progressBar}
-            />
-            <Paragraph style={styles.documentationNote}>
-              📄 Includes as-built drawings, O&M manuals, test certificates, and warranties
-            </Paragraph>
-          </Card.Content>
-        </Card>
-
-        {/* 7.3 Punch List Summary */}
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Punch List</Title>
-            <View style={styles.punchListRow}>
-              <View style={styles.punchListLeft}>
-                <Title style={styles.punchListTotal}>{totalPunchItems}</Title>
-                <Paragraph style={styles.punchListLabel}>Total Items</Paragraph>
-              </View>
-              <Divider style={styles.verticalDivider} />
-              <View style={styles.punchListRight}>
-                <Paragraph style={styles.punchListItem}>
-                  ✅ {punchItemsClosed} Closed
-                </Paragraph>
-                <Paragraph style={styles.punchListItem}>
-                  ⏳ {punchItemsOpen} Open
-                </Paragraph>
-                {punchItemsCritical > 0 && (
-                  <Paragraph style={styles.punchListCritical}>
-                    ⚠️ {punchItemsCritical} Critical
-                  </Paragraph>
-                )}
-              </View>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.punchCompletionRow}>
-              <Paragraph style={styles.punchCompletionLabel}>Punch List Completion:</Paragraph>
-              <Paragraph
-                style={[
-                  styles.punchCompletionValue,
-                  {
-                    color:
-                      punchListCompletion >= 90
-                        ? '#4CAF50'
-                        : punchListCompletion >= 70
-                        ? '#FFC107'
-                        : '#F44336',
-                  },
-                ]}
-              >
-                {punchListCompletion}%
-              </Paragraph>
-            </View>
-            <ProgressBar
-              progress={punchListCompletion / 100}
-              color={
-                punchListCompletion >= 90
-                  ? '#4CAF50'
-                  : punchListCompletion >= 70
-                  ? '#FFC107'
-                  : '#F44336'
-              }
-              style={styles.progressBar}
-            />
-            {punchItemsCritical > 0 && (
-              <Paragraph style={styles.warningText}>
-                ⚠️ {punchItemsCritical} critical items must be resolved before handover
-              </Paragraph>
-            )}
-          </Card.Content>
-        </Card>
-      </>
-    );
   };
 
   if (loading && !refreshing) {
@@ -2400,7 +1637,7 @@ const ManagerDashboardScreen = () => {
         <Title style={styles.sectionTitle}>Engineering Progress</Title>
         <Paragraph style={styles.sectionSubtitle}>PM200 Milestone + DOORS + RFQ Status</Paragraph>
 
-        {renderEngineeringProgress()}
+        <EngineeringSection data={engineeringData} />
       </View>
 
       {/* Section 3: Site Progress */}
@@ -2410,7 +1647,7 @@ const ManagerDashboardScreen = () => {
           All Sites - Hybrid Tracking (60% Items + 40% Milestones)
         </Paragraph>
 
-        {renderSiteProgress()}
+        <SiteProgressSection sites={sitesProgress} />
       </View>
 
       {/* Section 4: Equipment/Materials Status */}
@@ -2420,7 +1657,7 @@ const ManagerDashboardScreen = () => {
           Procurement (PM300) + Manufacturing (PM400) + Purchase Orders
         </Paragraph>
 
-        {renderEquipmentMaterials()}
+        <EquipmentMaterialsSection data={equipmentData} />
       </View>
 
       {/* Section 5: Financial Summary */}
@@ -2430,7 +1667,7 @@ const ManagerDashboardScreen = () => {
           Budget Overview + Profitability + BOM Summary
         </Paragraph>
 
-        {renderFinancialSummary()}
+        <FinancialSection data={financialData} />
       </View>
 
       {/* Section 6: Testing & Commissioning */}
@@ -2440,7 +1677,7 @@ const ManagerDashboardScreen = () => {
           Pre-commissioning (PM500) + Commissioning (PM600) + Quality Inspections
         </Paragraph>
 
-        {renderTestingCommissioning()}
+        <TestingCommissioningSection data={testingCommissioningData} />
       </View>
 
       {/* Section 7: Handover Status */}
@@ -2450,7 +1687,7 @@ const ManagerDashboardScreen = () => {
           PM700 Milestone + Documentation + Punch List
         </Paragraph>
 
-        {renderHandover()}
+        <HandoverSection data={handoverData} />
       </View>
     </ScrollView>
   );
@@ -3171,4 +2408,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ManagerDashboardScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ManagerDashboardScreenWithBoundary = () => (
+  <ErrorBoundary name="ManagerDashboardScreen">
+    <ManagerDashboardScreen />
+  </ErrorBoundary>
+);
+
+export default ManagerDashboardScreenWithBoundary;

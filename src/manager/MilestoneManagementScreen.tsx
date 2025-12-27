@@ -24,6 +24,8 @@ import {
 import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface Milestone {
   id: string;
@@ -196,7 +198,7 @@ const MilestoneManagementScreen = () => {
 
       setMilestones(milestonesWithProgress);
     } catch (error) {
-      console.error('[MilestoneManagement] Error loading data:', error);
+      logger.error('[MilestoneManagement] Error loading data', error as Error);
       Alert.alert('Error', 'Failed to load milestone data');
     } finally {
       setLoading(false);
@@ -254,7 +256,7 @@ const MilestoneManagementScreen = () => {
       setNewMilestoneWeightage('10');
       loadData();
     } catch (error) {
-      console.error('[MilestoneManagement] Error adding milestone:', error);
+      logger.error('[MilestoneManagement] Error adding milestone', error as Error);
       Alert.alert('Error', 'Failed to add custom milestone');
     }
   };
@@ -309,7 +311,7 @@ const MilestoneManagementScreen = () => {
       setEditingMilestone(null);
       loadData();
     } catch (error) {
-      console.error('[MilestoneManagement] Error updating milestone:', error);
+      logger.error('[MilestoneManagement] Error updating milestone', error as Error);
       Alert.alert('Error', 'Failed to update milestone');
     }
   };
@@ -344,7 +346,7 @@ const MilestoneManagementScreen = () => {
               Alert.alert('Success', 'Milestone deleted successfully');
               loadData();
             } catch (error) {
-              console.error('[MilestoneManagement] Error deleting milestone:', error);
+              logger.error('[MilestoneManagement] Error deleting milestone', error as Error);
               Alert.alert('Error', 'Failed to delete milestone');
             }
           },
@@ -969,4 +971,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MilestoneManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const MilestoneManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="MilestoneManagementScreen">
+    <MilestoneManagementScreen />
+  </ErrorBoundary>
+);
+
+export default MilestoneManagementScreenWithBoundary;

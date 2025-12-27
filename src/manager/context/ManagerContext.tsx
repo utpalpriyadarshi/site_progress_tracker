@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database } from '../../../models/database';
 import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
 
 /**
  * ManagerContext (Enhanced for v2.10)
@@ -53,32 +54,32 @@ export const ManagerProvider = ({ children }: { children: ReactNode }) => {
       if (!user || !user.userId) return;
 
       try {
-        console.log('[ManagerContext] Loading project for user:', user.userId);
+        logger.debug('[ManagerContext] Loading project for user', { userId: user.userId });
 
         // Fetch user from database to get project assignment
         const userRecord = await database.collections.get('users').find(user.userId);
 
         if (userRecord) {
           const projectId = (userRecord as any).projectId;
-          console.log('[ManagerContext] User projectId:', projectId);
+          logger.debug('[ManagerContext] User projectId', { projectId });
 
           if (projectId) {
             // Fetch project details
             const project = await database.collections.get('projects').find(projectId);
             const projectName = (project as any).name;
 
-            console.log('[ManagerContext] Setting project:', projectName);
+            logger.debug('[ManagerContext] Setting project', { projectName });
 
             // Update context state and persist to AsyncStorage
             await setProjectId(projectId);
             await setProjectName(projectName);
             await setManagerId(user.userId);
           } else {
-            console.log('[ManagerContext] No project assigned to user');
+            logger.warn('[ManagerContext] No project assigned to user');
           }
         }
       } catch (error) {
-        console.error('[ManagerContext] Error loading manager project:', error);
+        logger.error('[ManagerContext] Error loading manager project', error as Error);
       }
     };
 
@@ -107,7 +108,7 @@ export const ManagerProvider = ({ children }: { children: ReactNode }) => {
           setProjectNameState(savedProjectName);
         }
       } catch (error) {
-        console.error('[ManagerContext] Error loading saved data:', error);
+        logger.error('[ManagerContext] Error loading saved data', error as Error);
       }
     };
 
@@ -120,7 +121,7 @@ export const ManagerProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(MANAGER_ID_KEY, id);
     } catch (error) {
-      console.error('[ManagerContext] Error saving manager ID:', error);
+      logger.error('[ManagerContext] Error saving manager ID', error as Error);
     }
   };
 
@@ -130,7 +131,7 @@ export const ManagerProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      console.error('[ManagerContext] Error saving project ID:', error);
+      logger.error('[ManagerContext] Error saving project ID', error as Error);
     }
   };
 
@@ -140,7 +141,7 @@ export const ManagerProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      console.error('[ManagerContext] Error saving project name:', error);
+      logger.error('[ManagerContext] Error saving project name', error as Error);
     }
   };
 

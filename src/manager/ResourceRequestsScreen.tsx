@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import ResourceRequestForm from './components/ResourceRequestForm';
 import ApprovalQueue from './components/ApprovalQueue';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * ResourceRequestsScreen
@@ -109,4 +110,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ResourceRequestsScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ResourceRequestsScreenWithBoundary = () => (
+  <ErrorBoundary name="ResourceRequestsScreen">
+    <ResourceRequestsScreen />
+  </ErrorBoundary>
+);
+
+export default ResourceRequestsScreenWithBoundary;
