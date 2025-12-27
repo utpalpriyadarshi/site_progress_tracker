@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import BomModel from '../../../models/BomModel';
+import BomModel from '../../../../models/BomModel';
 
 export const useBomFilters = (boms: BomModel[]) => {
   const [activeTab, setActiveTab] = useState<'estimating' | 'execution'>('estimating');

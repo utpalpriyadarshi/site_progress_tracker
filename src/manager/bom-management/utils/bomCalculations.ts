@@ -3,8 +3,8 @@
  * Utility functions for BOM-related calculations
  */
 
-import BomModel from '../../../models/BomModel';
-import BomItemModel from '../../../models/BomItemModel';
+import BomModel from '../../../../models/BomModel';
+import BomItemModel from '../../../../models/BomItemModel';
 
 /**
  * Get all items for a specific BOM
