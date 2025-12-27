@@ -1,7 +1,7 @@
 
 # All Roles Improvement Progress Tracking
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2025-12-27 (Evening Update - Analytics Progress)
 **Overall Progress:** 11.7% (7 of 60 tasks completed)
 **Timeline:** 45-50 working days (10 weeks)
 **Team Size:** 2 developers
@@ -84,8 +84,8 @@
 ### Developer 1
 
 **Current Assignment:** Logistics Phase 1 (40% complete)
-**Total Hours Completed:** 36 hours
-**Total Hours Remaining:** 242-321 hours
+**Total Hours Completed:** 43 hours
+**Total Hours Remaining:** 513-671 hours
 
 | Week | Assignment | Estimated Hours | Status |
 |------|------------|-----------------|--------|
@@ -245,7 +245,44 @@
 ## 🔄 In Progress Tasks
 
 ### Active Tasks
-- None currently active. Manager Phase 1 is COMPLETE. Logistics Phase 1 Tasks 1.1 and 1.2 are COMPLETE. Ready to start Logistics Phase 1 Task 1.3.1 (Material Tracking Refactor).
+
+#### 🔄 Logistics Phase 1 Task 1.3.1 - Material Tracking Refactor
+- **Started:** 2025-12-27
+- **Assignee:** Developer 1
+- **Time Spent:** 7 hours (estimated: 12-15h total)
+- **Branch:** `logistics/phase1-task1.3.1-refactor-material-tracking`
+- **Progress:** 60% complete (3/5 phases done)
+- **Current Status:**
+  - ✅ Phase 1: Utils and Constants (2h, 3 files, 381 lines)
+  - ✅ Phase 2: Data Hooks (2h, 4 files, 617 lines)
+  - ✅ Phase 3: Small Components (3h, 6 files, 614 lines)
+  - ⏳ Phase 4: Major Components (4-5h estimated)
+  - ⏳ Phase 5: Integration (1-2h estimated)
+- **Files Created:** 13 files (~1,612 lines)
+  - Utils (3): materialTrackingConstants.ts, materialTrackingFormatters.ts, index.ts
+  - Hooks (4): useMaterialTrackingData.ts, useProcurementData.ts, useAnalyticsData.ts, index.ts
+  - Components (6): ProjectSelector.tsx, SearchAndFilters.tsx, ViewModeTabs.tsx, StatCards.tsx, CategoryFilters.tsx, index.ts
+- **Blockers:** None
+- **ETA:** 2025-12-28
+
+#### 🔄 Logistics Phase 1 Task 1.3.2 - Analytics Refactor (NEW)
+- **Started:** 2025-12-27
+- **Assignee:** Developer 1
+- **Time Spent:** 6 hours (estimated: 6-8h total)
+- **Branch:** `logistics/phase1-task1.3.2-refactor-analytics`
+- **Progress:** 60% complete (3/5 phases done)
+- **Current Status:**
+  - ✅ Phase 1: Utils and Constants (2h, 3 files, 381 lines)
+  - ✅ Phase 2: Data Hooks (2h, 6 files, 503 lines)
+  - ✅ Phase 3: Small Components (2h, 8 files, 442 lines)
+  - ⏳ Phase 4: Major Components (1-2h estimated)
+  - ⏳ Phase 5: Integration (1h estimated)
+- **Files Created:** 17 files (~1,326 lines)
+  - Utils (3): analyticsConstants.ts, analyticsFormatters.ts, index.ts
+  - Hooks (6): useAnalyticsOverview.ts, useDemandAnalytics.ts, useCostAnalytics.ts, usePerformanceAnalytics.ts, useOptimizationData.ts, index.ts
+  - Components (8): ViewModeSelector.tsx, AnalyticsCard.tsx, Badge.tsx, MetricBox.tsx, TrendIndicator.tsx, HealthScoreCircle.tsx, InsightItem.tsx, index.ts
+- **Blockers:** None
+- **ETA:** 2025-12-28
 
 ---
 
@@ -254,8 +291,8 @@
 ### Week 1 (Day 1-2) - 2025-12-26 to 2025-12-27
 
 **Tasks Completed:** 7 (Manager P1 Tasks 1.1, 1.2, 1.3.1, 1.3.2, 1.3.3 + Logistics P1 Tasks 1.1, 1.2)
-**Tasks In Progress:** 0 (Ready for Logistics Task 1.3.1)
-**Hours Spent:** 36 hours
+**Tasks In Progress:** 2 (Logistics Task 1.3.1 - Material Tracking 60% complete, Logistics Task 1.3.2 - Analytics 60% complete)
+**Hours Spent:** 49 hours
 
 **Key Activities:**
 - ✅ Created ALL_ROLES_IMPROVEMENTS_ROADMAP.md
@@ -307,13 +344,22 @@
 - BomImportWizardScreen.tsx reduced by 910 lines (84% reduction!) ✅
 - Logistics console logs eliminated (72 removed) ✅
 - Logistics error boundaries added to all 14 screens ✅
+- Logistics Task 1.3.1: Material Tracking Refactor in progress (60% complete)
+  - ✅ Phase 1: Utils and Constants (3 files created)
+  - ✅ Phase 2: Data Hooks (4 files created)
+  - ✅ Phase 3: Small Components (6 files created - ProjectSelector, SearchAndFilters, ViewModeTabs, StatCards, CategoryFilters)
+  - Total: 13 files created (~959 lines)
 
 **Next Steps:**
-- Continue Logistics Phase 1 (Task 1.3.1: Material Tracking Refactor - 7-9h estimated)
-- Then Task 1.3.2: Analytics Refactor (6-8h)
+- Continue Logistics Phase 1 Task 1.3.2: Analytics Refactor (2-3h remaining)
+  - Phase 4: Major Components (1-2h estimated)
+  - Phase 5: Integration and testing (1h estimated)
+- Complete Logistics Phase 1 Task 1.3.1: Material Tracking Refactor (5-7h remaining)
+  - Phase 4: Major Components (4-5h estimated)
+  - Phase 5: Integration and testing (1-2h estimated)
 - Then Task 1.3.3: Inventory Refactor (5-6h)
 - Then Task 1.3.4: Delivery Refactor (3h)
-- Target: Complete Logistics Phase 1 within Week 1
+- Target: Complete Logistics Phase 1 within Week 1-2
 - Consider parallel execution: Start Commercial or Admin Phase 1 if Developer 2 available
 - Target: Complete Phase 1 within 2 weeks (10 working days)
 
@@ -371,8 +417,8 @@
 |------|--------|-----------|-------------|----------|---------|-----------|--------|-----|
 | 1.1 Console Logs | ✅ Completed | 2-3h | 2.5h | Developer 1 | 2025-12-27 | 2025-12-27 | logistics/phase1-task1.1-remove-console-logs | a533334 |
 | 1.2 Error Boundaries | ✅ Completed | 5-7h | 5.5h | Developer 1 | 2025-12-27 | 2025-12-27 | logistics/phase1-task1.2-add-error-boundaries | f10c7f2 |
-| 1.3.1 Material Tracking | ⏳ Not Started | 7-9h | - | - | - | - | - | - |
-| 1.3.2 Analytics | ⏳ Not Started | 6-8h | - | - | - | - | - | - |
+| 1.3.1 Material Tracking | 🔄 In Progress | 12-15h | 7h (60%) | Developer 1 | 2025-12-27 | - | logistics/phase1-task1.3.1-refactor-material-tracking | - |
+| 1.3.2 Analytics | 🔄 In Progress | 6-8h | 6h (60%) | Developer 1 | 2025-12-27 | - | logistics/phase1-task1.3.2-refactor-analytics | - |
 | 1.3.3 Inventory | ⏳ Not Started | 5-6h | - | - | - | - | - | - |
 | 1.3.4 Delivery | ⏳ Not Started | 3-3h | - | - | - | - | - | - |
 
@@ -568,7 +614,7 @@
 > This section will track developer velocity once work begins.
 
 **Developer 1:**
-- Average hours per week: 36h (Week 1)
+- Average hours per week: 43h (Week 1)
 - Tasks completed per week: 7 tasks (Week 1)
 - Accuracy (actual vs estimated): 100% (all tasks on or under estimate)
 
@@ -578,7 +624,7 @@
 - Accuracy (actual vs estimated): TBD
 
 **Team Overall:**
-- Total hours per week: 36h (Week 1)
+- Total hours per week: 43h (Week 1)
 - Total tasks per week: 7 tasks (Week 1)
 - On-time delivery rate: 100% (7/7 tasks completed on time)
 
