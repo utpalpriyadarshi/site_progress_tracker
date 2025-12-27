@@ -12,6 +12,7 @@ import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput, Menu } f
 import { database } from '../../models/database';
 import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * PurchaseOrderManagementScreen (v2.11 Phase 3)
@@ -623,4 +624,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PurchaseOrderManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const PurchaseOrderManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - PurchaseOrderManagementScreen">
+    <PurchaseOrderManagementScreen />
+  </ErrorBoundary>
+);
+
+export default PurchaseOrderManagementScreenWithBoundary;

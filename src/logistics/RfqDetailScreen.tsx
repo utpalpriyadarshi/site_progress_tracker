@@ -20,6 +20,7 @@ import withObservables from '@nozbe/with-observables';
 import { switchMap } from 'rxjs/operators';
 import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * RFQ Detail Screen
@@ -832,4 +833,13 @@ const enhance = withObservables(['route'], ({ route }: any) => {
   };
 });
 
-export default enhance(RfqDetailScreen);
+const EnhancedRfqDetailScreen = enhance(RfqDetailScreen);
+
+// Wrap with ErrorBoundary for graceful error handling
+const RfqDetailScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - RfqDetailScreen">
+    <EnhancedRfqDetailScreen />
+  </ErrorBoundary>
+);
+
+export default RfqDetailScreenWithBoundary;

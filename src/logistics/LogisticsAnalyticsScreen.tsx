@@ -43,6 +43,7 @@ import {
   type VolumeDiscount,
 } from '../services/CostOptimizationService';
 import { useLogistics } from './context/LogisticsContext';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 const { width } = Dimensions.get('window');
 
@@ -1635,4 +1636,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LogisticsAnalyticsScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const LogisticsAnalyticsScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - LogisticsAnalyticsScreen">
+    <LogisticsAnalyticsScreen />
+  </ErrorBoundary>
+);
+
+export default LogisticsAnalyticsScreenWithBoundary;

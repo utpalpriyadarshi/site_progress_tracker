@@ -13,6 +13,7 @@ import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { useAuth } from '../auth/AuthContext';
 import DoorsEditService, { PackageEditData } from '../services/DoorsEditService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * DOORS Package Edit Screen
@@ -618,4 +619,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DoorsPackageEditScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const DoorsPackageEditScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - DoorsPackageEditScreen">
+    <DoorsPackageEditScreen />
+  </ErrorBoundary>
+);
+
+export default DoorsPackageEditScreenWithBoundary;

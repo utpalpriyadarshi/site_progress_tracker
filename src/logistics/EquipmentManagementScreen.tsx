@@ -25,6 +25,7 @@ import mockEquipment, {
   mockAllocations,
   mockOperatorCertifications,
 } from '../data/mockEquipment';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * EquipmentManagementScreen (Week 3)
@@ -1067,4 +1068,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EquipmentManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const EquipmentManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - EquipmentManagementScreen">
+    <EquipmentManagementScreen />
+  </ErrorBoundary>
+);
+
+export default EquipmentManagementScreenWithBoundary;

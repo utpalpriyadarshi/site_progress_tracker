@@ -17,6 +17,7 @@ import { useAuth } from '../auth/AuthContext';
 import { createDoorsDemoData } from '../utils/demoData/DoorsSeeder';
 import { linkBomItemsToDoors } from '../services/BomDoorsLinkingService';
 import type { DoorsPackage, DoorsPackageStatus, DoorsPriority } from '../../types/doors';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * DOORS Register Screen
@@ -399,7 +400,16 @@ const enhance = withObservables([], () => ({
   doorsPackages: database.collections.get<DoorsPackageModel>('doors_packages').query().observe(),
 }));
 
-export default enhance(DoorsRegisterScreen);
+const EnhancedDoorsRegisterScreen = enhance(DoorsRegisterScreen);
+
+// Wrap with ErrorBoundary for graceful error handling
+const DoorsRegisterScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - DoorsRegisterScreen">
+    <EnhancedDoorsRegisterScreen />
+  </ErrorBoundary>
+);
+
+export default DoorsRegisterScreenWithBoundary;
 
 const styles = StyleSheet.create({
   container: {

@@ -31,6 +31,7 @@ import { clearAllBoms } from '../services/ClearBomsService';
 import DoorsEditService from '../services/DoorsEditService';
 import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
 import { useAuth } from '../auth/AuthContext';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * MaterialTrackingScreen (Week 2 Enhanced)
@@ -2000,4 +2001,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MaterialTrackingScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const MaterialTrackingScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - MaterialTrackingScreen">
+    <MaterialTrackingScreen />
+  </ErrorBoundary>
+);
+
+export default MaterialTrackingScreenWithBoundary;

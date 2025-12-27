@@ -22,6 +22,7 @@ import type {
   ComplianceStatus,
   ReviewStatus,
 } from '../../types/doors';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * DOORS Detail Screen
@@ -614,7 +615,16 @@ const enhance = withObservables(['route'], ({ route }: any) => {
   };
 });
 
-export default enhance(DoorsDetailScreen);
+const EnhancedDoorsDetailScreen = enhance(DoorsDetailScreen);
+
+// Wrap with ErrorBoundary for graceful error handling
+const DoorsDetailScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - DoorsDetailScreen">
+    <EnhancedDoorsDetailScreen />
+  </ErrorBoundary>
+);
+
+export default DoorsDetailScreenWithBoundary;
 
 const styles = StyleSheet.create({
   container: {

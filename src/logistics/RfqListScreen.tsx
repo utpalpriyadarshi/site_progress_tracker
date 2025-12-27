@@ -19,6 +19,7 @@ import withObservables from '@nozbe/with-observables';
 import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
 import { createRfqsDemoData, clearRfqDemoData } from '../utils/demoData/RfqSeeder';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * RFQ List Screen
@@ -619,4 +620,13 @@ const enhance = withObservables([], () => ({
   rfqs: database.collections.get<RfqModel>('rfqs').query().observe(),
 }));
 
-export default enhance(RfqListScreen);
+const EnhancedRfqListScreen = enhance(RfqListScreen);
+
+// Wrap with ErrorBoundary for graceful error handling
+const RfqListScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - RfqListScreen">
+    <EnhancedRfqListScreen />
+  </ErrorBoundary>
+);
+
+export default RfqListScreenWithBoundary;
