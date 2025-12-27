@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
@@ -31,6 +32,7 @@ import { clearAllBoms } from '../services/ClearBomsService';
 import DoorsEditService from '../services/DoorsEditService';
 import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
 import { useAuth } from '../auth/AuthContext';
+
 
 /**
  * MaterialTrackingScreen (Week 2 Enhanced)
@@ -123,7 +125,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       const packages = await doorsCollection.query(Q.where('project_id', selectedProjectId)).fetch();
       setDoorsPackages(packages);
     } catch (error) {
-      console.error('[MaterialTracking] Error loading DOORS packages:', error);
+      logger.error('[MaterialTracking] Error loading DOORS packages:', error);
     }
   };
 
@@ -175,33 +177,33 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   const handleLoadSampleData = async () => {
     if (!selectedProjectId) {
-      console.warn('[MaterialTracking] Cannot load sample data: No project selected');
+      logger.warn('[MaterialTracking] Cannot load sample data: No project selected');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[MaterialTracking] Loading sample BOMs for project:', selectedProjectId);
+      logger.info('[MaterialTracking] Loading sample BOMs for project:', selectedProjectId);
 
       // Load mock BOMs into database
       const loadedBoms = await BomDataService.loadMockBoms(selectedProjectId);
-      console.log('[MaterialTracking] Loaded BOMs:', loadedBoms.length);
+      logger.info('[MaterialTracking] Loaded BOMs:', loadedBoms.length);
 
       // Wait a moment for database to settle
       await new Promise<void>(resolve => setTimeout(resolve, 500));
 
       // Refresh BOMs to reload from database
       await refreshBoms();
-      console.log('[MaterialTracking] Refreshed BOMs');
+      logger.info('[MaterialTracking] Refreshed BOMs');
 
       // Wait a moment before reloading procurement data
       await new Promise<void>(resolve => setTimeout(resolve, 300));
 
       // Reload procurement data
       loadProcurementData();
-      console.log('[MaterialTracking] Reloaded procurement data');
+      logger.info('[MaterialTracking] Reloaded procurement data');
     } catch (error) {
-      console.error('[MaterialTracking] Error loading sample BOMs:', error);
+      logger.error('[MaterialTracking] Error loading sample BOMs:', error);
     } finally {
       setLoading(false);
     }
@@ -210,7 +212,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const handleToggleMode = () => {
     const newMode = toggleAppMode();
     setAppModeState(newMode);
-    console.log('[MaterialTracking] Switched to', newMode, 'mode');
+    logger.info('[MaterialTracking] Switched to', newMode, 'mode');
     // Refresh to apply new mode behavior
     refreshBoms();
   };
@@ -218,12 +220,12 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const handleClearBoms = async () => {
     try {
       setLoading(true);
-      console.log('[MaterialTracking] Clearing all BOMs...');
+      logger.info('[MaterialTracking] Clearing all BOMs...');
       await clearAllBoms();
       await refreshBoms();
-      console.log('[MaterialTracking] BOMs cleared, screen refreshed');
+      logger.info('[MaterialTracking] BOMs cleared, screen refreshed');
     } catch (error) {
-      console.error('[MaterialTracking] Error clearing BOMs:', error);
+      logger.error('[MaterialTracking] Error clearing BOMs:', error);
     } finally {
       setLoading(false);
     }
@@ -232,12 +234,12 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const handleUnlinkBomItems = async () => {
     try {
       setLoading(true);
-      console.log('[MaterialTracking] Unlinking first 5 BOM items...');
+      logger.info('[MaterialTracking] Unlinking first 5 BOM items...');
       await UnlinkBomItemsService.unlinkFirstNItems(5);
       await refreshBoms();
-      console.log('[MaterialTracking] BOM items unlinked, screen refreshed');
+      logger.info('[MaterialTracking] BOM items unlinked, screen refreshed');
     } catch (error) {
-      console.error('[MaterialTracking] Error unlinking BOM items:', error);
+      logger.error('[MaterialTracking] Error unlinking BOM items:', error);
     } finally {
       setLoading(false);
     }
@@ -262,7 +264,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     const bomItem = bomItems.find(item => item.itemCode === itemCode);
 
     if (!bomItem) {
-      console.error('[MaterialTracking] BOM item not found for itemCode:', itemCode);
+      logger.error('[MaterialTracking] BOM item not found for itemCode:', itemCode);
       return;
     }
 
@@ -280,7 +282,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
         user.userId
       );
 
-      console.log('[MaterialTracking] Linked BOM item to DOORS package:', {
+      logger.info('[MaterialTracking] Linked BOM item to DOORS package:', {
         bomItemId: selectedBomItem.id,
         doorsPackageId,
         doorsPackageName,
@@ -289,7 +291,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       // Refresh to show the link
       await refreshBoms();
     } catch (error) {
-      console.error('[MaterialTracking] Error linking BOM item:', error);
+      logger.error('[MaterialTracking] Error linking BOM item:', error);
       throw error;
     }
   };

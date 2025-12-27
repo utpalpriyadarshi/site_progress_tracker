@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { logger } from '../../services/LoggingService';
+
 import { database } from '../../../models/database';
 import ProjectModel from '../../../models/ProjectModel';
 import MaterialModel from '../../../models/MaterialModel';
@@ -150,7 +152,7 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         setSelectedProjectId(projectsList[0].id);
       }
     } catch (error) {
-      console.error('Error loading projects:', error);
+      logger.error('Error loading projects:', error);
     }
   }, [selectedProjectId]);
 
@@ -162,7 +164,7 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         .fetch();
       setMaterials(materialsList);
     } catch (error) {
-      console.error('Error loading materials:', error);
+      logger.error('Error loading materials:', error);
     }
   }, []);
 
@@ -193,7 +195,7 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         stockAccuracy: 100, // Placeholder
       });
     } catch (error) {
-      console.error('Error calculating KPIs:', error);
+      logger.error('Error calculating KPIs:', error);
     }
   }, [materials]);
 
@@ -207,7 +209,7 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
       await calculateKPIs();
       setLastRefreshTime(new Date());
     } catch (error) {
-      console.error('Error refreshing logistics data:', error);
+      logger.error('Error refreshing logistics data:', error);
     } finally {
       setRefreshing(false);
     }

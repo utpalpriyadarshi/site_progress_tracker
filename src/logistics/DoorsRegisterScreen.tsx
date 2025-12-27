@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useAuth } from '../auth/AuthContext';
 import { createDoorsDemoData } from '../utils/demoData/DoorsSeeder';
 import { linkBomItemsToDoors } from '../services/BomDoorsLinkingService';
 import type { DoorsPackage, DoorsPackageStatus, DoorsPriority } from '../../types/doors';
+
 
 /**
  * DOORS Register Screen
@@ -41,7 +43,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
   // Force refresh when screen comes into focus (after returning from edit)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('[DoorsRegister] Screen focused, refreshing data');
+      logger.debug('[DoorsRegister] Screen focused, refreshing data');
       setRefreshKey(prev => prev + 1);
     }, [])
   );
@@ -105,7 +107,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
   const handleClearAllData = async () => {
     try {
       setLoading(true);
-      console.log('[DoorsRegister] Clearing all DOORS data...');
+      logger.info('[DoorsRegister] Clearing all DOORS data...');
 
       await database.write(async () => {
         const packagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
@@ -123,10 +125,10 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
           await req.destroyPermanently();
         }
 
-        console.log('[DoorsRegister] All DOORS data cleared successfully');
+        logger.info('[DoorsRegister] All DOORS data cleared successfully');
       });
     } catch (error) {
-      console.error('[DoorsRegister] Error clearing DOORS data:', error);
+      logger.error('[DoorsRegister] Error clearing DOORS data:', error);
     } finally {
       setLoading(false);
     }
@@ -136,12 +138,12 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
   const handleLoadDemoData = async () => {
     try {
       setLoading(true);
-      console.log('[DoorsRegister] Loading demo DOORS data...');
+      logger.info('[DoorsRegister] Loading demo DOORS data...');
 
       // Get first project
       const projects = await database.collections.get('projects').query().fetch();
       if (projects.length === 0) {
-        console.warn('[DoorsRegister] No projects found');
+        logger.warn('[DoorsRegister] No projects found');
         return;
       }
 
@@ -150,13 +152,13 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
 
       // Create DOORS demo data
       await createDoorsDemoData(projectId, userId);
-      console.log('[DoorsRegister] Demo data loaded successfully');
+      logger.info('[DoorsRegister] Demo data loaded successfully');
 
       // Link BOM items to DOORS packages (for Material Tracking integration)
       const linkedCount = await linkBomItemsToDoors(projectId);
-      console.log(`[DoorsRegister] Linked ${linkedCount} BOM items to DOORS packages`);
+      logger.info(`[DoorsRegister] Linked ${linkedCount} BOM items to DOORS packages`);
     } catch (error) {
-      console.error('[DoorsRegister] Error loading demo data:', error);
+      logger.error('[DoorsRegister] Error loading demo data:', error);
     } finally {
       setLoading(false);
     }

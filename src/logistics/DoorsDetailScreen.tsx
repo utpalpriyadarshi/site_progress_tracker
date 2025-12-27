@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -58,7 +60,7 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
   // Force refresh when screen comes into focus (after returning from edit)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('[DoorsDetail] Screen focused, refreshing data');
+      logger.info('[DoorsDetail] Screen focused, refreshing data');
       setRefreshKey(prev => prev + 1);
     }, [])
   );

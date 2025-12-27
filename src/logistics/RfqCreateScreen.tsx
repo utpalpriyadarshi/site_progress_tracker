@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import { Q } from '@nozbe/watermelondb';
 import withObservables from '@nozbe/with-observables';
 import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
+
 
 /**
  * RFQ Create Screen
@@ -48,7 +50,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
 
   // Debug logging
   React.useEffect(() => {
-    console.log('[RfqCreate] Loaded:', {
+    logger.debug('[RfqCreate] Loaded:', {
       doorsPackages: doorsPackages.length,
       vendors: vendors.length,
     });
@@ -102,7 +104,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
       );
     }
 
-    console.log('[RfqCreate] Filtered DOORS packages:', filtered.length);
+    logger.debug('[RfqCreate] Filtered DOORS packages:', filtered.length);
     return filtered;
   }, [doorsPackages, doorsSearchQuery]);
 
@@ -209,7 +211,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
         },
       ]);
     } catch (error) {
-      console.error('[RfqCreate] Error creating RFQ:', error);
+      logger.error('[RfqCreate] Error creating RFQ:', error);
       Alert.alert('Error', 'Failed to create RFQ. Please try again.');
     } finally {
       setCreating(false);
@@ -242,7 +244,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
               setCreating(true);
 
               // Create RFQ
-              console.log('[RfqCreate] Step 1: Creating RFQ...');
+              logger.info('[RfqCreate] Step 1: Creating RFQ...');
               const rfq = await RfqService.createRfq(
                 {
                   doorsPackageId: selectedDoorsPackage!.id,
@@ -254,12 +256,12 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
                 },
                 user?.userId || 'demo-user'
               );
-              console.log('[RfqCreate] Step 2: RFQ created successfully, ID:', rfq.id);
+              logger.info('[RfqCreate] Step 2: RFQ created successfully, ID:', rfq.id);
 
               // Issue RFQ
-              console.log('[RfqCreate] Step 3: Issuing RFQ...');
+              logger.info('[RfqCreate] Step 3: Issuing RFQ...');
               await RfqService.issueRfq(rfq.id);
-              console.log('[RfqCreate] Step 4: RFQ issued successfully');
+              logger.info('[RfqCreate] Step 4: RFQ issued successfully');
 
               Alert.alert('Success', 'RFQ issued successfully to vendors', [
                 {
@@ -268,7 +270,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
                 },
               ]);
             } catch (error) {
-              console.error('[RfqCreate] Error issuing RFQ:', error);
+              logger.error('[RfqCreate] Error issuing RFQ:', error);
               Alert.alert('Error', 'Failed to issue RFQ. Please try again.');
             } finally {
               setCreating(false);

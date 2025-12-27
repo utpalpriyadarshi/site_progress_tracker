@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -84,7 +86,7 @@ const DeliverySchedulingScreen = () => {
       );
       setPerformance(performanceMetrics);
     } catch (error) {
-      console.error('Error loading delivery data:', error);
+      logger.error('Error loading delivery data:', error);
     } finally {
       setLoading(false);
     }

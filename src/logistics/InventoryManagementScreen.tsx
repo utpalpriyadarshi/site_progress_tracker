@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -101,7 +103,7 @@ const InventoryManagementScreen = () => {
       );
       setInventoryHealth(health);
     } catch (error) {
-      console.error('Error loading inventory data:', error);
+      logger.error('Error loading inventory data:', error);
     } finally {
       setLoading(false);
     }
