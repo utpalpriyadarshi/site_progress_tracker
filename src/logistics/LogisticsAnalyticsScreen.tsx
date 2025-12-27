@@ -1,4 +1,5 @@
 /**
+import { logger } from '../services/LoggingService';
  * LogisticsAnalyticsScreen - Week 6
  *
  * Advanced analytics and optimization dashboard with:
@@ -9,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import {
   View,
   Text,
@@ -357,7 +359,7 @@ const LogisticsAnalyticsScreen: React.FC = () => {
       );
       setStorageOpt(storOpt);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error);
     } finally {
       setLoading(false);
     }

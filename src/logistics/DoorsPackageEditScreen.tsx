@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -74,7 +76,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
       setSpecificationRef(pkg.specificationRef || '');
       setDrawingRef(pkg.drawingRef || '');
     } catch (error) {
-      console.error('[DoorsPackageEdit] Error loading package:', error);
+      logger.error('[DoorsPackageEdit] Error loading package:', error);
       Alert.alert('Error', 'Failed to load package details');
       navigation.goBack();
     } finally {
@@ -109,7 +111,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         drawingRef: drawingRef || undefined,
       };
 
-      console.log('[DoorsPackageEdit] Saving updates:', updates);
+      logger.info('[DoorsPackageEdit] Saving updates:', updates);
 
       // Call edit service
       await DoorsEditService.updatePackage(
@@ -126,7 +128,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         },
       ]);
     } catch (error: any) {
-      console.error('[DoorsPackageEdit] Error saving package:', error);
+      logger.error('[DoorsPackageEdit] Error saving package:', error);
 
       // Handle validation errors
       if (error.message && error.message.includes('Validation failed')) {

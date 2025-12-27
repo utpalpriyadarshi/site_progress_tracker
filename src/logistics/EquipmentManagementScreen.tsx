@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -90,7 +92,7 @@ const EquipmentManagementScreen = () => {
       );
       setCertificationAlerts(alerts);
     } catch (error) {
-      console.error('Error loading equipment data:', error);
+      logger.error('Error loading equipment data:', error);
     } finally {
       setLoading(false);
     }

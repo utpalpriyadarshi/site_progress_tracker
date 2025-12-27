@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput, Menu } f
 import { database } from '../../models/database';
 import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
+
 
 /**
  * PurchaseOrderManagementScreen (v2.11 Phase 3)
@@ -87,7 +89,7 @@ const PurchaseOrderManagementScreen = () => {
 
       setVendors(vendorsList);
     } catch (error) {
-      console.error('[PO] Error loading vendors:', error);
+      logger.error('[PO] Error loading vendors:', error);
     }
   };
 
@@ -110,7 +112,7 @@ const PurchaseOrderManagementScreen = () => {
 
       setRfqs(rfqsList);
     } catch (error) {
-      console.error('[PO] Error loading RFQs:', error);
+      logger.error('[PO] Error loading RFQs:', error);
     }
   };
 
@@ -122,7 +124,7 @@ const PurchaseOrderManagementScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[PO] Loading purchase orders for project:', selectedProjectId);
+      logger.info('[PO] Loading purchase orders for project:', selectedProjectId);
 
       const poCollection = database.collections.get('purchase_orders');
       const posData = await poCollection
@@ -138,7 +140,7 @@ const PurchaseOrderManagementScreen = () => {
               const vendor = await database.collections.get('vendors').find(po.vendorId);
               vendorName = (vendor as any).name;
             } catch (error) {
-              console.error('[PO] Vendor not found:', po.vendorId);
+              logger.error('[PO] Vendor not found:', po.vendorId);
             }
           }
 
@@ -161,10 +163,10 @@ const PurchaseOrderManagementScreen = () => {
         })
       );
 
-      console.log('[PO] Loaded purchase orders:', posWithVendors.length);
+      logger.info('[PO] Loaded purchase orders:', posWithVendors.length);
       setPurchaseOrders(posWithVendors);
     } catch (error) {
-      console.error('[PO] Error loading purchase orders:', error);
+      logger.error('[PO] Error loading purchase orders:', error);
       Alert.alert('Error', 'Failed to load purchase orders');
     } finally {
       setLoading(false);
@@ -231,7 +233,7 @@ const PurchaseOrderManagementScreen = () => {
       resetCreateDialog();
       loadPurchaseOrders();
     } catch (error) {
-      console.error('[PO] Error creating PO:', error);
+      logger.error('[PO] Error creating PO:', error);
       Alert.alert('Error', 'Failed to create Purchase Order');
     }
   };
@@ -261,7 +263,7 @@ const PurchaseOrderManagementScreen = () => {
       Alert.alert('Success', `PO marked as ${newStatus}`);
       loadPurchaseOrders();
     } catch (error) {
-      console.error('[PO] Error updating PO status:', error);
+      logger.error('[PO] Error updating PO status:', error);
       Alert.alert('Error', 'Failed to update PO status');
     }
   };

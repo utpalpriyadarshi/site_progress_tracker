@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsStatisticsService, { DoorsKPIs } from '../services/DoorsStatisticsService';
+
 
 /**
  * LogisticsDashboardScreen
@@ -70,25 +72,25 @@ const LogisticsDashboardScreen = () => {
     if (selectedProjectId) {
       const loadDoorsPackages = async () => {
         try {
-          console.log('[Dashboard] Loading DOORS packages for project:', selectedProjectId);
+          logger.debug('[Dashboard] Loading DOORS packages for project:', selectedProjectId);
           const packagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
           const packages = await packagesCollection.query(
             Q.where('project_id', selectedProjectId)
           ).fetch();
-          console.log(`[Dashboard] Found ${packages.length} DOORS packages`);
+          logger.debug(`[Dashboard] Found ${packages.length} DOORS packages`);
           setDoorsPackages(packages);
 
           // Calculate DOORS KPIs
           if (packages.length > 0) {
             const kpis = DoorsStatisticsService.calculateKPIs(packages);
-            console.log('[Dashboard] DOORS KPIs calculated:', kpis);
+            logger.debug('[Dashboard] DOORS KPIs calculated:', kpis);
             setDoorsKPIs(kpis);
           } else {
-            console.log('[Dashboard] No DOORS packages found, KPIs will not display');
+            logger.debug('[Dashboard] No DOORS packages found, KPIs will not display');
             setDoorsKPIs(null);
           }
         } catch (error) {
-          console.error('[Dashboard] Error loading DOORS packages:', error);
+          logger.error('[Dashboard] Error loading DOORS packages:', error);
         }
       };
 

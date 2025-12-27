@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -124,7 +126,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   // Refresh on focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('[RfqDetail] Screen focused, refreshing');
+      logger.info('[RfqDetail] Screen focused, refreshing');
       setRefreshKey((prev) => prev + 1);
     }, [])
   );

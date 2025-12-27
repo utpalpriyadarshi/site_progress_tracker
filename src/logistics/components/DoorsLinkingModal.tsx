@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '../../services/LoggingService';
+
 import {
   View,
   Text,
@@ -66,7 +68,7 @@ const DoorsLinkingModal: React.FC<DoorsLinkingModalProps> = ({
       setSearchQuery('');
       onClose();
     } catch (error) {
-      console.error('[DoorsLinkingModal] Error linking:', error);
+      logger.error('[DoorsLinkingModal] Error linking:', error);
     } finally {
       setLinking(false);
     }

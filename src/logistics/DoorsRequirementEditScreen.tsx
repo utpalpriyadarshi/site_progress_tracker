@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggingService';
+
 import {
   View,
   Text,
@@ -64,7 +66,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
       setReviewStatus(req.reviewStatus);
       setReviewComments(req.reviewComments || '');
     } catch (error) {
-      console.error('[DoorsRequirementEdit] Error loading requirement:', error);
+      logger.error('[DoorsRequirementEdit] Error loading requirement:', error);
       Alert.alert('Error', 'Failed to load requirement details');
       navigation.goBack();
     } finally {
@@ -107,7 +109,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
         },
       ]);
     } catch (error: any) {
-      console.error('[DoorsRequirementEdit] Save error:', error);
+      logger.error('[DoorsRequirementEdit] Save error:', error);
 
       if (error.message && error.message.includes('Validation failed')) {
         Alert.alert('Validation Error', error.message);
