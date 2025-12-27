@@ -1,0 +1,247 @@
+/**
+ * CostAnalyticsSection Component
+ *
+ * Displays cost breakdown, cost trends, and procurement bundle opportunities
+ * Phase 4: Major Components
+ */
+
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import {
+  CostOptimizationResult,
+  ProcurementBundle,
+} from '../../../services/CostOptimizationService';
+import { CostTrendAnalysis } from '../../../services/PredictiveAnalyticsService';
+import { AnalyticsCard } from './AnalyticsCard';
+import { Badge } from './Badge';
+import { MetricBox } from './MetricBox';
+import { TrendIndicator } from './TrendIndicator';
+
+interface CostAnalyticsSectionProps {
+  costOptimization: CostOptimizationResult | null;
+  costTrends: CostTrendAnalysis[];
+  procurementBundles: ProcurementBundle[];
+  onShowDetail: (detail: any, type: string) => void;
+}
+
+export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
+  costOptimization,
+  costTrends,
+  procurementBundles,
+  onShowDetail,
+}) => {
+  const getVolatilityColor = (volatility: string): string => {
+    switch (volatility) {
+      case 'low':
+        return '#4CAF50';
+      case 'medium':
+        return '#FF9800';
+      case 'high':
+        return '#FF6B6B';
+      default:
+        return '#999';
+    }
+  };
+
+  return (
+    <View>
+      {/* Cost Breakdown */}
+      {costOptimization && (
+        <AnalyticsCard title="Cost Breakdown">
+          <View style={styles.costBreakdown}>
+            <View style={styles.costItem}>
+              <Text style={styles.costLabel}>Materials</Text>
+              <View style={styles.costBar}>
+                <View
+                  style={[
+                    styles.costBarFill,
+                    {
+                      width: `${costOptimization.currentCosts.costPercentages.materials}%`,
+                      backgroundColor: '#2196F3',
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.costValue}>
+                ${(costOptimization.currentCosts.materialCosts / 1000).toFixed(0)}K (
+                {costOptimization.currentCosts.costPercentages.materials}%)
+              </Text>
+            </View>
+            <View style={styles.costItem}>
+              <Text style={styles.costLabel}>Transportation</Text>
+              <View style={styles.costBar}>
+                <View
+                  style={[
+                    styles.costBarFill,
+                    {
+                      width: `${costOptimization.currentCosts.costPercentages.transportation}%`,
+                      backgroundColor: '#FF9800',
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.costValue}>
+                ${(costOptimization.currentCosts.transportationCosts / 1000).toFixed(0)}K (
+                {costOptimization.currentCosts.costPercentages.transportation}%)
+              </Text>
+            </View>
+            <View style={styles.costItem}>
+              <Text style={styles.costLabel}>Storage</Text>
+              <View style={styles.costBar}>
+                <View
+                  style={[
+                    styles.costBarFill,
+                    {
+                      width: `${costOptimization.currentCosts.costPercentages.storage}%`,
+                      backgroundColor: '#4CAF50',
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.costValue}>
+                ${(costOptimization.currentCosts.storageCosts / 1000).toFixed(0)}K (
+                {costOptimization.currentCosts.costPercentages.storage}%)
+              </Text>
+            </View>
+          </View>
+        </AnalyticsCard>
+      )}
+
+      {/* Cost Trends */}
+      <AnalyticsCard title="Cost Trend Analysis">
+        {costTrends.map((trend, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.trendItem}
+            onPress={() => onShowDetail(trend, 'cost')}
+          >
+            <View style={styles.trendHeader}>
+              <Text style={styles.trendMaterial}>{trend.materialName}</Text>
+              <Badge
+                text={`${trend.volatility} volatility`}
+                backgroundColor={getVolatilityColor(trend.volatility)}
+              />
+            </View>
+            <View style={styles.trendMetrics}>
+              <MetricBox label="Current" value={`$${trend.currentCost.toFixed(0)}`} />
+              <MetricBox label="Trend">
+                <TrendIndicator
+                  direction={trend.trend.direction}
+                  value={trend.trend.growthRate}
+                  showValue
+                />
+              </MetricBox>
+              <MetricBox
+                label="Budget Impact"
+                value={`${trend.budgetImpact.projectedCostIncrease > 0 ? '+' : ''}${trend.budgetImpact.projectedCostIncrease.toFixed(1)}%`}
+                valueColor={trend.budgetImpact.projectedCostIncrease > 0 ? '#FF6B6B' : '#4CAF50'}
+              />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </AnalyticsCard>
+
+      {/* Procurement Bundles */}
+      {procurementBundles.length > 0 && (
+        <AnalyticsCard title="Procurement Bundle Opportunities">
+          {procurementBundles.map((bundle, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.bundleItem}
+              onPress={() => onShowDetail(bundle, 'bundle')}
+            >
+              <View style={styles.bundleHeader}>
+                <Text style={styles.bundleName}>{bundle.name}</Text>
+                <Text style={styles.bundleSavings}>
+                  Save ${(bundle.savings / 1000).toFixed(1)}K ({bundle.savingsPercentage.toFixed(1)}%)
+                </Text>
+              </View>
+              <Text style={styles.bundleMaterials}>
+                {bundle.materials.length} materials • {bundle.materials.reduce((sum, m) => sum + m.quantity, 0)} total units
+              </Text>
+              {bundle.feasible && (
+                <Badge text="Feasible" variant="success" style={{ marginTop: 8 }} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </AnalyticsCard>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  costBreakdown: {
+    marginTop: 8,
+  },
+  costItem: {
+    marginBottom: 16,
+  },
+  costLabel: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  costBar: {
+    height: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 4,
+    marginBottom: 4,
+    overflow: 'hidden',
+  },
+  costBarFill: {
+    height: '100%',
+  },
+  costValue: {
+    fontSize: 12,
+    color: '#212121',
+  },
+  trendItem: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  trendHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  trendMaterial: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#212121',
+    flex: 1,
+  },
+  trendMetrics: {
+    flexDirection: 'row',
+  },
+  bundleItem: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  bundleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bundleName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  bundleSavings: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  bundleMaterials: {
+    fontSize: 12,
+    color: '#666',
+  },
+});

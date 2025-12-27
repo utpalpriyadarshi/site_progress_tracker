@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 interface MetricBoxProps {
   label: string;
-  value: string | number;
+  value?: string | number;
   valueColor?: string;
   children?: React.ReactNode;
   style?: ViewStyle;
