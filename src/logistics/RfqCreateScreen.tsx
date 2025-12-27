@@ -19,6 +19,7 @@ import { Q } from '@nozbe/watermelondb';
 import withObservables from '@nozbe/with-observables';
 import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 
 /**
@@ -746,4 +747,13 @@ const enhance = withObservables([], () => ({
   vendors: database.collections.get<VendorModel>('vendors').query().observe(),
 }));
 
-export default enhance(RfqCreateScreen);
+const EnhancedRfqCreateScreen = enhance(RfqCreateScreen);
+
+// Wrap with ErrorBoundary for graceful error handling
+const RfqCreateScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - RfqCreateScreen">
+    <EnhancedRfqCreateScreen />
+  </ErrorBoundary>
+);
+
+export default RfqCreateScreenWithBoundary;

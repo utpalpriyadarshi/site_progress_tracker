@@ -15,6 +15,7 @@ import { database } from '../../models/database';
 import DoorsRequirementModel from '../../models/DoorsRequirementModel';
 import { useAuth } from '../auth/AuthContext';
 import DoorsEditService, { RequirementEditData } from '../services/DoorsEditService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * DOORS Requirement Edit Screen
@@ -471,4 +472,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DoorsRequirementEditScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const DoorsRequirementEditScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - DoorsRequirementEditScreen">
+    <DoorsRequirementEditScreen />
+  </ErrorBoundary>
+);
+
+export default DoorsRequirementEditScreenWithBoundary;

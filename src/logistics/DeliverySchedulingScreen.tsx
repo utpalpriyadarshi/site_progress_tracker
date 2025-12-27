@@ -28,6 +28,7 @@ import mockDeliverySchedules, {
   mockDeliveryExceptions,
   mockSuppliers,
 } from '../data/mockDeliveries';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * DeliverySchedulingScreen (Week 4 - Enhanced)
@@ -1350,4 +1351,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DeliverySchedulingScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const DeliverySchedulingScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - DeliverySchedulingScreen">
+    <DeliverySchedulingScreen />
+  </ErrorBoundary>
+);
+
+export default DeliverySchedulingScreenWithBoundary;

@@ -28,6 +28,7 @@ import mockInventoryItems, {
   mockStockMovements,
   mockStockTransfers,
 } from '../data/mockInventory';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * InventoryManagementScreen (Week 5 - Enhanced)
@@ -1572,4 +1573,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InventoryManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const InventoryManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - InventoryManagementScreen">
+    <InventoryManagementScreen />
+  </ErrorBoundary>
+);
+
+export default InventoryManagementScreenWithBoundary;

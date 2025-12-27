@@ -21,6 +21,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsStatisticsService, { DoorsKPIs } from '../services/DoorsStatisticsService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 
 /**
@@ -917,4 +918,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LogisticsDashboardScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const LogisticsDashboardScreenWithBoundary = () => (
+  <ErrorBoundary name="Logistics - LogisticsDashboardScreen">
+    <LogisticsDashboardScreen />
+  </ErrorBoundary>
+);
+
+export default LogisticsDashboardScreenWithBoundary;
