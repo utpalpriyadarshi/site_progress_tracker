@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
 
 /**
  * CommercialContext (v2.11 Phase 5)
@@ -80,19 +81,19 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadManagerProject = async () => {
       if (!user || !user.userId) {
-        console.log('[CommercialContext] No user or userId available');
+        logger.debug('[CommercialContext] No user or userId available');
         return;
       }
 
       try {
-        console.log('[CommercialContext] Loading project for user:', user.userId);
+        logger.debug('[CommercialContext] Loading project for user:', user.userId);
 
         // Fetch user from database to get project assignment
         let userRecord;
         try {
           userRecord = await database.collections.get('users').find(user.userId);
         } catch (findError) {
-          console.log('[CommercialContext] User not found by ID, checking if role switching...');
+          logger.debug('[CommercialContext] User not found by ID, checking if role switching...');
 
           // When role switching from Admin, user.userId is admin's ID
           // Find the actual Commercial Manager user instead
@@ -101,7 +102,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
           const commercialRole = roles.find((r: any) => r.name === 'CommercialManager');
 
           if (commercialRole) {
-            console.log('[CommercialContext] Found CommercialManager role:', commercialRole.id);
+            logger.debug('[CommercialContext] Found CommercialManager role:', commercialRole.id);
             const usersCollection = database.collections.get('users');
             const commercialManagers = await usersCollection
               .query(Q.where('role_id', commercialRole.id))
@@ -109,7 +110,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
 
             if (commercialManagers.length > 0) {
               userRecord = commercialManagers[0];
-              console.log('[CommercialContext] Found Commercial Manager user:', (userRecord as any).username);
+              logger.debug('[CommercialContext] Found Commercial Manager user:', (userRecord as any).username);
             }
           }
         }
@@ -118,28 +119,28 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
           const projectId = (userRecord as any).projectId;
           const userId = (userRecord as any).id;
 
-          console.log('[CommercialContext] User project assignment:', projectId);
+          logger.debug('[CommercialContext] User project assignment:', projectId);
 
           if (projectId) {
             const project = await database.collections.get('projects').find(projectId);
             const projectName = (project as any).name;
 
-            console.log('[CommercialContext] Project found:', projectName);
+            logger.debug('[CommercialContext] Project found:', projectName);
 
             // Save to state
             await setManagerId(userId);
             await setProjectId(projectId);
             await setProjectName(projectName);
 
-            console.log('[CommercialContext] ✅ Project loaded successfully');
+            logger.debug('[CommercialContext] ✅ Project loaded successfully');
           } else {
-            console.log('[CommercialContext] ⚠️ User has no project assignment');
+            logger.warn('[CommercialContext] ⚠️ User has no project assignment');
           }
         } else {
-          console.log('[CommercialContext] ⚠️ No user record found');
+          logger.warn('[CommercialContext] ⚠️ No user record found');
         }
       } catch (error) {
-        console.error('[CommercialContext] ❌ Error loading manager project:', error);
+        logger.error('[CommercialContext] ❌ Error loading manager project:', error);
       }
     };
 
@@ -152,7 +153,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(MANAGER_ID_KEY, id);
     } catch (error) {
-      console.error('[CommercialContext] Error saving manager ID:', error);
+      logger.error('[CommercialContext] Error saving manager ID:', error);
     }
   };
 
@@ -162,7 +163,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      console.error('[CommercialContext] Error saving project ID:', error);
+      logger.error('[CommercialContext] Error saving project ID:', error);
     }
   };
 
@@ -172,7 +173,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      console.error('[CommercialContext] Error saving project name:', error);
+      logger.error('[CommercialContext] Error saving project name:', error);
     }
   };
 
@@ -188,7 +189,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
         if (savedProjectId) setProjectIdState(savedProjectId);
         if (savedProjectName) setProjectNameState(savedProjectName);
       } catch (error) {
-        console.error('[CommercialContext] Error loading persisted data:', error);
+        logger.error('[CommercialContext] Error loading persisted data:', error);
       }
     };
 
