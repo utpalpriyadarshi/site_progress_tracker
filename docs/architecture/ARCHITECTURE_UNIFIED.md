@@ -4,10 +4,10 @@
 
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers) with comprehensive progress tracking, reporting, material management, financial management, and advanced planning capabilities.
 
-**Current Version**: v2.20 (Manager Phase 1 COMPLETE ✅)
+**Current Version**: v2.20 (Manager & Logistics Phase 1 COMPLETE ✅🎉)
 **Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: December 27, 2025
+**Last Updated**: December 28, 2025
 
 ---
 
@@ -401,9 +401,37 @@ Screens are organized by user role for clear separation of concerns:
   - Gantt charts, schedule management
   - Resource planning, milestone tracking
 
-- **Logistics** (`src/logistics/`): 4 screens for materials/equipment
-  - Material tracking, equipment management
+- **Logistics** (`src/logistics/`): 14 screens for materials/equipment (v2.20: Modular Architecture)
+  - Material tracking with BOM integration (v2.4)
+  - DOORS equipment specification tracking (v2.4)
+  - RFQ management and vendor workflows (v2.4)
   - Delivery scheduling, inventory management
+  - Equipment management, purchase orders
+  - **Modular Architecture (v2.20)**: Large screens broken down into components, hooks, and utils
+    - **MaterialTrackingScreen**: Refactored from 2,013 lines → 456 lines (77.3% reduction)
+      - Structure: `src/logistics/material-tracking/`
+        - `MaterialTrackingScreen.tsx` (456 lines) - Main screen
+        - `components/` - 8 reusable components (StatCards, FiltersBar, Charts, ShipmentsList)
+        - `hooks/` - 5 custom hooks (useMaterialTrackingData, useMaterialFilters, useMaterialStats, useChartData, useShipmentData)
+        - `utils/` - 4 utility modules (materialFormatters, materialCalculations, materialConstants, chartHelpers)
+    - **LogisticsAnalyticsScreen**: Refactored from 1,638 lines → 524 lines (68.0% reduction)
+      - Structure: `src/logistics/analytics/`
+        - `LogisticsAnalyticsScreen.tsx` (524 lines) - Main screen
+        - `components/` - 7 reusable components (ViewModeTabs, StatCards, MetricCard, ChartCard, Sections)
+        - `hooks/` - 4 custom hooks (useAnalyticsData, useMetricsCalculation, useChartData, useForecastData)
+        - `utils/` - 3 utility modules (analyticsFormatters, analyticsCalculations, analyticsConstants)
+    - **InventoryManagementScreen**: Refactored from 1,583 lines → 228 lines (85.6% reduction)
+      - Structure: `src/logistics/inventory/`
+        - `InventoryManagementScreen.tsx` (228 lines) - Main screen
+        - `components/` - 9 reusable components (ViewModeTabs, StatCards, FiltersBar, Badges, Sections)
+        - `hooks/` - 3 custom hooks (useInventoryData, useInventoryFilters, useInventoryStats)
+        - `utils/` - 2 utility modules (inventoryConstants, inventoryFormatters)
+    - **DeliverySchedulingScreen**: Refactored from 1,362 lines → 209 lines (84.7% reduction)
+      - Structure: `src/logistics/delivery-scheduling/`
+        - `DeliverySchedulingScreen.tsx` (209 lines) - Main screen
+        - `components/` - 10 reusable components (ViewModeTabs, StatCards, StatusFilters, Views, Modal)
+        - `hooks/` - 2 custom hooks (useDeliveryData, useDeliveryFilters)
+        - `utils/` - 2 utility modules (deliveryConstants, deliveryFormatters)
 
 - **Commercial Manager** (`src/commercial/`): 5 screens for financial management (v2.11)
   - Budget Management: Category-based budget allocation with variance tracking
