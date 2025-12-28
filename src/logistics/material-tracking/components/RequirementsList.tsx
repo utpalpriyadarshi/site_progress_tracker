@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { MaterialRequirement } from '../../services/BomLogisticsService';
+import { MaterialRequirement } from '../../../services/BomLogisticsService';
 import BomRequirementCard from '../../components/BomRequirementCard';
 import BomModel from '../../../models/BomModel';
 

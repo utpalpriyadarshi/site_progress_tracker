@@ -8,11 +8,11 @@
 import {
   HistoricalDataPoint,
   ProjectDemandFactor,
-} from '../../services/PredictiveAnalyticsService';
+} from '../../../services/PredictiveAnalyticsService';
 import {
   VolumeDiscount,
   CostBreakdown,
-} from '../../services/CostOptimizationService';
+} from '../../../services/CostOptimizationService';
 
 // ============================================================================
 // TYPES

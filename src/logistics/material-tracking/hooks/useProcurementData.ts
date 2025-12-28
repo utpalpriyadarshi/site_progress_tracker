@@ -10,9 +10,9 @@ import BomItemModel from '../../../models/BomItemModel';
 import MaterialProcurementService, {
   PurchaseSuggestion,
   SupplierQuote,
-} from '../../services/MaterialProcurementService';
-import mockSuppliers from '../../data/mockSuppliers';
-import { logger } from '../../services/LoggingService';
+} from '../../../services/MaterialProcurementService';
+import mockSuppliers from '../../../data/mockSuppliers';
+import { logger } from '../../../services/LoggingService';
 
 export const useProcurementData = (
   materials: MaterialModel[],

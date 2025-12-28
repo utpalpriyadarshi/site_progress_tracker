@@ -8,9 +8,9 @@ import { useState, useEffect } from 'react';
 import MaterialModel from '../../../models/MaterialModel';
 import MaterialProcurementService, {
   ConsumptionData,
-} from '../../services/MaterialProcurementService';
-import { generateMockConsumptionHistory } from '../../data/mockSuppliers';
-import { logger } from '../../services/LoggingService';
+} from '../../../services/MaterialProcurementService';
+import { generateMockConsumptionHistory } from '../../../data/mockSuppliers';
+import { logger } from '../../../services/LoggingService';
 
 export const useAnalyticsData = (materials: MaterialModel[]) => {
   const [consumptionData, setConsumptionData] = useState<Map<string, ConsumptionData>>(new Map());

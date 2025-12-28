@@ -7,7 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { SupplierQuote } from '../../services/MaterialProcurementService';
+import { SupplierQuote } from '../../../services/MaterialProcurementService';
 import MaterialModel from '../../../models/MaterialModel';
 
 interface SupplierQuotesModalProps {

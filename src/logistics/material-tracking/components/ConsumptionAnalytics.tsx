@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { ConsumptionData } from '../../services/MaterialProcurementService';
+import { ConsumptionData } from '../../../services/MaterialProcurementService';
 
 interface ConsumptionAnalyticsProps {
   consumptionData: Map<string, ConsumptionData>;

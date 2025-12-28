@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { PurchaseSuggestion } from '../../services/MaterialProcurementService';
+import { PurchaseSuggestion } from '../../../services/MaterialProcurementService';
 import MaterialModel from '../../../models/MaterialModel';
 
 interface ProcurementSuggestionCardProps {

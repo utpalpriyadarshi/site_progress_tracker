@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../../models/DoorsPackageModel';
-import { logger } from '../../services/LoggingService';
+import { logger } from '../../../services/LoggingService';
 
 export const useMaterialTrackingData = (projectId: string | null) => {
   const [doorsPackages, setDoorsPackages] = useState<DoorsPackageModel[]>([]);
