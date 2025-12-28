@@ -13,6 +13,7 @@ import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
+import { logger } from '../services/LoggingService';
 
 /**
  * BudgetManagementScreen (v2.11 Phase 5 - Sprint 4)
@@ -71,7 +72,7 @@ const BudgetManagementScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[Budget] Loading budgets for project:', projectId);
+      logger.debug('[Budget] Loading budgets for project:', projectId);
 
       const budgetsCollection = database.collections.get('budgets');
       const budgetsData = await budgetsCollection
@@ -102,10 +103,10 @@ const BudgetManagementScreen = () => {
         };
       });
 
-      console.log('[Budget] Loaded budgets:', budgetsWithActuals.length);
+      logger.debug('[Budget] Loaded budgets:', budgetsWithActuals.length);
       setBudgets(budgetsWithActuals);
     } catch (error) {
-      console.error('[Budget] Error loading budgets:', error);
+      logger.error('[Budget] Error loading budgets:', error);
       Alert.alert('Error', 'Failed to load budgets');
     } finally {
       setLoading(false);
@@ -173,7 +174,7 @@ const BudgetManagementScreen = () => {
       resetForm();
       loadBudgets();
     } catch (error) {
-      console.error('[Budget] Error creating budget:', error);
+      logger.error('[Budget] Error creating budget:', error);
       Alert.alert('Error', 'Failed to create budget entry');
     }
   };
@@ -209,7 +210,7 @@ const BudgetManagementScreen = () => {
       resetForm();
       loadBudgets();
     } catch (error) {
-      console.error('[Budget] Error updating budget:', error);
+      logger.error('[Budget] Error updating budget:', error);
       Alert.alert('Error', 'Failed to update budget entry');
     }
   };
@@ -235,7 +236,7 @@ const BudgetManagementScreen = () => {
               Alert.alert('Success', 'Budget entry deleted successfully');
               loadBudgets();
             } catch (error) {
-              console.error('[Budget] Error deleting budget:', error);
+              logger.error('[Budget] Error deleting budget:', error);
               Alert.alert('Error', 'Failed to delete budget entry');
             }
           },

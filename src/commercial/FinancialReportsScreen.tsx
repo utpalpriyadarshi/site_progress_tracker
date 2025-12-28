@@ -13,6 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
 
 /**
  * FinancialReportsScreen (v2.11 Phase 5 - Sprint 7)
@@ -65,7 +66,7 @@ const FinancialReportsScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[Reports] Loading report data for project:', projectId);
+      logger.debug('[Reports] Loading report data for project:', projectId);
 
       // Load budgets
       const budgetsCollection = database.collections.get('budgets');
@@ -206,9 +207,9 @@ const FinancialReportsScreen = () => {
         profitability,
       });
 
-      console.log('[Reports] Report data loaded successfully');
+      logger.debug('[Reports] Report data loaded successfully');
     } catch (error) {
-      console.error('[Reports] Error loading report data:', error);
+      logger.error('[Reports] Error loading report data:', error);
       Alert.alert('Error', 'Failed to load report data');
     } finally {
       setLoading(false);

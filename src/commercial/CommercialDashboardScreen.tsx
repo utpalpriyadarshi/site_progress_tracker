@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
 
 /**
  * CommercialDashboardScreen (v2.11 Phase 5 - Sprint 8)
@@ -81,7 +82,7 @@ const CommercialDashboardScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[Dashboard] Loading dashboard data for project:', projectId);
+      logger.debug('[Dashboard] Loading dashboard data for project:', projectId);
 
       // Load budgets
       const budgetsCollection = database.collections.get('budgets');
@@ -230,9 +231,9 @@ const CommercialDashboardScreen = () => {
         alerts,
       });
 
-      console.log('[Dashboard] Dashboard data loaded successfully');
+      logger.debug('[Dashboard] Dashboard data loaded successfully');
     } catch (error) {
-      console.error('[Dashboard] Error loading dashboard data:', error);
+      logger.error('[Dashboard] Error loading dashboard data:', error);
       Alert.alert('Error', 'Failed to load dashboard data');
     } finally {
       setLoading(false);

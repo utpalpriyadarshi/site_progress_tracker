@@ -15,6 +15,7 @@ import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
+import { logger } from '../services/LoggingService';
 
 /**
  * CostTrackingScreen (v2.11 Phase 5 - Sprint 5)
@@ -84,7 +85,7 @@ const CostTrackingScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[Cost] Loading costs for project:', projectId);
+      logger.debug('[Cost] Loading costs for project:', projectId);
 
       const costsCollection = database.collections.get('costs');
       const costsData = await costsCollection
@@ -114,11 +115,11 @@ const CostTrackingScreen = () => {
         allocated: budget.allocatedAmount,
       }));
 
-      console.log('[Cost] Loaded costs:', costsArray.length);
+      logger.debug('[Cost] Loaded costs:', costsArray.length);
       setCosts(costsArray);
       setBudgets(budgetsArray);
     } catch (error) {
-      console.error('[Cost] Error loading costs:', error);
+      logger.error('[Cost] Error loading costs:', error);
       Alert.alert('Error', 'Failed to load costs');
     } finally {
       setLoading(false);
@@ -189,7 +190,7 @@ const CostTrackingScreen = () => {
       resetForm();
       loadCosts();
     } catch (error) {
-      console.error('[Cost] Error creating cost:', error);
+      logger.error('[Cost] Error creating cost:', error);
       Alert.alert('Error', 'Failed to create cost entry');
     }
   };
@@ -227,7 +228,7 @@ const CostTrackingScreen = () => {
       resetForm();
       loadCosts();
     } catch (error) {
-      console.error('[Cost] Error updating cost:', error);
+      logger.error('[Cost] Error updating cost:', error);
       Alert.alert('Error', 'Failed to update cost entry');
     }
   };
@@ -253,7 +254,7 @@ const CostTrackingScreen = () => {
               Alert.alert('Success', 'Cost entry deleted successfully');
               loadCosts();
             } catch (error) {
-              console.error('[Cost] Error deleting cost:', error);
+              logger.error('[Cost] Error deleting cost:', error);
               Alert.alert('Error', 'Failed to delete cost entry');
             }
           },
