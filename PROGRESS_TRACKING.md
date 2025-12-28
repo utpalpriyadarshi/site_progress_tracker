@@ -2,7 +2,7 @@
 # All Roles Improvement Progress Tracking
 
 **Last Updated:** 2025-12-28 (End of Day)
-**Overall Progress:** 18.3% (11 of 60 tasks completed) - All Merged to Main ✅
+**Overall Progress:** 21.7% (13 of 60 tasks completed) - 11 Merged to Main ✅
 **Timeline:** 45-50 working days (10 weeks)
 **Team Size:** 2 developers
 **Project Start Date:** 2025-12-26
@@ -17,12 +17,12 @@
 | Metric | Current | Target | Progress | Status |
 |--------|---------|--------|----------|--------|
 | **Console Logs Removed** | 127/255 | 255 | 49.8% █████░░░░░ | 🔄 In Progress |
-| **Error Boundaries Added** | 24/45 | 45 | 53.3% █████░░░░░ | 🔄 In Progress |
+| **Error Boundaries Added** | 29/45 | 45 | 64.4% ██████░░░░ | 🔄 In Progress |
 | **Large Files Refactored** | 6/23 | 23 | 26.1% ███░░░░░░░ | 🔄 In Progress |
 | **Shared Components Created** | 0/30 | 30 | 0.0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Tests Executed** | 0/450 | 450 | 0.0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Test Pass Rate** | - | 95%+ | - | ⏳ Not Started |
-| **Overall Tasks Completed** | 12/60 | 60 | 20.0% ██░░░░░░░░ | 🔄 In Progress |
+| **Overall Tasks Completed** | 13/60 | 60 | 21.7% ██░░░░░░░░ | 🔄 In Progress |
 
 ---
 
@@ -39,11 +39,11 @@
 |------|-------|-----------|----------|--------|
 | **Manager** | 5 | 5 | 100% ██████████ | ✅ COMPLETE |
 | **Logistics** | 6 | 6 | 100% ██████████ | ✅ COMPLETE |
-| **Commercial** | 6 | 1 | 16.7% ██░░░░░░░░ | 🔄 In Progress |
+| **Commercial** | 6 | 2 | 33.3% ███░░░░░░░ | 🔄 In Progress |
 | **Admin** | 4 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Planning** | 5 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Design Engineer** | 4 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
-| **Total Phase 1** | **29** | **12** | **41.4%** | 🔄 In Progress |
+| **Total Phase 1** | **29** | **13** | **44.8%** | 🔄 In Progress |
 
 ### Phase 2: Important Improvements (Weeks 3-5)
 
@@ -471,9 +471,9 @@
 
 ### 🟡 Commercial Role (Medium Priority)
 
-**Overall Progress:** 8.3% (1/12 tasks completed)
+**Overall Progress:** 16.7% (2/12 tasks completed)
 **Console Logs:** 40/40 removed ✅
-**Error Boundaries:** 0/5 added
+**Error Boundaries:** 5/5 added ✅
 **Large Files:** 0/4 refactored
 
 #### Phase 1: Critical Improvements (18-24 hours)
@@ -481,7 +481,7 @@
 | Task | Status | Time Est. | Time Actual | Assignee | Started | Completed | Branch | Tag |
 |------|--------|-----------|-------------|----------|---------|-----------|--------|-----|
 | 1.1 Console Logs | ✅ Completed | 1-2h | 1h | Developer 1 | 2025-12-28 | 2025-12-28 | commercial/phase1-task1.1-remove-console-logs | ec4646f |
-| 1.2 Error Boundaries | ⏳ Not Started | 3-4h | - | - | - | - | - | - |
+| 1.2 Error Boundaries | ✅ Completed | 3-4h | 0.5h | Developer 1 | 2025-12-28 | 2025-12-28 | commercial/phase1-task1.1-remove-console-logs | 63adaa9 |
 | 1.3.1 Invoice Management | ⏳ Not Started | 4-5h | - | - | - | - | - | - |
 | 1.3.2 Dashboard | ⏳ Not Started | 4-5h | - | - | - | - | - | - |
 | 1.3.3 Financial Reports | ⏳ Not Started | 3-4h | - | - | - | - | - | - |
