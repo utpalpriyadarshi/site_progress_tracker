@@ -76,7 +76,7 @@ export const useInventoryData = () => {
         transfers: mockStockTransfers.length,
       });
     } catch (error) {
-      logger.error('[Inventory] Error loading inventory data:', error);
+      logger.error('[Inventory] Error loading inventory data:', error instanceof Error ? error : undefined);
     } finally {
       setLoading(false);
     }
