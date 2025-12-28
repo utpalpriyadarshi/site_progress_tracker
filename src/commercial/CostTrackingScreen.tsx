@@ -16,6 +16,7 @@ import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * CostTrackingScreen (v2.11 Phase 5 - Sprint 5)
@@ -765,4 +766,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CostTrackingScreen;
+export default function CostTrackingScreenWithErrorBoundary(props: any) {
+  return (
+    <ErrorBoundary name="CostTrackingScreen">
+      <CostTrackingScreen {...props} />
+    </ErrorBoundary>
+  );
+}

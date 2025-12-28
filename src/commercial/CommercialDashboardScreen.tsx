@@ -13,6 +13,7 @@ import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * CommercialDashboardScreen (v2.11 Phase 5 - Sprint 8)
@@ -804,4 +805,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CommercialDashboardScreen;
+export default function CommercialDashboardScreenWithErrorBoundary(props: any) {
+  return (
+    <ErrorBoundary name="CommercialDashboardScreen">
+      <CommercialDashboardScreen {...props} />
+    </ErrorBoundary>
+  );
+}

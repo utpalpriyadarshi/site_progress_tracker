@@ -14,6 +14,7 @@ import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * BudgetManagementScreen (v2.11 Phase 5 - Sprint 4)
@@ -708,4 +709,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BudgetManagementScreen;
+export default function BudgetManagementScreenWithErrorBoundary(props: any) {
+  return (
+    <ErrorBoundary name="BudgetManagementScreen">
+      <BudgetManagementScreen {...props} />
+    </ErrorBoundary>
+  );
+}

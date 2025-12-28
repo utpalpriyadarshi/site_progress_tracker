@@ -16,6 +16,7 @@ import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * InvoiceManagementScreen (v2.11 Phase 5 - Sprint 6)
@@ -866,4 +867,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InvoiceManagementScreen;
+export default function InvoiceManagementScreenWithErrorBoundary(props: any) {
+  return (
+    <ErrorBoundary name="InvoiceManagementScreen">
+      <InvoiceManagementScreen {...props} />
+    </ErrorBoundary>
+  );
+}

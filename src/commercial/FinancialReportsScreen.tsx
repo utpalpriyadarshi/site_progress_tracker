@@ -14,6 +14,7 @@ import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * FinancialReportsScreen (v2.11 Phase 5 - Sprint 7)
@@ -783,4 +784,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FinancialReportsScreen;
+export default function FinancialReportsScreenWithErrorBoundary(props: any) {
+  return (
+    <ErrorBoundary name="FinancialReportsScreen">
+      <FinancialReportsScreen {...props} />
+    </ErrorBoundary>
+  );
+}
