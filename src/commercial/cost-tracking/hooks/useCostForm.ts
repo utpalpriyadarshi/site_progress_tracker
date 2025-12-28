@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import { database } from '../../../models/database';
-import { logger } from '../../services/LoggingService';
+import { database } from '../../../../models/database';
+import { logger } from '../../../services/LoggingService';
 import { Cost } from './useCostData';
 
 export const useCostForm = (userId: string | undefined, projectId: string | null, onSuccess: () => void) => {
