@@ -1,1 +1,3 @@
-// Components barrel export
+export * from './CategoryChip';
+export * from './SummaryCard';
+export * from './CategoryFilterMenu';
