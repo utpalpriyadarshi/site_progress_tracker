@@ -1,0 +1,48 @@
+/**
+ * HealthScoreCircle Component
+ *
+ * Circular display for logistics health score with visual indicator
+ * Phase 3: Small Components
+ */
+
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+interface HealthScoreCircleProps {
+  score: number;
+  maxScore?: number;
+  color?: string;
+}
+
+export const HealthScoreCircle: React.FC<HealthScoreCircleProps> = ({
+  score,
+  maxScore = 100,
+  color = '#2196F3',
+}) => {
+  return (
+    <View style={[styles.circle, { borderColor: color }]}>
+      <Text style={[styles.value, { color }]}>{score.toFixed(0)}</Text>
+      <Text style={styles.label}>/ {maxScore}</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  circle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+  },
+  value: {
+    fontSize: 32,
+    fontWeight: '700',
+  },
+  label: {
+    fontSize: 12,
+    color: '#666',
+  },
+});
