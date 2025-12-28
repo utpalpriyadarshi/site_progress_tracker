@@ -59,7 +59,7 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
       resetForm();
       onSuccess();
     } catch (error) {
-      logger.error('[Cost] Error creating cost:', error);
+      logger.error('[Cost] Error creating cost', error as Error);
       Alert.alert('Error', 'Failed to create cost entry');
     }
   };
@@ -97,7 +97,7 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
       resetForm();
       onSuccess();
     } catch (error) {
-      logger.error('[Cost] Error updating cost:', error);
+      logger.error('[Cost] Error updating cost', error as Error);
       Alert.alert('Error', 'Failed to update cost entry');
     }
   };
@@ -123,7 +123,7 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
               Alert.alert('Success', 'Cost entry deleted successfully');
               onSuccess();
             } catch (error) {
-              logger.error('[Cost] Error deleting cost:', error);
+              logger.error('[Cost] Error deleting cost', error as Error);
               Alert.alert('Error', 'Failed to delete cost entry');
             }
           },

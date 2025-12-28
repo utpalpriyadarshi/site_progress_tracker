@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { database } from '../../../models/database';
+import { database } from '../../../../models/database';
 import { Q } from '@nozbe/watermelondb';
-import { logger } from '../../services/LoggingService';
+import { logger } from '../../../services/LoggingService';
 
 export interface Cost {
   id: string;
@@ -34,7 +34,7 @@ export const useCostData = (projectId: string | null) => {
 
     try {
       setLoading(true);
-      logger.debug('[Cost] Loading costs for project:', projectId);
+      logger.debug('[Cost] Loading costs for project', { projectId });
 
       const costsCollection = database.collections.get('costs');
       const costsData = await costsCollection
@@ -64,11 +64,11 @@ export const useCostData = (projectId: string | null) => {
         allocated: budget.allocatedAmount,
       }));
 
-      logger.debug('[Cost] Loaded costs:', costsArray.length);
+      logger.debug('[Cost] Loaded costs', { count: costsArray.length });
       setCosts(costsArray);
       setBudgets(budgetsArray);
     } catch (error) {
-      logger.error('[Cost] Error loading costs:', error);
+      logger.error('[Cost] Error loading costs', error as Error);
       Alert.alert('Error', 'Failed to load costs');
     } finally {
       setLoading(false);
