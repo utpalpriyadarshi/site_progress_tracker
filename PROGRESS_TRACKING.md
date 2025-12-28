@@ -22,7 +22,7 @@
 | **Shared Components Created** | 0/30 | 30 | 0.0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Tests Executed** | 0/450 | 450 | 0.0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Test Pass Rate** | - | 95%+ | - | ⏳ Not Started |
-| **Overall Tasks Completed** | 11/60 | 60 | 18.3% ██░░░░░░░░ | 🔄 In Progress |
+| **Overall Tasks Completed** | 12/60 | 60 | 20.0% ██░░░░░░░░ | 🔄 In Progress |
 
 ---
 
@@ -39,11 +39,11 @@
 |------|-------|-----------|----------|--------|
 | **Manager** | 5 | 5 | 100% ██████████ | ✅ COMPLETE |
 | **Logistics** | 6 | 6 | 100% ██████████ | ✅ COMPLETE |
-| **Commercial** | 5 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
+| **Commercial** | 6 | 1 | 16.7% ██░░░░░░░░ | 🔄 In Progress |
 | **Admin** | 4 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Planning** | 5 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
 | **Design Engineer** | 4 | 0 | 0% ░░░░░░░░░░ | ⏳ Not Started |
-| **Total Phase 1** | **29** | **11** | **37.9%** | 🔄 In Progress |
+| **Total Phase 1** | **29** | **12** | **41.4%** | 🔄 In Progress |
 
 ### Phase 2: Important Improvements (Weeks 3-5)
 
@@ -471,8 +471,8 @@
 
 ### 🟡 Commercial Role (Medium Priority)
 
-**Overall Progress:** 0% (0/12 tasks completed)
-**Console Logs:** 0/40 removed
+**Overall Progress:** 8.3% (1/12 tasks completed)
+**Console Logs:** 40/40 removed ✅
 **Error Boundaries:** 0/5 added
 **Large Files:** 0/4 refactored
 
@@ -480,7 +480,7 @@
 
 | Task | Status | Time Est. | Time Actual | Assignee | Started | Completed | Branch | Tag |
 |------|--------|-----------|-------------|----------|---------|-----------|--------|-----|
-| 1.1 Console Logs | ⏳ Not Started | 1-2h | - | - | - | - | - | - |
+| 1.1 Console Logs | ✅ Completed | 1-2h | 1h | Developer 1 | 2025-12-28 | 2025-12-28 | commercial/phase1-task1.1-remove-console-logs | ec4646f |
 | 1.2 Error Boundaries | ⏳ Not Started | 3-4h | - | - | - | - | - | - |
 | 1.3.1 Invoice Management | ⏳ Not Started | 4-5h | - | - | - | - | - | - |
 | 1.3.2 Dashboard | ⏳ Not Started | 4-5h | - | - | - | - | - | - |
