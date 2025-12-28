@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
-import { logger } from '../../services/LoggingService';
+import { logger } from '../../../services/LoggingService';
 import {
   calculateBudgetVariance,
   calculateCostDistribution,
