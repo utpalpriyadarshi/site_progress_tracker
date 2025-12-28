@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { database } from '../../../models/database';
+import { database } from '../../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
 import {
@@ -49,7 +49,7 @@ export const useReportData = (
 
     try {
       setLoading(true);
-      logger.debug('[Reports] Loading report data for project:', projectId);
+      logger.debug('[Reports] Loading report data for project', { projectId });
 
       // Load budgets
       const budgetsCollection = database.collections.get('budgets');
@@ -126,7 +126,7 @@ export const useReportData = (
 
       logger.debug('[Reports] Report data loaded successfully');
     } catch (error) {
-      logger.error('[Reports] Error loading report data:', error);
+      logger.error('[Reports] Error loading report data', error as Error);
       Alert.alert('Error', 'Failed to load report data');
     } finally {
       setLoading(false);
