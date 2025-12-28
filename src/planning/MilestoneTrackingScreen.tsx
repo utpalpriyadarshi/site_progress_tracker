@@ -25,6 +25,7 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import MilestoneModel from '../../models/MilestoneModel';
 import MilestoneProgressModel from '../../models/MilestoneProgressModel';
+import { logger } from '../services/LoggingService';
 
 /**
  * MilestoneTrackingScreen (v2.11 Phase 4)
@@ -103,7 +104,7 @@ const MilestoneTrackingScreenComponent = ({
       const progressData = await query.fetch();
       setMilestoneProgress(progressData);
     } catch (error) {
-      console.error('[Milestone] Error loading progress:', error);
+      logger.error('[Milestone] Error loading progress', error as Error);
     } finally {
       setLoading(false);
     }
@@ -194,7 +195,7 @@ const MilestoneTrackingScreenComponent = ({
       setEditDialogVisible(false);
       loadMilestoneProgress();
     } catch (error) {
-      console.error('[Milestone] Error saving:', error);
+      logger.error('[Milestone] Error saving', error as Error);
       Alert.alert('Error', 'Failed to save milestone progress');
     }
   };
@@ -238,7 +239,7 @@ const MilestoneTrackingScreenComponent = ({
       setSnackbarVisible(true);
       loadMilestoneProgress();
     } catch (error) {
-      console.error('[Milestone] Error marking as achieved:', error);
+      logger.error('[Milestone] Error marking as achieved', error as Error);
       Alert.alert('Error', 'Failed to mark milestone as achieved');
     }
   };

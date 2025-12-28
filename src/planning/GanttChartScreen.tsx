@@ -22,6 +22,7 @@ import SimpleSiteSelector from './components/SimpleSiteSelector';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
+import { logger } from '../services/LoggingService';
 
 dayjs.extend(isBetween);
 dayjs.extend(weekOfYear);
@@ -61,7 +62,7 @@ const GanttChartScreen: React.FC = () => {
 
       setItems(siteItems);
     } catch (error) {
-      console.error('Error loading items:', error);
+      logger.error('[Gantt] Error loading items', error as Error);
     } finally {
       setLoading(false);
     }

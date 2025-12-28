@@ -12,6 +12,7 @@ import {
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import ItemModel from '../../models/ItemModel';
+import { logger } from '../services/LoggingService';
 
 /**
  * ScheduleManagementScreen (v2.11 Phase 4)
@@ -54,7 +55,7 @@ const ScheduleManagementScreenComponent = ({
         });
       });
     } catch (error) {
-      console.error('[Schedule] Error toggling critical path:', error);
+      logger.error('[Schedule] Error toggling critical path', error as Error);
       Alert.alert('Error', 'Failed to update critical path status');
     }
   };

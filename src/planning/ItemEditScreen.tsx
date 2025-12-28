@@ -34,6 +34,7 @@ import ItemModel from '../../models/ItemModel';
 import CategorySelector from './components/CategorySelector';
 import PhaseSelector from './components/PhaseSelector';
 import DatePickerField from './components/DatePickerField';
+import { logger } from '../services/LoggingService';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
@@ -133,7 +134,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
           riskNotes: loadedItem.riskNotes || '',
         });
       } catch (error) {
-        console.error('Error loading item:', error);
+        logger.error('[ItemEdit] Error loading item', error as Error);
         setSnackbarMessage('Failed to load item data');
         setSnackbarType('error');
         setSnackbarVisible(true);
@@ -284,7 +285,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
         navigation.goBack();
       }, 1500);
     } catch (error) {
-      console.error('Error updating item:', error);
+      logger.error('[ItemEdit] Error updating item', error as Error);
       setSnackbarMessage('Failed to update item. Please try again.');
       setSnackbarType('error');
       setSnackbarVisible(true);

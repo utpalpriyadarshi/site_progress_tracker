@@ -12,6 +12,7 @@ import { PlanningStackParamList } from '../nav/types';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { logger } from '../services/LoggingService';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'WBSManagement'>;
 
@@ -86,7 +87,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
       setItems(siteItems);
     } catch (error) {
-      console.error('Error loading items:', error);
+      logger.error('[WBS] Error loading items', error as Error);
       showSnackbar('Failed to load items', 'error');
     } finally {
       setLoading(false);
@@ -260,7 +261,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       showSnackbar(`"${itemToDelete.name}" deleted successfully`, 'success');
       setItemToDelete(null);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('[WBS] Error deleting item', error as Error);
       showSnackbar('Failed to delete item', 'error');
     }
   };

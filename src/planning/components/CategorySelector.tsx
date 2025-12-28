@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Menu, Button, ActivityIndicator } from 'react-native-paper';
 import { database } from '../../../models/database';
+import { logger } from '../../services/LoggingService';
 
 interface Category {
   id: string;
@@ -57,7 +58,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
       setCategories(categoryData);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('[CategorySelector] Error fetching categories', error as Error);
     } finally {
       setLoading(false);
     }
