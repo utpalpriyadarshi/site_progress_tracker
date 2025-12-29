@@ -18,6 +18,7 @@ import ProjectSelector from './components/ProjectSelector';
 import DependencyModal from './components/DependencyModal';
 import ItemPlanningCard from './components/ItemPlanningCard';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface BaselineScreenProps {
   projects: ProjectModel[];
@@ -360,4 +361,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BaselineScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const BaselineScreenWithBoundary = () => (
+  <ErrorBoundary name="BaselineScreen">
+    <BaselineScreen />
+  </ErrorBoundary>
+);
+
+export default BaselineScreenWithBoundary;

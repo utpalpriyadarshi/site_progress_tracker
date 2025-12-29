@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 const ResourcePlanningScreen = () => {
   return (
@@ -24,4 +25,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ResourcePlanningScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ResourcePlanningScreenWithBoundary = () => (
+  <ErrorBoundary name="ResourcePlanningScreen">
+    <ResourcePlanningScreen />
+  </ErrorBoundary>
+);
+
+export default ResourcePlanningScreenWithBoundary;

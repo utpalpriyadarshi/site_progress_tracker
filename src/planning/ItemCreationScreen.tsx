@@ -30,6 +30,7 @@ import { database } from '../../models/database';
 import CategorySelector from './components/CategorySelector';
 import { logger } from '../services/LoggingService';
 import PhaseSelector from './components/PhaseSelector';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import DatePickerField from './components/DatePickerField';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
@@ -630,4 +631,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ItemCreationScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ItemCreationScreenWithBoundary = (props: Props) => (
+  <ErrorBoundary name="ItemCreationScreen">
+    <ItemCreationScreen {...props} />
+  </ErrorBoundary>
+);
+
+export default ItemCreationScreenWithBoundary;

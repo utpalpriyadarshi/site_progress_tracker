@@ -26,6 +26,7 @@ import { Q } from '@nozbe/watermelondb';
 import MilestoneModel from '../../models/MilestoneModel';
 import MilestoneProgressModel from '../../models/MilestoneProgressModel';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * MilestoneTrackingScreen (v2.11 Phase 4)
@@ -745,4 +746,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MilestoneTrackingScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const MilestoneTrackingScreenWithBoundary = () => (
+  <ErrorBoundary name="MilestoneTrackingScreen">
+    <MilestoneTrackingScreen />
+  </ErrorBoundary>
+);
+
+export default MilestoneTrackingScreenWithBoundary;

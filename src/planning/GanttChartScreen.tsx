@@ -23,6 +23,7 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 dayjs.extend(isBetween);
 dayjs.extend(weekOfYear);
@@ -646,4 +647,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GanttChartScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const GanttChartScreenWithBoundary = () => (
+  <ErrorBoundary name="GanttChartScreen">
+    <GanttChartScreen />
+  </ErrorBoundary>
+);
+
+export default GanttChartScreenWithBoundary;

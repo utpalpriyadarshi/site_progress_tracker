@@ -13,6 +13,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'WBSManagement'>;
 
@@ -532,4 +533,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WBSManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const WBSManagementScreenWithBoundary = (props: Props) => (
+  <ErrorBoundary name="WBSManagementScreen">
+    <WBSManagementScreen {...props} />
+  </ErrorBoundary>
+);
+
+export default WBSManagementScreenWithBoundary;
