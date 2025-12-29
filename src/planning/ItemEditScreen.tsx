@@ -1,5 +1,5 @@
 /**
- * ItemEditScreen - Sprint 6
+ * ItemEditScreen - Refactored Sprint 6
  *
  * Edit existing WBS items with pre-populated data
  * - Lock WBS code (read-only after creation)
@@ -7,7 +7,7 @@
  * - Update existing records (not create)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,204 +17,63 @@ import {
 } from 'react-native';
 import {
   Text,
-  TextInput,
   Button,
   Appbar,
   Surface,
-  HelperText,
-  Chip,
   ActivityIndicator,
   Snackbar,
-  Banner,
 } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
-import { database } from '../../models/database';
-import ItemModel from '../../models/ItemModel';
-import CategorySelector from './components/CategorySelector';
-import PhaseSelector from './components/PhaseSelector';
-import DatePickerField from './components/DatePickerField';
-import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
-type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
+// Components
+import {
+  LockedBanner,
+  WBSCodeDisplay,
+  ItemDetailsSection,
+  ScheduleSection,
+  QuantitySection,
+  CriticalPathSection,
+  RiskSection,
+  ItemInfoCard,
+} from './item-edit/components';
 
-interface FormData {
-  name: string;
-  categoryId: string;
-  phase: string;
-  duration: string;
-  startDate: Date;
-  endDate: Date;
-  unit: string;
-  quantity: string;
-  completedQuantity: string;
-  isMilestone: boolean;
-  isCriticalPath: boolean;
-  floatDays: string;
-  dependencyRisk: 'low' | 'medium' | 'high' | '';
-  riskNotes: string;
-}
+// Hooks
+import { useItemEdit, useItemForm, useDateCalculations } from './item-edit/hooks';
+
+// Utils
+import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
+
+type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
 const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const itemId = route.params?.itemId;
 
-  // Item state
-  const [item, setItem] = useState<ItemModel | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isLocked, setIsLocked] = useState(false);
+  // Item data and operations
+  const { item, loading, isLocked, saving, saveItem } = useItemEdit(itemId);
 
-  // Form state
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    categoryId: '',
-    phase: 'design',
-    duration: '',
-    startDate: new Date(),
-    endDate: new Date(),
-    unit: 'Set',
-    quantity: '1',
-    completedQuantity: '0',
-    isMilestone: false,
-    isCriticalPath: false,
-    floatDays: '0',
-    dependencyRisk: 'low',
-    riskNotes: '',
-  });
+  // Form state and validation
+  const {
+    formData,
+    errors,
+    updateField,
+    updateNumericField,
+    validateForm,
+    getProgressPercentage,
+  } = useItemForm(item);
 
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Saving state
-  const [saving, setSaving] = useState(false);
+  // Date calculations
+  const {
+    handleStartDateChange,
+    handleEndDateChange,
+    handleDurationChange,
+  } = useDateCalculations();
 
   // Snackbar state
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
-
-  // Load item data on mount
-  useEffect(() => {
-    const loadItem = async () => {
-      if (!itemId) {
-        setSnackbarMessage('Error: No item ID provided');
-        setSnackbarType('error');
-        setSnackbarVisible(true);
-        navigation.goBack();
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const loadedItem = await database.collections
-          .get('items')
-          .find(itemId) as ItemModel;
-
-        setItem(loadedItem);
-        setIsLocked(loadedItem.isBaselineLocked);
-
-        // Pre-populate form fields
-        const durationDays = Math.ceil(
-          (loadedItem.plannedEndDate - loadedItem.plannedStartDate) / (1000 * 60 * 60 * 24)
-        );
-
-        setFormData({
-          name: loadedItem.name,
-          categoryId: loadedItem.categoryId,
-          phase: loadedItem.projectPhase,
-          duration: durationDays.toString(),
-          startDate: new Date(loadedItem.plannedStartDate),
-          endDate: new Date(loadedItem.plannedEndDate),
-          unit: loadedItem.unitOfMeasurement || 'Set',
-          quantity: loadedItem.plannedQuantity.toString(),
-          completedQuantity: loadedItem.completedQuantity.toString(),
-          isMilestone: loadedItem.isMilestone,
-          isCriticalPath: loadedItem.isCriticalPath,
-          floatDays: (loadedItem.floatDays || 0).toString(),
-          dependencyRisk: loadedItem.dependencyRisk || 'low',
-          riskNotes: loadedItem.riskNotes || '',
-        });
-      } catch (error) {
-        logger.error('[ItemEdit] Error loading item', error as Error);
-        setSnackbarMessage('Failed to load item data');
-        setSnackbarType('error');
-        setSnackbarVisible(true);
-        setTimeout(() => navigation.goBack(), 2000);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadItem();
-  }, [itemId, navigation]);
-
-  // Update form field
-  const updateField = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user edits field
-    if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
-
-  // Update numeric field with validation
-  const updateNumericField = (field: keyof FormData, value: string) => {
-    // Only allow positive numbers and empty string
-    if (value === '' || /^\d+$/.test(value)) {
-      updateField(field, value);
-    }
-  };
-
-  // Handle start date change - auto-calculate end date based on duration
-  const handleStartDateChange = (date: Date) => {
-    const durationDays = parseInt(formData.duration) || 30;
-    const endDate = new Date(date.getTime() + durationDays * 24 * 60 * 60 * 1000);
-    setFormData(prev => ({ ...prev, startDate: date, endDate }));
-  };
-
-  // Handle end date change - auto-calculate duration
-  const handleEndDateChange = (date: Date) => {
-    const durationMs = date.getTime() - formData.startDate.getTime();
-    const durationDays = Math.max(1, Math.ceil(durationMs / (24 * 60 * 60 * 1000)));
-    setFormData(prev => ({ ...prev, endDate: date, duration: durationDays.toString() }));
-  };
-
-  // Handle duration change - auto-calculate end date
-  const handleDurationChange = (value: string) => {
-    if (value === '' || /^\d+$/.test(value)) {
-      const durationDays = parseInt(value) || 1;
-      const endDate = new Date(formData.startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-      setFormData(prev => ({ ...prev, duration: value, endDate }));
-    }
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Item name is required';
-    }
-
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Category is required';
-    }
-
-    if (!formData.duration || parseFloat(formData.duration) <= 0) {
-      newErrors.duration = 'Duration must be greater than 0';
-    }
-
-    if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-      newErrors.quantity = 'Quantity must be greater than 0';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   // Handle update
   const handleUpdate = async () => {
@@ -222,76 +81,36 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
-    setSaving(true);
     try {
-      // Calculate dates
-      const plannedStartDate = formData.startDate.getTime();
-      const plannedEndDate = formData.endDate.getTime();
-
-      // Calculate status based on completed quantity
-      const completedQty = parseFloat(formData.completedQuantity) || 0;
-      const plannedQty = parseFloat(formData.quantity);
-      let itemStatus = 'not_started';
-
-      if (completedQty >= plannedQty) {
-        itemStatus = 'completed';
-      } else if (completedQty > 0) {
-        itemStatus = 'in_progress';
-      }
-
-      // Update database record
-      await database.write(async () => {
-        await item.update((i: any) => {
-          // Basic fields
-          i.name = formData.name.trim();
-          i.categoryId = formData.categoryId;
-
-          // Quantity and measurements
-          i.plannedQuantity = plannedQty;
-          i.completedQuantity = completedQty;
-          i.unitOfMeasurement = formData.unit.trim() || 'Set';
-
-          // Status (auto-calculated from progress)
-          i.status = itemStatus;
-
-          // Schedule
-          i.plannedStartDate = plannedStartDate;
-          i.plannedEndDate = plannedEndDate;
-
-          // Planning fields (only update if not locked)
-          if (!isLocked) {
-            i.baselineStartDate = plannedStartDate;
-            i.baselineEndDate = plannedEndDate;
-          }
-
-          // Phase and Milestone
-          i.projectPhase = formData.phase;
-          i.isMilestone = formData.isMilestone;
-
-          // Critical Path and Risk
-          i.isCriticalPath = formData.isCriticalPath;
-          i.floatDays = formData.isCriticalPath ? 0 : (parseFloat(formData.floatDays) || 0);
-          i.dependencyRisk = formData.dependencyRisk;
-          i.riskNotes = formData.riskNotes.trim() || null;
-        });
+      await saveItem({
+        name: formData.name,
+        categoryId: formData.categoryId,
+        phase: formData.phase,
+        plannedQuantity: parseFloat(formData.quantity),
+        completedQuantity: parseFloat(formData.completedQuantity) || 0,
+        unitOfMeasurement: formData.unit,
+        plannedStartDate: formData.startDate.getTime(),
+        plannedEndDate: formData.endDate.getTime(),
+        isMilestone: formData.isMilestone,
+        isCriticalPath: formData.isCriticalPath,
+        floatDays: formData.isCriticalPath ? 0 : (parseFloat(formData.floatDays) || 0),
+        dependencyRisk: formData.dependencyRisk,
+        riskNotes: formData.riskNotes.trim() || null,
       });
 
       // Success
-      setSnackbarMessage('Item updated successfully');
+      setSnackbarMessage(MESSAGES.SUCCESS_UPDATE);
       setSnackbarType('success');
       setSnackbarVisible(true);
 
       // Navigate back after showing snackbar
       setTimeout(() => {
         navigation.goBack();
-      }, 1500);
+      }, NAVIGATION_DELAY);
     } catch (error) {
-      logger.error('[ItemEdit] Error updating item', error as Error);
-      setSnackbarMessage('Failed to update item. Please try again.');
+      setSnackbarMessage(MESSAGES.ERROR_UPDATE_FAILED);
       setSnackbarType('error');
       setSnackbarVisible(true);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -305,6 +124,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
     );
   }
 
+  // Item not found
   if (!item) {
     return (
       <View style={styles.loadingContainer}>
@@ -328,15 +148,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       </Appbar.Header>
 
       {/* Baseline Locked Warning */}
-      {isLocked && (
-        <Banner
-          visible={true}
-          icon="lock"
-          style={styles.banner}
-        >
-          This item is baseline-locked and cannot be edited. You can only view the details.
-        </Banner>
-      )}
+      <LockedBanner visible={isLocked} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -345,268 +157,69 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
         <ScrollView style={styles.scrollView}>
           <Surface style={styles.surface}>
             {/* WBS Code (Read-Only) */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                WBS Code (Read-Only)
-              </Text>
-              <Surface style={styles.codePreviewReadOnly}>
-                <Text variant="titleMedium" style={styles.codeText}>
-                  {item.wbsCode}
-                </Text>
-              </Surface>
-              <HelperText type="info">
-                WBS codes cannot be changed after creation (Level {item.wbsLevel})
-              </HelperText>
-            </View>
+            <WBSCodeDisplay wbsCode={item.wbsCode} wbsLevel={item.wbsLevel} />
 
-            {/* Item Name */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Item Details
-              </Text>
-              <TextInput
-                label="Item Name *"
-                value={formData.name}
-                onChangeText={(text) => updateField('name', text)}
-                mode="outlined"
-                error={!!errors.name}
-                placeholder="e.g., Power Transformer Installation"
-                disabled={isLocked}
-              />
-              {errors.name && (
-                <HelperText type="error">{errors.name}</HelperText>
-              )}
-            </View>
+            {/* Item Details */}
+            <ItemDetailsSection
+              name={formData.name}
+              categoryId={formData.categoryId}
+              phase={formData.phase}
+              errors={errors}
+              isLocked={isLocked}
+              onNameChange={(text) => updateField('name', text)}
+              onCategoryChange={(categoryId) => updateField('categoryId', categoryId)}
+              onPhaseChange={(phase) => updateField('phase', phase)}
+            />
 
-            {/* Category Selection */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Category *
-              </Text>
-              <CategorySelector
-                value={formData.categoryId}
-                onSelect={(categoryId) => updateField('categoryId', categoryId)}
-                error={errors.categoryId}
-                disabled={isLocked}
-              />
-            </View>
+            {/* Schedule */}
+            <ScheduleSection
+              startDate={formData.startDate}
+              endDate={formData.endDate}
+              duration={formData.duration}
+              errors={errors}
+              isLocked={isLocked}
+              onStartDateChange={(date) => handleStartDateChange(date, formData, updateField)}
+              onEndDateChange={(date) => handleEndDateChange(date, formData, updateField)}
+              onDurationChange={(value) => handleDurationChange(value, formData, updateField)}
+            />
 
-            {/* Phase Selection */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Project Phase *
-              </Text>
-              <PhaseSelector
-                value={formData.phase}
-                onSelect={(phase) => updateField('phase', phase as any)}
-                disabled={isLocked}
-              />
-            </View>
+            {/* Quantity & Progress */}
+            <QuantitySection
+              quantity={formData.quantity}
+              completedQuantity={formData.completedQuantity}
+              unit={formData.unit}
+              errors={errors}
+              isLocked={isLocked}
+              onQuantityChange={(value) => updateNumericField('quantity', value)}
+              onCompletedQuantityChange={(value) => updateNumericField('completedQuantity', value)}
+              onUnitChange={(text) => updateField('unit', text)}
+            />
 
-            {/* Schedule Section */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Schedule
-              </Text>
-
-              <DatePickerField
-                label="Start Date *"
-                value={formData.startDate}
-                onChange={handleStartDateChange}
-                error={errors.startDate}
-                disabled={isLocked}
-              />
-
-              <View style={styles.marginTop}>
-                <DatePickerField
-                  label="End Date *"
-                  value={formData.endDate}
-                  onChange={handleEndDateChange}
-                  minimumDate={formData.startDate}
-                  error={errors.endDate}
-                  disabled={isLocked}
-                />
-              </View>
-
-              <TextInput
-                label="Duration (days) *"
-                value={formData.duration}
-                onChangeText={handleDurationChange}
-                mode="outlined"
-                keyboardType="number-pad"
-                error={!!errors.duration}
-                style={styles.marginTop}
-                disabled={isLocked}
-              />
-              {errors.duration && (
-                <HelperText type="error">{errors.duration}</HelperText>
-              )}
-              <HelperText type="info">
-                Duration auto-calculates based on start and end dates
-              </HelperText>
-            </View>
-
-            {/* Quantity Section */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Quantity & Progress
-              </Text>
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <TextInput
-                    label="Planned Quantity *"
-                    value={formData.quantity}
-                    onChangeText={(text) => updateNumericField('quantity', text)}
-                    mode="outlined"
-                    keyboardType="number-pad"
-                    error={!!errors.quantity}
-                    disabled={isLocked}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <TextInput
-                    label="Completed Quantity"
-                    value={formData.completedQuantity}
-                    onChangeText={(text) => updateNumericField('completedQuantity', text)}
-                    mode="outlined"
-                    keyboardType="number-pad"
-                    disabled={isLocked}
-                  />
-                </View>
-              </View>
-
-              <TextInput
-                label="Unit of Measurement"
-                value={formData.unit}
-                onChangeText={(text) => updateField('unit', text)}
-                mode="outlined"
-                placeholder="e.g., Set, Meter, Cubic Meter"
-                style={styles.marginTop}
-                disabled={isLocked}
-              />
-
-              <HelperText type="info">
-                Progress: {formData.quantity && parseFloat(formData.quantity) > 0
-                  ? Math.min(100, Math.round((parseFloat(formData.completedQuantity) / parseFloat(formData.quantity)) * 100))
-                  : 0}%
-              </HelperText>
-            </View>
-
-            {/* Milestone & Critical Path */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Critical Path & Risk
-              </Text>
-
-              <View style={styles.chipContainer}>
-                <Chip
-                  selected={formData.isMilestone}
-                  onPress={() => !isLocked && updateField('isMilestone', !formData.isMilestone)}
-                  style={styles.chip}
-                  icon={formData.isMilestone ? 'star' : 'star-outline'}
-                  disabled={isLocked}
-                >
-                  Milestone
-                </Chip>
-
-                <Chip
-                  selected={formData.isCriticalPath}
-                  onPress={() => !isLocked && updateField('isCriticalPath', !formData.isCriticalPath)}
-                  style={styles.chip}
-                  icon={formData.isCriticalPath ? 'alert-circle' : 'alert-circle-outline'}
-                  disabled={isLocked}
-                >
-                  Critical Path
-                </Chip>
-              </View>
-
-              {!formData.isCriticalPath && (
-                <TextInput
-                  label="Float Days"
-                  value={formData.floatDays}
-                  onChangeText={(text) => updateNumericField('floatDays', text)}
-                  mode="outlined"
-                  keyboardType="number-pad"
-                  style={styles.marginTop}
-                  disabled={isLocked}
-                />
-              )}
-            </View>
+            {/* Critical Path & Milestones */}
+            <CriticalPathSection
+              isMilestone={formData.isMilestone}
+              isCriticalPath={formData.isCriticalPath}
+              floatDays={formData.floatDays}
+              isLocked={isLocked}
+              onMilestoneToggle={() => updateField('isMilestone', !formData.isMilestone)}
+              onCriticalPathToggle={() => updateField('isCriticalPath', !formData.isCriticalPath)}
+              onFloatDaysChange={(value) => updateNumericField('floatDays', value)}
+            />
 
             {/* Risk Management */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Dependency Risk
-              </Text>
+            <RiskSection
+              dependencyRisk={formData.dependencyRisk}
+              riskNotes={formData.riskNotes}
+              isLocked={isLocked}
+              onRiskChange={(risk) => updateField('dependencyRisk', risk)}
+              onRiskNotesChange={(text) => updateField('riskNotes', text)}
+            />
 
-              <View style={styles.chipContainer}>
-                <Chip
-                  selected={formData.dependencyRisk === 'low'}
-                  onPress={() => !isLocked && updateField('dependencyRisk', 'low')}
-                  style={styles.chip}
-                  disabled={isLocked}
-                >
-                  Low
-                </Chip>
-                <Chip
-                  selected={formData.dependencyRisk === 'medium'}
-                  onPress={() => !isLocked && updateField('dependencyRisk', 'medium')}
-                  style={styles.chip}
-                  disabled={isLocked}
-                >
-                  Medium
-                </Chip>
-                <Chip
-                  selected={formData.dependencyRisk === 'high'}
-                  onPress={() => !isLocked && updateField('dependencyRisk', 'high')}
-                  style={styles.chip}
-                  disabled={isLocked}
-                >
-                  High
-                </Chip>
-              </View>
-
-              {formData.dependencyRisk !== 'low' && (
-                <TextInput
-                  label="Risk Notes"
-                  value={formData.riskNotes}
-                  onChangeText={(text) => updateField('riskNotes', text)}
-                  mode="outlined"
-                  multiline
-                  numberOfLines={3}
-                  placeholder="Describe the risk and mitigation plan"
-                  style={styles.marginTop}
-                  disabled={isLocked}
-                />
-              )}
-            </View>
-
-            {/* Item Metadata (Read-Only Info) */}
-            <View style={styles.section}>
-              <Text variant="labelLarge" style={styles.sectionTitle}>
-                Item Information
-              </Text>
-              <Surface style={styles.infoBox}>
-                <Text variant="bodySmall" style={styles.infoText}>
-                  WBS Code: {item.wbsCode}
-                </Text>
-                <Text variant="bodySmall" style={styles.infoText}>
-                  WBS Level: {item.wbsLevel}
-                </Text>
-                <Text variant="bodySmall" style={styles.infoText}>
-                  Current Status: {item.status.replace('_', ' ').toUpperCase()}
-                </Text>
-                <Text variant="bodySmall" style={styles.infoText}>
-                  Current Progress: {Math.round(item.getProgressPercentage())}%
-                </Text>
-                <Text variant="bodySmall" style={styles.infoText}>
-                  New Progress: {formData.quantity && parseFloat(formData.quantity) > 0
-                    ? Math.min(100, Math.round((parseFloat(formData.completedQuantity) / parseFloat(formData.quantity)) * 100))
-                    : 0}%
-                </Text>
-              </Surface>
-            </View>
+            {/* Item Information */}
+            <ItemInfoCard
+              item={item}
+              newProgressPercentage={getProgressPercentage()}
+            />
 
             {/* Update Button (only if not locked) */}
             {!isLocked && (
@@ -629,10 +242,8 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        style={{
-          backgroundColor: snackbarType === 'success' ? '#4CAF50' : '#F44336',
-        }}
+        duration={SNACKBAR_DURATION}
+        style={snackbarType === 'success' ? styles.snackbarSuccess : styles.snackbarError}
       >
         {snackbarMessage}
       </Snackbar>
@@ -659,9 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  banner: {
-    backgroundColor: '#fff3e0',
-  },
   scrollView: {
     flex: 1,
   },
@@ -671,58 +279,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 2,
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  codePreviewReadOnly: {
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#9e9e9e',
-    alignItems: 'center',
-  },
-  codeText: {
-    fontFamily: 'monospace',
-    color: '#424242',
-    fontWeight: 'bold',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  halfWidth: {
-    flex: 1,
-  },
-  marginTop: {
-    marginTop: 8,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    marginRight: 8,
-  },
-  infoBox: {
-    padding: 12,
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  infoText: {
-    marginVertical: 2,
-    color: '#1565C0',
-  },
   saveButton: {
     marginTop: 16,
     paddingVertical: 8,
+  },
+  snackbarSuccess: {
+    backgroundColor: '#4CAF50',
+  },
+  snackbarError: {
+    backgroundColor: '#F44336',
   },
 });
 
