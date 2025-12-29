@@ -5,6 +5,7 @@ import ItemModel from '../../../models/ItemModel';
 import { database } from '../../../models/database';
 import PlanningService from '../../../services/planning/PlanningService';
 import { useSnackbar } from '../../components/Snackbar';
+import { logger } from '../../services/LoggingService';
 
 interface DependencyModalProps {
   visible: boolean;
@@ -39,9 +40,7 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
   };
 
   const handleSave = async () => {
-    console.log('[DependencyModal] Save button clicked');
-    console.log('[DependencyModal] Item:', item.name, 'ID:', item.id);
-    console.log('[DependencyModal] Selected dependencies:', Array.from(selectedDeps));
+    logger.debug('[DependencyModal] Save button clicked', { itemName: item.name, itemId: item.id, selectedDeps: Array.from(selectedDeps) });
 
     setIsSaving(true);
     try {
@@ -64,18 +63,18 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
         return plainItem as ItemModel;
       });
 
-      console.log('[DependencyModal] Validating dependencies...');
+      logger.debug('[DependencyModal] Validating dependencies');
       const validation = PlanningService.validateDependencies(testItems);
-      console.log('[DependencyModal] Validation result:', validation);
+      logger.debug('[DependencyModal] Validation result', { validation });
 
       if (!validation.valid) {
-        console.log('[DependencyModal] Validation failed:', validation.errors);
+        logger.debug('[DependencyModal] Validation failed', { errors: validation.errors });
         showSnackbar(`Cannot save: ${validation.errors.join(', ')}`, 'error');
         return;
       }
 
       // Save dependencies
-      console.log('[DependencyModal] Saving to database...');
+      logger.debug('[DependencyModal] Saving to database');
       const itemToUpdate = await database.collections.get<ItemModel>('items').find(item.id);
       await database.write(async () => {
         await itemToUpdate.update(i => {
@@ -83,14 +82,14 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
         });
       });
 
-      console.log('[DependencyModal] Save successful, calling callbacks...');
+      logger.debug('[DependencyModal] Save successful, calling callbacks');
       onSave();
       onClose();
 
       showSnackbar(`Dependencies saved for ${item.name}`, 'success');
     } catch (error) {
-      console.error('[DependencyModal] Error saving dependencies:', error);
-      showSnackbar(`Failed to save dependencies: ${error.message || error}`, 'error');
+      logger.error('[DependencyModal] Error saving dependencies', error as Error);
+      showSnackbar(`Failed to save dependencies: ${(error as Error).message || error}`, 'error');
     } finally {
       setIsSaving(false);
     }

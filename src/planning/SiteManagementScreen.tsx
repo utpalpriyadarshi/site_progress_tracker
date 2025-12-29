@@ -24,6 +24,7 @@ import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -663,4 +664,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SiteManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const SiteManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="SiteManagementScreen">
+    <SiteManagementScreen />
+  </ErrorBoundary>
+);
+
+export default SiteManagementScreenWithBoundary;

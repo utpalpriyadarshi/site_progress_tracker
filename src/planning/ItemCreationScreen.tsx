@@ -28,7 +28,9 @@ import { PlanningStackParamList } from '../nav/types';
 import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
 import { database } from '../../models/database';
 import CategorySelector from './components/CategorySelector';
+import { logger } from '../services/LoggingService';
 import PhaseSelector from './components/PhaseSelector';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import DatePickerField from './components/DatePickerField';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
@@ -110,7 +112,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
         setGeneratedWbsCode(code);
       } catch (error) {
-        console.error('Error generating WBS code:', error);
+        logger.error('[ItemCreation] Error generating WBS code', error as Error);
         showSnackbar('Failed to generate WBS code', 'error');
       } finally {
         setGeneratingCode(false);
@@ -266,7 +268,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
         navigation.goBack();
       }, 1500);
     } catch (error) {
-      console.error('Error saving item:', error);
+      logger.error('[ItemCreation] Error saving item', error as Error);
       showSnackbar('Failed to create item. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -629,4 +631,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ItemCreationScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ItemCreationScreenWithBoundary = (props: Props) => (
+  <ErrorBoundary name="ItemCreationScreen">
+    <ItemCreationScreen {...props} />
+  </ErrorBoundary>
+);
+
+export default ItemCreationScreenWithBoundary;

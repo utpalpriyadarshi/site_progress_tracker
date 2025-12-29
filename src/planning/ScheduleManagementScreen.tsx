@@ -12,6 +12,8 @@ import {
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import ItemModel from '../../models/ItemModel';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 /**
  * ScheduleManagementScreen (v2.11 Phase 4)
@@ -54,7 +56,7 @@ const ScheduleManagementScreenComponent = ({
         });
       });
     } catch (error) {
-      console.error('[Schedule] Error toggling critical path:', error);
+      logger.error('[Schedule] Error toggling critical path', error as Error);
       Alert.alert('Error', 'Failed to update critical path status');
     }
   };
@@ -479,4 +481,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ScheduleManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ScheduleManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="ScheduleManagementScreen">
+    <ScheduleManagementScreen />
+  </ErrorBoundary>
+);
+
+export default ScheduleManagementScreenWithBoundary;

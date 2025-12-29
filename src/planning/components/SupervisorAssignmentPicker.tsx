@@ -4,6 +4,7 @@ import { List, Text, Portal, Dialog, Button, Searchbar } from 'react-native-pape
 import { database } from '../../../models/database';
 import UserModel from '../../../models/UserModel';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../../services/LoggingService';
 
 interface SupervisorAssignmentPickerProps {
   visible: boolean;
@@ -48,9 +49,9 @@ const SupervisorAssignmentPicker: React.FC<SupervisorAssignmentPickerProps> = ({
         setSupervisors([]);
       }
     } catch (error) {
-      console.error('Error loading supervisors:', error);
+      logger.error('[SupervisorPicker] Error loading supervisors', error as Error);
       setSupervisors([]);
-    } finally {
+    } finally{
       setLoading(false);
     }
   };

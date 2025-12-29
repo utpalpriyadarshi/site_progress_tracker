@@ -17,6 +17,8 @@ import PlanningService from '../../services/planning/PlanningService';
 import ProjectSelector from './components/ProjectSelector';
 import DependencyModal from './components/DependencyModal';
 import ItemPlanningCard from './components/ItemPlanningCard';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface BaselineScreenProps {
   projects: ProjectModel[];
@@ -62,7 +64,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
         .map(item => item.id);
       setCriticalPathItems(criticalItems);
     } catch (error) {
-      console.error('Error loading items:', error);
+      logger.error('[Baseline] Error loading items', error as Error);
       showSnackbar('Failed to load items', 'error');
     } finally {
       setLoading(false);
@@ -90,7 +92,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
 
       await loadItems(); // Reload to show updated flags
     } catch (error) {
-      console.error('Error calculating critical path:', error);
+      logger.error('[Baseline] Error calculating critical path', error as Error);
       showSnackbar('Failed to calculate critical path', 'error');
     } finally {
       setIsCalculating(false);
@@ -111,7 +113,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
       showSnackbar('Baseline locked successfully', 'success');
       await loadItems();
     } catch (error) {
-      console.error('Error locking baseline:', error);
+      logger.error('[Baseline] Error locking baseline', error as Error);
       showSnackbar('Failed to lock baseline', 'error');
     }
   };
@@ -359,4 +361,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BaselineScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const BaselineScreenWithBoundary = () => (
+  <ErrorBoundary name="BaselineScreen">
+    <BaselineScreen />
+  </ErrorBoundary>
+);
+
+export default BaselineScreenWithBoundary;
