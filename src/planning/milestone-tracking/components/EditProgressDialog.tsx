@@ -6,8 +6,9 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Portal, Dialog, TextInput, Button, Text, Chip, IconButton } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MilestoneModel from '../../../models/MilestoneModel';
-import { STATUS_OPTIONS, formatStatusLabel } from '../utils';
+import MilestoneModel from '../../../../models/MilestoneModel';
+import { STATUS_OPTIONS } from '../utils/milestoneConstants';
+import { formatStatusLabel } from '../utils/milestoneFormatters';
 
 interface EditProgressDialogProps {
   visible: boolean;

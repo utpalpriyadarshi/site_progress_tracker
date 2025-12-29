@@ -4,11 +4,11 @@
 
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { database } from '../../../models/database';
-import MilestoneModel from '../../../models/MilestoneModel';
-import MilestoneProgressModel from '../../../models/MilestoneProgressModel';
+import { database } from '../../../../models/database';
+import MilestoneModel from '../../../../models/MilestoneModel';
+import MilestoneProgressModel from '../../../../models/MilestoneProgressModel';
 import { logger } from '../../../services/LoggingService';
-import { MILESTONE_STATUS } from '../utils';
+import { MILESTONE_STATUS } from '../utils/milestoneConstants';
 
 interface UseEditProgressProps {
   selectedProjectId: string;

@@ -5,10 +5,11 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Button, ProgressBar } from 'react-native-paper';
-import MilestoneModel from '../../../models/MilestoneModel';
-import MilestoneProgressModel from '../../../models/MilestoneProgressModel';
+import MilestoneModel from '../../../../models/MilestoneModel';
+import MilestoneProgressModel from '../../../../models/MilestoneProgressModel';
 import { StatusChip } from './StatusChip';
-import { STATUS_COLORS, formatDate, formatProgressPercentage } from '../utils';
+import { STATUS_COLORS } from '../utils/milestoneConstants';
+import { formatDate, formatProgressPercentage } from '../utils/milestoneFormatters';
 
 interface MilestoneCardProps {
   milestone: MilestoneModel;

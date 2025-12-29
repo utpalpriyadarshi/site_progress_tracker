@@ -3,9 +3,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { database } from '../../../models/database';
+import { database } from '../../../../models/database';
 import { Q } from '@nozbe/watermelondb';
-import MilestoneProgressModel from '../../../models/MilestoneProgressModel';
+import MilestoneProgressModel from '../../../../models/MilestoneProgressModel';
 import { logger } from '../../../services/LoggingService';
 
 export const useMilestoneData = (selectedProjectId: string, selectedSiteId: string) => {

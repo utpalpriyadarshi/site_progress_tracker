@@ -5,7 +5,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
-import { STATUS_COLORS, STATUS_LABELS } from '../utils';
+import { STATUS_COLORS, STATUS_LABELS } from '../utils/milestoneConstants';
 
 interface StatusChipProps {
   status: string;
