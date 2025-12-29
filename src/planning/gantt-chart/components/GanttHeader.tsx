@@ -1,0 +1,60 @@
+/**
+ * Gantt chart header with task info and timeline
+ */
+
+import React from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from 'react-native-paper';
+import { TimelineHeader } from './TimelineHeader';
+import { TimelineColumn } from '../utils/ganttCalculations';
+import { LEFT_COLUMN_WIDTH, SCREEN_WIDTH, GANTT_COLORS } from '../utils/ganttConstants';
+
+interface GanttHeaderProps {
+  timelineColumns: TimelineColumn[];
+  columnWidth: number;
+  scrollViewRef: React.RefObject<ScrollView | null>;
+}
+
+export const GanttHeader: React.FC<GanttHeaderProps> = ({
+  timelineColumns,
+  columnWidth,
+  scrollViewRef,
+}) => {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.infoColumn, styles.headerColumn]}>
+        <Text style={styles.text}>Task</Text>
+      </View>
+      <ScrollView
+        horizontal
+        ref={scrollViewRef}
+        showsHorizontalScrollIndicator={true}
+        style={{ width: SCREEN_WIDTH - LEFT_COLUMN_WIDTH }}
+      >
+        <TimelineHeader columns={timelineColumns} columnWidth={columnWidth} />
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    backgroundColor: GANTT_COLORS.headerBg,
+    borderBottomWidth: 2,
+    borderBottomColor: GANTT_COLORS.borderColor,
+  },
+  infoColumn: {
+    width: LEFT_COLUMN_WIDTH,
+  },
+  headerColumn: {
+    backgroundColor: GANTT_COLORS.headerBg,
+    borderRightWidth: 2,
+    borderRightColor: GANTT_COLORS.borderColor,
+  },
+  text: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    padding: 12,
+  },
+});
