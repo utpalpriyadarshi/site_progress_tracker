@@ -10,7 +10,7 @@ import HindranceModel from '../../models/HindranceModel';
 import DailyReportModel from '../../models/DailyReportModel';
 import SyncQueueModel from '../../models/SyncQueueModel';
 import { Q } from '@nozbe/watermelondb';
-import TokenStorage from '../storage/TokenStorage';
+import AuthService from '../auth/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
@@ -40,6 +40,16 @@ const API_CONFIG = {
   TIMEOUT: 30000, // 30 seconds
 };
 
+/**
+ * DEVELOPMENT MODE: Disable sync when no backend is available
+ *
+ * Set to true when developing locally without a backend server.
+ * The app will work in pure offline mode using WatermelonDB.
+ *
+ * Set to false when you have a backend server running.
+ */
+const OFFLINE_DEVELOPMENT_MODE = true; // 👈 Set to false when backend is ready
+
 // Storage keys for sync state
 const SYNC_STORAGE_KEYS = {
   LAST_SYNC_AT: '@sync/last_sync_at',
@@ -63,7 +73,7 @@ export class SyncService {
     method: 'GET' | 'POST' = 'GET',
     body?: any
   ): Promise<any> {
-    const accessToken = await TokenStorage.getAccessToken();
+    const accessToken = await AuthService.getAccessToken();
 
     if (!accessToken) {
       throw new Error('No access token available. Please login first.');
@@ -137,8 +147,19 @@ export class SyncService {
     try {
       console.log('🔄 SyncService.syncUp() started...');
 
+      // Development Mode: Skip sync when no backend is available
+      if (OFFLINE_DEVELOPMENT_MODE) {
+        console.log('📴 SyncUp skipped: Offline development mode enabled');
+        console.log('💡 Working in pure offline mode - all data saved locally in WatermelonDB');
+        return {
+          success: true,
+          message: 'Offline mode - data saved locally',
+          syncedRecords: 0,
+        };
+      }
+
       // Fix: Week 8, Day 5 - Check authentication before syncing
-      const accessToken = await TokenStorage.getAccessToken();
+      const accessToken = await AuthService.getAccessToken();
       if (!accessToken) {
         console.log('⚠️  SyncUp skipped: Not authenticated');
         return {
@@ -317,8 +338,19 @@ export class SyncService {
     try {
       console.log('🔄 SyncService.syncDown() started...');
 
+      // Development Mode: Skip sync when no backend is available
+      if (OFFLINE_DEVELOPMENT_MODE) {
+        console.log('📴 SyncDown skipped: Offline development mode enabled');
+        console.log('💡 Working in pure offline mode - using local WatermelonDB data');
+        return {
+          success: true,
+          message: 'Offline mode - using local data',
+          syncedRecords: 0,
+        };
+      }
+
       // Fix: Week 8, Day 5 - Check authentication before syncing
-      const accessToken = await TokenStorage.getAccessToken();
+      const accessToken = await AuthService.getAccessToken();
       console.log('🔐 SyncDown auth check - Token exists:', !!accessToken);
       if (!accessToken) {
         console.log('⚠️  SyncDown skipped: Not authenticated');
