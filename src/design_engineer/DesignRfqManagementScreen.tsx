@@ -13,6 +13,7 @@ import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput } from 'r
 import { database } from '../../models/database';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
 
 /**
  * DesignRfqManagementScreen (v2.11)
@@ -94,7 +95,7 @@ const DesignRfqManagementScreen = () => {
 
       setDoorsPackages(packagesList);
     } catch (error) {
-      console.error('[DesignRfq] Error loading DOORS packages:', error);
+      logger.error('[DesignRfq] Error loading DOORS packages:', error);
     }
   };
 
@@ -106,7 +107,7 @@ const DesignRfqManagementScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[DesignRfq] Loading Design RFQs for project:', projectId);
+      logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
       const rfqCollection = database.collections.get('rfqs');
       const rfqsData = await rfqCollection
@@ -139,10 +140,10 @@ const DesignRfqManagementScreen = () => {
         createdAt: rfq.createdAt,
       }));
 
-      console.log('[DesignRfq] Loaded RFQs:', rfqsList.length);
+      logger.debug('[DesignRfq] Loaded RFQs:', rfqsList.length);
       setRfqs(rfqsList);
     } catch (error) {
-      console.error('[DesignRfq] Error loading RFQs:', error);
+      logger.error('[DesignRfq] Error loading RFQs:', error);
       Alert.alert('Error', 'Failed to load Design RFQs');
     } finally {
       setLoading(false);
@@ -215,7 +216,7 @@ const DesignRfqManagementScreen = () => {
       resetCreateDialog();
       loadRfqs();
     } catch (error) {
-      console.error('[DesignRfq] Error creating RFQ:', error);
+      logger.error('[DesignRfq] Error creating RFQ:', error);
       Alert.alert('Error', 'Failed to create Design RFQ');
     }
   };
@@ -242,7 +243,7 @@ const DesignRfqManagementScreen = () => {
       Alert.alert('Success', 'RFQ issued successfully');
       loadRfqs();
     } catch (error) {
-      console.error('[DesignRfq] Error issuing RFQ:', error);
+      logger.error('[DesignRfq] Error issuing RFQ:', error);
       Alert.alert('Error', 'Failed to issue RFQ');
     }
   };
@@ -261,7 +262,7 @@ const DesignRfqManagementScreen = () => {
       Alert.alert('Success', 'Marked as quotes received');
       loadRfqs();
     } catch (error) {
-      console.error('[DesignRfq] Error updating RFQ:', error);
+      logger.error('[DesignRfq] Error updating RFQ:', error);
       Alert.alert('Error', 'Failed to update RFQ');
     }
   };

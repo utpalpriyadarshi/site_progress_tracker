@@ -4,6 +4,7 @@ import { Card } from 'react-native-paper';
 import { database } from '../../models/database';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
 
 /**
  * DesignEngineerDashboardScreen (v2.11)
@@ -66,7 +67,7 @@ const DesignEngineerDashboardScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[Dashboard] Loading metrics for project:', projectId);
+      logger.info('[Dashboard] Loading metrics for project:', projectId);
 
       // Fetch DOORS packages
       const doorsCollection = database.collections.get('doors_packages');
@@ -116,12 +117,12 @@ const DesignEngineerDashboardScreen = () => {
         avgProcessingDays,
       });
 
-      console.log('[Dashboard] Metrics loaded:', {
+      logger.debug('[Dashboard] Metrics loaded:', {
         packages: allPackages.length,
         rfqs: allRfqs.length,
       });
     } catch (error) {
-      console.error('[Dashboard] Error loading metrics:', error);
+      logger.error('[Dashboard] Error loading metrics:', error);
     } finally {
       setLoading(false);
     }

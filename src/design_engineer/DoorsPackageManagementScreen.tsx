@@ -12,6 +12,7 @@ import { FAB, Card, Searchbar, Chip, Menu, Portal, Dialog, Button, TextInput } f
 import { database } from '../../models/database';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
 
 /**
  * DoorsPackageManagementScreen (v2.11)
@@ -88,7 +89,7 @@ const DoorsPackageManagementScreen = () => {
 
       setSites(sitesList);
     } catch (error) {
-      console.error('[DoorsPackage] Error loading sites:', error);
+      logger.error('[DoorsPackage] Error loading sites:', error);
     }
   };
 
@@ -100,7 +101,7 @@ const DoorsPackageManagementScreen = () => {
 
     try {
       setLoading(true);
-      console.log('[DoorsPackage] Loading packages for project:', projectId);
+      logger.info('[DoorsPackage] Loading packages for project:', projectId);
 
       const doorsCollection = database.collections.get('doors_packages');
       const packagesData = await doorsCollection
@@ -116,7 +117,7 @@ const DoorsPackageManagementScreen = () => {
               const site = await database.collections.get('sites').find(pkg.siteId);
               siteName = (site as any).name;
             } catch (error) {
-              console.error('[DoorsPackage] Site not found:', pkg.siteId);
+              logger.warn('[DoorsPackage] Site not found:', pkg.siteId);
             }
           }
 
@@ -139,10 +140,10 @@ const DoorsPackageManagementScreen = () => {
         })
       );
 
-      console.log('[DoorsPackage] Loaded packages:', packagesWithSites.length);
+      logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
       setPackages(packagesWithSites);
     } catch (error) {
-      console.error('[DoorsPackage] Error loading packages:', error);
+      logger.error('[DoorsPackage] Error loading packages:', error);
       Alert.alert('Error', 'Failed to load DOORS packages');
     } finally {
       setLoading(false);
@@ -207,7 +208,7 @@ const DoorsPackageManagementScreen = () => {
       resetCreateDialog();
       loadPackages();
     } catch (error) {
-      console.error('[DoorsPackage] Error creating package:', error);
+      logger.error('[DoorsPackage] Error creating package:', error);
       Alert.alert('Error', 'Failed to create DOORS package');
     }
   };
@@ -235,7 +236,7 @@ const DoorsPackageManagementScreen = () => {
       Alert.alert('Success', 'Package marked as received');
       loadPackages();
     } catch (error) {
-      console.error('[DoorsPackage] Error marking as received:', error);
+      logger.error('[DoorsPackage] Error marking as received:', error);
       Alert.alert('Error', 'Failed to update package');
     }
   };
@@ -255,7 +256,7 @@ const DoorsPackageManagementScreen = () => {
       Alert.alert('Success', 'Package marked as reviewed');
       loadPackages();
     } catch (error) {
-      console.error('[DoorsPackage] Error marking as reviewed:', error);
+      logger.error('[DoorsPackage] Error marking as reviewed:', error);
       Alert.alert('Error', 'Failed to update package');
     }
   };
