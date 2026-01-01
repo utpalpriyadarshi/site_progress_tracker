@@ -28,6 +28,8 @@ import AutoSyncManager, { SyncState } from '../../services/sync/AutoSyncManager'
 import NetworkMonitor from '../../services/network/NetworkMonitor';
 import { useSnackbar } from '../components/Snackbar';
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export const SyncMonitoringScreen: React.FC = () => {
   const [syncState, setSyncState] = useState<SyncState>(AutoSyncManager.getSyncState());
@@ -73,7 +75,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       const connected = await NetworkMonitor.isConnected();
       setIsConnected(connected);
     } catch (error) {
-      console.error('Failed to load sync data:', error);
+      logger.error('Failed to load sync data:', error);
     }
   };
 
@@ -365,4 +367,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SyncMonitoringScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const SyncMonitoringScreenWithBoundary = () => (
+  <ErrorBoundary name="SyncMonitoringScreen">
+    <SyncMonitoringScreen />
+  </ErrorBoundary>
+);
+
+export default SyncMonitoringScreenWithBoundary;
