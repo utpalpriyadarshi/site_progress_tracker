@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../../services/LoggingService';
 
 export type AdminRole = 'Supervisor' | 'Manager' | 'Planner' | 'Logistics' | 'DesignEngineer' | 'CommercialManager' | null;
 
@@ -30,7 +31,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           setSelectedRoleState(savedRole as AdminRole);
         }
       } catch (error) {
-        console.error('Error loading saved admin role:', error);
+        logger.error('Error loading saved admin role:', error);
       }
     };
 
@@ -47,7 +48,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         await AsyncStorage.removeItem(STORAGE_KEY);
       }
     } catch (error) {
-      console.error('Error saving admin role:', error);
+      logger.error('Error saving admin role:', error);
     }
   };
 

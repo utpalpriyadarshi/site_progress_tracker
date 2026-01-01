@@ -30,6 +30,7 @@ import {
   getPasswordRequirements,
 } from '../../utils/passwordValidator';
 import { useAuth } from '../auth/AuthContext';
+import { logger } from '../services/LoggingService';
 
 interface UserFormData {
   username: string;
@@ -96,7 +97,7 @@ const RoleManagementScreen = () => {
       setRoles(rolesList);
       setProjects(projectsList); // v2.9: Store projects
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       showSnackbar('Failed to load data', 'error');
     } finally {
       setLoading(false);
@@ -251,7 +252,7 @@ const RoleManagementScreen = () => {
         'success'
       );
     } catch (error) {
-      console.error('Error saving user:', error);
+      logger.error('Error saving user:', error);
       showSnackbar('Failed to save user', 'error');
     }
   };
@@ -274,7 +275,7 @@ const RoleManagementScreen = () => {
       showSnackbar('User deleted successfully', 'success');
       setUserToDelete(null);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       showSnackbar('Failed to delete user', 'error');
     }
   };
@@ -328,7 +329,7 @@ const RoleManagementScreen = () => {
         showSnackbar(result.details || result.error || 'Failed to reset password', 'error');
       }
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logger.error('Error resetting password:', error);
       showSnackbar('Failed to reset password', 'error');
     } finally {
       setResetPasswordLoading(false);
@@ -348,7 +349,7 @@ const RoleManagementScreen = () => {
         'success'
       );
     } catch (error) {
-      console.error('Error toggling user status:', error);
+      logger.error('Error toggling user status:', error);
       showSnackbar('Failed to update user status', 'error');
     }
   };

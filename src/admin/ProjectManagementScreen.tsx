@@ -25,6 +25,7 @@ import { Q } from '@nozbe/watermelondb';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
+import { logger } from '../services/LoggingService';
 
 interface ProjectFormData {
   name: string;
@@ -75,7 +76,7 @@ const ProjectManagementScreen = () => {
         .fetch();
       setProjects(projectsList);
     } catch (error) {
-      console.error('Error loading projects:', error);
+      logger.error('Error loading projects:', error);
       showSnackbar('Failed to load projects', 'error');
     } finally {
       setLoading(false);
@@ -130,7 +131,7 @@ const ProjectManagementScreen = () => {
       });
     }
 
-    console.log(`[ProjectManagement] Created ${defaultMilestones.length} default milestones for project ${projectId}`);
+    logger.info(`Created ${defaultMilestones.length} default milestones for project ${projectId}`);
   };
 
   const openCreateModal = () => {
@@ -221,7 +222,7 @@ const ProjectManagementScreen = () => {
         'success'
       );
     } catch (error) {
-      console.error('Error saving project:', error);
+      logger.error('Error saving project:', error);
       showSnackbar('Failed to save project', 'error');
     }
   };
@@ -324,7 +325,7 @@ const ProjectManagementScreen = () => {
       showSnackbar('Project and all related data deleted successfully', 'success');
       setProjectToDelete(null);
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', error);
       showSnackbar('Failed to delete project', 'error');
     }
   };

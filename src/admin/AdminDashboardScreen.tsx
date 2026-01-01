@@ -9,6 +9,7 @@ import { database } from '../../models/database';
 import PasswordMigrationService from '../../services/auth/PasswordMigrationService';
 import { SimpleDatabaseService } from '../../services/db/SimpleDatabaseService';
 import { migrateCategoryNames, verifyCategoryMigration } from '../../scripts/migrateCategoryNames';
+import { logger } from '../services/LoggingService';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -63,7 +64,7 @@ const AdminDashboardScreen = () => {
         totalItems: items.length,
       });
     } catch (error) {
-      console.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error);
     }
   };
 
@@ -104,7 +105,7 @@ const AdminDashboardScreen = () => {
       const status = await PasswordMigrationService.getMigrationStatus();
       setMigrationStatus(status);
     } catch (error) {
-      console.error('Error loading migration status:', error);
+      logger.error('Error loading migration status:', error);
     }
   };
 
@@ -164,7 +165,7 @@ const AdminDashboardScreen = () => {
           onPress: async () => {
             setIsMigratingCategories(true);
             try {
-              console.log('🔄 Starting category migration...');
+              logger.info('Starting category migration...');
 
               // Run migration
               await migrateCategoryNames();
@@ -180,7 +181,7 @@ const AdminDashboardScreen = () => {
                 'Category names have been updated successfully!\n\nNew names:\n• "Handing Over" (was "Finishing")\n• "Punch List" (was "Framing")\n\nAll items remain linked correctly.'
               );
             } catch (error) {
-              console.error('❌ Category migration failed:', error);
+              logger.error('Category migration failed:', error);
               Alert.alert(
                 'Migration Error',
                 `Failed to migrate categories: ${error}\n\nCheck console for details.`
@@ -408,7 +409,7 @@ const AdminDashboardScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                       try {
-                        console.log('🔄 Starting database reset...');
+                        logger.info('Starting database reset...');
 
                         // Clear database FIRST (most important)
                         const collections = [
@@ -432,23 +433,23 @@ const AdminDashboardScreen = () => {
                                 );
                               });
                               totalDeleted += records.length;
-                              console.log(`  ✅ Deleted ${records.length} records from ${collectionName}`);
+                              logger.info(`Deleted ${records.length} records from ${collectionName}`);
                             }
                           } catch (error) {
-                            console.log(`  ⚠️  Collection ${collectionName} error:`, error);
+                            logger.warn(`Collection ${collectionName} error:`, error);
                           }
                         }
 
-                        console.log(`🗑️  Total records deleted: ${totalDeleted}`);
+                        logger.info(`Total records deleted: ${totalDeleted}`);
 
                         // Clear AsyncStorage (this will force re-login)
                         await AsyncStorage.clear();
-                        console.log('🧹 AsyncStorage cleared');
+                        logger.info('AsyncStorage cleared');
 
                         // IMPORTANT: Re-initialize default data after reset
-                        console.log('🔄 Re-initializing database with default data...');
+                        logger.info('Re-initializing database with default data...');
                         await SimpleDatabaseService.initializeDefaultData();
-                        console.log('✅ Database re-initialization complete!');
+                        logger.info('Database re-initialization complete!');
 
                         Alert.alert(
                           'Success',
@@ -469,7 +470,7 @@ const AdminDashboardScreen = () => {
                           ]
                         );
                       } catch (error) {
-                        console.error('❌ Reset failed:', error);
+                        logger.error('Reset failed:', error);
                         Alert.alert('Error', 'Failed to reset database: ' + error);
                       }
                     },
