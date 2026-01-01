@@ -29,6 +29,7 @@ import NetworkMonitor from '../../services/network/NetworkMonitor';
 import { useSnackbar } from '../components/Snackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export const SyncMonitoringScreen: React.FC = () => {
   const [syncState, setSyncState] = useState<SyncState>(AutoSyncManager.getSyncState());
@@ -366,4 +367,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SyncMonitoringScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const SyncMonitoringScreenWithBoundary = () => (
+  <ErrorBoundary name="SyncMonitoringScreen">
+    <SyncMonitoringScreen />
+  </ErrorBoundary>
+);
+
+export default SyncMonitoringScreenWithBoundary;

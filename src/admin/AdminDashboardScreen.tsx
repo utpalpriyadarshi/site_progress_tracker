@@ -10,6 +10,7 @@ import PasswordMigrationService from '../../services/auth/PasswordMigrationServi
 import { SimpleDatabaseService } from '../../services/db/SimpleDatabaseService';
 import { migrateCategoryNames, verifyCategoryMigration } from '../../scripts/migrateCategoryNames';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -557,4 +558,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminDashboardScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const AdminDashboardScreenWithBoundary = () => (
+  <ErrorBoundary name="AdminDashboardScreen">
+    <AdminDashboardScreen />
+  </ErrorBoundary>
+);
+
+export default AdminDashboardScreenWithBoundary;

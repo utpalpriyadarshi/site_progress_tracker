@@ -26,6 +26,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface ProjectFormData {
   name: string;
@@ -658,4 +659,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const ProjectManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="ProjectManagementScreen">
+    <ProjectManagementScreen />
+  </ErrorBoundary>
+);
+
+export default ProjectManagementScreenWithBoundary;

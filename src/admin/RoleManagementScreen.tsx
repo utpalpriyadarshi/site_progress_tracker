@@ -31,6 +31,7 @@ import {
 } from '../../utils/passwordValidator';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface UserFormData {
   username: string;
@@ -920,4 +921,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RoleManagementScreen;
+// Wrap with ErrorBoundary for graceful error handling
+const RoleManagementScreenWithBoundary = () => (
+  <ErrorBoundary name="RoleManagementScreen">
+    <RoleManagementScreen />
+  </ErrorBoundary>
+);
+
+export default RoleManagementScreenWithBoundary;
