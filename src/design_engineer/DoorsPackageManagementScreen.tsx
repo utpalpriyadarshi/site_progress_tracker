@@ -13,6 +13,7 @@ import { database } from '../../models/database';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * DoorsPackageManagementScreen (v2.11)
@@ -347,14 +348,17 @@ const DoorsPackageManagementScreen = () => {
 
   if (!projectId) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>No project assigned</Text>
-      </View>
+      <ErrorBoundary>
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>No project assigned</Text>
+        </View>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ErrorBoundary>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
         <Searchbar
@@ -482,6 +486,7 @@ const DoorsPackageManagementScreen = () => {
         </Dialog>
       </Portal>
     </View>
+    </ErrorBoundary>
   );
 };
 

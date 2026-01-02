@@ -5,6 +5,7 @@ import { database } from '../../models/database';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 /**
  * DesignEngineerDashboardScreen (v2.11)
@@ -152,24 +153,29 @@ const DesignEngineerDashboardScreen = () => {
 
   if (!projectId) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>No project assigned</Text>
-        <Text style={styles.errorSubtext}>Please contact your administrator to assign a project</Text>
-      </View>
+      <ErrorBoundary>
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>No project assigned</Text>
+          <Text style={styles.errorSubtext}>Please contact your administrator to assign a project</Text>
+        </View>
+      </ErrorBoundary>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
-      </View>
+      <ErrorBoundary>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ErrorBoundary>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
         <Text style={styles.roleLabel}>Design Engineer Dashboard</Text>
@@ -254,6 +260,7 @@ const DesignEngineerDashboardScreen = () => {
 
       <View style={styles.bottomPadding} />
     </ScrollView>
+    </ErrorBoundary>
   );
 };
 
