@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database } from '../../../models/database';
 import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
 
 /**
  * DesignEngineerContext (v2.11)
@@ -59,19 +60,19 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   useEffect(() => {
     const loadEngineerProject = async () => {
       if (!user || !user.userId) {
-        console.log('[DesignEngineerContext] No user or userId available');
+        logger.debug('[DesignEngineerContext] No user or userId available');
         return;
       }
 
       try {
-        console.log('[DesignEngineerContext] Loading project for user:', user.userId);
+        logger.info('[DesignEngineerContext] Loading project for user:', user.userId);
 
         // Fetch user from database to get project assignment
         let userRecord;
         try {
           userRecord = await database.collections.get('users').find(user.userId);
         } catch (findError) {
-          console.log('[DesignEngineerContext] User not found by ID, checking if role switching...');
+          logger.debug('[DesignEngineerContext] User not found by ID, checking if role switching...');
 
           // When role switching from Admin, user.userId is admin's ID
           // Find the actual Design Engineer user instead
@@ -80,7 +81,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           const designEngineerRole = roles.find((r: any) => r.name === 'DesignEngineer');
 
           if (designEngineerRole) {
-            console.log('[DesignEngineerContext] Found DesignEngineer role:', designEngineerRole.id);
+            logger.debug('[DesignEngineerContext] Found DesignEngineer role:', designEngineerRole.id);
             const usersCollection = database.collections.get('users');
             const designEngineers = await usersCollection
               .query(Q.where('role_id', designEngineerRole.id))
@@ -88,7 +89,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
 
             if (designEngineers.length > 0) {
               userRecord = designEngineers[0]; // Get first design engineer
-              console.log('[DesignEngineerContext] Found Design Engineer user:', (userRecord as any).username);
+              logger.debug('[DesignEngineerContext] Found Design Engineer user:', (userRecord as any).username);
             }
           }
         }
@@ -96,9 +97,9 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
         if (userRecord) {
           const projectId = (userRecord as any).projectId;
           const userId = (userRecord as any).id;
-          console.log('[DesignEngineerContext] User record found');
-          console.log('[DesignEngineerContext] User projectId:', projectId);
-          console.log('[DesignEngineerContext] ProjectId type:', typeof projectId);
+          logger.debug('[DesignEngineerContext] User record found');
+          logger.debug('[DesignEngineerContext] User projectId:', projectId);
+          logger.debug('[DesignEngineerContext] ProjectId type:', typeof projectId);
 
           if (projectId) {
             try {
@@ -106,26 +107,26 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
               const project = await database.collections.get('projects').find(projectId);
               const projectName = (project as any).name;
 
-              console.log('[DesignEngineerContext] Project found:', projectName);
-              console.log('[DesignEngineerContext] Setting project in context...');
+              logger.info('[DesignEngineerContext] Project found:', projectName);
+              logger.debug('[DesignEngineerContext] Setting project in context...');
 
               // Update context state and persist to AsyncStorage
               await setProjectId(projectId);
               await setProjectName(projectName);
               await setEngineerId(userId); // Use the design engineer's actual ID
 
-              console.log('[DesignEngineerContext] ✅ Project loaded successfully');
+              logger.info('[DesignEngineerContext] ✅ Project loaded successfully');
             } catch (projectError) {
-              console.error('[DesignEngineerContext] ❌ Error fetching project:', projectError);
+              logger.error('[DesignEngineerContext] ❌ Error fetching project:', projectError);
             }
           } else {
-            console.log('[DesignEngineerContext] ⚠️ No project assigned to user (projectId is null/undefined)');
+            logger.warn('[DesignEngineerContext] ⚠️ No project assigned to user (projectId is null/undefined)');
           }
         } else {
-          console.log('[DesignEngineerContext] ❌ User record not found in database');
+          logger.warn('[DesignEngineerContext] ❌ User record not found in database');
         }
       } catch (error) {
-        console.error('[DesignEngineerContext] ❌ Error loading engineer project:', error);
+        logger.error('[DesignEngineerContext] ❌ Error loading engineer project:', error);
       }
     };
 
@@ -154,7 +155,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           setProjectNameState(savedProjectName);
         }
       } catch (error) {
-        console.error('[DesignEngineerContext] Error loading saved data:', error);
+        logger.error('[DesignEngineerContext] Error loading saved data:', error);
       }
     };
 
@@ -167,7 +168,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(ENGINEER_ID_KEY, id);
     } catch (error) {
-      console.error('[DesignEngineerContext] Error saving engineer ID:', error);
+      logger.error('[DesignEngineerContext] Error saving engineer ID:', error);
     }
   };
 
@@ -177,7 +178,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      console.error('[DesignEngineerContext] Error saving project ID:', error);
+      logger.error('[DesignEngineerContext] Error saving project ID:', error);
     }
   };
 
@@ -187,7 +188,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      console.error('[DesignEngineerContext] Error saving project name:', error);
+      logger.error('[DesignEngineerContext] Error saving project name:', error);
     }
   };
 
