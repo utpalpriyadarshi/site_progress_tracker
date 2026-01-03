@@ -1,64 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useReducer, useEffect, useCallback } from 'react';
 import { database } from '../../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
+import {
+  dashboardReducer,
+  initialDashboardState,
+  startLoad,
+  finishLoad,
+  startRefresh as startRefreshAction,
+  finishRefresh as finishRefreshAction,
+  setStats as setStatsAction,
+  setProjectInfo as setProjectInfoAction,
+} from '../state';
 
-export interface ProjectStats {
-  overallCompletion: number;
-  sitesOnSchedule: number;
-  sitesDelayed: number;
-  totalSites: number;
-  budgetUtilization: number;
-  openHindrances: number;
-  pendingApprovals: number;
-  deliveryOnTrack: number;
-  deliveryDelayed: number;
-  criticalPathItemsAtRisk: number;
-  upcomingMilestones: number;
-  activeSupervisors: number;
-}
-
-export interface ProjectInfo {
-  name: string;
-  startDate: number;
-  endDate: number;
-  status: string;
-  client: string;
-  budget: number;
-}
+// Re-export types for backward compatibility
+export type { ProjectStats, ProjectInfo } from '../state';
 
 export const useDashboardData = (projectId: string | null) => {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState<ProjectStats>({
-    overallCompletion: 0,
-    sitesOnSchedule: 0,
-    sitesDelayed: 0,
-    totalSites: 0,
-    budgetUtilization: 0,
-    openHindrances: 0,
-    pendingApprovals: 0,
-    deliveryOnTrack: 0,
-    deliveryDelayed: 0,
-    criticalPathItemsAtRisk: 0,
-    upcomingMilestones: 0,
-    activeSupervisors: 0,
-  });
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null);
+  // Replace 4 useState hooks with single useReducer
+  const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
 
   const loadProjectInfo = useCallback(async () => {
     if (!projectId) return;
 
     try {
       const project = await database.collections.get('projects').find(projectId);
-      setProjectInfo({
+      dispatch(setProjectInfoAction({
         name: (project as any).name,
         startDate: (project as any).startDate,
         endDate: (project as any).endDate,
         status: (project as any).status,
         client: (project as any).client,
         budget: (project as any).budget,
-      });
+      }));
     } catch (error) {
       logger.error('[useDashboardData] Error loading project info', error as Error);
     }
@@ -208,7 +182,7 @@ export const useDashboardData = (projectId: string | null) => {
 
       const budgetUtilization = await calculateBudgetUtilization();
 
-      setStats({
+      dispatch(setStatsAction({
         overallCompletion,
         sitesOnSchedule,
         sitesDelayed,
@@ -221,7 +195,7 @@ export const useDashboardData = (projectId: string | null) => {
         criticalPathItemsAtRisk,
         upcomingMilestones: upcomingMilestones.length,
         activeSupervisors: sites.length, // Simplified: 1 supervisor per site
-      });
+      }));
     } catch (error) {
       logger.error('[useDashboardData] Error calculating stats', error as Error);
     }
@@ -229,34 +203,35 @@ export const useDashboardData = (projectId: string | null) => {
 
   const loadDashboardData = useCallback(async () => {
     try {
-      setLoading(true);
+      dispatch(startLoad());
       await Promise.all([loadProjectInfo(), calculateStats()]);
     } catch (error) {
       logger.error('[useDashboardData] Error loading data', error as Error);
     } finally {
-      setLoading(false);
+      dispatch(finishLoad());
     }
-  }, [projectId, loadProjectInfo, calculateStats]);
+  }, [loadProjectInfo, calculateStats]);
 
   useEffect(() => {
     if (projectId) {
       loadDashboardData();
     } else {
-      setLoading(false);
+      dispatch(finishLoad());
     }
   }, [projectId, loadDashboardData]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+    dispatch(startRefreshAction());
     await loadDashboardData();
-    setRefreshing(false);
+    dispatch(finishRefreshAction());
   }, [loadDashboardData]);
 
+  // Return interface - map from nested state to flat interface (no breaking changes!)
   return {
-    loading,
-    refreshing,
-    stats,
-    projectInfo,
+    loading: state.loading.initial,
+    refreshing: state.loading.refreshing,
+    stats: state.data.stats,
+    projectInfo: state.data.projectInfo,
     onRefresh,
   };
 };

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ProjectStats, ProjectInfo } from './useDashboardData';
+import { ProjectStats, ProjectInfo } from '../state';
 import { getKPIIndicatorColor, formatCurrency } from '../utils/dashboardFormatters';
 
 export interface KPIMetric {

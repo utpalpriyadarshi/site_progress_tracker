@@ -1,9 +1,11 @@
 /**
  * useBomData Hook
  * Manages BOM CRUD operations and related state
+ *
+ * Refactored to use useReducer pattern (Phase 2, Task 2.1)
  */
 
-import { useState } from 'react';
+import { useReducer, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import BomModel from '../../../../models/BomModel';
@@ -14,88 +16,128 @@ import { BomImportExportService } from '../../../services/BomImportExportService
 import { logger } from '../../../services/LoggingService';
 import { SITE_CATEGORIES } from '../utils/bomConstants';
 import { getBomItems } from '../utils/bomCalculations';
+import {
+  bomFormReducer,
+  initialBomFormState,
+  openAddBomDialog as openAddAction,
+  openEditBomDialog as openEditAction,
+  closeBomDialog as closeAction,
+  setBomName as setBomNameAction,
+  setProjectId as setProjectIdAction,
+  setBomType as setBomTypeAction,
+  setSiteCategory as setSiteCategoryAction,
+  setQuantity as setQuantityAction,
+  setUnit as setUnitAction,
+  setDescription as setDescriptionAction,
+  setProjectMenuVisible as setProjectMenuAction,
+  setSiteMenuVisible as setSiteMenuAction,
+  openDeleteBomDialog as openDeleteAction,
+  closeDeleteBomDialog as closeDeleteAction,
+} from '../state';
 
 export const useBomData = (
   projects: ProjectModel[],
   allBomItems: BomItemModel[],
-  boms: BomModel[]
+  _boms: BomModel[]
 ) => {
   const { showSnackbar } = useSnackbar();
 
-  // Dialog state
-  const [bomDialogVisible, setBomDialogVisible] = useState(false);
-  const [editingBom, setEditingBom] = useState<BomModel | null>(null);
-  const [showDeleteBomDialog, setShowDeleteBomDialog] = useState(false);
-  const [bomToDelete, setBomToDelete] = useState<BomModel | null>(null);
+  // Replace 13 useState hooks with single useReducer
+  const [state, dispatch] = useReducer(bomFormReducer, initialBomFormState);
 
-  // BOM Form state
-  const [bomName, setBomName] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [bomType, setBomType] = useState<'estimating' | 'execution'>('estimating');
-  const [siteCategory, setSiteCategory] = useState<string>('');
-  const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState('nos');
-  const [description, setDescription] = useState('');
-
-  // Dropdown menu states
-  const [projectMenuVisible, setProjectMenuVisible] = useState(false);
-  const [siteMenuVisible, setSiteMenuVisible] = useState(false);
-
-  // Reset BOM form
-  const resetBomForm = () => {
-    setBomName('');
-    setSelectedProjectId(projects[0]?.id || '');
-    setBomType('estimating');
-    setSiteCategory(SITE_CATEGORIES[0]);
-    setQuantity('1');
-    setUnit('nos');
-    setDescription('');
-    setEditingBom(null);
-  };
-
-  // Open BOM dialog for adding
-  const openAddBomDialog = (activeTab: 'estimating' | 'execution') => {
+  // Wrap dispatch calls in useCallback
+  const openAddBomDialog = useCallback((activeTab: 'estimating' | 'execution') => {
     if (projects.length === 0) {
       showSnackbar('Please create a project first', 'warning');
       return;
     }
-    resetBomForm();
-    setBomType(activeTab);
-    setSelectedProjectId(projects[0]?.id || '');
-    setSiteCategory(SITE_CATEGORIES[0]);
-    setBomDialogVisible(true);
-  };
+    const defaultProjectId = projects[0]?.id || '';
+    const defaultCategory = SITE_CATEGORIES[0];
+    dispatch(openAddAction(activeTab, defaultProjectId, defaultCategory));
+  }, [projects, showSnackbar]);
 
-  // Open BOM dialog for editing
-  const openEditBomDialog = (bom: BomModel) => {
-    setEditingBom(bom);
-    setBomName(bom.name);
-    setSelectedProjectId(bom.projectId);
-    setBomType(bom.type as 'estimating' | 'execution');
-    setSiteCategory(bom.siteCategory || SITE_CATEGORIES[0]);
-    setQuantity(bom.quantity.toString());
-    setUnit(bom.unit);
-    setDescription(bom.description || '');
-    setBomDialogVisible(true);
-  };
+  const openEditBomDialog = useCallback((bom: BomModel) => {
+    dispatch(openEditAction(bom));
+  }, []);
 
-  // Close BOM dialog
-  const closeBomDialog = () => {
-    setBomDialogVisible(false);
-    resetBomForm();
-  };
+  const closeBomDialog = useCallback(() => {
+    dispatch(closeAction());
+  }, []);
+
+  const setBomName = useCallback((value: string) => {
+    dispatch(setBomNameAction(value));
+  }, []);
+
+  const setSelectedProjectId = useCallback((value: string) => {
+    dispatch(setProjectIdAction(value));
+  }, []);
+
+  const setBomType = useCallback((value: 'estimating' | 'execution') => {
+    dispatch(setBomTypeAction(value));
+  }, []);
+
+  const setSiteCategory = useCallback((value: string) => {
+    dispatch(setSiteCategoryAction(value));
+  }, []);
+
+  const setQuantity = useCallback((value: string) => {
+    dispatch(setQuantityAction(value));
+  }, []);
+
+  const setUnit = useCallback((value: string) => {
+    dispatch(setUnitAction(value));
+  }, []);
+
+  const setDescription = useCallback((value: string) => {
+    dispatch(setDescriptionAction(value));
+  }, []);
+
+  const setProjectMenuVisible = useCallback((visible: boolean) => {
+    dispatch(setProjectMenuAction(visible));
+  }, []);
+
+  const setSiteMenuVisible = useCallback((visible: boolean) => {
+    dispatch(setSiteMenuAction(visible));
+  }, []);
+
+  const handleDeleteBom = useCallback((bom: BomModel) => {
+    dispatch(openDeleteAction(bom));
+  }, []);
+
+  const setShowDeleteBomDialog = useCallback((visible: boolean) => {
+    if (!visible) {
+      dispatch(closeDeleteAction());
+    }
+  }, []);
+
+  const setBomDialogVisible = useCallback((visible: boolean) => {
+    if (!visible) {
+      closeBomDialog();
+    }
+  }, [closeBomDialog]);
+
+  const setBomToDelete = useCallback((bom: BomModel | null) => {
+    if (bom) {
+      dispatch(openDeleteAction(bom));
+    } else {
+      dispatch(closeDeleteAction());
+    }
+  }, []);
 
   // Create or Update BOM
   const handleSaveBom = async () => {
+    const { bomName, selectedProjectId, siteCategory, quantity, unit, description, bomType } = state.form;
+    const { editingBom } = state.dialog;
+
     if (!bomName.trim() || !selectedProjectId || !siteCategory || !quantity || !unit.trim()) {
-      setBomDialogVisible(false);
+      dispatch(closeAction());
       showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
 
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) {
-      setBomDialogVisible(false);
+      dispatch(closeAction());
       showSnackbar('Quantity must be a positive number', 'warning');
       return;
     }
@@ -145,16 +187,11 @@ export const useBomData = (
     }
   };
 
-  // Delete BOM
-  const handleDeleteBom = (bom: BomModel) => {
-    setBomToDelete(bom);
-    setShowDeleteBomDialog(true);
-  };
-
   const confirmDeleteBom = async () => {
+    const { bomToDelete } = state.deleteConfirmation;
     if (!bomToDelete) return;
 
-    setShowDeleteBomDialog(false);
+    dispatch(closeDeleteAction());
     try {
       await database.write(async () => {
         // Delete all BOM items first
@@ -166,7 +203,6 @@ export const useBomData = (
         await bomToDelete.markAsDeleted();
       });
       showSnackbar('BOM deleted successfully', 'success');
-      setBomToDelete(null);
     } catch (error) {
       logger.error('Error deleting BOM', error as Error);
       showSnackbar('Failed to delete BOM: ' + (error as Error).message, 'error');
@@ -350,39 +386,40 @@ export const useBomData = (
     }
   };
 
+  // Return interface - map from nested state to flat interface (no breaking changes!)
   return {
-    // Dialog state
-    bomDialogVisible,
+    // Dialog state (mapped from state.dialog)
+    bomDialogVisible: state.dialog.visible,
     setBomDialogVisible,
-    editingBom,
-    showDeleteBomDialog,
+    editingBom: state.dialog.editingBom,
+    showDeleteBomDialog: state.deleteConfirmation.visible,
     setShowDeleteBomDialog,
-    bomToDelete,
+    bomToDelete: state.deleteConfirmation.bomToDelete,
     setBomToDelete,
 
-    // Form state
-    bomName,
+    // Form state (mapped from state.form)
+    bomName: state.form.bomName,
     setBomName,
-    selectedProjectId,
+    selectedProjectId: state.form.selectedProjectId,
     setSelectedProjectId,
-    bomType,
+    bomType: state.form.bomType,
     setBomType,
-    siteCategory,
+    siteCategory: state.form.siteCategory,
     setSiteCategory,
-    quantity,
+    quantity: state.form.quantity,
     setQuantity,
-    unit,
+    unit: state.form.unit,
     setUnit,
-    description,
+    description: state.form.description,
     setDescription,
 
-    // Dropdown states
-    projectMenuVisible,
+    // Dropdown states (mapped from state.ui)
+    projectMenuVisible: state.ui.projectMenuVisible,
     setProjectMenuVisible,
-    siteMenuVisible,
+    siteMenuVisible: state.ui.siteMenuVisible,
     setSiteMenuVisible,
 
-    // Handlers
+    // Handlers (unchanged)
     openAddBomDialog,
     openEditBomDialog,
     closeBomDialog,
