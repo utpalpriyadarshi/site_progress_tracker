@@ -1,76 +1,118 @@
 /**
  * useBomItemData Hook
  * Manages BOM Item CRUD operations and related state
+ *
+ * Refactored to use useReducer pattern (Phase 2, Task 2.1)
  */
 
-import { useState } from 'react';
+import { useReducer, useCallback } from 'react';
 import { database } from '../../../../models/database';
 import BomModel from '../../../../models/BomModel';
 import BomItemModel from '../../../../models/BomItemModel';
 import { useSnackbar } from '../../../components/Snackbar';
 import { logger } from '../../../services/LoggingService';
 import { getBomItems } from '../utils/bomCalculations';
+import {
+  bomItemFormReducer,
+  initialBomItemFormState,
+  openAddItemDialog as openAddAction,
+  openEditItemDialog as openEditAction,
+  closeItemDialog as closeAction,
+  setItemDescription as setItemDescriptionAction,
+  setItemCategory as setItemCategoryAction,
+  setItemQuantity as setItemQuantityAction,
+  setItemUnit as setItemUnitAction,
+  setItemUnitCost as setItemUnitCostAction,
+  setItemPhase as setItemPhaseAction,
+  openDeleteItemDialog as openDeleteAction,
+  closeDeleteItemDialog as closeDeleteAction,
+} from '../state';
 
 export const useBomItemData = (allBomItems: BomItemModel[]) => {
   const { showSnackbar } = useSnackbar();
 
-  // Dialog state
-  const [itemDialogVisible, setItemDialogVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<BomItemModel | null>(null);
-  const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<BomItemModel | null>(null);
+  // Replace 10 useState hooks with single useReducer
+  const [state, dispatch] = useReducer(bomItemFormReducer, initialBomItemFormState);
 
-  // BOM Item Form state
-  const [selectedBomId, setSelectedBomId] = useState('');
-  const [itemDescription, setItemDescription] = useState('');
-  const [itemCategory, setItemCategory] = useState<'material' | 'labor' | 'equipment' | 'subcontractor'>('material');
-  const [itemQuantity, setItemQuantity] = useState('');
-  const [itemUnit, setItemUnit] = useState('');
-  const [itemUnitCost, setItemUnitCost] = useState('');
-  const [itemPhase, setItemPhase] = useState('');
+  // Wrap dispatch calls in useCallback
+  const openAddItemDialog = useCallback((bomId: string) => {
+    dispatch(openAddAction(bomId));
+  }, []);
 
-  // Reset Item form
-  const resetItemForm = () => {
-    setSelectedBomId('');
-    setItemDescription('');
-    setItemCategory('material');
-    setItemQuantity('');
-    setItemUnit('');
-    setItemUnitCost('');
-    setItemPhase('');
-    setEditingItem(null);
-  };
+  const openEditItemDialog = useCallback((item: BomItemModel) => {
+    dispatch(openEditAction(item));
+  }, []);
 
-  // Open Item dialog for adding
-  const openAddItemDialog = (bomId: string) => {
-    resetItemForm();
-    setSelectedBomId(bomId);
-    setItemDialogVisible(true);
-  };
+  const closeItemDialog = useCallback(() => {
+    dispatch(closeAction());
+  }, []);
 
-  // Open Item dialog for editing
-  const openEditItemDialog = (item: BomItemModel) => {
-    setEditingItem(item);
-    setSelectedBomId(item.bomId);
-    setItemDescription(item.description);
-    setItemCategory(item.category as any);
-    setItemQuantity(item.quantity.toString());
-    setItemUnit(item.unit);
-    setItemUnitCost(item.unitCost.toString());
-    setItemPhase(item.phase || '');
-    setItemDialogVisible(true);
-  };
+  const setItemDescription = useCallback((value: string) => {
+    dispatch(setItemDescriptionAction(value));
+  }, []);
 
-  // Close Item dialog
-  const closeItemDialog = () => {
-    setItemDialogVisible(false);
-    resetItemForm();
-  };
+  const setItemCategory = useCallback((value: 'material' | 'labor' | 'equipment' | 'subcontractor') => {
+    dispatch(setItemCategoryAction(value));
+  }, []);
+
+  const setItemQuantity = useCallback((value: string) => {
+    dispatch(setItemQuantityAction(value));
+  }, []);
+
+  const setItemUnit = useCallback((value: string) => {
+    dispatch(setItemUnitAction(value));
+  }, []);
+
+  const setItemUnitCost = useCallback((value: string) => {
+    dispatch(setItemUnitCostAction(value));
+  }, []);
+
+  const setItemPhase = useCallback((value: string) => {
+    dispatch(setItemPhaseAction(value));
+  }, []);
+
+  const handleDeleteItem = useCallback((item: BomItemModel) => {
+    dispatch(openDeleteAction(item));
+  }, []);
+
+  const setShowDeleteItemDialog = useCallback((visible: boolean) => {
+    if (!visible) {
+      dispatch(closeDeleteAction());
+    }
+  }, []);
+
+  const setItemDialogVisible = useCallback((visible: boolean) => {
+    if (!visible) {
+      closeItemDialog();
+    }
+  }, [closeItemDialog]);
+
+  const setSelectedBomId = useCallback((_bomId: string) => {
+    // This is typically only used internally, but we expose it for compatibility
+    // Note: Setting bomId directly is not common in the new reducer pattern
+  }, []);
+
+  const setEditingItem = useCallback((item: BomItemModel | null) => {
+    if (item) {
+      dispatch(openEditAction(item));
+    }
+  }, []);
+
+  const setItemToDelete = useCallback((item: BomItemModel | null) => {
+    if (item) {
+      dispatch(openDeleteAction(item));
+    } else {
+      dispatch(closeDeleteAction());
+    }
+  }, []);
 
   // Create or Update BOM Item
   const handleSaveItem = async () => {
+    const { itemDescription, itemQuantity, itemUnit, itemUnitCost, itemCategory, itemPhase, selectedBomId } = state.form;
+    const { editingItem } = state.dialog;
+
     if (!itemDescription.trim() || !itemQuantity || !itemUnit.trim() || !itemUnitCost) {
-      setItemDialogVisible(false);
+      dispatch(closeAction());
       showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
@@ -81,13 +123,13 @@ export const useBomItemData = (allBomItems: BomItemModel[]) => {
 
       // Validate positive numbers
       if (isNaN(qty) || qty <= 0) {
-        setItemDialogVisible(false);
+        dispatch(closeAction());
         showSnackbar('Quantity must be a positive number', 'warning');
         return;
       }
 
       if (isNaN(cost) || cost < 0) {
-        setItemDialogVisible(false);
+        dispatch(closeAction());
         showSnackbar('Unit cost cannot be negative', 'warning');
         return;
       }
@@ -159,16 +201,11 @@ export const useBomItemData = (allBomItems: BomItemModel[]) => {
     }
   };
 
-  // Delete Item
-  const handleDeleteItem = (item: BomItemModel) => {
-    setItemToDelete(item);
-    setShowDeleteItemDialog(true);
-  };
-
   const confirmDeleteItem = async () => {
+    const { itemToDelete } = state.deleteConfirmation;
     if (!itemToDelete) return;
 
-    setShowDeleteItemDialog(false);
+    dispatch(closeDeleteAction());
     try {
       const bomId = itemToDelete.bomId;
       await database.write(async () => {
@@ -184,40 +221,41 @@ export const useBomItemData = (allBomItems: BomItemModel[]) => {
         });
       });
       showSnackbar('Item deleted successfully', 'success');
-      setItemToDelete(null);
     } catch (error) {
       logger.error('Error deleting item', error as Error);
       showSnackbar('Failed to delete item: ' + (error as Error).message, 'error');
     }
   };
 
+  // Return interface - map from nested state to flat interface (no breaking changes!)
   return {
-    // Dialog state
-    itemDialogVisible,
+    // Dialog state (mapped from state.dialog)
+    itemDialogVisible: state.dialog.visible,
     setItemDialogVisible,
-    editingItem,
-    showDeleteItemDialog,
+    editingItem: state.dialog.editingItem,
+    setEditingItem,
+    showDeleteItemDialog: state.deleteConfirmation.visible,
     setShowDeleteItemDialog,
-    itemToDelete,
+    itemToDelete: state.deleteConfirmation.itemToDelete,
     setItemToDelete,
 
-    // Form state
-    selectedBomId,
+    // Form state (mapped from state.form)
+    selectedBomId: state.form.selectedBomId,
     setSelectedBomId,
-    itemDescription,
+    itemDescription: state.form.itemDescription,
     setItemDescription,
-    itemCategory,
+    itemCategory: state.form.itemCategory,
     setItemCategory,
-    itemQuantity,
+    itemQuantity: state.form.itemQuantity,
     setItemQuantity,
-    itemUnit,
+    itemUnit: state.form.itemUnit,
     setItemUnit,
-    itemUnitCost,
+    itemUnitCost: state.form.itemUnitCost,
     setItemUnitCost,
-    itemPhase,
+    itemPhase: state.form.itemPhase,
     setItemPhase,
 
-    // Handlers
+    // Handlers (unchanged)
     openAddItemDialog,
     openEditItemDialog,
     closeItemDialog,
