@@ -11,18 +11,16 @@
  * - ResourceAllocationGrid: Grid display for resource allocation
  */
 
-// Components will be exported here as they are created
-// export { default as ApprovalWorkflowCard } from './ApprovalWorkflowCard';
-// export { default as BomItemEditor } from './BomItemEditor';
-// export { default as CostBreakdownChart } from './CostBreakdownChart';
-// export { default as TeamMemberSelector } from './TeamMemberSelector';
-// export { default as ResourceAllocationGrid } from './ResourceAllocationGrid';
+// Component Exports
+export { default as ApprovalWorkflowCard } from './ApprovalWorkflowCard';
+export { default as BomItemEditor } from './BomItemEditor';
+export { default as CostBreakdownChart } from './CostBreakdownChart';
+export { default as TeamMemberSelector } from './TeamMemberSelector';
+export { default as ResourceAllocationGrid } from './ResourceAllocationGrid';
 
-// Types will be exported here as they are created
-// export type { ApprovalWorkflowItem, ApprovalWorkflowCardProps } from './ApprovalWorkflowCard';
-// export type { BomItemData, BomItemEditorProps } from './BomItemEditor';
-// export type { CostBreakdownData, CostBreakdownChartProps } from './CostBreakdownChart';
-// export type { TeamMember, TeamMemberSelectorProps } from './TeamMemberSelector';
-// export type { ResourceAllocation, ResourceAllocationGridProps } from './ResourceAllocationGrid';
-
-export {};
+// Type Exports
+export type { ApprovalWorkflowItem } from './ApprovalWorkflowCard';
+export type { BomItemData } from './BomItemEditor';
+export type { CostBreakdownData } from './CostBreakdownChart';
+export type { TeamMember } from './TeamMemberSelector';
+export type { ResourceAllocation } from './ResourceAllocationGrid';
