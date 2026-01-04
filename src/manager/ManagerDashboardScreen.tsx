@@ -22,7 +22,6 @@ import {
   Title,
   Paragraph,
   Chip,
-  ActivityIndicator,
   Divider,
   ProgressBar,
   Menu,
@@ -35,8 +34,6 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import {
-  KPICard,
-  ProjectHeader,
   EngineeringSection,
   SiteProgressSection,
   EquipmentMaterialsSection,
