@@ -14,7 +14,6 @@ import {
   Card,
   Title,
   Paragraph,
-  ActivityIndicator,
   DataTable,
   Chip,
   ProgressBar,
@@ -25,6 +24,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { TeamPerformanceSkeleton } from './shared';
 
 interface SupervisorPerformance {
   userId: string;
@@ -408,12 +408,7 @@ const TeamPerformanceScreen = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Paragraph style={styles.loadingText}>Loading team performance...</Paragraph>
-      </View>
-    );
+    return <TeamPerformanceSkeleton />;
   }
 
   if (!projectId) {

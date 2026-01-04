@@ -22,7 +22,6 @@ import {
   Title,
   Paragraph,
   Chip,
-  ActivityIndicator,
   Divider,
   ProgressBar,
   Menu,
@@ -35,8 +34,6 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import {
-  KPICard,
-  ProjectHeader,
   EngineeringSection,
   SiteProgressSection,
   EquipmentMaterialsSection,
@@ -45,6 +42,7 @@ import {
   HandoverSection,
 } from './dashboard/components';
 import { formatCurrency } from './dashboard/utils/dashboardFormatters';
+import { DashboardSkeleton } from './shared';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -1334,12 +1332,7 @@ const ManagerDashboardScreen = () => {
   };
 
   if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Paragraph style={styles.loadingText}>Loading dashboard...</Paragraph>
-      </View>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!projectId || !projectInfo) {
