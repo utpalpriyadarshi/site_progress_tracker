@@ -1,8 +1,19 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useReducer, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useCommercial } from './context/CommercialContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { useReportData, useDateFilter } from './financial-reports/hooks';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { financialReportsReducer, initialFinancialReportsState } from './state/reports/financialReportsReducer';
+import { financialReportsActions } from './state/reports/financialReportsActions';
+import {
+  calculateBudgetVariance,
+  calculateCostDistribution,
+  calculateInvoicesSummary,
+  calculateCashFlow,
+  calculateProfitability,
+} from './financial-reports/utils';
 import {
   DateRangeFilter,
   ProfitabilityCard,
@@ -15,6 +26,7 @@ import {
 
 /**
  * FinancialReportsScreen (v2.20 - Refactored)
+ * Phase 2 Task 2.1 - State Management Refactor
  *
  * Commercial Manager views comprehensive financial reports.
  *
@@ -29,18 +41,118 @@ import {
 
 const FinancialReportsScreen = () => {
   const { projectId, projectName, startDate, setStartDate, endDate, setEndDate } = useCommercial();
+  const [state, dispatch] = useReducer(financialReportsReducer, initialFinancialReportsState);
 
-  const { loading, reportData, loadReportData } = useReportData(projectId, startDate, endDate);
+  const loadReportData = useCallback(async () => {
+    if (!projectId) {
+      dispatch(financialReportsActions.setLoading(false));
+      return;
+    }
 
-  const {
-    showStartDatePicker,
-    setShowStartDatePicker,
-    showEndDatePicker,
-    setShowEndDatePicker,
-    handleStartDateChange,
-    handleEndDateChange,
-    handleClearDates,
-  } = useDateFilter(startDate, endDate, setStartDate, setEndDate);
+    try {
+      dispatch(financialReportsActions.setLoading(true));
+      logger.debug('[Reports] Loading report data for project', { projectId });
+
+      // Load budgets
+      const budgetsCollection = database.collections.get('budgets');
+      const budgets = await budgetsCollection
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      // Load costs with date filtering
+      const costsCollection = database.collections.get('costs');
+      let costsQuery = costsCollection.query(Q.where('project_id', projectId));
+
+      if (startDate && endDate) {
+        costsQuery = costsCollection.query(
+          Q.where('project_id', projectId),
+          Q.and(
+            Q.where('cost_date', Q.gte(startDate.getTime())),
+            Q.where('cost_date', Q.lte(endDate.getTime()))
+          )
+        );
+      } else if (startDate) {
+        costsQuery = costsCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('cost_date', Q.gte(startDate.getTime()))
+        );
+      } else if (endDate) {
+        costsQuery = costsCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('cost_date', Q.lte(endDate.getTime()))
+        );
+      }
+
+      const costs = await costsQuery.fetch();
+
+      // Load invoices with date filtering
+      const invoicesCollection = database.collections.get('invoices');
+      let invoicesQuery = invoicesCollection.query(Q.where('project_id', projectId));
+
+      if (startDate && endDate) {
+        invoicesQuery = invoicesCollection.query(
+          Q.where('project_id', projectId),
+          Q.and(
+            Q.where('invoice_date', Q.gte(startDate.getTime())),
+            Q.where('invoice_date', Q.lte(endDate.getTime()))
+          )
+        );
+      } else if (startDate) {
+        invoicesQuery = invoicesCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('invoice_date', Q.gte(startDate.getTime()))
+        );
+      } else if (endDate) {
+        invoicesQuery = invoicesCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('invoice_date', Q.lte(endDate.getTime()))
+        );
+      }
+
+      const invoices = await invoicesQuery.fetch();
+
+      // Calculate all report sections
+      const budgetByCategory = calculateBudgetVariance(budgets, costs);
+      const costsByCategory = calculateCostDistribution(costs);
+      const invoicesSummary = calculateInvoicesSummary(invoices);
+      const cashFlow = calculateCashFlow(invoices, costs);
+      const profitability = calculateProfitability(budgets, costs);
+
+      dispatch(financialReportsActions.setReportData({
+        budgetByCategory,
+        costsByCategory,
+        invoicesSummary,
+        cashFlow,
+        profitability,
+      }));
+
+      logger.debug('[Reports] Report data loaded successfully');
+    } catch (error) {
+      logger.error('[Reports] Error loading report data', error as Error);
+      Alert.alert('Error', 'Failed to load report data');
+    } finally {
+      dispatch(financialReportsActions.setLoading(false));
+    }
+  }, [projectId, startDate, endDate]);
+
+  const handleStartDateChange = (event: any, selectedDate?: Date) => {
+    dispatch(financialReportsActions.setShowStartDatePicker(Platform.OS === 'ios'));
+    if (selectedDate) {
+      setStartDate(selectedDate);
+    }
+  };
+
+  const handleEndDateChange = (event: any, selectedDate?: Date) => {
+    dispatch(financialReportsActions.setShowEndDatePicker(Platform.OS === 'ios'));
+    if (selectedDate) {
+      setEndDate(selectedDate);
+    }
+  };
+
+  const handleClearDates = () => {
+    setStartDate(null);
+    setEndDate(null);
+  };
 
   useEffect(() => {
     loadReportData();
@@ -54,7 +166,7 @@ const FinancialReportsScreen = () => {
     );
   }
 
-  if (loading) {
+  if (state.ui.loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -63,7 +175,7 @@ const FinancialReportsScreen = () => {
     );
   }
 
-  if (!reportData) {
+  if (!state.data.reportData) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>No report data available</Text>
@@ -82,10 +194,10 @@ const FinancialReportsScreen = () => {
       <DateRangeFilter
         startDate={startDate}
         endDate={endDate}
-        showStartDatePicker={showStartDatePicker}
-        showEndDatePicker={showEndDatePicker}
-        setShowStartDatePicker={setShowStartDatePicker}
-        setShowEndDatePicker={setShowEndDatePicker}
+        showStartDatePicker={state.ui.showStartDatePicker}
+        showEndDatePicker={state.ui.showEndDatePicker}
+        setShowStartDatePicker={(show) => dispatch(financialReportsActions.setShowStartDatePicker(show))}
+        setShowEndDatePicker={(show) => dispatch(financialReportsActions.setShowEndDatePicker(show))}
         handleStartDateChange={handleStartDateChange}
         handleEndDateChange={handleEndDateChange}
         handleClearDates={handleClearDates}
@@ -93,31 +205,31 @@ const FinancialReportsScreen = () => {
 
       {/* Profitability Overview */}
       <ProfitabilityCard
-        totalBudget={reportData.profitability.totalBudget}
-        totalSpent={reportData.profitability.totalSpent}
-        remaining={reportData.profitability.remaining}
-        profitMargin={reportData.profitability.profitMargin}
+        totalBudget={state.data.reportData.profitability.totalBudget}
+        totalSpent={state.data.reportData.profitability.totalSpent}
+        remaining={state.data.reportData.profitability.remaining}
+        profitMargin={state.data.reportData.profitability.profitMargin}
       />
 
       {/* Budget Variance Report */}
-      <BudgetVarianceCard budgetByCategory={reportData.budgetByCategory} />
+      <BudgetVarianceCard budgetByCategory={state.data.reportData.budgetByCategory} />
 
       {/* Cost Distribution */}
-      <CostDistributionCard costsByCategory={reportData.costsByCategory} />
+      <CostDistributionCard costsByCategory={state.data.reportData.costsByCategory} />
 
       {/* Cash Flow Analysis */}
       <CashFlowCard
-        totalRevenue={reportData.cashFlow.totalRevenue}
-        totalCosts={reportData.cashFlow.totalCosts}
-        netCashFlow={reportData.cashFlow.netCashFlow}
+        totalRevenue={state.data.reportData.cashFlow.totalRevenue}
+        totalCosts={state.data.reportData.cashFlow.totalCosts}
+        netCashFlow={state.data.reportData.cashFlow.netCashFlow}
       />
 
       {/* Invoices Summary */}
       <InvoicesSummaryCard
-        total={reportData.invoicesSummary.total}
-        paid={reportData.invoicesSummary.paid}
-        pending={reportData.invoicesSummary.pending}
-        overdue={reportData.invoicesSummary.overdue}
+        total={state.data.reportData.invoicesSummary.total}
+        paid={state.data.reportData.invoicesSummary.paid}
+        pending={state.data.reportData.invoicesSummary.pending}
+        overdue={state.data.reportData.invoicesSummary.overdue}
       />
 
       {/* Export Options (Future) */}
