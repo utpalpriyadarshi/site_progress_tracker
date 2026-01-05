@@ -1,10 +1,15 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import React, { useReducer, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar } from 'react-native-paper';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { useCostData, useCostFilters, useCostForm } from './cost-tracking/hooks';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { costTrackingReducer, initialCostTrackingState } from './state/cost/costTrackingReducer';
+import { costTrackingActions } from './state/cost/costTrackingActions';
+import type { Cost } from './state/cost/costTrackingReducer';
 import {
   HeaderSection,
   CostCard,
@@ -14,6 +19,7 @@ import {
 
 /**
  * CostTrackingScreen (v2.20 - Refactored)
+ * Phase 2 Task 2.1 - State Management Refactor
  *
  * Commercial Manager tracks actual costs incurred on the project.
  *
@@ -31,52 +37,219 @@ const CostTrackingScreen = () => {
   const { projectId, projectName, selectedCostCategory, setSelectedCostCategory, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const [state, dispatch] = useReducer(costTrackingReducer, initialCostTrackingState);
 
-  // Data hooks
-  const {
-    costs,
-    loading,
-    loadCosts,
-    getBudgetForCategory,
-    getTotalSpentForCategory,
-    totalBudgets,
-    totalCosts,
-    totalVariance,
-  } = useCostData(projectId);
+  // Load costs and budgets from database
+  const loadCosts = useCallback(async () => {
+    if (!projectId) {
+      dispatch(costTrackingActions.setLoading(false));
+      return;
+    }
 
-  const { searchQuery, setSearchQuery, filteredCosts } = useCostFilters(
-    costs,
-    selectedCostCategory
-  );
+    try {
+      dispatch(costTrackingActions.setLoading(true));
+      logger.debug('[Cost] Loading costs for project', { projectId });
 
-  const {
-    showCreateDialog,
-    setShowCreateDialog,
-    showEditDialog,
-    showDatePicker,
-    setShowDatePicker,
-    formCategory,
-    setFormCategory,
-    formAmount,
-    setFormAmount,
-    formDescription,
-    setFormDescription,
-    formPoId,
-    setFormPoId,
-    formCostDate,
-    resetForm,
-    handleCreateCost,
-    handleEditCost,
-    handleDeleteCost,
-    openEditDialog,
-    handleDateChange,
-  } = useCostForm(user?.userId, projectId, loadCosts);
+      const costsCollection = database.collections.get('costs');
+      const costsData = await costsCollection
+        .query(Q.where('project_id', projectId), Q.sortBy('cost_date', Q.desc))
+        .fetch();
 
-  const [showFilterMenu, setShowFilterMenu] = React.useState(false);
+      const costsArray = costsData.map((cost: any) => ({
+        id: cost.id,
+        projectId: cost.projectId,
+        poId: cost.poId,
+        category: cost.category,
+        amount: cost.amount,
+        description: cost.description,
+        costDate: cost.costDate,
+        createdBy: cost.createdBy,
+        createdAt: cost.createdAt,
+      }));
+
+      // Load budgets for comparison
+      const budgetsCollection = database.collections.get('budgets');
+      const budgetsData = await budgetsCollection
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const budgetsArray = budgetsData.map((budget: any) => ({
+        category: budget.category,
+        allocated: budget.allocatedAmount,
+      }));
+
+      logger.debug('[Cost] Loaded costs', { count: costsArray.length });
+      dispatch(costTrackingActions.setCosts(costsArray));
+      dispatch(costTrackingActions.setBudgets(budgetsArray));
+
+      // Calculate totals
+      const totalCosts = costsArray.reduce((sum, c) => sum + c.amount, 0);
+      const totalBudgets = budgetsArray.reduce((sum, b) => sum + b.allocated, 0);
+      const totalVariance = totalBudgets - totalCosts;
+      dispatch(costTrackingActions.setTotals(totalBudgets, totalCosts, totalVariance));
+    } catch (error) {
+      logger.error('[Cost] Error loading costs', error as Error);
+      Alert.alert('Error', 'Failed to load costs');
+    } finally {
+      dispatch(costTrackingActions.setLoading(false));
+    }
+  }, [projectId]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...state.data.costs];
+
+    // Search filter
+    if (state.filters.searchQuery) {
+      const query = state.filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (cost) =>
+          cost.category.toLowerCase().includes(query) ||
+          cost.description.toLowerCase().includes(query) ||
+          (cost.poId && cost.poId.toLowerCase().includes(query))
+      );
+    }
+
+    // Category filter
+    if (selectedCostCategory) {
+      filtered = filtered.filter((cost) => cost.category === selectedCostCategory);
+    }
+
+    dispatch(costTrackingActions.setFilteredCosts(filtered));
+  }, [state.data.costs, state.filters.searchQuery, selectedCostCategory]);
 
   useEffect(() => {
     loadCosts();
   }, [loadCosts, refreshTrigger]);
+
+  // Helper functions
+  const getBudgetForCategory = (category: string): number => {
+    const budget = state.data.budgets.find((b) => b.category === category);
+    return budget ? budget.allocated : 0;
+  };
+
+  const getTotalSpentForCategory = (category: string): number => {
+    return state.data.costs
+      .filter((c) => c.category === category)
+      .reduce((sum, c) => sum + c.amount, 0);
+  };
+
+  const handleCreateCost = async () => {
+    if (!state.form.description.trim()) {
+      Alert.alert('Validation Error', 'Please enter a description');
+      return;
+    }
+
+    const amount = parseFloat(state.form.amount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid amount');
+      return;
+    }
+
+    try {
+      const costsCollection = database.collections.get('costs');
+
+      await database.write(async () => {
+        await costsCollection.create((record: any) => {
+          record.projectId = projectId;
+          record.poId = state.form.poId.trim() || null;
+          record.category = state.form.category;
+          record.amount = amount;
+          record.description = state.form.description.trim();
+          record.costDate = state.form.costDate.getTime();
+          record.createdBy = user?.userId || '';
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+      });
+
+      Alert.alert('Success', 'Cost entry created successfully');
+      dispatch(costTrackingActions.closeDialogs());
+      dispatch(costTrackingActions.resetForm());
+      loadCosts();
+    } catch (error) {
+      logger.error('[Cost] Error creating cost', error as Error);
+      Alert.alert('Error', 'Failed to create cost entry');
+    }
+  };
+
+  const handleEditCost = async () => {
+    if (!state.data.editingCost || !state.form.description.trim()) {
+      Alert.alert('Validation Error', 'Please enter a description');
+      return;
+    }
+
+    const amount = parseFloat(state.form.amount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid amount');
+      return;
+    }
+
+    try {
+      const costsCollection = database.collections.get('costs');
+      const costRecord = await costsCollection.find(state.data.editingCost.id);
+
+      await database.write(async () => {
+        await costRecord.update((record: any) => {
+          record.poId = state.form.poId.trim() || null;
+          record.category = state.form.category;
+          record.amount = amount;
+          record.description = state.form.description.trim();
+          record.costDate = state.form.costDate.getTime();
+          record.appSyncStatus = 'pending';
+        });
+      });
+
+      Alert.alert('Success', 'Cost entry updated successfully');
+      dispatch(costTrackingActions.closeDialogs());
+      dispatch(costTrackingActions.resetForm());
+      loadCosts();
+    } catch (error) {
+      logger.error('[Cost] Error updating cost', error as Error);
+      Alert.alert('Error', 'Failed to update cost entry');
+    }
+  };
+
+  const handleDeleteCost = (cost: Cost) => {
+    Alert.alert(
+      'Delete Cost',
+      `Are you sure you want to delete this cost entry?\n\n${cost.category.toUpperCase()}: ${cost.description}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const costsCollection = database.collections.get('costs');
+              const costRecord = await costsCollection.find(cost.id);
+
+              await database.write(async () => {
+                await costRecord.markAsDeleted();
+              });
+
+              Alert.alert('Success', 'Cost entry deleted successfully');
+              loadCosts();
+            } catch (error) {
+              logger.error('[Cost] Error deleting cost', error as Error);
+              Alert.alert('Error', 'Failed to delete cost entry');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openEditDialog = (cost: Cost) => {
+    dispatch(costTrackingActions.openEditDialog(cost));
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    dispatch(costTrackingActions.setShowDatePicker(false));
+    if (selectedDate) {
+      dispatch(costTrackingActions.setFormDate(selectedDate));
+    }
+  };
 
   if (!projectId) {
     return (
@@ -90,44 +263,44 @@ const CostTrackingScreen = () => {
     <View style={styles.container}>
       <HeaderSection
         projectName={projectName}
-        totalBudgets={totalBudgets}
-        totalCosts={totalCosts}
-        totalVariance={totalVariance}
+        totalBudgets={state.data.totalBudgets}
+        totalCosts={state.data.totalCosts}
+        totalVariance={state.data.totalVariance}
       />
 
       {/* Search and filter */}
       <View style={styles.controls}>
         <Searchbar
           placeholder="Search costs..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
+          onChangeText={(query) => dispatch(costTrackingActions.setSearchQuery(query))}
+          value={state.filters.searchQuery}
           style={styles.searchbar}
         />
         <CategoryFilterMenu
-          visible={showFilterMenu}
-          onDismiss={() => setShowFilterMenu(false)}
+          visible={state.ui.showFilterMenu}
+          onDismiss={() => dispatch(costTrackingActions.toggleFilterMenu())}
           selectedCategory={selectedCostCategory}
           onSelectCategory={setSelectedCostCategory}
         />
       </View>
 
       {/* Cost list */}
-      {loading ? (
+      {state.ui.loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading costs...</Text>
         </View>
-      ) : filteredCosts.length === 0 ? (
+      ) : state.data.filteredCosts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {searchQuery || selectedCostCategory
+            {state.filters.searchQuery || selectedCostCategory
               ? 'No costs match your filters'
               : 'No cost entries yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={filteredCosts}
+          data={state.data.filteredCosts}
           renderItem={({ item }) => (
             <CostCard
               cost={item}
@@ -147,49 +320,49 @@ const CostTrackingScreen = () => {
         style={styles.fab}
         icon="plus"
         onPress={() => {
-          resetForm();
-          setShowCreateDialog(true);
+          dispatch(costTrackingActions.resetForm());
+          dispatch(costTrackingActions.openCreateDialog());
         }}
         label="Add Cost"
       />
 
       {/* Create Dialog */}
       <CostFormDialog
-        visible={showCreateDialog}
-        onDismiss={() => setShowCreateDialog(false)}
+        visible={state.ui.showCreateDialog}
+        onDismiss={() => dispatch(costTrackingActions.closeDialogs())}
         onSave={handleCreateCost}
         title="Create Cost Entry"
-        formCategory={formCategory}
-        setFormCategory={setFormCategory}
-        formAmount={formAmount}
-        setFormAmount={setFormAmount}
-        formDescription={formDescription}
-        setFormDescription={setFormDescription}
-        formPoId={formPoId}
-        setFormPoId={setFormPoId}
-        formCostDate={formCostDate}
-        showDatePicker={showDatePicker}
-        setShowDatePicker={setShowDatePicker}
+        formCategory={state.form.category}
+        setFormCategory={(value) => dispatch(costTrackingActions.setFormField('category', value))}
+        formAmount={state.form.amount}
+        setFormAmount={(value) => dispatch(costTrackingActions.setFormField('amount', value))}
+        formDescription={state.form.description}
+        setFormDescription={(value) => dispatch(costTrackingActions.setFormField('description', value))}
+        formPoId={state.form.poId}
+        setFormPoId={(value) => dispatch(costTrackingActions.setFormField('poId', value))}
+        formCostDate={state.form.costDate}
+        showDatePicker={state.ui.showDatePicker}
+        setShowDatePicker={(show) => dispatch(costTrackingActions.setShowDatePicker(show))}
         handleDateChange={handleDateChange}
       />
 
       {/* Edit Dialog */}
       <CostFormDialog
-        visible={showEditDialog}
-        onDismiss={() => setShowCreateDialog(false)}
+        visible={state.ui.showEditDialog}
+        onDismiss={() => dispatch(costTrackingActions.closeDialogs())}
         onSave={handleEditCost}
         title="Edit Cost Entry"
-        formCategory={formCategory}
-        setFormCategory={setFormCategory}
-        formAmount={formAmount}
-        setFormAmount={setFormAmount}
-        formDescription={formDescription}
-        setFormDescription={setFormDescription}
-        formPoId={formPoId}
-        setFormPoId={setFormPoId}
-        formCostDate={formCostDate}
-        showDatePicker={showDatePicker}
-        setShowDatePicker={setShowDatePicker}
+        formCategory={state.form.category}
+        setFormCategory={(value) => dispatch(costTrackingActions.setFormField('category', value))}
+        formAmount={state.form.amount}
+        setFormAmount={(value) => dispatch(costTrackingActions.setFormField('amount', value))}
+        formDescription={state.form.description}
+        setFormDescription={(value) => dispatch(costTrackingActions.setFormField('description', value))}
+        formPoId={state.form.poId}
+        setFormPoId={(value) => dispatch(costTrackingActions.setFormField('poId', value))}
+        formCostDate={state.form.costDate}
+        showDatePicker={state.ui.showDatePicker}
+        setShowDatePicker={(show) => dispatch(costTrackingActions.setShowDatePicker(show))}
         handleDateChange={handleDateChange}
       />
     </View>
