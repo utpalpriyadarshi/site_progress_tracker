@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB } from 'react-native-paper';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { isInvoiceOverdue } from './invoice-management/utils';
+import { invoiceManagementReducer, initialInvoiceManagementState } from './state/invoice/invoiceManagementReducer';
+import { invoiceManagementActions } from './state/invoice/invoiceManagementActions';
+import type { Invoice } from './state/invoice/invoiceManagementReducer';
 import {
-  useInvoiceData,
-  useInvoiceFilters,
-  Invoice,
   InvoiceFormData,
 } from './invoice-management/hooks';
 import {
@@ -19,6 +23,7 @@ import {
 
 /**
  * InvoiceManagementScreen (v2.11 Phase 5 - Sprint 6) - REFACTORED
+ * Phase 2 Task 2.1 - State Management Refactor
  *
  * Commercial Manager manages project invoices and payment tracking.
  *
@@ -36,56 +41,222 @@ import {
  * - Reduced from 868 → ~220 lines (74% reduction)
  * - Extracted 5 components, 2 hooks, 2 utils
  * - Improved maintainability and reusability
+ *
+ * Phase 2 Refactor: 2026-01-05
+ * - Consolidated hook state into useReducer
+ * - Centralized state management
  */
 
 const InvoiceManagementScreen = () => {
   const { projectId, projectName, selectedInvoiceStatus, setSelectedInvoiceStatus, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const [state, dispatch] = useReducer(invoiceManagementReducer, initialInvoiceManagementState);
 
-  // Dialog state
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  // Load invoices from database
+  const loadInvoices = useCallback(async () => {
+    if (!projectId) {
+      dispatch(invoiceManagementActions.setLoading(false));
+      return;
+    }
 
-  // Data hooks
-  const {
-    invoices,
-    loading,
-    loadInvoices,
-    createInvoice,
-    updateInvoice,
-    deleteInvoice,
-    markInvoiceAsPaid,
-  } = useInvoiceData(projectId, user?.userId || '');
+    try {
+      dispatch(invoiceManagementActions.setLoading(true));
+      logger.debug('[Invoice] Loading invoices for project:', projectId);
 
-  const { searchQuery, setSearchQuery, filteredInvoices, summary } = useInvoiceFilters(
-    invoices,
-    selectedInvoiceStatus
-  );
+      const invoicesCollection = database.collections.get('invoices');
+      const invoicesData = await invoicesCollection
+        .query(Q.where('project_id', projectId), Q.sortBy('invoice_date', Q.desc))
+        .fetch();
+
+      const invoicesWithVendors = invoicesData.map((invoice: any) => {
+        const isOverdue = isInvoiceOverdue(invoice.invoiceDate, invoice.paymentStatus);
+
+        return {
+          id: invoice.id,
+          projectId: invoice.projectId,
+          poId: invoice.poId,
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceDate: invoice.invoiceDate,
+          amount: invoice.amount,
+          paymentStatus: isOverdue ? 'overdue' : invoice.paymentStatus,
+          paymentDate: invoice.paymentDate,
+          vendorId: invoice.vendorId,
+          vendorName: invoice.vendorName || 'Unknown Vendor',
+          createdBy: invoice.createdBy,
+          createdAt: invoice.createdAt,
+        };
+      });
+
+      logger.debug('[Invoice] Loaded invoices:', invoicesWithVendors.length);
+      dispatch(invoiceManagementActions.setInvoices(invoicesWithVendors));
+    } catch (error) {
+      logger.error('[Invoice] Error loading invoices:', error);
+      Alert.alert('Error', 'Failed to load invoices');
+    } finally {
+      dispatch(invoiceManagementActions.setLoading(false));
+    }
+  }, [projectId]);
+
+  // Apply filters and calculate summary
+  useEffect(() => {
+    let filtered = [...state.data.invoices];
+
+    // Search filter
+    if (state.filters.searchQuery) {
+      const query = state.filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (invoice) =>
+          invoice.invoiceNumber.toLowerCase().includes(query) ||
+          invoice.poId.toLowerCase().includes(query) ||
+          (invoice.vendorName && invoice.vendorName.toLowerCase().includes(query))
+      );
+    }
+
+    // Status filter
+    if (selectedInvoiceStatus) {
+      filtered = filtered.filter((invoice) => invoice.paymentStatus === selectedInvoiceStatus);
+    }
+
+    dispatch(invoiceManagementActions.setFilteredInvoices(filtered));
+
+    // Calculate summary
+    const totalInvoices = state.data.invoices.length;
+    const totalAmount = state.data.invoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const paidAmount = state.data.invoices
+      .filter((inv) => inv.paymentStatus === 'paid')
+      .reduce((sum, inv) => sum + inv.amount, 0);
+    const pendingAmount = totalAmount - paidAmount;
+    const overdueCount = state.data.invoices.filter((inv) => inv.paymentStatus === 'overdue').length;
+
+    dispatch(invoiceManagementActions.setSummary({
+      totalInvoices,
+      totalAmount,
+      paidAmount,
+      pendingAmount,
+      overdueCount,
+    }));
+  }, [state.data.invoices, state.filters.searchQuery, selectedInvoiceStatus]);
 
   // Load invoices on mount and refresh
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices, refreshTrigger]);
 
+  const createInvoice = async (formData: InvoiceFormData): Promise<boolean> => {
+    try {
+      const invoicesCollection = database.collections.get('invoices');
+      const amount = parseFloat(formData.amount);
+
+      await database.write(async () => {
+        await invoicesCollection.create((record: any) => {
+          record.projectId = projectId;
+          record.poId = formData.poId.trim();
+          record.invoiceNumber = formData.invoiceNumber.trim();
+          record.invoiceDate = formData.invoiceDate.getTime();
+          record.amount = amount;
+          record.paymentStatus = formData.paymentStatus;
+          record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;
+          record.vendorId = '';
+          record.vendorName = formData.vendorName.trim();
+          record.createdBy = user?.userId || '';
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+      });
+
+      Alert.alert('Success', 'Invoice created successfully');
+      loadInvoices();
+      return true;
+    } catch (error) {
+      logger.error('[Invoice] Error creating invoice:', error);
+      Alert.alert('Error', 'Failed to create invoice');
+      return false;
+    }
+  };
+
+  const updateInvoice = async (invoiceId: string, formData: InvoiceFormData): Promise<boolean> => {
+    try {
+      const invoicesCollection = database.collections.get('invoices');
+      const invoiceRecord = await invoicesCollection.find(invoiceId);
+      const amount = parseFloat(formData.amount);
+
+      await database.write(async () => {
+        await invoiceRecord.update((record: any) => {
+          record.poId = formData.poId.trim();
+          record.invoiceNumber = formData.invoiceNumber.trim();
+          record.invoiceDate = formData.invoiceDate.getTime();
+          record.amount = amount;
+          record.paymentStatus = formData.paymentStatus;
+          record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;
+          record.vendorName = formData.vendorName.trim();
+          record.appSyncStatus = 'pending';
+        });
+      });
+
+      Alert.alert('Success', 'Invoice updated successfully');
+      loadInvoices();
+      return true;
+    } catch (error) {
+      logger.error('[Invoice] Error updating invoice:', error);
+      Alert.alert('Error', 'Failed to update invoice');
+      return false;
+    }
+  };
+
+  const deleteInvoice = async (invoice: Invoice): Promise<void> => {
+    try {
+      const invoicesCollection = database.collections.get('invoices');
+      const invoiceRecord = await invoicesCollection.find(invoice.id);
+
+      await database.write(async () => {
+        await invoiceRecord.markAsDeleted();
+      });
+
+      Alert.alert('Success', 'Invoice deleted successfully');
+      loadInvoices();
+    } catch (error) {
+      logger.error('[Invoice] Error deleting invoice:', error);
+      Alert.alert('Error', 'Failed to delete invoice');
+    }
+  };
+
+  const markInvoiceAsPaid = async (invoice: Invoice): Promise<void> => {
+    try {
+      const invoicesCollection = database.collections.get('invoices');
+      const invoiceRecord = await invoicesCollection.find(invoice.id);
+
+      await database.write(async () => {
+        await invoiceRecord.update((record: any) => {
+          record.paymentStatus = 'paid';
+          record.paymentDate = Date.now();
+          record.appSyncStatus = 'pending';
+        });
+      });
+
+      Alert.alert('Success', 'Invoice marked as paid');
+      loadInvoices();
+    } catch (error) {
+      logger.error('[Invoice] Error marking invoice as paid:', error);
+      Alert.alert('Error', 'Failed to mark invoice as paid');
+    }
+  };
+
   const handleCreate = async (formData: InvoiceFormData): Promise<boolean> => {
     return await createInvoice(formData);
   };
 
   const handleEdit = async (formData: InvoiceFormData): Promise<boolean> => {
-    if (!editingInvoice) return false;
-    return await updateInvoice(editingInvoice.id, formData);
+    if (!state.data.editingInvoice) return false;
+    return await updateInvoice(state.data.editingInvoice.id, formData);
   };
 
   const openEditDialog = (invoice: Invoice) => {
-    setEditingInvoice(invoice);
-    setShowEditDialog(true);
+    dispatch(invoiceManagementActions.openEditDialog(invoice));
   };
 
   const closeEditDialog = () => {
-    setShowEditDialog(false);
-    setEditingInvoice(null);
+    dispatch(invoiceManagementActions.closeDialogs());
   };
 
   if (!projectId) {
@@ -102,38 +273,38 @@ const InvoiceManagementScreen = () => {
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
         <InvoiceSummaryCards
-          totalInvoices={summary.totalInvoices}
-          totalAmount={summary.totalAmount}
-          pendingAmount={summary.pendingAmount}
-          overdueCount={summary.overdueCount}
+          totalInvoices={state.data.summary.totalInvoices}
+          totalAmount={state.data.summary.totalAmount}
+          pendingAmount={state.data.summary.pendingAmount}
+          overdueCount={state.data.summary.overdueCount}
         />
       </View>
 
       {/* Search and filter */}
       <FiltersBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        searchQuery={state.filters.searchQuery}
+        onSearchChange={(query) => dispatch(invoiceManagementActions.setSearchQuery(query))}
         selectedStatus={selectedInvoiceStatus}
         onStatusChange={setSelectedInvoiceStatus}
       />
 
       {/* Invoice list */}
-      {loading ? (
+      {state.ui.loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading invoices...</Text>
         </View>
-      ) : filteredInvoices.length === 0 ? (
+      ) : state.data.filteredInvoices.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {searchQuery || selectedInvoiceStatus
+            {state.filters.searchQuery || selectedInvoiceStatus
               ? 'No invoices match your filters'
               : 'No invoices yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={filteredInvoices}
+          data={state.data.filteredInvoices}
           renderItem={({ item }) => (
             <InvoiceCard
               invoice={item}
@@ -151,24 +322,24 @@ const InvoiceManagementScreen = () => {
       <FAB
         style={styles.fab}
         icon="plus"
-        onPress={() => setShowCreateDialog(true)}
+        onPress={() => dispatch(invoiceManagementActions.openCreateDialog())}
         label="Add Invoice"
       />
 
       {/* Create Dialog */}
       <InvoiceFormDialog
-        visible={showCreateDialog}
-        onDismiss={() => setShowCreateDialog(false)}
+        visible={state.ui.showCreateDialog}
+        onDismiss={() => dispatch(invoiceManagementActions.closeDialogs())}
         onSubmit={handleCreate}
         title="Create Invoice"
       />
 
       {/* Edit Dialog */}
       <InvoiceFormDialog
-        visible={showEditDialog}
+        visible={state.ui.showEditDialog}
         onDismiss={closeEditDialog}
         onSubmit={handleEdit}
-        editingInvoice={editingInvoice}
+        editingInvoice={state.data.editingInvoice}
         title="Edit Invoice"
       />
     </View>

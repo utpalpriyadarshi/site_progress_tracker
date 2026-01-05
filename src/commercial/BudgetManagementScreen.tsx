@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,13 @@ import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { budgetManagementReducer, initialBudgetManagementState } from './state/budget/budgetManagementReducer';
+import { budgetManagementActions } from './state/budget/budgetManagementActions';
+import type { Budget } from './state/budget/budgetManagementReducer';
 
 /**
  * BudgetManagementScreen (v2.11 Phase 5 - Sprint 4)
+ * Phase 2 Task 2.1 - State Management Refactor
  *
  * Commercial Manager manages project-level budgets.
  *
@@ -30,17 +34,6 @@ import ErrorBoundary from '../components/common/ErrorBoundary';
  * - Budget variance display
  */
 
-interface Budget {
-  id: string;
-  projectId: string;
-  category: string;
-  allocatedAmount: number;
-  description: string;
-  createdBy: string;
-  createdAt: number;
-  actualSpent?: number; // Calculated from costs table
-}
-
 const BUDGET_CATEGORIES = [
   { value: 'labor', label: 'Labor' },
   { value: 'material', label: 'Materials' },
@@ -51,28 +44,16 @@ const BUDGET_CATEGORIES = [
 const BudgetManagementScreen = () => {
   const { projectId, projectName, selectedBudgetCategory, setSelectedBudgetCategory, refreshTrigger } = useCommercial();
   const { user } = useAuth();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [filteredBudgets, setFilteredBudgets] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
-
-  // Form state
-  const [formCategory, setFormCategory] = useState('labor');
-  const [formAmount, setFormAmount] = useState('');
-  const [formDescription, setFormDescription] = useState('');
+  const [state, dispatch] = useReducer(budgetManagementReducer, initialBudgetManagementState);
 
   const loadBudgets = useCallback(async () => {
     if (!projectId) {
-      setLoading(false);
+      dispatch(budgetManagementActions.setLoading(false));
       return;
     }
 
     try {
-      setLoading(true);
+      dispatch(budgetManagementActions.setLoading(true));
       logger.debug('[Budget] Loading budgets for project:', projectId);
 
       const budgetsCollection = database.collections.get('budgets');
@@ -105,21 +86,21 @@ const BudgetManagementScreen = () => {
       });
 
       logger.debug('[Budget] Loaded budgets:', budgetsWithActuals.length);
-      setBudgets(budgetsWithActuals);
+      dispatch(budgetManagementActions.setBudgets(budgetsWithActuals));
     } catch (error) {
       logger.error('[Budget] Error loading budgets:', error);
       Alert.alert('Error', 'Failed to load budgets');
     } finally {
-      setLoading(false);
+      dispatch(budgetManagementActions.setLoading(false));
     }
   }, [projectId]);
 
   const applyFilters = useCallback(() => {
-    let filtered = [...budgets];
+    let filtered = [...state.data.budgets];
 
     // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (state.filters.searchQuery) {
+      const query = state.filters.searchQuery.toLowerCase();
       filtered = filtered.filter(
         (budget) =>
           budget.category.toLowerCase().includes(query) ||
@@ -132,8 +113,8 @@ const BudgetManagementScreen = () => {
       filtered = filtered.filter((budget) => budget.category === selectedBudgetCategory);
     }
 
-    setFilteredBudgets(filtered);
-  }, [budgets, searchQuery, selectedBudgetCategory]);
+    dispatch(budgetManagementActions.setFilteredBudgets(filtered));
+  }, [state.data.budgets, state.filters.searchQuery, selectedBudgetCategory]);
 
   useEffect(() => {
     loadBudgets();
@@ -144,12 +125,12 @@ const BudgetManagementScreen = () => {
   }, [applyFilters]);
 
   const handleCreateBudget = async () => {
-    if (!formDescription.trim()) {
+    if (!state.form.description.trim()) {
       Alert.alert('Validation Error', 'Please enter a description');
       return;
     }
 
-    const amount = parseFloat(formAmount);
+    const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
       Alert.alert('Validation Error', 'Please enter a valid amount');
       return;
@@ -161,9 +142,9 @@ const BudgetManagementScreen = () => {
       await database.write(async () => {
         await budgetsCollection.create((record: any) => {
           record.projectId = projectId;
-          record.category = formCategory;
+          record.category = state.form.category;
           record.allocatedAmount = amount;
-          record.description = formDescription.trim();
+          record.description = state.form.description.trim();
           record.createdBy = user?.userId || '';
           record.appSyncStatus = 'pending';
           record.version = 1;
@@ -171,8 +152,8 @@ const BudgetManagementScreen = () => {
       });
 
       Alert.alert('Success', 'Budget entry created successfully');
-      setShowCreateDialog(false);
-      resetForm();
+      dispatch(budgetManagementActions.closeDialogs());
+      dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
       logger.error('[Budget] Error creating budget:', error);
@@ -181,12 +162,12 @@ const BudgetManagementScreen = () => {
   };
 
   const handleEditBudget = async () => {
-    if (!editingBudget || !formDescription.trim()) {
+    if (!state.data.editingBudget || !state.form.description.trim()) {
       Alert.alert('Validation Error', 'Please enter a description');
       return;
     }
 
-    const amount = parseFloat(formAmount);
+    const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
       Alert.alert('Validation Error', 'Please enter a valid amount');
       return;
@@ -194,21 +175,20 @@ const BudgetManagementScreen = () => {
 
     try {
       const budgetsCollection = database.collections.get('budgets');
-      const budgetRecord = await budgetsCollection.find(editingBudget.id);
+      const budgetRecord = await budgetsCollection.find(state.data.editingBudget.id);
 
       await database.write(async () => {
         await budgetRecord.update((record: any) => {
-          record.category = formCategory;
+          record.category = state.form.category;
           record.allocatedAmount = amount;
-          record.description = formDescription.trim();
+          record.description = state.form.description.trim();
           record.appSyncStatus = 'pending';
         });
       });
 
       Alert.alert('Success', 'Budget entry updated successfully');
-      setShowEditDialog(false);
-      setEditingBudget(null);
-      resetForm();
+      dispatch(budgetManagementActions.closeDialogs());
+      dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
       logger.error('[Budget] Error updating budget:', error);
@@ -247,17 +227,7 @@ const BudgetManagementScreen = () => {
   };
 
   const openEditDialog = (budget: Budget) => {
-    setEditingBudget(budget);
-    setFormCategory(budget.category);
-    setFormAmount(budget.allocatedAmount.toString());
-    setFormDescription(budget.description);
-    setShowEditDialog(true);
-  };
-
-  const resetForm = () => {
-    setFormCategory('labor');
-    setFormAmount('');
-    setFormDescription('');
+    dispatch(budgetManagementActions.openEditDialog(budget));
   };
 
   const getCategoryLabel = (category: string) => {
@@ -362,8 +332,8 @@ const BudgetManagementScreen = () => {
         {BUDGET_CATEGORIES.map((cat) => (
           <Chip
             key={cat.value}
-            selected={formCategory === cat.value}
-            onPress={() => setFormCategory(cat.value)}
+            selected={state.form.category === cat.value}
+            onPress={() => dispatch(budgetManagementActions.setFormField('category', cat.value))}
             style={styles.categoryButton}
             selectedColor="#007AFF"
           >
@@ -374,8 +344,8 @@ const BudgetManagementScreen = () => {
 
       <TextInput
         label="Allocated Amount *"
-        value={formAmount}
-        onChangeText={setFormAmount}
+        value={state.form.amount}
+        onChangeText={(value) => dispatch(budgetManagementActions.setFormField('amount', value))}
         keyboardType="numeric"
         mode="outlined"
         style={styles.input}
@@ -384,8 +354,8 @@ const BudgetManagementScreen = () => {
 
       <TextInput
         label="Description *"
-        value={formDescription}
-        onChangeText={setFormDescription}
+        value={state.form.description}
+        onChangeText={(value) => dispatch(budgetManagementActions.setFormField('description', value))}
         mode="outlined"
         multiline
         numberOfLines={3}
@@ -394,8 +364,8 @@ const BudgetManagementScreen = () => {
     </ScrollView>
   );
 
-  const totalAllocated = budgets.reduce((sum, b) => sum + b.allocatedAmount, 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + (b.actualSpent || 0), 0);
+  const totalAllocated = state.data.budgets.reduce((sum, b) => sum + b.allocatedAmount, 0);
+  const totalSpent = state.data.budgets.reduce((sum, b) => sum + (b.actualSpent || 0), 0);
   const totalVariance = totalAllocated - totalSpent;
 
   if (!projectId) {
@@ -433,17 +403,17 @@ const BudgetManagementScreen = () => {
       <View style={styles.controls}>
         <Searchbar
           placeholder="Search budgets..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
+          onChangeText={(query) => dispatch(budgetManagementActions.setSearchQuery(query))}
+          value={state.filters.searchQuery}
           style={styles.searchbar}
         />
         <Menu
-          visible={showFilterMenu}
-          onDismiss={() => setShowFilterMenu(false)}
+          visible={state.ui.showFilterMenu}
+          onDismiss={() => dispatch(budgetManagementActions.toggleFilterMenu())}
           anchor={
             <Button
               mode="outlined"
-              onPress={() => setShowFilterMenu(true)}
+              onPress={() => dispatch(budgetManagementActions.toggleFilterMenu())}
               style={styles.filterButton}
             >
               {selectedBudgetCategory ? getCategoryLabel(selectedBudgetCategory) : 'All Categories'}
@@ -453,7 +423,7 @@ const BudgetManagementScreen = () => {
           <Menu.Item
             onPress={() => {
               setSelectedBudgetCategory(null);
-              setShowFilterMenu(false);
+              dispatch(budgetManagementActions.toggleFilterMenu());
             }}
             title="All Categories"
           />
@@ -462,7 +432,7 @@ const BudgetManagementScreen = () => {
               key={cat.value}
               onPress={() => {
                 setSelectedBudgetCategory(cat.value);
-                setShowFilterMenu(false);
+                dispatch(budgetManagementActions.toggleFilterMenu());
               }}
               title={cat.label}
             />
@@ -471,22 +441,22 @@ const BudgetManagementScreen = () => {
       </View>
 
       {/* Budget list */}
-      {loading ? (
+      {state.ui.loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading budgets...</Text>
         </View>
-      ) : filteredBudgets.length === 0 ? (
+      ) : state.data.filteredBudgets.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {searchQuery || selectedBudgetCategory
+            {state.filters.searchQuery || selectedBudgetCategory
               ? 'No budgets match your filters'
               : 'No budget entries yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={filteredBudgets}
+          data={state.data.filteredBudgets}
           renderItem={renderBudgetCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -498,19 +468,19 @@ const BudgetManagementScreen = () => {
         style={styles.fab}
         icon="plus"
         onPress={() => {
-          resetForm();
-          setShowCreateDialog(true);
+          dispatch(budgetManagementActions.resetForm());
+          dispatch(budgetManagementActions.openCreateDialog());
         }}
         label="Add Budget"
       />
 
       {/* Create Dialog */}
       <Portal>
-        <Dialog visible={showCreateDialog} onDismiss={() => setShowCreateDialog(false)}>
+        <Dialog visible={state.ui.showCreateDialog} onDismiss={() => dispatch(budgetManagementActions.closeDialogs())}>
           <Dialog.Title>Create Budget Entry</Dialog.Title>
           <Dialog.ScrollArea>{renderBudgetForm()}</Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setShowCreateDialog(false)}>Cancel</Button>
+            <Button onPress={() => dispatch(budgetManagementActions.closeDialogs())}>Cancel</Button>
             <Button onPress={handleCreateBudget}>Create</Button>
           </Dialog.Actions>
         </Dialog>
@@ -518,11 +488,11 @@ const BudgetManagementScreen = () => {
 
       {/* Edit Dialog */}
       <Portal>
-        <Dialog visible={showEditDialog} onDismiss={() => setShowEditDialog(false)}>
+        <Dialog visible={state.ui.showEditDialog} onDismiss={() => dispatch(budgetManagementActions.closeDialogs())}>
           <Dialog.Title>Edit Budget Entry</Dialog.Title>
           <Dialog.ScrollArea>{renderBudgetForm()}</Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setShowEditDialog(false)}>Cancel</Button>
+            <Button onPress={() => dispatch(budgetManagementActions.closeDialogs())}>Cancel</Button>
             <Button onPress={handleEditBudget}>Save</Button>
           </Dialog.Actions>
         </Dialog>
