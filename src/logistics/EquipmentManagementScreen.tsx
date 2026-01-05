@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import { logger } from '../services/LoggingService';
 
 import {
@@ -11,15 +11,8 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
-import { useLogistics } from './context/LogisticsContext';
 import EquipmentManagementService, {
   Equipment,
-  MaintenanceRecord,
-  EquipmentAllocation,
-  OperatorCertification,
-  UtilizationMetrics,
-  MaintenanceSchedule,
-  EquipmentPerformance,
   EquipmentStatus,
 } from '../services/EquipmentManagementService';
 import mockEquipment, {
@@ -28,6 +21,11 @@ import mockEquipment, {
   mockOperatorCertifications,
 } from '../data/mockEquipment';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import {
+  equipmentManagementReducer,
+  initialEquipmentManagementState,
+  StatusFilter,
+} from './equipment/state';
 
 /**
  * EquipmentManagementScreen (Week 3)
@@ -41,74 +39,62 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
  * - Downtime analysis
  */
 
-type ViewMode = 'overview' | 'maintenance' | 'allocation' | 'performance';
-type StatusFilter = 'all' | EquipmentStatus;
-
 const EquipmentManagementScreen = () => {
-  const { selectedProjectId, projects } = useLogistics();
+  // Centralized state management with useReducer
+  const [state, dispatch] = useReducer(
+    equipmentManagementReducer,
+    initialEquipmentManagementState
+  );
 
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Equipment data
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [allocations, setAllocations] = useState<EquipmentAllocation[]>([]);
-  const [certifications, setCertifications] = useState<OperatorCertification[]>([]);
-
-  // Computed data
-  const [maintenanceSchedule, setMaintenanceSchedule] = useState<MaintenanceSchedule[]>([]);
-  const [certificationAlerts, setCertificationAlerts] = useState<Array<{ operatorId: string; operatorName: string; daysUntilExpiry: number; status: string }>>([]);
-
-  // Modal state
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-
-  // Load data
-  useEffect(() => {
-    loadEquipmentData();
-  }, []);
-
-  const loadEquipmentData = () => {
-    setLoading(true);
+  // Load equipment data
+  const loadEquipmentData = useCallback(() => {
+    dispatch({ type: 'START_LOADING' });
     try {
-      // Load mock data
-      setEquipment(mockEquipment);
-      setMaintenanceRecords(mockMaintenanceRecords);
-      setAllocations(mockAllocations);
-      setCertifications(mockOperatorCertifications);
-
       // Generate maintenance schedule
       const schedule = EquipmentManagementService.generateMaintenanceSchedule(
         mockEquipment,
         mockMaintenanceRecords
       );
-      setMaintenanceSchedule(schedule);
 
       // Check certifications
       const alerts = EquipmentManagementService.checkOperatorCertifications(
         mockOperatorCertifications
       );
-      setCertificationAlerts(alerts);
+
+      // Load all data in a single dispatch
+      dispatch({
+        type: 'LOAD_ALL_EQUIPMENT_DATA',
+        payload: {
+          equipment: mockEquipment,
+          maintenanceRecords: mockMaintenanceRecords,
+          allocations: mockAllocations,
+          certifications: mockOperatorCertifications,
+          maintenanceSchedule: schedule,
+          certificationAlerts: alerts,
+        },
+      });
     } catch (error) {
       logger.error('Error loading equipment data:', error);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'STOP_LOADING' });
     }
-  };
+  }, []);
+
+  // Load data on mount
+  useEffect(() => {
+    loadEquipmentData();
+  }, [loadEquipmentData]);
 
   // Filter equipment
   const filteredEquipment = React.useMemo(() => {
-    let filtered = equipment;
+    let filtered = state.data.equipment;
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(eq => eq.status === statusFilter);
+    if (state.ui.statusFilter !== 'all') {
+      filtered = filtered.filter(eq => eq.status === state.ui.statusFilter);
     }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (state.ui.searchQuery.trim()) {
+      const query = state.ui.searchQuery.toLowerCase();
       filtered = filtered.filter(eq =>
         eq.name.toLowerCase().includes(query) ||
         eq.model.toLowerCase().includes(query) ||
@@ -117,19 +103,19 @@ const EquipmentManagementScreen = () => {
     }
 
     return filtered;
-  }, [equipment, statusFilter, searchQuery]);
+  }, [state.data.equipment, state.ui.statusFilter, state.ui.searchQuery]);
 
   // Calculate statistics
   const stats = React.useMemo(() => {
-    const total = equipment.length;
-    const available = equipment.filter(e => e.status === 'available').length;
-    const inUse = equipment.filter(e => e.status === 'in_use').length;
-    const maintenance = equipment.filter(e => e.status === 'maintenance' || e.status === 'repair').length;
-    const overdueMaintenance = maintenanceSchedule.filter(m => m.isOverdue).length;
-    const certExpiring = certificationAlerts.length;
+    const total = state.data.equipment.length;
+    const available = state.data.equipment.filter(e => e.status === 'available').length;
+    const inUse = state.data.equipment.filter(e => e.status === 'in_use').length;
+    const maintenance = state.data.equipment.filter(e => e.status === 'maintenance' || e.status === 'repair').length;
+    const overdueMaintenance = state.data.maintenanceSchedule.filter(m => m.isOverdue).length;
+    const certExpiring = state.data.certificationAlerts.length;
 
     return { total, available, inUse, maintenance, overdueMaintenance, certExpiring };
-  }, [equipment, maintenanceSchedule, certificationAlerts]);
+  }, [state.data.equipment, state.data.maintenanceSchedule, state.data.certificationAlerts]);
 
   const getStatusColor = (status: EquipmentStatus): string => {
     switch (status) {
@@ -151,6 +137,18 @@ const EquipmentManagementScreen = () => {
       case 'retired': return '#F5F5F5';
       default: return '#F5F5F5';
     }
+  };
+
+  const getConditionColor = (condition: number): string => {
+    if (condition > 75) return '#4CAF50';
+    if (condition > 50) return '#FF9800';
+    return '#F44336';
+  };
+
+  const getHealthScoreColor = (score: number): string => {
+    if (score > 75) return '#4CAF50';
+    if (score > 50) return '#FF9800';
+    return '#F44336';
   };
 
   const renderStatCards = () => {
@@ -197,19 +195,19 @@ const EquipmentManagementScreen = () => {
     return (
       <View style={styles.tabsContainer}>
         <TouchableOpacity
-          style={[styles.tab, viewMode === 'overview' && styles.tabActive]}
-          onPress={() => setViewMode('overview')}
+          style={[styles.tab, state.ui.viewMode === 'overview' && styles.tabActive]}
+          onPress={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'overview' })}
         >
-          <Text style={[styles.tabText, viewMode === 'overview' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, state.ui.viewMode === 'overview' && styles.tabTextActive]}>
             Overview
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, viewMode === 'maintenance' && styles.tabActive]}
-          onPress={() => setViewMode('maintenance')}
+          style={[styles.tab, state.ui.viewMode === 'maintenance' && styles.tabActive]}
+          onPress={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'maintenance' })}
         >
-          <Text style={[styles.tabText, viewMode === 'maintenance' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, state.ui.viewMode === 'maintenance' && styles.tabTextActive]}>
             Maintenance
           </Text>
           {stats.overdueMaintenance > 0 && (
@@ -220,19 +218,19 @@ const EquipmentManagementScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, viewMode === 'allocation' && styles.tabActive]}
-          onPress={() => setViewMode('allocation')}
+          style={[styles.tab, state.ui.viewMode === 'allocation' && styles.tabActive]}
+          onPress={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'allocation' })}
         >
-          <Text style={[styles.tabText, viewMode === 'allocation' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, state.ui.viewMode === 'allocation' && styles.tabTextActive]}>
             Allocation
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, viewMode === 'performance' && styles.tabActive]}
-          onPress={() => setViewMode('performance')}
+          style={[styles.tab, state.ui.viewMode === 'performance' && styles.tabActive]}
+          onPress={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'performance' })}
         >
-          <Text style={[styles.tabText, viewMode === 'performance' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, state.ui.viewMode === 'performance' && styles.tabTextActive]}>
             Performance
           </Text>
         </TouchableOpacity>
@@ -241,7 +239,7 @@ const EquipmentManagementScreen = () => {
   };
 
   const renderStatusFilters = () => {
-    if (viewMode !== 'overview') return null;
+    if (state.ui.viewMode !== 'overview') return null;
 
     const statuses: StatusFilter[] = ['all', 'available', 'in_use', 'maintenance', 'repair'];
 
@@ -253,10 +251,10 @@ const EquipmentManagementScreen = () => {
               key={status}
               style={[
                 styles.filterChip,
-                statusFilter === status && styles.filterChipActive,
+                state.ui.statusFilter === status && styles.filterChipActive,
                 status !== 'all' && { borderColor: getStatusColor(status as EquipmentStatus) },
               ]}
-              onPress={() => setStatusFilter(status)}
+              onPress={() => dispatch({ type: 'SET_STATUS_FILTER', payload: status })}
             >
               {status !== 'all' && (
                 <View style={[styles.filterDot, { backgroundColor: getStatusColor(status as EquipmentStatus) }]} />
@@ -264,7 +262,7 @@ const EquipmentManagementScreen = () => {
               <Text
                 style={[
                   styles.filterChipText,
-                  statusFilter === status && styles.filterChipTextActive,
+                  state.ui.statusFilter === status && styles.filterChipTextActive,
                 ]}
               >
                 {status === 'all' ? 'All' : status.replace('_', ' ').toUpperCase()}
@@ -283,8 +281,8 @@ const EquipmentManagementScreen = () => {
           style={styles.searchInput}
           placeholder="Search equipment..."
           placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          value={state.ui.searchQuery}
+          onChangeText={(text) => dispatch({ type: 'SET_SEARCH_QUERY', payload: text })}
         />
       </View>
     );
@@ -293,8 +291,8 @@ const EquipmentManagementScreen = () => {
   const renderEquipmentCard = (eq: Equipment) => {
     const utilizationMetrics = EquipmentManagementService.calculateUtilizationMetrics(
       eq,
-      allocations.filter(a => a.equipmentId === eq.id),
-      maintenanceRecords.filter(m => m.equipmentId === eq.id),
+      state.data.allocations.filter(a => a.equipmentId === eq.id),
+      state.data.maintenanceRecords.filter(m => m.equipmentId === eq.id),
       30
     );
 
@@ -303,8 +301,8 @@ const EquipmentManagementScreen = () => {
         key={eq.id}
         style={styles.equipmentCard}
         onPress={() => {
-          setSelectedEquipment(eq);
-          setShowDetailsModal(true);
+          dispatch({ type: 'SELECT_EQUIPMENT', payload: eq });
+          dispatch({ type: 'SHOW_DETAILS_MODAL' });
         }}
       >
         <View style={[styles.cardBorder, { backgroundColor: getStatusColor(eq.status) }]} />
@@ -330,7 +328,7 @@ const EquipmentManagementScreen = () => {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Condition:</Text>
               <View style={styles.conditionBar}>
-                <View style={[styles.conditionFill, { width: `${eq.condition}%`, backgroundColor: eq.condition > 75 ? '#4CAF50' : eq.condition > 50 ? '#FF9800' : '#F44336' }]} />
+                <View style={[styles.conditionFill, { width: `${eq.condition}%`, backgroundColor: getConditionColor(eq.condition) }]} />
               </View>
               <Text style={styles.detailValue}>{eq.condition}%</Text>
             </View>
@@ -442,11 +440,11 @@ const EquipmentManagementScreen = () => {
   const renderPerformanceMetrics = () => {
     return (
       <ScrollView style={styles.performanceContainer}>
-        {equipment.slice(0, 5).map(eq => {
+        {state.data.equipment.slice(0, 5).map(eq => {
           const performance = EquipmentManagementService.calculatePerformanceMetrics(
             eq,
-            maintenanceRecords.filter(m => m.equipmentId === eq.id),
-            allocations.filter(a => a.equipmentId === eq.id)
+            state.data.maintenanceRecords.filter(m => m.equipmentId === eq.id),
+            state.data.allocations.filter(a => a.equipmentId === eq.id)
           );
 
           return (
@@ -456,7 +454,7 @@ const EquipmentManagementScreen = () => {
               <View style={styles.performanceGrid}>
                 <View style={styles.performanceItem}>
                   <Text style={styles.performanceLabel}>Health Score</Text>
-                  <Text style={[styles.performanceValue, { color: performance.overallHealthScore > 75 ? '#4CAF50' : performance.overallHealthScore > 50 ? '#FF9800' : '#F44336' }]}>
+                  <Text style={[styles.performanceValue, { color: getHealthScoreColor(performance.overallHealthScore) }]}>
                     {performance.overallHealthScore.toFixed(0)}%
                   </Text>
                 </View>
@@ -481,26 +479,26 @@ const EquipmentManagementScreen = () => {
   };
 
   const renderDetailsModal = () => {
-    if (!selectedEquipment) return null;
+    if (!state.modal.selectedEquipment) return null;
 
     const performance = EquipmentManagementService.calculatePerformanceMetrics(
-      selectedEquipment,
-      maintenanceRecords.filter(m => m.equipmentId === selectedEquipment.id),
-      allocations.filter(a => a.equipmentId === selectedEquipment.id)
+      state.modal.selectedEquipment,
+      state.data.maintenanceRecords.filter(m => m.equipmentId === state.modal.selectedEquipment!.id),
+      state.data.allocations.filter(a => a.equipmentId === state.modal.selectedEquipment!.id)
     );
 
     return (
       <Modal
-        visible={showDetailsModal}
+        visible={state.ui.showDetailsModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowDetailsModal(false)}
+        onRequestClose={() => dispatch({ type: 'HIDE_DETAILS_MODAL' })}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selectedEquipment.name}</Text>
-              <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
+              <Text style={styles.modalTitle}>{state.modal.selectedEquipment.name}</Text>
+              <TouchableOpacity onPress={() => dispatch({ type: 'HIDE_DETAILS_MODAL' })}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -508,10 +506,10 @@ const EquipmentManagementScreen = () => {
             <ScrollView style={styles.modalScroll}>
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>General Info</Text>
-                <Text style={styles.modalInfo}>Manufacturer: {selectedEquipment.manufacturer}</Text>
-                <Text style={styles.modalInfo}>Model: {selectedEquipment.model}</Text>
-                <Text style={styles.modalInfo}>Serial: {selectedEquipment.serialNumber}</Text>
-                <Text style={styles.modalInfo}>Purchase Date: {selectedEquipment.purchaseDate.toLocaleDateString()}</Text>
+                <Text style={styles.modalInfo}>Manufacturer: {state.modal.selectedEquipment.manufacturer}</Text>
+                <Text style={styles.modalInfo}>Model: {state.modal.selectedEquipment.model}</Text>
+                <Text style={styles.modalInfo}>Serial: {state.modal.selectedEquipment.serialNumber}</Text>
+                <Text style={styles.modalInfo}>Purchase Date: {state.modal.selectedEquipment.purchaseDate.toLocaleDateString()}</Text>
               </View>
 
               <View style={styles.modalSection}>
@@ -524,9 +522,9 @@ const EquipmentManagementScreen = () => {
 
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Maintenance</Text>
-                <Text style={styles.modalInfo}>Last: {selectedEquipment.lastMaintenanceDate.toLocaleDateString()}</Text>
-                <Text style={styles.modalInfo}>Next: {selectedEquipment.nextMaintenanceDate.toLocaleDateString()}</Text>
-                <Text style={styles.modalInfo}>Total Cost: ₹{(selectedEquipment.totalMaintenanceCost / 1000).toFixed(1)}K</Text>
+                <Text style={styles.modalInfo}>Last: {state.modal.selectedEquipment.lastMaintenanceDate.toLocaleDateString()}</Text>
+                <Text style={styles.modalInfo}>Next: {state.modal.selectedEquipment.nextMaintenanceDate.toLocaleDateString()}</Text>
+                <Text style={styles.modalInfo}>Total Cost: ₹{(state.modal.selectedEquipment.totalMaintenanceCost / 1000).toFixed(1)}K</Text>
               </View>
             </ScrollView>
           </View>
@@ -536,7 +534,7 @@ const EquipmentManagementScreen = () => {
   };
 
   const renderContent = () => {
-    switch (viewMode) {
+    switch (state.ui.viewMode) {
       case 'overview':
         return (
           <ScrollView style={styles.contentScroll}>
@@ -546,13 +544,13 @@ const EquipmentManagementScreen = () => {
       case 'maintenance':
         return (
           <ScrollView style={styles.contentScroll}>
-            {maintenanceSchedule.map(schedule => renderMaintenanceScheduleItem(schedule))}
+            {state.data.maintenanceSchedule.map(schedule => renderMaintenanceScheduleItem(schedule))}
           </ScrollView>
         );
       case 'allocation':
         return (
           <ScrollView style={styles.contentScroll}>
-            {allocations.map(allocation => renderAllocationItem(allocation))}
+            {state.data.allocations.map(allocation => renderAllocationItem(allocation))}
           </ScrollView>
         );
       case 'performance':
@@ -562,7 +560,7 @@ const EquipmentManagementScreen = () => {
     }
   };
 
-  if (loading) {
+  if (state.ui.loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
@@ -581,7 +579,7 @@ const EquipmentManagementScreen = () => {
       {renderStatCards()}
       {renderViewModeTabs()}
       {renderStatusFilters()}
-      {viewMode === 'overview' && renderSearchBar()}
+      {state.ui.viewMode === 'overview' && renderSearchBar()}
       {renderContent()}
       {renderDetailsModal()}
     </View>

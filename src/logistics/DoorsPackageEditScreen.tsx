@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import { logger } from '../services/LoggingService';
 
 import {
@@ -16,6 +16,9 @@ import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { useAuth } from '../auth/AuthContext';
 import DoorsEditService, { PackageEditData } from '../services/DoorsEditService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+// DOORS Package state management
+import { doorsPackageFormReducer, initialDoorsPackageFormState } from './doors-package/state';
 
 /**
  * DOORS Package Edit Screen
@@ -37,63 +40,56 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
   const { user } = useAuth();
   const { packageId } = route.params;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [doorsPackage, setDoorsPackage] = useState<DoorsPackageModel | null>(null);
+  // Centralized state management with useReducer (replaces 13 useState hooks)
+  const [state, dispatch] = useReducer(doorsPackageFormReducer, initialDoorsPackageFormState);
 
-  // Form state
-  const [equipmentName, setEquipmentName] = useState('');
-  const [category, setCategory] = useState('');
-  const [equipmentType, setEquipmentType] = useState('');
-  const [status, setStatus] = useState('');
-  const [priority, setPriority] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState('');
-  const [specificationRef, setSpecificationRef] = useState('');
-  const [drawingRef, setDrawingRef] = useState('');
-
-  // Validation errors
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  // Load package data
-  useEffect(() => {
-    loadPackage();
-  }, [packageId]);
-
-  const loadPackage = async () => {
+  const loadPackage = useCallback(async () => {
     try {
-      setLoading(true);
+      dispatch({ type: 'START_LOADING' });
       const doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
       const pkg = await doorsPackagesCollection.find(packageId);
 
-      setDoorsPackage(pkg);
-      setEquipmentName(pkg.equipmentName);
-      setCategory(pkg.category);
-      setEquipmentType(pkg.equipmentType);
-      setStatus(pkg.status);
-      setPriority(pkg.priority);
-      setQuantity(pkg.quantity.toString());
-      setUnit(pkg.unit);
-      setSpecificationRef(pkg.specificationRef || '');
-      setDrawingRef(pkg.drawingRef || '');
+      // Load package data with all form fields at once
+      dispatch({
+        type: 'LOAD_PACKAGE_DATA',
+        payload: {
+          doorsPackage: pkg,
+          formData: {
+            equipmentName: pkg.equipmentName,
+            category: pkg.category,
+            equipmentType: pkg.equipmentType,
+            status: pkg.status,
+            priority: pkg.priority,
+            quantity: pkg.quantity.toString(),
+            unit: pkg.unit,
+            specificationRef: pkg.specificationRef || '',
+            drawingRef: pkg.drawingRef || '',
+          },
+        },
+      });
     } catch (error) {
       logger.error('[DoorsPackageEdit] Error loading package:', error);
       Alert.alert('Error', 'Failed to load package details');
       navigation.goBack();
     } finally {
-      setLoading(false);
+      dispatch({ type: 'STOP_LOADING' });
     }
-  };
+  }, [packageId, navigation]);
+
+  // Load package data on mount
+  useEffect(() => {
+    loadPackage();
+  }, [loadPackage]);
 
   const handleSave = async () => {
-    if (!doorsPackage || !user) return;
+    if (!state.data.doorsPackage || !user) return;
 
     try {
-      setSaving(true);
-      setErrors({});
+      dispatch({ type: 'START_SAVING' });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       // Validate quantity before parsing
-      const quantityNum = parseFloat(quantity);
+      const quantityNum = parseFloat(state.form.quantity);
       if (isNaN(quantityNum) || quantityNum <= 0) {
         Alert.alert('Validation Error', 'Quantity must be a number greater than 0');
         return;
@@ -101,15 +97,15 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
 
       // Prepare updates
       const updates: PackageEditData = {
-        equipmentName,
-        category,
-        equipmentType,
-        status,
-        priority,
+        equipmentName: state.form.equipmentName,
+        category: state.form.category,
+        equipmentType: state.form.equipmentType,
+        status: state.form.status,
+        priority: state.form.priority,
         quantity: quantityNum,
-        unit,
-        specificationRef: specificationRef || undefined,
-        drawingRef: drawingRef || undefined,
+        unit: state.form.unit,
+        specificationRef: state.form.specificationRef || undefined,
+        drawingRef: state.form.drawingRef || undefined,
       };
 
       logger.info('[DoorsPackageEdit] Saving updates:', updates);
@@ -140,7 +136,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         Alert.alert('Error', 'Failed to save package. Please try again.');
       }
     } finally {
-      setSaving(false);
+      dispatch({ type: 'STOP_SAVING' });
     }
   };
 
@@ -159,7 +155,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
     );
   };
 
-  if (loading) {
+  if (state.ui.loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -168,7 +164,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
     );
   }
 
-  if (!doorsPackage) {
+  if (!state.data.doorsPackage) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Package not found</Text>
@@ -177,7 +173,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
   }
 
   // Check if user can edit
-  const canEdit = DoorsEditService.canEditPackage(user?.role || '', doorsPackage.status);
+  const canEdit = DoorsEditService.canEditPackage(user?.role || '', state.data.doorsPackage.status);
 
   return (
     <View style={styles.container}>
@@ -189,10 +185,10 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         <Text style={styles.headerTitle}>Edit Package</Text>
         <TouchableOpacity
           onPress={handleSave}
-          style={[styles.saveButton, (!canEdit || saving) && styles.saveButtonDisabled]}
-          disabled={!canEdit || saving}
+          style={[styles.saveButton, (!canEdit || state.ui.saving) && styles.saveButtonDisabled]}
+          disabled={!canEdit || state.ui.saving}
         >
-          {saving ? (
+          {state.ui.saving ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
             <Text style={styles.saveText}>Save</Text>
@@ -204,7 +200,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
       {!canEdit && (
         <View style={styles.warningBanner}>
           <Text style={styles.warningText}>
-            ⚠️ You don't have permission to edit this package. Status: {doorsPackage.status}
+            ⚠️ You don't have permission to edit this package. Status: {state.data.doorsPackage.status}
           </Text>
         </View>
       )}
@@ -214,7 +210,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         {/* Package ID (Read-only) */}
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>DOORS ID</Text>
-          <Text style={styles.readOnlyValue}>{doorsPackage.doorsId}</Text>
+          <Text style={styles.readOnlyValue}>{state.data.doorsPackage.doorsId}</Text>
         </View>
 
         {/* Equipment Name */}
@@ -222,13 +218,13 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           <Text style={styles.label}>Equipment Name *</Text>
           <TextInput
             style={[styles.input, !canEdit && styles.inputDisabled]}
-            value={equipmentName}
-            onChangeText={setEquipmentName}
+            value={state.form.equipmentName}
+            onChangeText={(text) => dispatch({ type: 'SET_EQUIPMENT_NAME', payload: text })}
             placeholder="e.g., Auxiliary Transformer 1000kVA"
             editable={canEdit}
           />
-          {errors.equipmentName && (
-            <Text style={styles.errorText}>{errors.equipmentName}</Text>
+          {state.validation.errors.equipmentName && (
+            <Text style={styles.errorText}>{state.validation.errors.equipmentName}</Text>
           )}
         </View>
 
@@ -241,13 +237,13 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
                 key={cat}
                 style={[
                   styles.pill,
-                  category === cat && styles.pillSelected,
+                  state.form.category === cat && styles.pillSelected,
                   !canEdit && styles.pillDisabled,
                 ]}
-                onPress={() => canEdit && setCategory(cat)}
+                onPress={() => canEdit && dispatch({ type: 'SET_CATEGORY', payload: cat })}
                 disabled={!canEdit}
               >
-                <Text style={[styles.pillText, category === cat && styles.pillTextSelected]}>
+                <Text style={[styles.pillText, state.form.category === cat && styles.pillTextSelected]}>
                   {cat}
                 </Text>
               </TouchableOpacity>
@@ -260,8 +256,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           <Text style={styles.label}>Equipment Type *</Text>
           <TextInput
             style={[styles.input, !canEdit && styles.inputDisabled]}
-            value={equipmentType}
-            onChangeText={setEquipmentType}
+            value={state.form.equipmentType}
+            onChangeText={(text) => dispatch({ type: 'SET_EQUIPMENT_TYPE', payload: text })}
             placeholder="e.g., Transformer, Switchgear, Cable"
             editable={canEdit}
           />
@@ -276,13 +272,13 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
                 key={stat}
                 style={[
                   styles.pill,
-                  status === stat && styles.pillSelected,
+                  state.form.status === stat && styles.pillSelected,
                   !canEdit && styles.pillDisabled,
                 ]}
-                onPress={() => canEdit && setStatus(stat)}
+                onPress={() => canEdit && dispatch({ type: 'SET_STATUS', payload: stat })}
                 disabled={!canEdit}
               >
-                <Text style={[styles.pillText, status === stat && styles.pillTextSelected]}>
+                <Text style={[styles.pillText, state.form.status === stat && styles.pillTextSelected]}>
                   {stat.replace('_', ' ').toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -299,13 +295,13 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
                 key={pri}
                 style={[
                   styles.pill,
-                  priority === pri && styles.pillSelected,
+                  state.form.priority === pri && styles.pillSelected,
                   !canEdit && styles.pillDisabled,
                 ]}
-                onPress={() => canEdit && setPriority(pri)}
+                onPress={() => canEdit && dispatch({ type: 'SET_PRIORITY', payload: pri })}
                 disabled={!canEdit}
               >
-                <Text style={[styles.pillText, priority === pri && styles.pillTextSelected]}>
+                <Text style={[styles.pillText, state.form.priority === pri && styles.pillTextSelected]}>
                   {pri.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -319,8 +315,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
             <Text style={styles.label}>Quantity *</Text>
             <TextInput
               style={[styles.input, !canEdit && styles.inputDisabled]}
-              value={quantity}
-              onChangeText={setQuantity}
+              value={state.form.quantity}
+              onChangeText={(text) => dispatch({ type: 'SET_QUANTITY', payload: text })}
               placeholder="e.g., 5"
               keyboardType="numeric"
               editable={canEdit}
@@ -331,8 +327,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
             <Text style={styles.label}>Unit *</Text>
             <TextInput
               style={[styles.input, !canEdit && styles.inputDisabled]}
-              value={unit}
-              onChangeText={setUnit}
+              value={state.form.unit}
+              onChangeText={(text) => dispatch({ type: 'SET_UNIT', payload: text })}
               placeholder="e.g., nos"
               editable={canEdit}
             />
@@ -344,8 +340,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           <Text style={styles.label}>Specification Reference</Text>
           <TextInput
             style={[styles.input, !canEdit && styles.inputDisabled]}
-            value={specificationRef}
-            onChangeText={setSpecificationRef}
+            value={state.form.specificationRef}
+            onChangeText={(text) => dispatch({ type: 'SET_SPECIFICATION_REF', payload: text })}
             placeholder="e.g., IEC 60076-1"
             editable={canEdit}
           />
@@ -356,8 +352,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           <Text style={styles.label}>Drawing Reference</Text>
           <TextInput
             style={[styles.input, !canEdit && styles.inputDisabled]}
-            value={drawingRef}
-            onChangeText={setDrawingRef}
+            value={state.form.drawingRef}
+            onChangeText={(text) => dispatch({ type: 'SET_DRAWING_REF', payload: text })}
             placeholder="e.g., DRW-TSS-001"
             editable={canEdit}
           />
@@ -369,19 +365,19 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           <View style={styles.complianceGrid}>
             <View style={styles.complianceItem}>
               <Text style={styles.complianceLabel}>Total Requirements</Text>
-              <Text style={styles.complianceValue}>{doorsPackage.totalRequirements}</Text>
+              <Text style={styles.complianceValue}>{state.data.doorsPackage.totalRequirements}</Text>
             </View>
             <View style={styles.complianceItem}>
               <Text style={styles.complianceLabel}>Compliant</Text>
-              <Text style={styles.complianceValue}>{doorsPackage.compliantRequirements}</Text>
+              <Text style={styles.complianceValue}>{state.data.doorsPackage.compliantRequirements}</Text>
             </View>
             <View style={styles.complianceItem}>
               <Text style={styles.complianceLabel}>Compliance %</Text>
               <Text style={[
                 styles.complianceValue,
-                doorsPackage.compliancePercentage >= 80 ? styles.complianceHigh : styles.complianceLow
+                state.data.doorsPackage.compliancePercentage >= 80 ? styles.complianceHigh : styles.complianceLow
               ]}>
-                {doorsPackage.compliancePercentage.toFixed(1)}%
+                {state.data.doorsPackage.compliancePercentage.toFixed(1)}%
               </Text>
             </View>
           </View>
@@ -391,14 +387,14 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         </View>
 
         {/* Audit Info */}
-        {doorsPackage.lastModifiedAt && (
+        {state.data.doorsPackage.lastModifiedAt && (
           <View style={styles.auditSection}>
             <Text style={styles.auditTitle}>Last Modified</Text>
             <Text style={styles.auditText}>
-              {new Date(doorsPackage.lastModifiedAt).toLocaleString()}
+              {new Date(state.data.doorsPackage.lastModifiedAt).toLocaleString()}
             </Text>
-            {doorsPackage.modifiedById && (
-              <Text style={styles.auditText}>By: {doorsPackage.modifiedById}</Text>
+            {state.data.doorsPackage.modifiedById && (
+              <Text style={styles.auditText}>By: {state.data.doorsPackage.modifiedById}</Text>
             )}
           </View>
         )}

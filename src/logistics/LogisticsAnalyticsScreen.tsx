@@ -8,7 +8,7 @@
  * - Comprehensive reporting
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
-  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -27,18 +26,11 @@ import {
   type CostTrendAnalysis,
   type ConsumptionPattern,
   type PerformanceBenchmark,
-  type AnalyticsSummary,
   type HistoricalDataPoint,
   type ProjectDemandFactor,
 } from '../services/PredictiveAnalyticsService';
 import {
   CostOptimizationService,
-  type CostOptimizationResult,
-  type ProcurementBundle,
-  type SupplierNegotiationAnalysis,
-  type TransportationOptimization,
-  type TCOAnalysis,
-  type StorageOptimization,
   type CostBreakdown,
   type VolumeDiscount,
 } from '../services/CostOptimizationService';
@@ -56,14 +48,8 @@ import {
   OptimizationSection,
 } from './analytics/components';
 
-const { width } = Dimensions.get('window');
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-type ViewMode = 'overview' | 'demand' | 'costs' | 'performance' | 'optimization';
-type ReportType = 'executive' | 'operational' | 'cost_analysis' | 'compliance';
+// Analytics state management
+import { analyticsReducer, initialAnalyticsState } from './analytics/state';
 
 // ============================================================================
 // MOCK DATA
@@ -137,32 +123,10 @@ const mockCurrentCosts: CostBreakdown = {
 // ============================================================================
 
 const LogisticsAnalyticsScreen: React.FC = () => {
-  const { selectedProjectId, projects } = useLogistics();
+  const { selectedProjectId } = useLogistics();
 
-  // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Analytics data
-  const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
-  const [demandForecasts, setDemandForecasts] = useState<DemandForecast[]>([]);
-  const [leadTimePredictions, setLeadTimePredictions] = useState<LeadTimePrediction[]>([]);
-  const [costTrends, setCostTrends] = useState<CostTrendAnalysis[]>([]);
-  const [consumptionPatterns, setConsumptionPatterns] = useState<ConsumptionPattern[]>([]);
-  const [performanceBenchmarks, setPerformanceBenchmarks] = useState<PerformanceBenchmark[]>([]);
-
-  // Cost optimization data
-  const [costOptimization, setCostOptimization] = useState<CostOptimizationResult | null>(null);
-  const [procurementBundles, setProcurementBundles] = useState<ProcurementBundle[]>([]);
-  const [supplierNegotiation, setSupplierNegotiation] = useState<SupplierNegotiationAnalysis[]>([]);
-  const [transportationOpt, setTransportationOpt] = useState<TransportationOptimization | null>(null);
-  const [storageOpt, setStorageOpt] = useState<StorageOptimization | null>(null);
-
-  // Modal state
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedDetail, setSelectedDetail] = useState<any>(null);
-  const [detailType, setDetailType] = useState<string>('');
+  // Centralized state management with useReducer (replaces 15 useState hooks)
+  const [state, dispatch] = useReducer(analyticsReducer, initialAnalyticsState);
 
   // Load analytics data
   useEffect(() => {
@@ -170,7 +134,7 @@ const LogisticsAnalyticsScreen: React.FC = () => {
   }, [selectedProjectId]);
 
   const loadAnalyticsData = () => {
-    setLoading(true);
+    dispatch({ type: 'START_LOADING' });
     try {
       // Generate demand forecasts
       const forecasts: DemandForecast[] = [
@@ -191,7 +155,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           90
         ),
       ];
-      setDemandForecasts(forecasts);
 
       // Generate lead time predictions
       const leadTimes: LeadTimePrediction[] = [
@@ -208,7 +171,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           [7, 8, 9, 7, 10, 8, 7, 9, 8, 7]
         ),
       ];
-      setLeadTimePredictions(leadTimes);
 
       // Generate cost trend analysis
       const costs: CostTrendAnalysis[] = [
@@ -227,7 +189,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           90
         ),
       ];
-      setCostTrends(costs);
 
       // Generate consumption patterns
       const patterns: ConsumptionPattern[] = [
@@ -248,7 +209,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           2
         ),
       ];
-      setConsumptionPatterns(patterns);
 
       // Generate performance benchmarks
       const benchmarks: PerformanceBenchmark[] = [
@@ -274,7 +234,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           95
         ),
       ];
-      setPerformanceBenchmarks(benchmarks);
 
       // Generate analytics summary
       const summary = PredictiveAnalyticsService.generateAnalyticsSummary(
@@ -284,7 +243,19 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         patterns,
         benchmarks
       );
-      setAnalyticsSummary(summary);
+
+      // Dispatch all analytics data at once
+      dispatch({
+        type: 'SET_ALL_ANALYTICS_DATA',
+        payload: {
+          summary,
+          demandForecasts: forecasts,
+          leadTimePredictions: leadTimes,
+          costTrends: costs,
+          consumptionPatterns: patterns,
+          performanceBenchmarks: benchmarks,
+        },
+      });
 
       // Cost optimization
       const costOpt = CostOptimizationService.performCostOptimization(
@@ -294,7 +265,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         {},
         {}
       );
-      setCostOptimization(costOpt);
 
       // Procurement bundles
       const bundles = CostOptimizationService.optimizeProcurementBundles(
@@ -329,7 +299,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         ],
         mockVolumeDiscounts
       );
-      setProcurementBundles(bundles);
 
       // Supplier negotiation analysis
       const negotiation = [
@@ -346,7 +315,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           92
         ),
       ];
-      setSupplierNegotiation(negotiation);
 
       // Transportation optimization
       const transOpt = CostOptimizationService.optimizeTransportationCosts([
@@ -354,7 +322,6 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         { route: 'Supplier B -> Site 2', deliveries: 6, cost: 9000, mode: 'truck' },
         { route: 'Warehouse -> Site 1', deliveries: 4, cost: 5000, mode: 'truck' },
       ]);
-      setTransportationOpt(transOpt);
 
       // Storage optimization
       const storOpt = CostOptimizationService.optimizeStorageCosts(
@@ -367,24 +334,33 @@ const LogisticsAnalyticsScreen: React.FC = () => {
           { materialId: 'm3', materialName: 'Cement Bags', quantity: 200, turnoverRate: 12, spaceRequired: 200 },
         ]
       );
-      setStorageOpt(storOpt);
+
+      // Dispatch all optimization data at once
+      dispatch({
+        type: 'SET_ALL_OPTIMIZATION_DATA',
+        payload: {
+          costOptimization: costOpt,
+          procurementBundles: bundles,
+          supplierNegotiation: negotiation,
+          transportation: transOpt,
+          storage: storOpt,
+        },
+      });
     } catch (error) {
       logger.error('Error loading analytics:', error);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'STOP_LOADING' });
     }
   };
 
   const handleRefresh = () => {
-    setRefreshing(true);
+    dispatch({ type: 'START_REFRESH' });
     loadAnalyticsData();
-    setRefreshing(false);
+    dispatch({ type: 'STOP_REFRESH' });
   };
 
   const showDetail = (detail: any, type: string) => {
-    setSelectedDetail(detail);
-    setDetailType(type);
-    setDetailModalVisible(true);
+    dispatch({ type: 'SHOW_DETAIL_MODAL', payload: { detail, detailType: type } });
   };
 
   // -------------------------------------------------------------------------
@@ -400,53 +376,56 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <ViewModeSelector viewMode={viewMode} onViewModeChange={setViewMode} />
+      <ViewModeSelector
+        viewMode={state.ui.viewMode}
+        onViewModeChange={(mode) => dispatch({ type: 'SET_VIEW_MODE', payload: mode })}
+      />
 
       <ScrollView
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={<RefreshControl refreshing={state.ui.refreshing} onRefresh={handleRefresh} />}
       >
-        {viewMode === 'overview' && <OverviewSection analyticsSummary={analyticsSummary} />}
-        {viewMode === 'demand' && (
+        {state.ui.viewMode === 'overview' && <OverviewSection analyticsSummary={state.analytics.summary} />}
+        {state.ui.viewMode === 'demand' && (
           <DemandAnalyticsSection
-            demandForecasts={demandForecasts}
-            leadTimePredictions={leadTimePredictions}
-            consumptionPatterns={consumptionPatterns}
+            demandForecasts={state.analytics.demandForecasts}
+            leadTimePredictions={state.analytics.leadTimePredictions}
+            consumptionPatterns={state.analytics.consumptionPatterns}
             onShowDetail={showDetail}
           />
         )}
-        {viewMode === 'costs' && (
+        {state.ui.viewMode === 'costs' && (
           <CostAnalyticsSection
-            costOptimization={costOptimization}
-            costTrends={costTrends}
-            procurementBundles={procurementBundles}
+            costOptimization={state.optimization.costOptimization}
+            costTrends={state.analytics.costTrends}
+            procurementBundles={state.optimization.procurementBundles}
             onShowDetail={showDetail}
           />
         )}
-        {viewMode === 'performance' && (
-          <PerformanceSection performanceBenchmarks={performanceBenchmarks} onShowDetail={showDetail} />
+        {state.ui.viewMode === 'performance' && (
+          <PerformanceSection performanceBenchmarks={state.analytics.performanceBenchmarks} onShowDetail={showDetail} />
         )}
-        {viewMode === 'optimization' && (
+        {state.ui.viewMode === 'optimization' && (
           <OptimizationSection
-            costOptimization={costOptimization}
-            transportationOpt={transportationOpt}
-            storageOpt={storageOpt}
+            costOptimization={state.optimization.costOptimization}
+            transportationOpt={state.optimization.transportation}
+            storageOpt={state.optimization.storage}
           />
         )}
       </ScrollView>
 
       {/* Detail Modal */}
-      <Modal visible={detailModalVisible} animationType="slide" transparent>
+      <Modal visible={state.modal.visible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Details</Text>
-              <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
+              <TouchableOpacity onPress={() => dispatch({ type: 'HIDE_DETAIL_MODAL' })}>
                 <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalBody}>
-              <Text>{JSON.stringify(selectedDetail, null, 2)}</Text>
+              <Text>{JSON.stringify(state.modal.selectedDetail, null, 2)}</Text>
             </ScrollView>
           </View>
         </View>

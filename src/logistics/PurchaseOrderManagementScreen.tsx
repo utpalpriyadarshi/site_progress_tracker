@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import { logger } from '../services/LoggingService';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
+import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput } from 'react-native-paper';
 import { database } from '../../models/database';
 import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+// Purchase Order state management
+import {
+  poManagementReducer,
+  initialPOManagementState,
+  type PurchaseOrder,
+} from './purchase-order/state';
 
 
 /**
@@ -31,54 +37,13 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
  * - Link to vendors and RFQs
  */
 
-interface PurchaseOrder {
-  id: string;
-  poNumber: string;
-  projectId: string;
-  rfqId?: string;
-  vendorId: string;
-  vendorName?: string;
-  orderDate: number;
-  expectedDeliveryDate?: number;
-  actualDeliveryDate?: number;
-  status: string; // 'draft' | 'sent' | 'acknowledged' | 'delivered' | 'cancelled'
-  totalAmount: number;
-  description?: string;
-  createdById: string;
-  createdAt: Date;
-}
-
 const PurchaseOrderManagementScreen = () => {
   const { selectedProjectId, projects } = useLogistics();
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [filteredPOs, setFilteredPOs] = useState<PurchaseOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [vendors, setVendors] = useState<Array<{ id: string; name: string }>>([]);
-  const [rfqs, setRfqs] = useState<Array<{ id: string; rfqNumber: string }>>([]);
 
-  // Create dialog state
-  const [newDescription, setNewDescription] = useState('');
-  const [newVendorId, setNewVendorId] = useState('');
-  const [newRfqId, setNewRfqId] = useState('');
-  const [newTotalAmount, setNewTotalAmount] = useState('');
-  const [newExpectedDeliveryDays, setNewExpectedDeliveryDays] = useState('30');
+  // Centralized state management with useReducer (replaces 13 useState hooks)
+  const [state, dispatch] = useReducer(poManagementReducer, initialPOManagementState);
 
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadPurchaseOrders();
-      loadVendors();
-      loadRfqs();
-    }
-  }, [selectedProjectId]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [purchaseOrders, searchQuery, filterStatus]);
-
-  const loadVendors = async () => {
+  const loadVendors = useCallback(async () => {
     try {
       const vendorsCollection = database.collections.get('vendors');
       const vendorsData = await vendorsCollection.query().fetch();
@@ -88,13 +53,13 @@ const PurchaseOrderManagementScreen = () => {
         name: vendor.name,
       }));
 
-      setVendors(vendorsList);
+      dispatch({ type: 'SET_VENDORS', payload: vendorsList });
     } catch (error) {
       logger.error('[PO] Error loading vendors:', error);
     }
-  };
+  }, []);
 
-  const loadRfqs = async () => {
+  const loadRfqs = useCallback(async () => {
     if (!selectedProjectId) return;
 
     try {
@@ -111,20 +76,20 @@ const PurchaseOrderManagementScreen = () => {
         rfqNumber: rfq.rfqNumber,
       }));
 
-      setRfqs(rfqsList);
+      dispatch({ type: 'SET_RFQS', payload: rfqsList });
     } catch (error) {
       logger.error('[PO] Error loading RFQs:', error);
     }
-  };
+  }, [selectedProjectId]);
 
-  const loadPurchaseOrders = async () => {
+  const loadPurchaseOrders = useCallback(async () => {
     if (!selectedProjectId) {
-      setLoading(false);
+      dispatch({ type: 'STOP_LOADING' });
       return;
     }
 
     try {
-      setLoading(true);
+      dispatch({ type: 'START_LOADING' });
       logger.info('[PO] Loading purchase orders for project:', selectedProjectId);
 
       const poCollection = database.collections.get('purchase_orders');
@@ -165,21 +130,21 @@ const PurchaseOrderManagementScreen = () => {
       );
 
       logger.info('[PO] Loaded purchase orders:', posWithVendors.length);
-      setPurchaseOrders(posWithVendors);
+      dispatch({ type: 'SET_PURCHASE_ORDERS', payload: posWithVendors });
     } catch (error) {
       logger.error('[PO] Error loading purchase orders:', error);
       Alert.alert('Error', 'Failed to load purchase orders');
     } finally {
-      setLoading(false);
+      dispatch({ type: 'STOP_LOADING' });
     }
-  };
+  }, [selectedProjectId]);
 
-  const applyFilters = () => {
-    let filtered = [...purchaseOrders];
+  const applyFilters = useCallback(() => {
+    let filtered = [...state.data.purchaseOrders];
 
     // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (state.filters.searchQuery) {
+      const query = state.filters.searchQuery.toLowerCase();
       filtered = filtered.filter(
         (po) =>
           po.poNumber.toLowerCase().includes(query) ||
@@ -189,12 +154,24 @@ const PurchaseOrderManagementScreen = () => {
     }
 
     // Status filter
-    if (filterStatus) {
-      filtered = filtered.filter((po) => po.status === filterStatus);
+    if (state.filters.filterStatus) {
+      filtered = filtered.filter((po) => po.status === state.filters.filterStatus);
     }
 
-    setFilteredPOs(filtered);
-  };
+    dispatch({ type: 'SET_FILTERED_POS', payload: filtered });
+  }, [state.data.purchaseOrders, state.filters.searchQuery, state.filters.filterStatus]);
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      loadPurchaseOrders();
+      loadVendors();
+      loadRfqs();
+    }
+  }, [selectedProjectId, loadPurchaseOrders, loadVendors, loadRfqs]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const generatePONumber = () => {
     const timestamp = Date.now().toString().slice(-6);
@@ -202,7 +179,7 @@ const PurchaseOrderManagementScreen = () => {
   };
 
   const handleCreatePO = async () => {
-    if (!newVendorId || !newTotalAmount) {
+    if (!state.form.newVendorId || !state.form.newTotalAmount) {
       Alert.alert('Validation Error', 'Please select vendor and enter amount');
       return;
     }
@@ -210,19 +187,19 @@ const PurchaseOrderManagementScreen = () => {
     try {
       const poCollection = database.collections.get('purchase_orders');
       const orderDate = Date.now();
-      const expectedDeliveryDate = orderDate + (parseInt(newExpectedDeliveryDays) || 30) * 24 * 60 * 60 * 1000;
+      const expectedDeliveryDate = orderDate + (parseInt(state.form.newExpectedDeliveryDays, 10) || 30) * 24 * 60 * 60 * 1000;
 
       await database.write(async () => {
         await poCollection.create((record: any) => {
           record.poNumber = generatePONumber();
           record.projectId = selectedProjectId;
-          record.rfqId = newRfqId || null;
-          record.vendorId = newVendorId;
+          record.rfqId = state.form.newRfqId || null;
+          record.vendorId = state.form.newVendorId;
           record.orderDate = orderDate;
           record.expectedDeliveryDate = expectedDeliveryDate;
           record.status = 'draft';
-          record.totalAmount = parseFloat(newTotalAmount);
-          record.description = newDescription || null;
+          record.totalAmount = parseFloat(state.form.newTotalAmount);
+          record.description = state.form.newDescription || null;
           record.createdById = ''; // Will be set from context
           record.appSyncStatus = 'pending';
           record.version = 1;
@@ -230,8 +207,8 @@ const PurchaseOrderManagementScreen = () => {
       });
 
       Alert.alert('Success', 'Purchase Order created successfully');
-      setShowCreateDialog(false);
-      resetCreateDialog();
+      dispatch({ type: 'HIDE_CREATE_DIALOG' });
+      dispatch({ type: 'RESET_FORM' });
       loadPurchaseOrders();
     } catch (error) {
       logger.error('[PO] Error creating PO:', error);
@@ -240,11 +217,7 @@ const PurchaseOrderManagementScreen = () => {
   };
 
   const resetCreateDialog = () => {
-    setNewDescription('');
-    setNewVendorId('');
-    setNewRfqId('');
-    setNewTotalAmount('');
-    setNewExpectedDeliveryDays('30');
+    dispatch({ type: 'RESET_FORM' });
   };
 
   const handleUpdateStatus = async (poId: string, newStatus: string) => {
@@ -381,17 +354,17 @@ const PurchaseOrderManagementScreen = () => {
         <Text style={styles.projectName}>{selectedProject?.name || 'Project'}</Text>
         <Searchbar
           placeholder="Search purchase orders..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
+          onChangeText={(text) => dispatch({ type: 'SET_SEARCH_QUERY', payload: text })}
+          value={state.filters.searchQuery}
           style={styles.searchbar}
         />
         <View style={styles.filterRow}>
           {['draft', 'sent', 'acknowledged', 'delivered'].map((status) => (
             <Chip
               key={status}
-              mode={filterStatus === status ? 'flat' : 'outlined'}
-              selected={filterStatus === status}
-              onPress={() => setFilterStatus(filterStatus === status ? null : status)}
+              mode={state.filters.filterStatus === status ? 'flat' : 'outlined'}
+              selected={state.filters.filterStatus === status}
+              onPress={() => dispatch({ type: 'TOGGLE_FILTER_STATUS', payload: status })}
               style={styles.filterChip}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -400,13 +373,13 @@ const PurchaseOrderManagementScreen = () => {
         </View>
       </View>
 
-      {loading ? (
+      {state.ui.loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       ) : (
         <FlatList
-          data={filteredPOs}
+          data={state.data.filteredPOs}
           renderItem={renderPOCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
@@ -419,41 +392,41 @@ const PurchaseOrderManagementScreen = () => {
         />
       )}
 
-      <FAB icon="plus" style={styles.fab} onPress={() => setShowCreateDialog(true)} label="New PO" />
+      <FAB icon="plus" style={styles.fab} onPress={() => dispatch({ type: 'SHOW_CREATE_DIALOG' })} label="New PO" />
 
       {/* Create Dialog */}
       <Portal>
-        <Dialog visible={showCreateDialog} onDismiss={() => setShowCreateDialog(false)} style={styles.dialog}>
+        <Dialog visible={state.ui.showCreateDialog} onDismiss={() => dispatch({ type: 'HIDE_CREATE_DIALOG' })} style={styles.dialog}>
           <Dialog.Title>Create Purchase Order</Dialog.Title>
           <Dialog.Content>
             <TextInput
               label="Description"
-              value={newDescription}
-              onChangeText={setNewDescription}
+              value={state.form.newDescription}
+              onChangeText={(text) => dispatch({ type: 'SET_NEW_DESCRIPTION', payload: text })}
               style={styles.input}
               mode="outlined"
               multiline
               numberOfLines={2}
             />
             <Text style={styles.pickerLabel}>Vendor *</Text>
-            {vendors.map((vendor) => (
+            {state.data.vendors.map((vendor) => (
               <Chip
                 key={vendor.id}
-                mode={newVendorId === vendor.id ? 'flat' : 'outlined'}
-                selected={newVendorId === vendor.id}
-                onPress={() => setNewVendorId(vendor.id)}
+                mode={state.form.newVendorId === vendor.id ? 'flat' : 'outlined'}
+                selected={state.form.newVendorId === vendor.id}
+                onPress={() => dispatch({ type: 'SET_NEW_VENDOR_ID', payload: vendor.id })}
                 style={styles.pickerChip}
               >
                 {vendor.name}
               </Chip>
             ))}
             <Text style={styles.pickerLabel}>Link to RFQ (Optional)</Text>
-            {rfqs.map((rfq) => (
+            {state.data.rfqs.map((rfq) => (
               <Chip
                 key={rfq.id}
-                mode={newRfqId === rfq.id ? 'flat' : 'outlined'}
-                selected={newRfqId === rfq.id}
-                onPress={() => setNewRfqId(rfq.id)}
+                mode={state.form.newRfqId === rfq.id ? 'flat' : 'outlined'}
+                selected={state.form.newRfqId === rfq.id}
+                onPress={() => dispatch({ type: 'SET_NEW_RFQ_ID', payload: rfq.id })}
                 style={styles.pickerChip}
               >
                 {rfq.rfqNumber}
@@ -461,8 +434,8 @@ const PurchaseOrderManagementScreen = () => {
             ))}
             <TextInput
               label="Total Amount *"
-              value={newTotalAmount}
-              onChangeText={setNewTotalAmount}
+              value={state.form.newTotalAmount}
+              onChangeText={(text) => dispatch({ type: 'SET_NEW_TOTAL_AMOUNT', payload: text })}
               style={styles.input}
               mode="outlined"
               keyboardType="numeric"
@@ -470,8 +443,8 @@ const PurchaseOrderManagementScreen = () => {
             />
             <TextInput
               label="Expected Delivery (Days)"
-              value={newExpectedDeliveryDays}
-              onChangeText={setNewExpectedDeliveryDays}
+              value={state.form.newExpectedDeliveryDays}
+              onChangeText={(text) => dispatch({ type: 'SET_NEW_EXPECTED_DELIVERY_DAYS', payload: text })}
               style={styles.input}
               mode="outlined"
               keyboardType="numeric"
@@ -481,7 +454,7 @@ const PurchaseOrderManagementScreen = () => {
           <Dialog.Actions>
             <Button
               onPress={() => {
-                setShowCreateDialog(false);
+                dispatch({ type: 'HIDE_CREATE_DIALOG' });
                 resetCreateDialog();
               }}
             >
