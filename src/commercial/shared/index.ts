@@ -8,3 +8,6 @@ export * from './types';
 
 // Export all components
 export * from './components';
+
+// Export all skeletons
+export * from './skeletons';

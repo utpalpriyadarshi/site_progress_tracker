@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -24,6 +24,7 @@ import {
   InvoicesSummaryCard,
   RecentCostsCard,
 } from './dashboard/components';
+import { DashboardSkeleton } from './shared';
 
 /**
  * CommercialDashboardScreen (v2.11 Phase 5 - Sprint 8) - REFACTORED
@@ -141,12 +142,7 @@ const CommercialDashboardScreen = () => {
   }
 
   if (state.ui.loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
-      </View>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!state.data.dashboardData) {

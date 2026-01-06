@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { FAB } from 'react-native-paper';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
@@ -20,6 +20,7 @@ import {
   InvoiceSummaryCards,
   FiltersBar,
 } from './invoice-management/components';
+import { InvoiceListSkeleton } from './shared';
 
 /**
  * InvoiceManagementScreen (v2.11 Phase 5 - Sprint 6) - REFACTORED
@@ -290,10 +291,7 @@ const InvoiceManagementScreen = () => {
 
       {/* Invoice list */}
       {state.ui.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading invoices...</Text>
-        </View>
+        <InvoiceListSkeleton />
       ) : state.data.filteredInvoices.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>

@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { useCommercial } from './context/CommercialContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { database } from '../../models/database';
@@ -23,6 +23,7 @@ import {
   InvoicesSummaryCard,
   ReportCard,
 } from './financial-reports/components';
+import { FinancialChartsSkeleton } from './shared';
 
 /**
  * FinancialReportsScreen (v2.20 - Refactored)
@@ -167,12 +168,7 @@ const FinancialReportsScreen = () => {
   }
 
   if (state.ui.loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading financial reports...</Text>
-      </View>
-    );
+    return <FinancialChartsSkeleton />;
   }
 
   if (!state.data.reportData) {
