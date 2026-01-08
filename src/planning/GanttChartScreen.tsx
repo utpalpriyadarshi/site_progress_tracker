@@ -1,11 +1,12 @@
 /**
- * GanttChartScreen - Refactored
+ * GanttChartScreen - Phase 2 Refactor
  *
  * Enhanced Gantt Chart with database integration, timeline visualization,
  * zoom controls, and critical path highlighting
+ * Refactored to use useReducer for state management (4 useState → 1 useReducer, 75% reduction)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useReducer, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,9 +16,19 @@ import { Text, Card, ActivityIndicator } from 'react-native-paper';
 import SiteModel from '../../models/SiteModel';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import ItemModel from '../../models/ItemModel';
+import { logger } from '../services/LoggingService';
+
+// State management
+import {
+  ganttChartReducer,
+  createGanttChartInitialState,
+  type ZoomLevel,
+} from './state/gantt-chart';
 
 // Hooks
-import { useGanttData } from './gantt-chart/hooks/useGanttData';
 import { useGanttTimeline } from './gantt-chart/hooks/useGanttTimeline';
 
 // Components
@@ -28,16 +39,52 @@ import {
   TaskRow,
 } from './gantt-chart/components';
 
-// Types and constants
-import { ZoomLevel } from './gantt-chart/utils/ganttConstants';
-
 const GanttChartScreen: React.FC = () => {
-  const [selectedSite, setSelectedSite] = useState<SiteModel | null>(null);
-  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('week');
+  // Initialize reducer state
+  const [state, dispatch] = useReducer(ganttChartReducer, createGanttChartInitialState());
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Load items data
-  const { items, loading } = useGanttData(selectedSite);
+  // Load items when site changes
+  useEffect(() => {
+    const loadItems = async () => {
+      if (!state.selection.selectedSite) {
+        dispatch({ type: 'SET_ITEMS', payload: { items: [] } });
+        return;
+      }
+
+      dispatch({ type: 'START_LOADING' });
+      try {
+        const siteItems = await database.collections
+          .get<ItemModel>('items')
+          .query(Q.where('site_id', state.selection.selectedSite.id))
+          .fetch();
+
+        // Sort by start date, then by WBS code
+        siteItems.sort((a, b) => {
+          const dateCompare = a.plannedStartDate - b.plannedStartDate;
+          if (dateCompare !== 0) return dateCompare;
+          return a.wbsCode.localeCompare(b.wbsCode, undefined, { numeric: true });
+        });
+
+        dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+      } catch (error) {
+        logger.error('[Gantt] Error loading items', error as Error);
+        dispatch({ type: 'LOADING_ERROR' });
+      }
+    };
+
+    loadItems();
+  }, [state.selection.selectedSite]);
+
+  // Site selection handler
+  const handleSiteChange = useCallback((site: SiteModel | null) => {
+    dispatch({ type: 'SET_SELECTED_SITE', payload: { site } });
+  }, []);
+
+  // Zoom level handler
+  const handleZoomChange = useCallback((zoomLevel: ZoomLevel) => {
+    dispatch({ type: 'SET_ZOOM_LEVEL', payload: { zoomLevel } });
+  }, []);
 
   // Calculate timeline
   const {
@@ -46,7 +93,7 @@ const GanttChartScreen: React.FC = () => {
     columnWidth,
     totalTimelineWidth,
     todayPosition,
-  } = useGanttTimeline(items, zoomLevel);
+  } = useGanttTimeline(state.data.items, state.selection.zoomLevel);
 
   return (
     <View style={styles.container}>
@@ -54,27 +101,27 @@ const GanttChartScreen: React.FC = () => {
       <Card style={styles.selectorCard}>
         <Card.Content>
           <SimpleSiteSelector
-            selectedSite={selectedSite}
-            onSiteChange={setSelectedSite}
+            selectedSite={state.selection.selectedSite}
+            onSiteChange={handleSiteChange}
           />
         </Card.Content>
       </Card>
 
-      {selectedSite && (
+      {state.selection.selectedSite && (
         <>
           {/* Zoom Controls */}
-          <ZoomControls zoomLevel={zoomLevel} onZoomChange={setZoomLevel} />
+          <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
 
           {/* Legend */}
           <GanttLegend showTodayMarker={todayPosition !== null} />
 
           {/* Gantt Chart */}
-          {loading ? (
+          {state.ui.loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#1976D2" />
               <Text style={styles.loadingText}>Loading tasks...</Text>
             </View>
-          ) : items.length === 0 ? (
+          ) : state.data.items.length === 0 ? (
             <Card style={styles.emptyCard}>
               <Card.Content>
                 <Text style={styles.emptyText}>
@@ -92,12 +139,12 @@ const GanttChartScreen: React.FC = () => {
               />
 
               {/* Tasks */}
-              {items.map((item) => (
+              {state.data.items.map((item) => (
                 <TaskRow
                   key={item.id}
                   item={item}
                   timelineStart={timelineBounds.start}
-                  zoomLevel={zoomLevel}
+                  zoomLevel={state.selection.zoomLevel}
                   totalTimelineWidth={totalTimelineWidth}
                   todayPosition={todayPosition}
                 />
@@ -107,7 +154,7 @@ const GanttChartScreen: React.FC = () => {
         </>
       )}
 
-      {!selectedSite && (
+      {!state.selection.selectedSite && (
         <Card style={styles.emptyCard}>
           <Card.Content>
             <Text style={styles.emptyText}>
