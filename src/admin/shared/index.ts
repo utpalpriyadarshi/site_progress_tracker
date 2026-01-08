@@ -9,4 +9,5 @@ export * from './types';
 // Export all components
 export * from './components';
 
-// Note: Skeletons will be added in Task 2.3
+// Export all skeletons
+export * from './skeletons';
