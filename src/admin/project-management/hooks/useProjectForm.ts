@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useReducer, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { database } from '../../../../models/database';
 import ProjectModel from '../../../../models/ProjectModel';
 import { logger } from '../../../services/LoggingService';
 import {
-  ProjectFormData,
   validateProjectForm,
   createDefaultMilestones,
 } from '../utils';
+import {
+  projectManagementReducer,
+  createInitialState,
+  ProjectFormData,
+} from '../../state/project-management';
 
 interface UseProjectFormProps {
   currentUserId?: string;
@@ -22,55 +26,29 @@ export const useProjectForm = ({
   onError,
   onDataReload,
 }: UseProjectFormProps) => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingProject, setEditingProject] = useState<ProjectModel | null>(null);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [formData, setFormData] = useState<ProjectFormData>({
-    name: '',
-    client: '',
-    startDate: new Date(),
-    endDate: new Date(),
-    status: 'active',
-    budget: '0',
-  });
+  const [state, dispatch] = useReducer(projectManagementReducer, undefined, createInitialState);
 
-  const openCreateModal = () => {
-    setEditingProject(null);
-    setFormData({
-      name: '',
-      client: '',
-      startDate: new Date(),
-      endDate: new Date(),
-      status: 'active',
-      budget: '0',
-    });
-    setModalVisible(true);
-  };
+  const openCreateModal = useCallback(() => {
+    dispatch({ type: 'OPEN_CREATE_MODAL' });
+  }, []);
 
-  const openEditModal = (project: ProjectModel) => {
-    setEditingProject(project);
-    setFormData({
-      name: project.name,
-      client: project.client,
-      startDate: new Date(project.startDate),
-      endDate: new Date(project.endDate),
-      status: project.status as any,
-      budget: project.budget.toString(),
-    });
-    setModalVisible(true);
-  };
+  const openEditModal = useCallback((project: ProjectModel) => {
+    dispatch({ type: 'OPEN_EDIT_MODAL', payload: { project } });
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    const { form, data } = state;
+    const { editingProject } = data;
+
     // Validation
-    const validation = validateProjectForm(formData);
+    const validation = validateProjectForm(form);
     if (!validation.isValid) {
-      setModalVisible(false);
+      dispatch({ type: 'CLOSE_MODAL' });
       onError(validation.error || 'Validation failed');
       return;
     }
 
-    const budget = parseFloat(formData.budget);
+    const budget = parseFloat(form.budget);
 
     try {
       let newProjectId: string | null = null;
@@ -79,21 +57,21 @@ export const useProjectForm = ({
         if (editingProject) {
           // Update existing project
           await editingProject.update((project: any) => {
-            project.name = formData.name;
-            project.client = formData.client;
-            project.startDate = formData.startDate.getTime();
-            project.endDate = formData.endDate.getTime();
-            project.status = formData.status;
+            project.name = form.name;
+            project.client = form.client;
+            project.startDate = form.startDate.getTime();
+            project.endDate = form.endDate.getTime();
+            project.status = form.status;
             project.budget = budget;
           });
         } else {
           // Create new project
           const newProject = await database.collections.get('projects').create((project: any) => {
-            project.name = formData.name;
-            project.client = formData.client;
-            project.startDate = formData.startDate.getTime();
-            project.endDate = formData.endDate.getTime();
-            project.status = formData.status;
+            project.name = form.name;
+            project.client = form.client;
+            project.startDate = form.startDate.getTime();
+            project.endDate = form.endDate.getTime();
+            project.status = form.status;
             project.budget = budget;
           });
           newProjectId = newProject.id;
@@ -107,7 +85,7 @@ export const useProjectForm = ({
         });
       }
 
-      setModalVisible(false);
+      dispatch({ type: 'CLOSE_MODAL' });
       onDataReload();
       onSuccess(
         editingProject ? 'Project updated successfully' : 'Project created successfully'
@@ -116,36 +94,69 @@ export const useProjectForm = ({
       logger.error('Error saving project:', error);
       onError('Failed to save project');
     }
-  };
+  }, [state, currentUserId, onError, onDataReload, onSuccess]);
 
-  const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    setShowStartDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setFormData({ ...formData, startDate: selectedDate });
+  const handleStartDateChange = useCallback((event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'ios') {
+      // On iOS, keep picker open
+      // On Android, it auto-closes
+    } else {
+      dispatch({ type: 'HIDE_START_DATE_PICKER' });
     }
-  };
-
-  const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    setShowEndDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      setFormData({ ...formData, endDate: selectedDate });
+      dispatch({ type: 'SET_START_DATE', payload: { date: selectedDate } });
     }
-  };
+  }, []);
 
-  const updateFormData = (data: Partial<ProjectFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
+  const handleEndDateChange = useCallback((event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'ios') {
+      // On iOS, keep picker open
+      // On Android, it auto-closes
+    } else {
+      dispatch({ type: 'HIDE_END_DATE_PICKER' });
+    }
+    if (selectedDate) {
+      dispatch({ type: 'SET_END_DATE', payload: { date: selectedDate } });
+    }
+  }, []);
+
+  const updateFormData = useCallback((data: Partial<ProjectFormData>) => {
+    dispatch({ type: 'UPDATE_FORM_DATA', payload: data });
+  }, []);
 
   return {
-    modalVisible,
-    setModalVisible,
-    editingProject,
-    formData,
+    // UI state
+    modalVisible: state.ui.modalVisible,
+    setModalVisible: useCallback((visible: boolean) => {
+      if (!visible) {
+        dispatch({ type: 'CLOSE_MODAL' });
+      }
+    }, []),
+    showStartDatePicker: state.ui.showStartDatePicker,
+    setShowStartDatePicker: useCallback((visible: boolean) => {
+      if (visible) {
+        dispatch({ type: 'SHOW_START_DATE_PICKER' });
+      } else {
+        dispatch({ type: 'HIDE_START_DATE_PICKER' });
+      }
+    }, []),
+    showEndDatePicker: state.ui.showEndDatePicker,
+    setShowEndDatePicker: useCallback((visible: boolean) => {
+      if (visible) {
+        dispatch({ type: 'SHOW_END_DATE_PICKER' });
+      } else {
+        dispatch({ type: 'HIDE_END_DATE_PICKER' });
+      }
+    }, []),
+
+    // Data state
+    editingProject: state.data.editingProject,
+
+    // Form state
+    formData: state.form,
     updateFormData,
-    showStartDatePicker,
-    setShowStartDatePicker,
-    showEndDatePicker,
-    setShowEndDatePicker,
+
+    // Actions
     openCreateModal,
     openEditModal,
     handleSave,
