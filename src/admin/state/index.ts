@@ -5,3 +5,4 @@
  */
 export * from './user-management';
 export * from './project-management';
+export * from './dashboard';

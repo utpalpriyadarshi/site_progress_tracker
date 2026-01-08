@@ -12,35 +12,26 @@ import {
   CategoryMigrationCard,
   DatabaseResetCard,
 } from './dashboard/components';
-import {
-  useDashboardStats,
-  useRoleSwitcher,
-  usePasswordMigration,
-  useCategoryMigration,
-  useDatabaseReset,
-} from './dashboard/hooks';
+import { useAdminDashboard } from './dashboard/hooks';
 
 const AdminDashboardScreen = () => {
   const { selectedRole, setSelectedRole } = useAdminContext();
   const navigation = useNavigation();
 
-  // Load dashboard statistics
-  const { stats, reloadStats } = useDashboardStats();
-
-  // Role switcher functionality
-  const { menuVisible, setMenuVisible, handleRoleSwitch } = useRoleSwitcher(
-    selectedRole,
-    setSelectedRole
-  );
-
-  // Password migration functionality
-  const { migrationStatus, isMigrating, handleRunMigration } = usePasswordMigration();
-
-  // Category migration functionality
-  const { isMigratingCategories, handleCategoryMigration } = useCategoryMigration(reloadStats);
-
-  // Database reset functionality
-  const { handleDatabaseReset } = useDatabaseReset();
+  // Consolidated dashboard hook (replaces 5 individual hooks)
+  const {
+    stats,
+    reloadStats,
+    menuVisible,
+    setMenuVisible,
+    handleRoleSwitch,
+    migrationStatus,
+    isMigrating,
+    handleRunMigration,
+    isMigratingCategories,
+    handleCategoryMigration,
+    handleDatabaseReset,
+  } = useAdminDashboard(selectedRole, setSelectedRole);
 
   // Navigation handlers
   const handleManageProjects = () => {
