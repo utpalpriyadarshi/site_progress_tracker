@@ -1,10 +1,11 @@
 /**
- * ItemCreationScreen - Sprint 3
+ * ItemCreationScreen - Sprint 3 - Phase 2 Refactor
  *
  * Create new WBS items with auto-generated codes
+ * Refactored to use useReducer for state management
  */
 
-import React from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -32,11 +33,14 @@ import {
   RiskSection,
 } from './item-creation/components';
 import {
-  useWBSCodeGeneration,
-  useItemForm,
-  useDateCalculations,
-  useItemCreation,
-} from './item-creation/hooks';
+  itemCreationReducer,
+  createItemCreationInitialState,
+  validateItemForm,
+  type ItemFormData,
+} from './state/item-form';
+import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
+import { database } from '../../models/database';
+import { logger } from '../services/LoggingService';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
 
@@ -47,33 +51,139 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   const siteId = 'siteId' in route.params ? route.params.siteId : '';
   const parentWbsCode = 'parentWbsCode' in route.params ? route.params.parentWbsCode || null : null;
 
-  // Custom hooks
-  const { generatedWbsCode, generatingCode } = useWBSCodeGeneration({
-    siteId,
-    parentWbsCode,
-    onError: (message) => showSnackbar(message, 'error'),
-  });
+  // Initialize reducer state
+  const [state, dispatch] = useReducer(
+    itemCreationReducer,
+    createItemCreationInitialState(parentWbsCode)
+  );
 
-  const { formData, errors, updateField, updateNumericField, validateForm } = useItemForm({
-    parentWbsCode,
-  });
+  // Generate WBS code on mount or when dependencies change
+  useEffect(() => {
+    const generateWbsCode = async () => {
+      if (!siteId) return;
 
-  const { handleStartDateChange, handleEndDateChange, handleDurationChange } = useDateCalculations({
-    formData,
-    updateField,
-  });
+      dispatch({ type: 'START_WBS_GENERATION' });
+      try {
+        let code: string;
+        if (parentWbsCode) {
+          code = await WBSCodeGenerator.generateChildCode(siteId, parentWbsCode);
+        } else {
+          code = await WBSCodeGenerator.generateRootCode(siteId);
+        }
+        dispatch({ type: 'SET_WBS_CODE', payload: { code } });
+      } catch (error) {
+        logger.error('[ItemCreation] Error generating WBS code', error as Error);
+        showSnackbar('Failed to generate WBS code', 'error');
+        dispatch({ type: 'WBS_GENERATION_COMPLETE' });
+      }
+    };
 
-  const { loading, handleSave } = useItemCreation({
-    siteId,
-    generatedWbsCode,
-    formData,
-    validateForm,
-    onSuccess: () => {
+    generateWbsCode();
+  }, [siteId, parentWbsCode, showSnackbar]);
+
+  // Handle field updates
+  const updateField = useCallback((field: keyof ItemFormData, value: any) => {
+    dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field, value } });
+  }, []);
+
+  const updateNumericField = useCallback((field: keyof ItemFormData, value: string) => {
+    dispatch({ type: 'UPDATE_NUMERIC_FIELD', payload: { field, value } });
+  }, []);
+
+  // Handle date changes with auto-calculation
+  const handleStartDateChange = useCallback((date: Date) => {
+    dispatch({ type: 'SET_START_DATE', payload: { date } });
+  }, []);
+
+  const handleEndDateChange = useCallback((date: Date) => {
+    dispatch({ type: 'SET_END_DATE', payload: { date } });
+  }, []);
+
+  const handleDurationChange = useCallback((duration: string) => {
+    dispatch({ type: 'SET_DURATION', payload: { duration } });
+  }, []);
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    // Validate form
+    const { isValid, errors } = validateItemForm(state.form);
+    if (!isValid) {
+      dispatch({ type: 'SET_VALIDATION_ERRORS', payload: { errors } });
+      return;
+    }
+
+    dispatch({ type: 'START_SAVING' });
+    try {
+      // Calculate planned dates
+      const plannedStartDate = state.form.startDate.getTime();
+      const plannedEndDate = state.form.endDate.getTime();
+
+      // Calculate WBS level from code
+      const wbsLevel = WBSCodeGenerator.calculateLevel(state.wbs.generatedCode);
+
+      // Calculate status based on completed quantity
+      const completedQty = parseFloat(state.form.completedQuantity) || 0;
+      const plannedQty = parseFloat(state.form.quantity);
+      let itemStatus = 'not_started';
+
+      if (completedQty >= plannedQty) {
+        itemStatus = 'completed';
+      } else if (completedQty > 0) {
+        itemStatus = 'in_progress';
+      }
+
+      // Save to database
+      await database.write(async () => {
+        await database.collections.get('items').create((item: any) => {
+          // Basic fields
+          item.name = state.form.name.trim();
+          item.categoryId = state.form.categoryId;
+          item.siteId = siteId;
+
+          // Quantity and measurements
+          item.plannedQuantity = plannedQty;
+          item.completedQuantity = completedQty;
+          item.unitOfMeasurement = state.form.unit.trim() || 'Set';
+
+          // Schedule
+          item.plannedStartDate = plannedStartDate;
+          item.plannedEndDate = plannedEndDate;
+          item.status = itemStatus;
+          item.weightage = parseFloat(state.form.weightage) || 0;
+
+          // Planning fields
+          item.baselineStartDate = plannedStartDate;
+          item.baselineEndDate = plannedEndDate;
+          item.isBaselineLocked = false;
+          item.dependencies = JSON.stringify([]);
+
+          // WBS Structure
+          item.wbsCode = state.wbs.generatedCode;
+          item.wbsLevel = wbsLevel;
+          item.parentWbsCode = state.form.parentWbsCode || null;
+
+          // Phase and Milestone
+          item.projectPhase = state.form.phase;
+          item.isMilestone = state.form.isMilestone;
+          item.createdByRole = 'planner';
+
+          // Critical Path and Risk
+          item.isCriticalPath = state.form.isCriticalPath;
+          item.floatDays = state.form.isCriticalPath ? 0 : (parseFloat(state.form.floatDays) || 0);
+          item.dependencyRisk = state.form.dependencyRisk;
+          item.riskNotes = state.form.riskNotes.trim() || null;
+        });
+      });
+
+      dispatch({ type: 'COMPLETE_SAVING' });
       showSnackbar('WBS item created successfully', 'success');
       setTimeout(() => navigation.goBack(), 1500);
-    },
-    onError: (message) => showSnackbar(message, 'error'),
-  });
+    } catch (error) {
+      logger.error('[ItemCreation] Error saving item', error as Error);
+      showSnackbar('Failed to create item. Please try again.', 'error');
+      dispatch({ type: 'COMPLETE_SAVING' });
+    }
+  }, [state.form, state.wbs.generatedCode, siteId, showSnackbar, navigation]);
 
   return (
     <View style={styles.container}>
@@ -83,7 +193,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
         <Appbar.Action
           icon="check"
           onPress={handleSave}
-          disabled={loading}
+          disabled={state.ui.saving}
         />
       </Appbar.Header>
 
@@ -95,73 +205,73 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           <Surface style={styles.surface}>
             {/* WBS Code Preview */}
             <WBSCodeDisplay
-              generatedWbsCode={generatedWbsCode}
+              generatedWbsCode={state.wbs.generatedCode}
               parentWbsCode={parentWbsCode}
-              generatingCode={generatingCode}
+              generatingCode={state.wbs.generating}
             />
 
             {/* Item Name */}
             <ItemDetailsSection
-              name={formData.name}
+              name={state.form.name}
               onNameChange={(text) => updateField('name', text)}
-              error={errors.name}
+              error={state.validation.errors.name}
             />
 
             {/* Category Selection */}
             <CategorySection
-              categoryId={formData.categoryId}
+              categoryId={state.form.categoryId}
               onCategorySelect={(categoryId) => updateField('categoryId', categoryId)}
-              error={errors.categoryId}
+              error={state.validation.errors.categoryId}
             />
 
             {/* Phase Selection */}
             <PhaseSection
-              phase={formData.phase}
+              phase={state.form.phase}
               onPhaseSelect={(phase) => updateField('phase', phase)}
             />
 
             {/* Schedule Section */}
             <ScheduleSection
-              startDate={formData.startDate}
-              endDate={formData.endDate}
-              duration={formData.duration}
+              startDate={state.form.startDate}
+              endDate={state.form.endDate}
+              duration={state.form.duration}
               onStartDateChange={handleStartDateChange}
               onEndDateChange={handleEndDateChange}
               onDurationChange={handleDurationChange}
               errors={{
-                startDate: errors.startDate,
-                endDate: errors.endDate,
-                duration: errors.duration,
+                startDate: state.validation.errors.startDate,
+                endDate: state.validation.errors.endDate,
+                duration: state.validation.errors.duration,
               }}
             />
 
             {/* Quantity Section */}
             <QuantitySection
-              quantity={formData.quantity}
-              completedQuantity={formData.completedQuantity}
-              unit={formData.unit}
-              weightage={formData.weightage}
+              quantity={state.form.quantity}
+              completedQuantity={state.form.completedQuantity}
+              unit={state.form.unit}
+              weightage={state.form.weightage}
               onQuantityChange={(text) => updateNumericField('quantity', text)}
               onCompletedQuantityChange={(text) => updateNumericField('completedQuantity', text)}
               onUnitChange={(text) => updateField('unit', text)}
               onWeightageChange={(text) => updateNumericField('weightage', text)}
-              error={errors.quantity}
+              error={state.validation.errors.quantity}
             />
 
             {/* Milestone & Critical Path */}
             <CriticalPathSection
-              isMilestone={formData.isMilestone}
-              isCriticalPath={formData.isCriticalPath}
-              floatDays={formData.floatDays}
-              onMilestoneToggle={() => updateField('isMilestone', !formData.isMilestone)}
-              onCriticalPathToggle={() => updateField('isCriticalPath', !formData.isCriticalPath)}
+              isMilestone={state.form.isMilestone}
+              isCriticalPath={state.form.isCriticalPath}
+              floatDays={state.form.floatDays}
+              onMilestoneToggle={() => updateField('isMilestone', !state.form.isMilestone)}
+              onCriticalPathToggle={() => updateField('isCriticalPath', !state.form.isCriticalPath)}
               onFloatDaysChange={(text) => updateNumericField('floatDays', text)}
             />
 
             {/* Risk Management */}
             <RiskSection
-              dependencyRisk={formData.dependencyRisk}
-              riskNotes={formData.riskNotes}
+              dependencyRisk={state.form.dependencyRisk}
+              riskNotes={state.form.riskNotes}
               onRiskChange={(risk) => updateField('dependencyRisk', risk)}
               onRiskNotesChange={(text) => updateField('riskNotes', text)}
             />
@@ -170,8 +280,8 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
             <Button
               mode="contained"
               onPress={handleSave}
-              loading={loading}
-              disabled={loading}
+              loading={state.ui.saving}
+              disabled={state.ui.saving}
               style={styles.saveButton}
               icon="content-save"
             >
