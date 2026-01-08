@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useReducer, useCallback } from 'react';
 import { database } from '../../../../models/database';
 import UserModel from '../../../../models/UserModel';
 import RoleModel from '../../../../models/RoleModel';
@@ -6,10 +6,14 @@ import bcrypt from 'react-native-bcrypt';
 import PasswordValidator from '../../../../services/auth/PasswordValidator';
 import { logger } from '../../../services/LoggingService';
 import {
-  UserFormData,
   validateUserForm,
   checkDuplicateUsername,
 } from '../utils/userValidation';
+import {
+  userManagementReducer,
+  createInitialState,
+  UserFormData,
+} from '../../state/user-management';
 
 interface UseUserFormProps {
   roles: RoleModel[];
@@ -19,77 +23,48 @@ interface UseUserFormProps {
 }
 
 export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUserFormProps) => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserModel | null>(null);
-  const [roleMenuVisible, setRoleMenuVisible] = useState(false);
-  const [projectMenuVisible, setProjectMenuVisible] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<UserModel | null>(null);
-  const [formData, setFormData] = useState<UserFormData>({
-    username: '',
-    password: '',
-    fullName: '',
-    email: '',
-    phone: '',
-    roleId: roles.length > 0 ? roles[0].id : '',
-    projectId: '',
-    isActive: true,
-  });
+  const defaultRoleId = roles.length > 0 ? roles[0].id : '';
+  const [state, dispatch] = useReducer(
+    userManagementReducer,
+    defaultRoleId,
+    createInitialState
+  );
 
-  const openCreateModal = () => {
-    setEditingUser(null);
-    setFormData({
-      username: '',
-      password: '',
-      fullName: '',
-      email: '',
-      phone: '',
-      roleId: roles.length > 0 ? roles[0].id : '',
-      projectId: '',
-      isActive: true,
-    });
-    setModalVisible(true);
-  };
+  const openCreateModal = useCallback(() => {
+    dispatch({ type: 'OPEN_CREATE_MODAL', payload: { defaultRoleId } });
+  }, [defaultRoleId]);
 
-  const openEditModal = (user: UserModel) => {
-    setEditingUser(user);
-    setFormData({
-      username: user.username,
-      password: '',
-      fullName: user.fullName,
-      email: user.email || '',
-      phone: user.phone || '',
-      roleId: user.roleId,
-      projectId: user.projectId || '',
-      isActive: user.isActive,
-    });
-    setModalVisible(true);
-  };
+  const openEditModal = useCallback((user: UserModel) => {
+    dispatch({ type: 'OPEN_EDIT_MODAL', payload: { user } });
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    const { form, data } = state;
+    const { editingUser } = data;
+
     // Validation
-    const validation = validateUserForm(formData, !!editingUser);
+    const validation = validateUserForm(form, !!editingUser);
     if (!validation.isValid) {
-      setModalVisible(false);
+      dispatch({ type: 'CLOSE_MODAL' });
       onError(validation.error || 'Validation failed');
       return;
     }
 
     // Check for duplicate username
     const duplicateCheck = await checkDuplicateUsername(
-      formData.username,
+      form.username,
       editingUser?.id
     );
     if (!duplicateCheck.isValid) {
-      setModalVisible(false);
+      dispatch({ type: 'CLOSE_MODAL' });
       onError(duplicateCheck.error || 'Username already exists');
       return;
     }
 
     try {
       // Validate password if provided
-      if (formData.password.trim()) {
-        const passwordValidation = PasswordValidator.validate(formData.password);
+      if (form.password.trim()) {
+        const passwordValidation = PasswordValidator.validate(form.password);
         if (!passwordValidation.isValid) {
           onError(passwordValidation.errors[0]);
           return;
@@ -101,9 +76,9 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
 
       // Hash password if provided
       let passwordHash: string | null = null;
-      if (formData.password.trim()) {
+      if (form.password.trim()) {
         passwordHash = await new Promise<string>((resolve, reject) => {
-          bcrypt.hash(formData.password, 8, (err: Error | undefined, hash: string) => {
+          bcrypt.hash(form.password, 8, (err: Error | undefined, hash: string) => {
             if (err) {
               reject(err);
             } else {
@@ -117,50 +92,50 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
         if (editingUser) {
           // Update existing user
           await editingUser.update((user: any) => {
-            user.username = formData.username;
+            user.username = form.username;
             if (passwordHash) {
               user._raw.password_hash = passwordHash;
             }
-            user.fullName = formData.fullName;
-            user.email = formData.email;
-            user.phone = formData.phone;
-            user.roleId = formData.roleId;
-            user.projectId = formData.projectId || null;
-            user.isActive = formData.isActive;
+            user.fullName = form.fullName;
+            user.email = form.email;
+            user.phone = form.phone;
+            user.roleId = form.roleId;
+            user.projectId = form.projectId || null;
+            user.isActive = form.isActive;
           });
         } else {
           // Create new user
           await database.collections.get('users').create((user: any) => {
-            user.username = formData.username;
+            user.username = form.username;
             user._raw.password_hash = passwordHash;
-            user.fullName = formData.fullName;
-            user.email = formData.email;
-            user.phone = formData.phone;
-            user.roleId = formData.roleId;
-            user.projectId = formData.projectId || null;
-            user.isActive = formData.isActive;
+            user.fullName = form.fullName;
+            user.email = form.email;
+            user.phone = form.phone;
+            user.roleId = form.roleId;
+            user.projectId = form.projectId || null;
+            user.isActive = form.isActive;
           });
         }
       });
 
-      setModalVisible(false);
+      dispatch({ type: 'CLOSE_MODAL' });
       onDataReload();
       onSuccess(editingUser ? 'User updated successfully' : 'User created successfully');
     } catch (error) {
       logger.error('Error saving user:', error);
       onError('Failed to save user');
     }
-  };
+  }, [state, onError, onDataReload, onSuccess]);
 
-  const handleDelete = (user: UserModel) => {
-    setUserToDelete(user);
-    setShowDeleteDialog(true);
-  };
+  const handleDelete = useCallback((user: UserModel) => {
+    dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { user } });
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
+    const { userToDelete } = state.data;
     if (!userToDelete) return;
 
-    setShowDeleteDialog(false);
+    dispatch({ type: 'CLOSE_DELETE_DIALOG' });
     try {
       await database.write(async () => {
         await userToDelete.markAsDeleted();
@@ -168,14 +143,13 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
 
       onDataReload();
       onSuccess('User deleted successfully');
-      setUserToDelete(null);
     } catch (error) {
       logger.error('Error deleting user:', error);
       onError('Failed to delete user');
     }
-  };
+  }, [state.data, onDataReload, onSuccess, onError]);
 
-  const toggleUserStatus = async (user: UserModel) => {
+  const toggleUserStatus = useCallback(async (user: UserModel) => {
     try {
       await database.write(async () => {
         await user.update((u: any) => {
@@ -188,26 +162,51 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
       logger.error('Error toggling user status:', error);
       onError('Failed to update user status');
     }
-  };
+  }, [onDataReload, onSuccess, onError]);
 
-  const updateFormData = (data: Partial<UserFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
+  const updateFormData = useCallback((data: Partial<UserFormData>) => {
+    dispatch({ type: 'UPDATE_FORM_DATA', payload: data });
+  }, []);
 
   return {
-    modalVisible,
-    setModalVisible,
-    editingUser,
-    formData,
+    // UI state
+    modalVisible: state.ui.modalVisible,
+    setModalVisible: useCallback((visible: boolean) => {
+      if (!visible) {
+        dispatch({ type: 'CLOSE_MODAL' });
+      }
+    }, []),
+    roleMenuVisible: state.ui.roleMenuVisible,
+    setRoleMenuVisible: useCallback(() => {
+      dispatch({ type: 'TOGGLE_ROLE_MENU' });
+    }, []),
+    projectMenuVisible: state.ui.projectMenuVisible,
+    setProjectMenuVisible: useCallback(() => {
+      dispatch({ type: 'TOGGLE_PROJECT_MENU' });
+    }, []),
+    showDeleteDialog: state.ui.showDeleteDialog,
+    setShowDeleteDialog: useCallback((visible: boolean) => {
+      if (!visible) {
+        dispatch({ type: 'CLOSE_DELETE_DIALOG' });
+      }
+    }, []),
+
+    // Data state
+    editingUser: state.data.editingUser,
+    userToDelete: state.data.userToDelete,
+    setUserToDelete: useCallback((user: UserModel | null) => {
+      if (user) {
+        dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { user } });
+      } else {
+        dispatch({ type: 'CLOSE_DELETE_DIALOG' });
+      }
+    }, []),
+
+    // Form state
+    formData: state.form,
     updateFormData,
-    roleMenuVisible,
-    setRoleMenuVisible,
-    projectMenuVisible,
-    setProjectMenuVisible,
-    showDeleteDialog,
-    setShowDeleteDialog,
-    userToDelete,
-    setUserToDelete,
+
+    // Actions
     openCreateModal,
     openEditModal,
     handleSave,
