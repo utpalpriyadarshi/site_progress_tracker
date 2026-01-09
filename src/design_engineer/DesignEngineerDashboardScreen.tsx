@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import MetricCard from './components/MetricCard';
-import { useDashboardMetrics } from './hooks/useDashboardMetrics';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import {
+  designEngineerDashboardReducer,
+  createDashboardInitialState,
+} from './state';
 
 /**
  * DesignEngineerDashboardScreen (v3.0 - Refactored)
@@ -34,7 +40,82 @@ import { useDashboardMetrics } from './hooks/useDashboardMetrics';
 
 const DesignEngineerDashboardScreen = () => {
   const { projectId, projectName, engineerId, refreshTrigger } = useDesignEngineerContext();
-  const { metrics, loading } = useDashboardMetrics(projectId, engineerId, refreshTrigger);
+  const [state, dispatch] = useReducer(designEngineerDashboardReducer, createDashboardInitialState());
+
+  // Load metrics
+  useEffect(() => {
+    loadMetrics();
+  }, [projectId, engineerId, refreshTrigger]);
+
+  const loadMetrics = async () => {
+    if (!projectId) {
+      dispatch({ type: 'COMPLETE_LOADING' });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'START_LOADING' });
+      logger.info('[Dashboard] Loading metrics for project:', projectId);
+
+      const doorsCollection = database.collections.get('doors_packages');
+      const allPackages = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
+
+      const pendingPackages = allPackages.filter((pkg: any) => pkg.status === 'pending').length;
+      const receivedPackages = allPackages.filter((pkg: any) => pkg.status === 'received').length;
+      const reviewedPackages = allPackages.filter((pkg: any) => pkg.status === 'reviewed').length;
+
+      const rfqCollection = database.collections.get('rfqs');
+      const allRfqs = await rfqCollection
+        .query(Q.where('project_id', projectId), Q.where('rfq_type', 'design'))
+        .fetch();
+
+      const draftRfqs = allRfqs.filter((rfq: any) => rfq.status === 'draft').length;
+      const issuedRfqs = allRfqs.filter((rfq: any) => rfq.status === 'issued').length;
+      const awardedRfqs = allRfqs.filter((rfq: any) => rfq.status === 'awarded').length;
+
+      const complianceRate = allPackages.length > 0 ? (reviewedPackages / allPackages.length) * 100 : 0;
+
+      let totalProcessingDays = 0;
+      let processedCount = 0;
+
+      allPackages.forEach((pkg: any) => {
+        if (pkg.receivedDate && pkg.reviewedDate) {
+          const processingTime = (pkg.reviewedDate - pkg.receivedDate) / (1000 * 60 * 60 * 24);
+          totalProcessingDays += processingTime;
+          processedCount++;
+        }
+      });
+
+      const avgProcessingDays = processedCount > 0 ? Math.round(totalProcessingDays / processedCount) : 0;
+
+      dispatch({
+        type: 'SET_METRICS',
+        payload: {
+          metrics: {
+            totalDoorsPackages: allPackages.length,
+            pendingPackages,
+            receivedPackages,
+            reviewedPackages,
+            totalDesignRfqs: allRfqs.length,
+            draftRfqs,
+            issuedRfqs,
+            awardedRfqs,
+            complianceRate: Math.round(complianceRate),
+            avgProcessingDays,
+          },
+        },
+      });
+
+      logger.debug('[Dashboard] Metrics loaded:', {
+        packages: allPackages.length,
+        rfqs: allRfqs.length,
+      });
+    } catch (error) {
+      logger.error('[Dashboard] Error loading metrics:', error);
+    } finally {
+      dispatch({ type: 'COMPLETE_LOADING' });
+    }
+  };
 
   const renderSectionHeader = (title: string, icon: string) => (
     <View style={styles.sectionHeader}>
@@ -54,7 +135,7 @@ const DesignEngineerDashboardScreen = () => {
     );
   }
 
-  if (loading) {
+  if (state.ui.loading) {
     return (
       <ErrorBoundary>
         <View style={styles.centerContainer}>
@@ -75,38 +156,38 @@ const DesignEngineerDashboardScreen = () => {
 
         {renderSectionHeader('DOORS Packages', '📦')}
         <View style={styles.metricsRow}>
-          <MetricCard title="Total Packages" value={metrics.totalDoorsPackages} subtitle="100 req/pkg" color="#007AFF" />
-          <MetricCard title="Pending" value={metrics.pendingPackages} subtitle="Not received" color="#FFA500" />
+          <MetricCard title="Total Packages" value={state.data.metrics.totalDoorsPackages} subtitle="100 req/pkg" color="#007AFF" />
+          <MetricCard title="Pending" value={state.data.metrics.pendingPackages} subtitle="Not received" color="#FFA500" />
         </View>
         <View style={styles.metricsRow}>
-          <MetricCard title="Received" value={metrics.receivedPackages} subtitle="Under review" color="#2196F3" />
-          <MetricCard title="Reviewed" value={metrics.reviewedPackages} subtitle="Completed" color="#4CAF50" />
+          <MetricCard title="Received" value={state.data.metrics.receivedPackages} subtitle="Under review" color="#2196F3" />
+          <MetricCard title="Reviewed" value={state.data.metrics.reviewedPackages} subtitle="Completed" color="#4CAF50" />
         </View>
 
         {renderSectionHeader('Design RFQs', '📝')}
         <View style={styles.metricsRow}>
-          <MetricCard title="Total RFQs" value={metrics.totalDesignRfqs} subtitle="Pre-PM200" color="#007AFF" />
-          <MetricCard title="Draft" value={metrics.draftRfqs} subtitle="Not issued" color="#9E9E9E" />
+          <MetricCard title="Total RFQs" value={state.data.metrics.totalDesignRfqs} subtitle="Pre-PM200" color="#007AFF" />
+          <MetricCard title="Draft" value={state.data.metrics.draftRfqs} subtitle="Not issued" color="#9E9E9E" />
         </View>
         <View style={styles.metricsRow}>
-          <MetricCard title="Issued" value={metrics.issuedRfqs} subtitle="Awaiting quotes" color="#2196F3" />
-          <MetricCard title="Awarded" value={metrics.awardedRfqs} subtitle="Completed" color="#4CAF50" />
+          <MetricCard title="Issued" value={state.data.metrics.issuedRfqs} subtitle="Awaiting quotes" color="#2196F3" />
+          <MetricCard title="Awarded" value={state.data.metrics.awardedRfqs} subtitle="Completed" color="#4CAF50" />
         </View>
 
         {renderSectionHeader('Performance Metrics', '📊')}
         <View style={styles.metricsRow}>
           <MetricCard
             title="Compliance Rate"
-            value={`${metrics.complianceRate}%`}
+            value={`${state.data.metrics.complianceRate}%`}
             subtitle="Reviewed / Total"
-            color={metrics.complianceRate >= 80 ? '#4CAF50' : metrics.complianceRate >= 50 ? '#FFA500' : '#F44336'}
+            color={state.data.metrics.complianceRate >= 80 ? '#4CAF50' : state.data.metrics.complianceRate >= 50 ? '#FFA500' : '#F44336'}
           />
           <MetricCard
             title="Avg Processing"
-            value={`${metrics.avgProcessingDays}`}
+            value={`${state.data.metrics.avgProcessingDays}`}
             subtitle="Days to review"
             color={
-              metrics.avgProcessingDays <= 7 ? '#4CAF50' : metrics.avgProcessingDays <= 14 ? '#FFA500' : '#F44336'
+              state.data.metrics.avgProcessingDays <= 7 ? '#4CAF50' : state.data.metrics.avgProcessingDays <= 14 ? '#FFA500' : '#F44336'
             }
           />
         </View>
@@ -133,7 +214,7 @@ const DesignEngineerDashboardScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {metrics.totalDoorsPackages === 0 && metrics.totalDesignRfqs === 0 && (
+        {state.data.metrics.totalDoorsPackages === 0 && state.data.metrics.totalDesignRfqs === 0 && (
           <Card style={styles.emptyStateCard}>
             <Card.Content>
               <Text style={styles.emptyStateTitle}>Getting Started</Text>
