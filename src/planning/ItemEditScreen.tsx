@@ -1,13 +1,14 @@
 /**
- * ItemEditScreen - Refactored Sprint 6
+ * ItemEditScreen - Phase 2 Refactor
  *
  * Edit existing WBS items with pre-populated data
  * - Lock WBS code (read-only after creation)
  * - Handle baseline-locked items (read-only mode)
  * - Update existing records (not create)
+ * Refactored to use useReducer for state management
  */
 
-import React, { useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -39,8 +40,17 @@ import {
   ItemInfoCard,
 } from './item-edit/components';
 
-// Hooks
-import { useItemEdit, useItemForm, useDateCalculations } from './item-edit/hooks';
+// State management
+import {
+  itemEditReducer,
+  createItemEditInitialState,
+  validateItemEditForm,
+  calculateProgress,
+  type ItemEditFormData,
+} from './state/item-form';
+import { database } from '../../models/database';
+import ItemModel from '../../models/ItemModel';
+import { logger } from '../services/LoggingService';
 
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
@@ -50,55 +60,125 @@ type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const itemId = route.params?.itemId;
 
-  // Item data and operations
-  const { item, loading, isLocked, saving, saveItem } = useItemEdit(itemId);
+  // Initialize reducer state
+  const [state, dispatch] = useReducer(itemEditReducer, createItemEditInitialState());
 
-  // Form state and validation
-  const {
-    formData,
-    errors,
-    updateField,
-    updateNumericField,
-    validateForm,
-    getProgressPercentage,
-  } = useItemForm(item);
-
-  // Date calculations
-  const {
-    handleStartDateChange,
-    handleEndDateChange,
-    handleDurationChange,
-  } = useDateCalculations();
-
-  // Snackbar state
+  // Snackbar state (keep separate for simplicity)
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
 
+  // Load item data on mount
+  useEffect(() => {
+    const loadItem = async () => {
+      if (!itemId) {
+        logger.error('[ItemEdit] No item ID provided');
+        dispatch({ type: 'LOADING_ERROR' });
+        return;
+      }
+
+      try {
+        dispatch({ type: 'START_LOADING' });
+        const loadedItem = await database.collections
+          .get('items')
+          .find(itemId) as ItemModel;
+
+        dispatch({ type: 'SET_ITEM_DATA', payload: { item: loadedItem } });
+      } catch (error) {
+        logger.error('[ItemEdit] Error loading item', error as Error);
+        dispatch({ type: 'LOADING_ERROR' });
+      }
+    };
+
+    loadItem();
+  }, [itemId]);
+
+  // Handle field updates
+  const updateField = useCallback((field: keyof ItemEditFormData, value: any) => {
+    dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field, value } });
+  }, []);
+
+  const updateNumericField = useCallback((field: keyof ItemEditFormData, value: string) => {
+    dispatch({ type: 'UPDATE_NUMERIC_FIELD', payload: { field, value } });
+  }, []);
+
+  // Handle date changes with auto-calculation
+  const handleStartDateChange = useCallback((date: Date) => {
+    dispatch({ type: 'SET_START_DATE', payload: { date } });
+  }, []);
+
+  const handleEndDateChange = useCallback((date: Date) => {
+    dispatch({ type: 'SET_END_DATE', payload: { date } });
+  }, []);
+
+  const handleDurationChange = useCallback((duration: string) => {
+    dispatch({ type: 'SET_DURATION', payload: { duration } });
+  }, []);
+
   // Handle update
-  const handleUpdate = async () => {
-    if (!validateForm() || !item) {
+  const handleUpdate = useCallback(async () => {
+    // Validate form
+    const { isValid, errors } = validateItemEditForm(state.form);
+    if (!isValid) {
+      dispatch({ type: 'SET_VALIDATION_ERRORS', payload: { errors } });
       return;
     }
 
+    if (!state.data.originalItem) {
+      return;
+    }
+
+    dispatch({ type: 'START_SAVING' });
     try {
-      await saveItem({
-        name: formData.name,
-        categoryId: formData.categoryId,
-        phase: formData.phase,
-        plannedQuantity: parseFloat(formData.quantity),
-        completedQuantity: parseFloat(formData.completedQuantity) || 0,
-        unitOfMeasurement: formData.unit,
-        plannedStartDate: formData.startDate.getTime(),
-        plannedEndDate: formData.endDate.getTime(),
-        isMilestone: formData.isMilestone,
-        isCriticalPath: formData.isCriticalPath,
-        floatDays: formData.isCriticalPath ? 0 : (parseFloat(formData.floatDays) || 0),
-        dependencyRisk: formData.dependencyRisk,
-        riskNotes: formData.riskNotes.trim() || null,
+      // Calculate status based on completed quantity
+      const completedQty = parseFloat(state.form.completedQuantity) || 0;
+      const plannedQty = parseFloat(state.form.quantity);
+      let itemStatus = 'not_started';
+
+      if (completedQty >= plannedQty) {
+        itemStatus = 'completed';
+      } else if (completedQty > 0) {
+        itemStatus = 'in_progress';
+      }
+
+      // Update database record
+      await database.write(async () => {
+        await state.data.originalItem!.update((i: any) => {
+          // Basic fields
+          i.name = state.form.name.trim();
+          i.categoryId = state.form.categoryId;
+
+          // Quantity and measurements
+          i.plannedQuantity = plannedQty;
+          i.completedQuantity = completedQty;
+          i.unitOfMeasurement = state.form.unit.trim() || 'Set';
+
+          // Status (auto-calculated from progress)
+          i.status = itemStatus;
+
+          // Schedule
+          i.plannedStartDate = state.form.startDate.getTime();
+          i.plannedEndDate = state.form.endDate.getTime();
+
+          // Planning fields (only update if not locked)
+          if (!state.ui.isLocked) {
+            i.baselineStartDate = state.form.startDate.getTime();
+            i.baselineEndDate = state.form.endDate.getTime();
+          }
+
+          // Phase and Milestone
+          i.projectPhase = state.form.phase;
+          i.isMilestone = state.form.isMilestone;
+
+          // Critical Path and Risk
+          i.isCriticalPath = state.form.isCriticalPath;
+          i.floatDays = state.form.isCriticalPath ? 0 : (parseFloat(state.form.floatDays) || 0);
+          i.dependencyRisk = state.form.dependencyRisk;
+          i.riskNotes = state.form.riskNotes.trim() || null;
+        });
       });
 
-      // Success
+      dispatch({ type: 'COMPLETE_SAVING' });
       setSnackbarMessage(MESSAGES.SUCCESS_UPDATE);
       setSnackbarType('success');
       setSnackbarVisible(true);
@@ -108,14 +188,16 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
         navigation.goBack();
       }, NAVIGATION_DELAY);
     } catch (error) {
+      logger.error('[ItemEdit] Error updating item', error as Error);
       setSnackbarMessage(MESSAGES.ERROR_UPDATE_FAILED);
       setSnackbarType('error');
       setSnackbarVisible(true);
+      dispatch({ type: 'COMPLETE_SAVING' });
     }
-  };
+  }, [state.form, state.data.originalItem, state.ui.isLocked, navigation]);
 
   // Loading state
-  if (loading) {
+  if (state.ui.loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1976D2" />
@@ -125,7 +207,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   // Item not found
-  if (!item) {
+  if (!state.data.originalItem) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Item not found</Text>
@@ -137,18 +219,18 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
     <View style={styles.container}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={isLocked ? 'View Item' : 'Edit WBS Item'} />
-        {!isLocked && (
+        <Appbar.Content title={state.ui.isLocked ? 'View Item' : 'Edit WBS Item'} />
+        {!state.ui.isLocked && (
           <Appbar.Action
             icon="check"
             onPress={handleUpdate}
-            disabled={saving}
+            disabled={state.ui.saving}
           />
         )}
       </Appbar.Header>
 
       {/* Baseline Locked Warning */}
-      <LockedBanner visible={isLocked} />
+      <LockedBanner visible={state.ui.isLocked} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -157,15 +239,18 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
         <ScrollView style={styles.scrollView}>
           <Surface style={styles.surface}>
             {/* WBS Code (Read-Only) */}
-            <WBSCodeDisplay wbsCode={item.wbsCode} wbsLevel={item.wbsLevel} />
+            <WBSCodeDisplay
+              wbsCode={state.data.originalItem.wbsCode}
+              wbsLevel={state.data.originalItem.wbsLevel}
+            />
 
             {/* Item Details */}
             <ItemDetailsSection
-              name={formData.name}
-              categoryId={formData.categoryId}
-              phase={formData.phase}
-              errors={errors}
-              isLocked={isLocked}
+              name={state.form.name}
+              categoryId={state.form.categoryId}
+              phase={state.form.phase}
+              errors={state.validation.errors}
+              isLocked={state.ui.isLocked}
               onNameChange={(text) => updateField('name', text)}
               onCategoryChange={(categoryId) => updateField('categoryId', categoryId)}
               onPhaseChange={(phase) => updateField('phase', phase)}
@@ -173,23 +258,23 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* Schedule */}
             <ScheduleSection
-              startDate={formData.startDate}
-              endDate={formData.endDate}
-              duration={formData.duration}
-              errors={errors}
-              isLocked={isLocked}
-              onStartDateChange={(date) => handleStartDateChange(date, formData, updateField)}
-              onEndDateChange={(date) => handleEndDateChange(date, formData, updateField)}
-              onDurationChange={(value) => handleDurationChange(value, formData, updateField)}
+              startDate={state.form.startDate}
+              endDate={state.form.endDate}
+              duration={state.form.duration}
+              errors={state.validation.errors}
+              isLocked={state.ui.isLocked}
+              onStartDateChange={handleStartDateChange}
+              onEndDateChange={handleEndDateChange}
+              onDurationChange={handleDurationChange}
             />
 
             {/* Quantity & Progress */}
             <QuantitySection
-              quantity={formData.quantity}
-              completedQuantity={formData.completedQuantity}
-              unit={formData.unit}
-              errors={errors}
-              isLocked={isLocked}
+              quantity={state.form.quantity}
+              completedQuantity={state.form.completedQuantity}
+              unit={state.form.unit}
+              errors={state.validation.errors}
+              isLocked={state.ui.isLocked}
               onQuantityChange={(value) => updateNumericField('quantity', value)}
               onCompletedQuantityChange={(value) => updateNumericField('completedQuantity', value)}
               onUnitChange={(text) => updateField('unit', text)}
@@ -197,37 +282,37 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* Critical Path & Milestones */}
             <CriticalPathSection
-              isMilestone={formData.isMilestone}
-              isCriticalPath={formData.isCriticalPath}
-              floatDays={formData.floatDays}
-              isLocked={isLocked}
-              onMilestoneToggle={() => updateField('isMilestone', !formData.isMilestone)}
-              onCriticalPathToggle={() => updateField('isCriticalPath', !formData.isCriticalPath)}
+              isMilestone={state.form.isMilestone}
+              isCriticalPath={state.form.isCriticalPath}
+              floatDays={state.form.floatDays}
+              isLocked={state.ui.isLocked}
+              onMilestoneToggle={() => updateField('isMilestone', !state.form.isMilestone)}
+              onCriticalPathToggle={() => updateField('isCriticalPath', !state.form.isCriticalPath)}
               onFloatDaysChange={(value) => updateNumericField('floatDays', value)}
             />
 
             {/* Risk Management */}
             <RiskSection
-              dependencyRisk={formData.dependencyRisk}
-              riskNotes={formData.riskNotes}
-              isLocked={isLocked}
+              dependencyRisk={state.form.dependencyRisk}
+              riskNotes={state.form.riskNotes}
+              isLocked={state.ui.isLocked}
               onRiskChange={(risk) => updateField('dependencyRisk', risk)}
               onRiskNotesChange={(text) => updateField('riskNotes', text)}
             />
 
             {/* Item Information */}
             <ItemInfoCard
-              item={item}
-              newProgressPercentage={getProgressPercentage()}
+              item={state.data.originalItem}
+              newProgressPercentage={calculateProgress(state.form)}
             />
 
             {/* Update Button (only if not locked) */}
-            {!isLocked && (
+            {!state.ui.isLocked && (
               <Button
                 mode="contained"
                 onPress={handleUpdate}
-                loading={saving}
-                disabled={saving}
+                loading={state.ui.saving}
+                disabled={state.ui.saving}
                 style={styles.saveButton}
                 icon="content-save"
               >

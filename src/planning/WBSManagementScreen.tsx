@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useReducer, useEffect, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { Card, Text, FAB, Chip, Button } from 'react-native-paper';
 import { database } from '../../models/database';
@@ -14,6 +14,13 @@ import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+// State management
+import {
+  wbsManagementReducer,
+  createWBSManagementInitialState,
+  type SortBy,
+} from './state/wbs-management';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'WBSManagement'>;
 
@@ -35,26 +42,16 @@ const SORT_OPTIONS: SortOption[] = [
 
 const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
   const { showSnackbar } = useSnackbar();
-  const [selectedSite, setSelectedSite] = useState<SiteModel | null>(null);
-  const [items, setItems] = useState<ItemModel[]>([]);
-  const [selectedPhase, setSelectedPhase] = useState<ProjectPhase | 'all'>('all');
-  const [loading, setLoading] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
-  // Search, filter, sort state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string[]>(['all']);
-  const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'wbs' | 'name' | 'duration' | 'progress'>('wbs');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  // Initialize reducer state
+  const [state, dispatch] = useReducer(wbsManagementReducer, createWBSManagementInitialState());
 
-  const loadItems = React.useCallback(async () => {
-    if (!selectedSite) return;
+  const loadItems = useCallback(async () => {
+    if (!state.selection.selectedSite) return;
 
-    setLoading(true);
+    dispatch({ type: 'START_LOADING' });
     try {
-      const query = [Q.where('site_id', selectedSite.id)];
+      const query = [Q.where('site_id', state.selection.selectedSite.id)];
 
       // Note: We don't filter by phase in the query anymore
       // We'll do it in the displayedItems useMemo for better UX
@@ -86,22 +83,21 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
         }
       });
 
-      setItems(siteItems);
+      dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
     } catch (error) {
       logger.error('[WBS] Error loading items', error as Error);
       showSnackbar('Failed to load items', 'error');
-    } finally {
-      setLoading(false);
+      dispatch({ type: 'LOADING_ERROR' });
     }
-  }, [selectedSite]);
+  }, [state.selection.selectedSite, showSnackbar]);
 
   // Combined filtering and sorting logic
   const displayedItems = useMemo(() => {
-    let result = items;
+    let result = state.data.items;
 
     // 1. Search filter (name OR WBS code)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (state.filters.searchQuery.trim()) {
+      const query = state.filters.searchQuery.toLowerCase();
       result = result.filter(item =>
         item.name.toLowerCase().includes(query) ||
         item.wbsCode.toLowerCase().includes(query)
@@ -109,17 +105,17 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     // 2. Phase filter
-    if (selectedPhase !== 'all') {
-      result = result.filter(item => item.projectPhase === selectedPhase);
+    if (state.selection.selectedPhase !== 'all') {
+      result = result.filter(item => item.projectPhase === state.selection.selectedPhase);
     }
 
     // 3. Status filter
-    if (!selectedStatus.includes('all')) {
-      result = result.filter(item => selectedStatus.includes(item.status));
+    if (!state.filters.selectedStatus.includes('all')) {
+      result = result.filter(item => state.filters.selectedStatus.includes(item.status));
     }
 
     // 4. Critical path filter
-    if (showCriticalPathOnly) {
+    if (state.filters.showCriticalPathOnly) {
       result = result.filter(item => item.isCriticalPath);
     }
 
@@ -127,11 +123,11 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     result = [...result].sort((a, b) => {
       let comparison = 0;
 
-      if (sortBy === 'wbs') {
+      if (state.sort.sortBy === 'wbs') {
         comparison = a.wbsCode.localeCompare(b.wbsCode, undefined, { numeric: true });
-      } else if (sortBy === 'name') {
+      } else if (state.sort.sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
-      } else if (sortBy === 'duration') {
+      } else if (state.sort.sortBy === 'duration') {
         const durationA = a.plannedEndDate && a.plannedStartDate
           ? (a.plannedEndDate - a.plannedStartDate) / (1000 * 60 * 60 * 24)
           : 0;
@@ -139,80 +135,73 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
           ? (b.plannedEndDate - b.plannedStartDate) / (1000 * 60 * 60 * 24)
           : 0;
         comparison = durationA - durationB;
-      } else if (sortBy === 'progress') {
+      } else if (state.sort.sortBy === 'progress') {
         const progressA = a.getProgressPercentage();
         const progressB = b.getProgressPercentage();
         comparison = progressA - progressB;
       }
 
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return state.sort.sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return result;
-  }, [items, searchQuery, selectedPhase, selectedStatus, showCriticalPathOnly, sortBy, sortDirection]);
+  }, [state.data.items, state.filters, state.selection.selectedPhase, state.sort]);
 
   // Load items when site changes
   useEffect(() => {
-    if (selectedSite) {
+    if (state.selection.selectedSite) {
       loadItems();
-    } else {
-      setItems([]);
     }
-  }, [selectedSite, loadItems]);
+  }, [state.selection.selectedSite, loadItems]);
 
   // Reload items when screen comes into focus (after creating/editing)
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      if (selectedSite) {
+      if (state.selection.selectedSite) {
         loadItems();
       }
     });
 
     return unsubscribe;
-  }, [navigation, selectedSite, loadItems]);
+  }, [navigation, state.selection.selectedSite, loadItems]);
 
   // Filter toggle handlers
-  const handleStatusToggle = (id: string) => {
+  const handleStatusToggle = useCallback((id: string) => {
     if (id === 'all') {
-      setSelectedStatus(['all']);
+      dispatch({ type: 'SET_SELECTED_STATUS', payload: { status: ['all'] } });
     } else {
-      const newFilters = selectedStatus.includes(id)
-        ? selectedStatus.filter(f => f !== id && f !== 'all')
-        : [...selectedStatus.filter(f => f !== 'all'), id];
-      setSelectedStatus(newFilters.length === 0 ? ['all'] : newFilters);
+      const newFilters = state.filters.selectedStatus.includes(id)
+        ? state.filters.selectedStatus.filter(f => f !== id && f !== 'all')
+        : [...state.filters.selectedStatus.filter(f => f !== 'all'), id];
+      dispatch({ type: 'SET_SELECTED_STATUS', payload: { status: newFilters.length === 0 ? ['all'] : newFilters } });
     }
-  };
+  }, [state.filters.selectedStatus]);
 
   // Clear all filters
-  const clearAllFilters = () => {
-    setSearchQuery('');
-    setSelectedPhase('all');
-    setSelectedStatus(['all']);
-    setShowCriticalPathOnly(false);
-    setSortBy('wbs');
-    setSortDirection('asc');
-  };
+  const clearAllFilters = useCallback(() => {
+    dispatch({ type: 'CLEAR_FILTERS' });
+  }, []);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return searchQuery.trim() !== '' ||
-           selectedPhase !== 'all' ||
-           !selectedStatus.includes('all') ||
-           showCriticalPathOnly;
-  }, [searchQuery, selectedPhase, selectedStatus, showCriticalPathOnly]);
+    return state.filters.searchQuery.trim() !== '' ||
+           state.selection.selectedPhase !== 'all' ||
+           !state.filters.selectedStatus.includes('all') ||
+           state.filters.showCriticalPathOnly;
+  }, [state.filters, state.selection.selectedPhase]);
 
-  const handleAddItem = () => {
-    if (!selectedSite) {
+  const handleAddItem = useCallback(() => {
+    if (!state.selection.selectedSite) {
       showSnackbar('Please select a site first', 'warning');
       return;
     }
 
     navigation.navigate('ItemCreation', {
-      siteId: selectedSite.id,
+      siteId: state.selection.selectedSite.id,
     });
-  };
+  }, [state.selection.selectedSite, showSnackbar, navigation]);
 
-  const handleAddChildItem = (parentItem: ItemModel) => {
+  const handleAddChildItem = useCallback((parentItem: ItemModel) => {
     if (parentItem.isBaselineLocked) {
       showSnackbar('Cannot add child items after baseline is locked', 'warning');
       return;
@@ -224,12 +213,12 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     navigation.navigate('ItemCreation', {
-      siteId: selectedSite!.id,
+      siteId: state.selection.selectedSite!.id,
       parentWbsCode: parentItem.wbsCode,
     });
-  };
+  }, [state.selection.selectedSite, showSnackbar, navigation]);
 
-  const handleEditItem = (item: ItemModel) => {
+  const handleEditItem = useCallback((item: ItemModel) => {
     if (item.isBaselineLocked) {
       showSnackbar('Cannot edit items after baseline is locked', 'warning');
       return;
@@ -238,34 +227,33 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('ItemEdit', {
       itemId: item.id,
     });
-  };
+  }, [showSnackbar, navigation]);
 
-  const handleDeleteItem = async (item: ItemModel) => {
+  const handleDeleteItem = useCallback((item: ItemModel) => {
     if (item.isBaselineLocked) {
       showSnackbar('Cannot delete items after baseline is locked', 'warning');
       return;
     }
 
-    setItemToDelete(item);
-    setShowDeleteDialog(true);
-  };
+    dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { item } });
+  }, [showSnackbar]);
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
+  const confirmDelete = useCallback(async () => {
+    if (!state.data.itemToDelete) return;
 
-    setShowDeleteDialog(false);
     try {
       await database.write(async () => {
-        await itemToDelete.destroyPermanently();
+        await state.data.itemToDelete!.destroyPermanently();
       });
+      dispatch({ type: 'CONFIRM_DELETE' });
       loadItems();
-      showSnackbar(`"${itemToDelete.name}" deleted successfully`, 'success');
-      setItemToDelete(null);
+      showSnackbar(`"${state.data.itemToDelete.name}" deleted successfully`, 'success');
     } catch (error) {
       logger.error('[WBS] Error deleting item', error as Error);
       showSnackbar('Failed to delete item', 'error');
+      dispatch({ type: 'CLOSE_DELETE_DIALOG' });
     }
-  };
+  }, [state.data.itemToDelete, loadItems, showSnackbar]);
 
   const phases: Array<{ key: ProjectPhase | 'all'; label: string }> = [
     { key: 'all', label: 'All Phases' },
@@ -288,18 +276,18 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       <Card style={styles.selectorCard}>
         <Card.Content>
           <SimpleSiteSelector
-            selectedSite={selectedSite}
-            onSiteChange={setSelectedSite}
+            selectedSite={state.selection.selectedSite}
+            onSiteChange={(site) => dispatch({ type: 'SET_SELECTED_SITE', payload: { site } })}
           />
         </Card.Content>
       </Card>
 
-      {selectedSite && (
+      {state.selection.selectedSite && (
         <View style={styles.contentWrapper}>
           {/* Search Bar */}
           <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+            value={state.filters.searchQuery}
+            onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
             placeholder="Search by name or WBS code..."
           />
 
@@ -313,8 +301,8 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
             {phases.map(phase => (
               <Chip
                 key={phase.key}
-                selected={selectedPhase === phase.key}
-                onPress={() => setSelectedPhase(phase.key)}
+                selected={state.selection.selectedPhase === phase.key}
+                onPress={() => dispatch({ type: 'SET_SELECTED_PHASE', payload: { phase: phase.key } })}
                 style={styles.phaseChip}
               >
                 {phase.label}
@@ -325,21 +313,21 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
           {/* Status Filter Chips (New) */}
           <FilterChips
             filters={STATUS_FILTERS}
-            selectedFilters={selectedStatus}
+            selectedFilters={state.filters.selectedStatus}
             onFilterToggle={handleStatusToggle}
           />
 
           {/* Critical Path Only Filter (New) */}
           <View style={styles.criticalPathFilter}>
             <Chip
-              selected={showCriticalPathOnly}
-              onPress={() => setShowCriticalPathOnly(!showCriticalPathOnly)}
-              icon={showCriticalPathOnly ? 'check' : 'alert'}
+              selected={state.filters.showCriticalPathOnly}
+              onPress={() => dispatch({ type: 'TOGGLE_CRITICAL_PATH_FILTER' })}
+              icon={state.filters.showCriticalPathOnly ? 'check' : 'alert'}
               style={[
                 styles.criticalPathChip,
-                showCriticalPathOnly && styles.criticalPathChipActive,
+                state.filters.showCriticalPathOnly && styles.criticalPathChipActive,
               ]}
-              textStyle={showCriticalPathOnly && styles.criticalPathChipText}
+              textStyle={state.filters.showCriticalPathOnly && styles.criticalPathChipText}
             >
               Critical Path Only
             </Chip>
@@ -348,7 +336,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
           {/* Results Row with Sort and Clear All */}
           <View style={styles.resultsRow}>
             <Text variant="bodySmall" style={styles.resultCount}>
-              Showing {displayedItems.length} of {items.length} items
+              Showing {displayedItems.length} of {state.data.items.length} items
             </Text>
 
             {hasActiveFilters && (
@@ -359,10 +347,10 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
             <SortMenu
               sortOptions={SORT_OPTIONS}
-              currentSort={sortBy}
-              onSortChange={(id) => setSortBy(id as any)}
-              sortDirection={sortDirection}
-              onDirectionChange={setSortDirection}
+              currentSort={state.sort.sortBy}
+              onSortChange={(id) => dispatch({ type: 'SET_SORT_BY', payload: { sortBy: id as SortBy } })}
+              sortDirection={state.sort.sortDirection}
+              onDirectionChange={(direction) => dispatch({ type: 'SET_SORT_DIRECTION', payload: { direction } })}
             />
           </View>
 
@@ -382,13 +370,13 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text variant="bodyLarge" style={styles.emptyText}>
-                  {loading
+                  {state.ui.loading
                     ? 'Loading items...'
                     : hasActiveFilters
                     ? 'No items match your filters'
                     : 'No items yet'}
                 </Text>
-                {!loading && (
+                {!state.ui.loading && (
                   <Text variant="bodyMedium" style={styles.emptySubtext}>
                     {hasActiveFilters
                       ? 'Try adjusting the search or filters'
@@ -411,7 +399,7 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       )}
 
-      {!selectedSite && (
+      {!state.selection.selectedSite && (
         <View style={styles.noSiteContainer}>
           <Text variant="headlineSmall" style={styles.noSiteText}>
             Select a Site
@@ -423,16 +411,13 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
       )}
 
       <ConfirmDialog
-        visible={showDeleteDialog}
+        visible={state.ui.showDeleteDialog}
         title="Delete Item"
-        message={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${state.data.itemToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDelete}
-        onCancel={() => {
-          setShowDeleteDialog(false);
-          setItemToDelete(null);
-        }}
+        onCancel={() => dispatch({ type: 'CLOSE_DELETE_DIALOG' })}
         destructive={true}
       />
     </View>

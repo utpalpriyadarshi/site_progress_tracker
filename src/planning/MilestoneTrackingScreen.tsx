@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useReducer, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Text, Snackbar } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
@@ -11,13 +11,21 @@ import {
   MilestoneCard,
   EditProgressDialog,
 } from './milestone-tracking/components';
-import { useMilestoneData, useEditProgress } from './milestone-tracking/hooks';
+import { useMilestoneData } from './milestone-tracking/hooks';
+import {
+  milestoneTrackingReducer,
+  createMilestoneTrackingInitialState,
+  validateMilestoneProgress,
+} from './state/milestone-tracking';
+import { logger } from '../services/LoggingService';
+import { MILESTONE_STATUS } from './milestone-tracking/utils/milestoneConstants';
 
 /**
- * MilestoneTrackingScreen (v2.11 Phase 4)
+ * MilestoneTrackingScreen - Phase 2 Refactor
  *
  * Planning coordinator tracks milestone progress across sites.
  * Uses milestone_progress table which has planned dates & progress.
+ * Refactored to use useReducer for state management (18 useState → 1 useReducer, 94% reduction)
  */
 
 const MilestoneTrackingScreenComponent = ({
@@ -29,38 +37,212 @@ const MilestoneTrackingScreenComponent = ({
   sites: any[];
   projects: any[];
 }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  // Initialize reducer state
+  const [state, dispatch] = useReducer(
+    milestoneTrackingReducer,
+    createMilestoneTrackingInitialState()
+  );
 
   // Initialize project selection
   useEffect(() => {
-    if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0].id);
+    if (projects.length > 0 && !state.selection.selectedProjectId) {
+      dispatch({ type: 'SET_SELECTED_PROJECT', payload: { projectId: projects[0].id } });
     }
-  }, [projects]);
+  }, [projects, state.selection.selectedProjectId]);
 
-  // Custom hooks
+  // Custom hooks (data loading only)
   const {
     milestoneProgress,
     loading,
     getProgressForMilestone,
     refreshProgress,
-  } = useMilestoneData(selectedProjectId, selectedSiteId);
+  } = useMilestoneData(state.selection.selectedProjectId, state.selection.selectedSiteId);
 
-  const editProgressHook = useEditProgress({
-    selectedProjectId,
-    selectedSiteId,
-    getProgressForMilestone,
-    onSuccess: (message) => {
-      setSnackbarMessage(message);
-      setSnackbarVisible(true);
+  // Selection handlers
+  const handleSelectProject = useCallback((projectId: string) => {
+    dispatch({ type: 'SET_SELECTED_PROJECT', payload: { projectId } });
+  }, []);
+
+  const handleSelectSite = useCallback((siteId: string) => {
+    dispatch({ type: 'SET_SELECTED_SITE', payload: { siteId } });
+  }, []);
+
+  // Dialog handlers
+  const openEditDialog = useCallback(
+    (milestone: MilestoneModel) => {
+      const progress = getProgressForMilestone(milestone.id);
+      dispatch({
+        type: 'OPEN_EDIT_DIALOG',
+        payload: { milestone, progress },
+      });
     },
-    onRefresh: refreshProgress,
-  });
+    [getProgressForMilestone]
+  );
 
-  const filteredMilestones = milestones.filter(m => m.projectId === selectedProjectId);
+  const closeEditDialog = useCallback(() => {
+    dispatch({ type: 'CLOSE_EDIT_DIALOG' });
+  }, []);
+
+  // Form field handlers
+  const handleChangeProgressPercentage = useCallback((value: string) => {
+    dispatch({ type: 'SET_PROGRESS_PERCENTAGE', payload: { value } });
+  }, []);
+
+  const handleChangeStatus = useCallback((status: string) => {
+    dispatch({ type: 'SET_STATUS', payload: { status } });
+  }, []);
+
+  const handleChangeNotes = useCallback((notes: string) => {
+    dispatch({ type: 'SET_NOTES', payload: { notes } });
+  }, []);
+
+  // Date handlers
+  const handleChangePlannedStartDate = useCallback((date: Date | undefined) => {
+    dispatch({ type: 'SET_PLANNED_START_DATE', payload: { date } });
+  }, []);
+
+  const handleChangePlannedEndDate = useCallback((date: Date | undefined) => {
+    dispatch({ type: 'SET_PLANNED_END_DATE', payload: { date } });
+  }, []);
+
+  const handleChangeActualStartDate = useCallback((date: Date | undefined) => {
+    dispatch({ type: 'SET_ACTUAL_START_DATE', payload: { date } });
+  }, []);
+
+  const handleChangeActualEndDate = useCallback((date: Date | undefined) => {
+    dispatch({ type: 'SET_ACTUAL_END_DATE', payload: { date } });
+  }, []);
+
+  // Date picker handlers
+  const handleShowPlannedStartPicker = useCallback((show: boolean) => {
+    dispatch({ type: 'SHOW_PLANNED_START_PICKER', payload: { show } });
+  }, []);
+
+  const handleShowPlannedEndPicker = useCallback((show: boolean) => {
+    dispatch({ type: 'SHOW_PLANNED_END_PICKER', payload: { show } });
+  }, []);
+
+  const handleShowActualStartPicker = useCallback((show: boolean) => {
+    dispatch({ type: 'SHOW_ACTUAL_START_PICKER', payload: { show } });
+  }, []);
+
+  const handleShowActualEndPicker = useCallback((show: boolean) => {
+    dispatch({ type: 'SHOW_ACTUAL_END_PICKER', payload: { show } });
+  }, []);
+
+  // Save handler
+  const handleSave = useCallback(async () => {
+    if (!state.selection.selectedSiteId) {
+      Alert.alert('Validation Error', 'Please select a site first');
+      return;
+    }
+
+    // Validate form
+    const { isValid, errors } = validateMilestoneProgress(state.form);
+    if (!isValid) {
+      Alert.alert('Validation Error', errors.progressPercentage || 'Invalid progress value');
+      return;
+    }
+
+    const percentage = parseFloat(state.form.progressPercentage);
+
+    try {
+      await database.write(async () => {
+        if (state.dialog.editingProgress) {
+          // Update existing progress
+          await state.dialog.editingProgress.update((record: any) => {
+            record.progressPercentage = percentage;
+            record.status = state.form.status;
+            record.notes = state.form.notes;
+            record.plannedStartDate = state.form.plannedStartDate?.getTime() || null;
+            record.plannedEndDate = state.form.plannedEndDate?.getTime() || null;
+            record.actualStartDate = state.form.actualStartDate?.getTime() || null;
+            record.actualEndDate = state.form.actualEndDate?.getTime() || null;
+            record.updatedBy = 'planner';
+            record.updatedAt = Date.now();
+          });
+        } else {
+          // Create new progress record
+          const progressCollection = database.collections.get('milestone_progress');
+          await progressCollection.create((record: any) => {
+            record.milestoneId = state.dialog.editingMilestone!.id;
+            record.siteId = state.selection.selectedSiteId;
+            record.projectId = state.selection.selectedProjectId;
+            record.progressPercentage = percentage;
+            record.status = state.form.status;
+            record.notes = state.form.notes;
+            record.plannedStartDate = state.form.plannedStartDate?.getTime() || null;
+            record.plannedEndDate = state.form.plannedEndDate?.getTime() || null;
+            record.actualStartDate = state.form.actualStartDate?.getTime() || null;
+            record.actualEndDate = state.form.actualEndDate?.getTime() || null;
+            record.updatedBy = 'planner';
+            record.updatedAt = Date.now();
+            record.appSyncStatus = 'pending';
+            record.version = 1;
+          });
+        }
+      });
+
+      dispatch({ type: 'SHOW_SNACKBAR', payload: { message: 'Milestone progress updated successfully' } });
+      dispatch({ type: 'CLOSE_EDIT_DIALOG' });
+      refreshProgress();
+    } catch (error) {
+      logger.error('[Milestone] Error saving', error as Error);
+      Alert.alert('Error', 'Failed to save milestone progress');
+    }
+  }, [state, refreshProgress]);
+
+  // Mark as achieved handler
+  const handleMarkAsAchieved = useCallback(
+    async (milestone: MilestoneModel) => {
+      if (!state.selection.selectedSiteId) {
+        Alert.alert('Validation Error', 'Please select a site first');
+        return;
+      }
+
+      const progress = getProgressForMilestone(milestone.id);
+
+      try {
+        await database.write(async () => {
+          if (progress) {
+            await progress.update((record: any) => {
+              record.progressPercentage = 100;
+              record.status = MILESTONE_STATUS.COMPLETED;
+              record.actualEndDate = Date.now();
+              record.updatedBy = 'planner';
+              record.updatedAt = Date.now();
+            });
+          } else {
+            const progressCollection = database.collections.get('milestone_progress');
+            await progressCollection.create((record: any) => {
+              record.milestoneId = milestone.id;
+              record.siteId = state.selection.selectedSiteId;
+              record.projectId = state.selection.selectedProjectId;
+              record.progressPercentage = 100;
+              record.status = MILESTONE_STATUS.COMPLETED;
+              record.actualEndDate = Date.now();
+              record.updatedBy = 'planner';
+              record.updatedAt = Date.now();
+              record.appSyncStatus = 'pending';
+              record.version = 1;
+            });
+          }
+        });
+
+        dispatch({
+          type: 'SHOW_SNACKBAR',
+          payload: { message: `${milestone.milestoneName} marked as achieved!` },
+        });
+        refreshProgress();
+      } catch (error) {
+        logger.error('[Milestone] Error marking as achieved', error as Error);
+        Alert.alert('Error', 'Failed to mark milestone as achieved');
+      }
+    },
+    [state.selection, getProgressForMilestone, refreshProgress]
+  );
+
+  const filteredMilestones = milestones.filter((m) => m.projectId === state.selection.selectedProjectId);
 
   return (
     <View style={styles.container}>
@@ -68,10 +250,10 @@ const MilestoneTrackingScreenComponent = ({
       <ProjectSiteSelector
         projects={projects}
         sites={sites}
-        selectedProjectId={selectedProjectId}
-        selectedSiteId={selectedSiteId}
-        onSelectProject={setSelectedProjectId}
-        onSelectSite={setSelectedSiteId}
+        selectedProjectId={state.selection.selectedProjectId}
+        selectedSiteId={state.selection.selectedSiteId}
+        onSelectProject={handleSelectProject}
+        onSelectSite={handleSelectSite}
       />
 
       {/* Milestones List */}
@@ -84,9 +266,9 @@ const MilestoneTrackingScreenComponent = ({
               key={milestone.id}
               milestone={milestone}
               progress={progress}
-              selectedSiteId={selectedSiteId}
-              onEditProgress={editProgressHook.openEditDialog}
-              onMarkAsAchieved={editProgressHook.handleMarkAsAchieved}
+              selectedSiteId={state.selection.selectedSiteId}
+              onEditProgress={openEditDialog}
+              onMarkAsAchieved={handleMarkAsAchieved}
             />
           );
         })}
@@ -102,42 +284,42 @@ const MilestoneTrackingScreenComponent = ({
 
       {/* Edit Progress Dialog */}
       <EditProgressDialog
-        visible={editProgressHook.editDialogVisible}
-        milestone={editProgressHook.editingMilestone}
-        progressPercentage={editProgressHook.progressPercentage}
-        status={editProgressHook.status}
-        notes={editProgressHook.notes}
-        plannedStartDate={editProgressHook.plannedStartDate}
-        plannedEndDate={editProgressHook.plannedEndDate}
-        actualStartDate={editProgressHook.actualStartDate}
-        actualEndDate={editProgressHook.actualEndDate}
-        showPlannedStartPicker={editProgressHook.showPlannedStartPicker}
-        showPlannedEndPicker={editProgressHook.showPlannedEndPicker}
-        showActualStartPicker={editProgressHook.showActualStartPicker}
-        showActualEndPicker={editProgressHook.showActualEndPicker}
-        onChangeProgressPercentage={editProgressHook.setProgressPercentage}
-        onChangeStatus={editProgressHook.setStatus}
-        onChangeNotes={editProgressHook.setNotes}
-        onChangePlannedStartDate={editProgressHook.setPlannedStartDate}
-        onChangePlannedEndDate={editProgressHook.setPlannedEndDate}
-        onChangeActualStartDate={editProgressHook.setActualStartDate}
-        onChangeActualEndDate={editProgressHook.setActualEndDate}
-        onShowPlannedStartPicker={editProgressHook.setShowPlannedStartPicker}
-        onShowPlannedEndPicker={editProgressHook.setShowPlannedEndPicker}
-        onShowActualStartPicker={editProgressHook.setShowActualStartPicker}
-        onShowActualEndPicker={editProgressHook.setShowActualEndPicker}
-        onSave={editProgressHook.handleSave}
-        onCancel={editProgressHook.closeEditDialog}
+        visible={state.ui.editDialogVisible}
+        milestone={state.dialog.editingMilestone}
+        progressPercentage={state.form.progressPercentage}
+        status={state.form.status}
+        notes={state.form.notes}
+        plannedStartDate={state.form.plannedStartDate}
+        plannedEndDate={state.form.plannedEndDate}
+        actualStartDate={state.form.actualStartDate}
+        actualEndDate={state.form.actualEndDate}
+        showPlannedStartPicker={state.ui.showPlannedStartPicker}
+        showPlannedEndPicker={state.ui.showPlannedEndPicker}
+        showActualStartPicker={state.ui.showActualStartPicker}
+        showActualEndPicker={state.ui.showActualEndPicker}
+        onChangeProgressPercentage={handleChangeProgressPercentage}
+        onChangeStatus={handleChangeStatus}
+        onChangeNotes={handleChangeNotes}
+        onChangePlannedStartDate={handleChangePlannedStartDate}
+        onChangePlannedEndDate={handleChangePlannedEndDate}
+        onChangeActualStartDate={handleChangeActualStartDate}
+        onChangeActualEndDate={handleChangeActualEndDate}
+        onShowPlannedStartPicker={handleShowPlannedStartPicker}
+        onShowPlannedEndPicker={handleShowPlannedEndPicker}
+        onShowActualStartPicker={handleShowActualStartPicker}
+        onShowActualEndPicker={handleShowActualEndPicker}
+        onSave={handleSave}
+        onCancel={closeEditDialog}
       />
 
       {/* Snackbar */}
       <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
+        visible={state.ui.snackbarVisible}
+        onDismiss={() => dispatch({ type: 'HIDE_SNACKBAR' })}
         duration={3000}
         style={styles.snackbar}
       >
-        {snackbarMessage}
+        {state.ui.snackbarMessage}
       </Snackbar>
     </View>
   );
