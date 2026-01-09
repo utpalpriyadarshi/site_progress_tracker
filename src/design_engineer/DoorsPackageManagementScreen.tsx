@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import React, { useReducer, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Menu, Portal } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DoorsPackageCard from './components/DoorsPackageCard';
 import CreateDoorsPackageDialog from './components/CreateDoorsPackageDialog';
-import { useDoorsPackages } from './hooks/useDoorsPackages';
-import { useDoorsPackageFilters } from './hooks/useDoorsPackageFilters';
+import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import { logger } from '../services/LoggingService';
+import { DoorsPackage } from './types/DoorsPackageTypes';
+import {
+  doorsPackageManagementReducer,
+  createDoorsPackageInitialState,
+} from './state';
 
 /**
  * DoorsPackageManagementScreen (v3.0 - Refactored)
@@ -31,38 +37,209 @@ import { useDoorsPackageFilters } from './hooks/useDoorsPackageFilters';
 
 const DoorsPackageManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
-  const { packages, sites, loading, createPackage, markAsReceived, markAsReviewed } = useDoorsPackages(
-    projectId,
-    refreshTrigger
-  );
-  const { filteredPackages, searchQuery, setSearchQuery, filterStatus, setFilterStatus } =
-    useDoorsPackageFilters(packages);
+  const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
 
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newDoorsId, setNewDoorsId] = useState('');
-  const [newSiteId, setNewSiteId] = useState('');
-  const [newEquipmentType, setNewEquipmentType] = useState('');
-  const [newMaterialType, setNewMaterialType] = useState('');
+  // Load packages and sites
+  useEffect(() => {
+    loadSites();
+    loadPackages();
+  }, [projectId, refreshTrigger]);
 
-  const handleCreatePackage = async () => {
-    const success = await createPackage(newDoorsId, newSiteId, newEquipmentType, newMaterialType);
-    if (success) {
-      setShowCreateDialog(false);
-      resetCreateDialog();
+  const loadSites = async () => {
+    if (!projectId) return;
+
+    try {
+      const sitesCollection = database.collections.get('sites');
+      const sitesData = await sitesCollection.query(Q.where('project_id', projectId)).fetch();
+
+      const sitesList = sitesData.map((site: any) => ({
+        id: site.id,
+        name: site.name,
+      }));
+
+      dispatch({ type: 'SET_SITES', payload: { sites: sitesList } });
+    } catch (error) {
+      logger.error('[DoorsPackage] Error loading sites:', error);
     }
   };
 
-  const resetCreateDialog = () => {
-    setNewDoorsId('');
-    setNewSiteId('');
-    setNewEquipmentType('');
-    setNewMaterialType('');
+  const loadPackages = async () => {
+    if (!projectId) {
+      dispatch({ type: 'COMPLETE_LOADING' });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'START_LOADING' });
+      logger.info('[DoorsPackage] Loading packages for project:', projectId);
+
+      const doorsCollection = database.collections.get('doors_packages');
+      const packagesData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
+
+      const packagesWithSites = await Promise.all(
+        packagesData.map(async (pkg: any) => {
+          let siteName = '';
+          if (pkg.siteId) {
+            try {
+              const site = await database.collections.get('sites').find(pkg.siteId);
+              siteName = (site as any).name;
+            } catch (error) {
+              logger.warn('[DoorsPackage] Site not found:', pkg.siteId);
+            }
+          }
+
+          return {
+            id: pkg.id,
+            doorsId: pkg.doorsId,
+            projectId: pkg.projectId,
+            siteId: pkg.siteId,
+            siteName,
+            equipmentType: pkg.equipmentType,
+            materialType: pkg.materialType,
+            category: pkg.category,
+            totalRequirements: pkg.totalRequirements,
+            receivedDate: pkg.receivedDate,
+            reviewedDate: pkg.reviewedDate,
+            status: pkg.status,
+            engineerId: pkg.engineerId,
+            createdAt: pkg.createdAt,
+          };
+        })
+      );
+
+      logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
+      dispatch({ type: 'SET_PACKAGES', payload: { packages: packagesWithSites } });
+    } catch (error) {
+      logger.error('[DoorsPackage] Error loading packages:', error);
+      Alert.alert('Error', 'Failed to load DOORS packages');
+    } finally {
+      dispatch({ type: 'COMPLETE_LOADING' });
+    }
+  };
+
+  const handleCreatePackage = async () => {
+    const { doorsId, siteId, equipmentType, materialType } = state.form;
+
+    if (!doorsId || !equipmentType || !siteId) {
+      Alert.alert('Validation Error', 'Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+
+      let newPackage: DoorsPackage | null = null;
+
+      await database.write(async () => {
+        const record = await doorsCollection.create((rec: any) => {
+          rec.doorsId = doorsId;
+          rec.projectId = projectId;
+          rec.siteId = siteId;
+          rec.equipmentType = equipmentType;
+          rec.materialType = materialType || null;
+          rec.category = 'equipment';
+          rec.totalRequirements = 100;
+          rec.status = 'pending';
+          rec.engineerId = '';
+          rec.appSyncStatus = 'pending';
+          rec.version = 1;
+        });
+
+        // Get site name
+        let siteName = '';
+        try {
+          const site = await database.collections.get('sites').find(siteId);
+          siteName = (site as any).name;
+        } catch (error) {
+          logger.warn('[DoorsPackage] Site not found:', siteId);
+        }
+
+        newPackage = {
+          id: (record as any).id,
+          doorsId: (record as any).doorsId,
+          projectId: (record as any).projectId,
+          siteId: (record as any).siteId,
+          siteName,
+          equipmentType: (record as any).equipmentType,
+          materialType: (record as any).materialType,
+          category: (record as any).category,
+          totalRequirements: (record as any).totalRequirements,
+          receivedDate: (record as any).receivedDate,
+          reviewedDate: (record as any).reviewedDate,
+          status: (record as any).status,
+          engineerId: (record as any).engineerId,
+          createdAt: (record as any).createdAt,
+        };
+      });
+
+      if (newPackage) {
+        dispatch({ type: 'ADD_PACKAGE', payload: { package: newPackage } });
+      }
+
+      Alert.alert('Success', 'DOORS package created successfully');
+      dispatch({ type: 'CLOSE_DIALOG' });
+    } catch (error) {
+      logger.error('[DoorsPackage] Error creating package:', error);
+      Alert.alert('Error', 'Failed to create DOORS package');
+    }
+  };
+
+  const markAsReceived = async (packageId: string) => {
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const packageRecord = await doorsCollection.find(packageId);
+
+      await database.write(async () => {
+        await packageRecord.update((record: any) => {
+          record.receivedDate = Date.now();
+          record.status = 'received';
+        });
+      });
+
+      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
+      if (updatedPackage) {
+        dispatch({
+          type: 'UPDATE_PACKAGE',
+          payload: { package: { ...updatedPackage, status: 'received', receivedDate: Date.now() } },
+        });
+      }
+
+      Alert.alert('Success', 'Package marked as received');
+    } catch (error) {
+      logger.error('[DoorsPackage] Error marking as received:', error);
+      Alert.alert('Error', 'Failed to update package');
+    }
+  };
+
+  const markAsReviewed = async (packageId: string) => {
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const packageRecord = await doorsCollection.find(packageId);
+
+      await database.write(async () => {
+        await packageRecord.update((record: any) => {
+          record.reviewedDate = Date.now();
+          record.status = 'reviewed';
+        });
+      });
+
+      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
+      if (updatedPackage) {
+        dispatch({
+          type: 'UPDATE_PACKAGE',
+          payload: { package: { ...updatedPackage, status: 'reviewed', reviewedDate: Date.now() } },
+        });
+      }
+
+      Alert.alert('Success', 'Package marked as reviewed');
+    } catch (error) {
+      logger.error('[DoorsPackage] Error marking as reviewed:', error);
+      Alert.alert('Error', 'Failed to update package');
+    }
   };
 
   const handleDismissDialog = () => {
-    setShowCreateDialog(false);
-    resetCreateDialog();
+    dispatch({ type: 'CLOSE_DIALOG' });
   };
 
   if (!projectId) {
@@ -82,25 +259,25 @@ const DoorsPackageManagementScreen = () => {
           <Text style={styles.projectName}>{projectName}</Text>
           <Searchbar
             placeholder="Search DOORS packages..."
-            onChangeText={setSearchQuery}
-            value={searchQuery}
+            onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
+            value={state.filters.searchQuery}
             style={styles.searchbar}
           />
           <View style={styles.filterRow}>
             <Chip
-              mode={filterStatus ? 'flat' : 'outlined'}
-              selected={filterStatus !== null}
-              onPress={() => setShowFilterMenu(true)}
+              mode={state.filters.status ? 'flat' : 'outlined'}
+              selected={state.filters.status !== null}
+              onPress={() => dispatch({ type: 'OPEN_FILTER_MENU' })}
               style={styles.filterChip}
             >
-              {filterStatus ? `Status: ${filterStatus}` : 'Filter'}
+              {state.filters.status ? `Status: ${state.filters.status}` : 'Filter'}
             </Chip>
-            {filterStatus && (
+            {state.filters.status && (
               <Chip
                 mode="outlined"
-                onPress={() => setFilterStatus(null)}
+                onPress={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
                 closeIcon="close"
-                onClose={() => setFilterStatus(null)}
+                onClose={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
                 style={styles.filterChip}
               >
                 Clear
@@ -109,13 +286,13 @@ const DoorsPackageManagementScreen = () => {
           </View>
         </View>
 
-        {loading ? (
+        {state.ui.loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
           </View>
         ) : (
           <FlatList
-            data={filteredPackages}
+            data={state.data.filteredPackages}
             renderItem={({ item }) => (
               <DoorsPackageCard package={item} onMarkReceived={markAsReceived} onMarkReviewed={markAsReviewed} />
             )}
@@ -129,28 +306,37 @@ const DoorsPackageManagementScreen = () => {
           />
         )}
 
-        <FAB icon="plus" style={styles.fab} onPress={() => setShowCreateDialog(true)} label="New Package" />
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
+          label="New Package"
+        />
 
         <Portal>
-          <Menu visible={showFilterMenu} onDismiss={() => setShowFilterMenu(false)} anchor={{ x: 0, y: 0 }}>
+          <Menu
+            visible={state.ui.filterMenuVisible}
+            onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
+            anchor={{ x: 0, y: 0 }}
+          >
             <Menu.Item
               onPress={() => {
-                setFilterStatus('pending');
-                setShowFilterMenu(false);
+                dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'pending' } });
+                dispatch({ type: 'CLOSE_FILTER_MENU' });
               }}
               title="Pending"
             />
             <Menu.Item
               onPress={() => {
-                setFilterStatus('received');
-                setShowFilterMenu(false);
+                dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'received' } });
+                dispatch({ type: 'CLOSE_FILTER_MENU' });
               }}
               title="Received"
             />
             <Menu.Item
               onPress={() => {
-                setFilterStatus('reviewed');
-                setShowFilterMenu(false);
+                dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'reviewed' } });
+                dispatch({ type: 'CLOSE_FILTER_MENU' });
               }}
               title="Reviewed"
             />
@@ -158,18 +344,24 @@ const DoorsPackageManagementScreen = () => {
         </Portal>
 
         <CreateDoorsPackageDialog
-          visible={showCreateDialog}
+          visible={state.ui.dialogVisible}
           onDismiss={handleDismissDialog}
           onCreate={handleCreatePackage}
-          sites={sites}
-          newDoorsId={newDoorsId}
-          setNewDoorsId={setNewDoorsId}
-          newSiteId={newSiteId}
-          setNewSiteId={setNewSiteId}
-          newEquipmentType={newEquipmentType}
-          setNewEquipmentType={setNewEquipmentType}
-          newMaterialType={newMaterialType}
-          setNewMaterialType={setNewMaterialType}
+          sites={state.data.sites}
+          newDoorsId={state.form.doorsId}
+          setNewDoorsId={(doorsId) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'doorsId', value: doorsId } })
+          }
+          newSiteId={state.form.siteId}
+          setNewSiteId={(siteId) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'siteId', value: siteId } })}
+          newEquipmentType={state.form.equipmentType}
+          setNewEquipmentType={(equipmentType) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'equipmentType', value: equipmentType } })
+          }
+          newMaterialType={state.form.materialType}
+          setNewMaterialType={(materialType) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'materialType', value: materialType } })
+          }
         />
       </View>
     </ErrorBoundary>
