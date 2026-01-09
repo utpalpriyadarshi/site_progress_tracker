@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Skeleton } from '../../../../components/skeletons/Skeleton';
+import { Skeleton } from '../../../components/skeletons/Skeleton';
 
 /**
  * MilestoneListSkeleton Props
