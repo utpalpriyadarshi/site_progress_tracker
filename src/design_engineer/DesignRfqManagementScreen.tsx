@@ -13,9 +13,10 @@ import {
   designRfqManagementReducer,
   createDesignRfqInitialState,
 } from './state';
+import { useAccessibility } from '../../utils/accessibility';
 
 /**
- * DesignRfqManagementScreen (v3.0 - Refactored)
+ * DesignRfqManagementScreen (v4.0 - Phase 3 Accessibility)
  *
  * Design Engineer creates and manages Design RFQs (pre-PM200 engineering phase).
  * These are distinct from Procurement RFQs (handled by Logistics).
@@ -29,17 +30,18 @@ import {
  * - Evaluate and award RFQs
  * - View RFQ details and timeline
  *
- * Refactoring improvements:
- * - Extracted RFQ card to separate component
- * - Extracted create dialog to separate component
- * - Extracted data operations to custom hook
- * - Extracted filter logic to custom hook
- * - Extracted types to separate file
+ * Phase 3 Accessibility Enhancements:
+ * - Screen reader announcements for data loading
+ * - ARIA labels and hints on all interactive elements
+ * - Accessible search with clear labeling
+ * - Filter chips with proper selection states
+ * - FAB with descriptive label
  */
 
 const DesignRfqManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
+  const { announce } = useAccessibility();
 
   // Load RFQs and DOORS packages
   useEffect(() => {
@@ -105,6 +107,9 @@ const DesignRfqManagementScreen = () => {
 
       logger.debug('[DesignRfq] Loaded RFQs:', rfqsList.length);
       dispatch({ type: 'SET_RFQS', payload: { rfqs: rfqsList } });
+
+      // Accessibility announcement
+      announce(`Loaded ${rfqsList.length} Design RFQ${rfqsList.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DesignRfq] Error loading RFQs:', error);
       Alert.alert('Error', 'Failed to load Design RFQs');
@@ -184,6 +189,7 @@ const DesignRfqManagementScreen = () => {
       }
 
       Alert.alert('Success', 'Design RFQ created successfully');
+      announce('Design RFQ created successfully');
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DesignRfq] Error creating RFQ:', error);
@@ -262,17 +268,33 @@ const DesignRfqManagementScreen = () => {
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.projectName}>{projectName}</Text>
+          <Text
+            style={styles.projectName}
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={`Project: ${projectName}`}
+          >
+            {projectName}
+          </Text>
           <Searchbar
             placeholder="Search Design RFQs..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
             value={state.filters.searchQuery}
             style={styles.searchbar}
+            accessible
+            accessibilityLabel="Search Design RFQs"
+            accessibilityHint="Enter text to search for RFQs by number or title"
+            accessibilityRole="search"
           />
-          <View style={styles.filterRow}>
+          <View
+            style={styles.filterRow}
+            accessible
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Filter RFQs by status"
+          >
             <Chip
               mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status !== null}
+              selected={state.filters.status === 'draft'}
               onPress={() =>
                 dispatch({
                   type: 'SET_FILTER_STATUS',
@@ -280,12 +302,19 @@ const DesignRfqManagementScreen = () => {
                 })
               }
               style={styles.filterChip}
+              accessible
+              accessibilityRole="radio"
+              accessibilityLabel="Draft filter"
+              accessibilityState={{ checked: state.filters.status === 'draft' }}
+              accessibilityHint={
+                state.filters.status === 'draft' ? 'Double tap to clear filter' : 'Double tap to filter by draft RFQs'
+              }
             >
               {state.filters.status === 'draft' ? 'Clear Draft' : 'Draft'}
             </Chip>
             <Chip
               mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status !== null}
+              selected={state.filters.status === 'issued'}
               onPress={() =>
                 dispatch({
                   type: 'SET_FILTER_STATUS',
@@ -293,12 +322,21 @@ const DesignRfqManagementScreen = () => {
                 })
               }
               style={styles.filterChip}
+              accessible
+              accessibilityRole="radio"
+              accessibilityLabel="Issued filter"
+              accessibilityState={{ checked: state.filters.status === 'issued' }}
+              accessibilityHint={
+                state.filters.status === 'issued'
+                  ? 'Double tap to clear filter'
+                  : 'Double tap to filter by issued RFQs'
+              }
             >
               {state.filters.status === 'issued' ? 'Clear Issued' : 'Issued'}
             </Chip>
             <Chip
               mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status !== null}
+              selected={state.filters.status === 'awarded'}
               onPress={() =>
                 dispatch({
                   type: 'SET_FILTER_STATUS',
@@ -306,6 +344,15 @@ const DesignRfqManagementScreen = () => {
                 })
               }
               style={styles.filterChip}
+              accessible
+              accessibilityRole="radio"
+              accessibilityLabel="Awarded filter"
+              accessibilityState={{ checked: state.filters.status === 'awarded' }}
+              accessibilityHint={
+                state.filters.status === 'awarded'
+                  ? 'Double tap to clear filter'
+                  : 'Double tap to filter by awarded RFQs'
+              }
             >
               {state.filters.status === 'awarded' ? 'Clear Awarded' : 'Awarded'}
             </Chip>
@@ -314,7 +361,13 @@ const DesignRfqManagementScreen = () => {
 
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator
+              size="large"
+              color="#007AFF"
+              accessible
+              accessibilityLabel="Loading Design RFQs"
+              accessibilityRole="progressbar"
+            />
           </View>
         ) : (
           <FlatList
@@ -324,10 +377,28 @@ const DesignRfqManagementScreen = () => {
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
+            accessible
+            accessibilityRole="list"
+            accessibilityLabel={`Design RFQs list, ${state.data.filteredRfqs.length} ${
+              state.data.filteredRfqs.length === 1 ? 'item' : 'items'
+            }`}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No Design RFQs found</Text>
-                <Text style={styles.emptySubtext}>Create your first Design RFQ to get started</Text>
+                <Text
+                  style={styles.emptyText}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel="No Design RFQs found"
+                >
+                  No Design RFQs found
+                </Text>
+                <Text
+                  style={styles.emptySubtext}
+                  accessible
+                  accessibilityRole="text"
+                >
+                  Create your first Design RFQ to get started
+                </Text>
               </View>
             }
           />
@@ -338,6 +409,10 @@ const DesignRfqManagementScreen = () => {
           style={styles.fab}
           onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
           label="New Design RFQ"
+          accessible
+          accessibilityLabel="Create new Design RFQ"
+          accessibilityRole="button"
+          accessibilityHint="Double tap to open dialog for creating a new Design RFQ"
         />
 
         <CreateDesignRfqDialog

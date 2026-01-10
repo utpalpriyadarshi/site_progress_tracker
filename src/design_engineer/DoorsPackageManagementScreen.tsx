@@ -13,9 +13,10 @@ import {
   doorsPackageManagementReducer,
   createDoorsPackageInitialState,
 } from './state';
+import { useAccessibility } from '../../utils/accessibility';
 
 /**
- * DoorsPackageManagementScreen (v3.0 - Refactored)
+ * DoorsPackageManagementScreen (v4.0 - Phase 3 Accessibility)
  *
  * Design Engineer manages DOORS packages (100 requirements per equipment/material).
  *
@@ -27,17 +28,18 @@ import {
  * - View requirements count (100 per package)
  * - Link to Design RFQs
  *
- * Refactoring improvements:
- * - Extracted DOORS package card to separate component
- * - Extracted create dialog to separate component
- * - Extracted data operations to custom hook
- * - Extracted filter logic to custom hook
- * - Extracted types to separate file
+ * Phase 3 Accessibility Enhancements:
+ * - Screen reader announcements for data loading
+ * - ARIA labels and hints on all interactive elements
+ * - Accessible search with clear labeling
+ * - Filter menu with proper accessibility
+ * - FAB with descriptive label
  */
 
 const DoorsPackageManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
+  const { announce } = useAccessibility();
 
   // Load packages and sites
   useEffect(() => {
@@ -109,6 +111,9 @@ const DoorsPackageManagementScreen = () => {
 
       logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
       dispatch({ type: 'SET_PACKAGES', payload: { packages: packagesWithSites } });
+
+      // Accessibility announcement
+      announce(`Loaded ${packagesWithSites.length} DOORS package${packagesWithSites.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error);
       Alert.alert('Error', 'Failed to load DOORS packages');
@@ -177,6 +182,7 @@ const DoorsPackageManagementScreen = () => {
       }
 
       Alert.alert('Success', 'DOORS package created successfully');
+      announce('DOORS package created successfully');
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DoorsPackage] Error creating package:', error);
@@ -256,12 +262,23 @@ const DoorsPackageManagementScreen = () => {
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.projectName}>{projectName}</Text>
+          <Text
+            style={styles.projectName}
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={`Project: ${projectName}`}
+          >
+            {projectName}
+          </Text>
           <Searchbar
             placeholder="Search DOORS packages..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
             value={state.filters.searchQuery}
             style={styles.searchbar}
+            accessible
+            accessibilityLabel="Search DOORS packages"
+            accessibilityHint="Enter text to search for packages by DOORS ID or equipment type"
+            accessibilityRole="search"
           />
           <View style={styles.filterRow}>
             <Chip
@@ -269,6 +286,10 @@ const DoorsPackageManagementScreen = () => {
               selected={state.filters.status !== null}
               onPress={() => dispatch({ type: 'OPEN_FILTER_MENU' })}
               style={styles.filterChip}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={state.filters.status ? `Status filter: ${state.filters.status}` : 'Open filter menu'}
+              accessibilityHint="Double tap to open filter menu"
             >
               {state.filters.status ? `Status: ${state.filters.status}` : 'Filter'}
             </Chip>
@@ -279,6 +300,10 @@ const DoorsPackageManagementScreen = () => {
                 closeIcon="close"
                 onClose={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
                 style={styles.filterChip}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Clear status filter"
+                accessibilityHint="Double tap to remove filter"
               >
                 Clear
               </Chip>
@@ -288,7 +313,13 @@ const DoorsPackageManagementScreen = () => {
 
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator
+              size="large"
+              color="#007AFF"
+              accessible
+              accessibilityLabel="Loading DOORS packages"
+              accessibilityRole="progressbar"
+            />
           </View>
         ) : (
           <FlatList
@@ -298,9 +329,21 @@ const DoorsPackageManagementScreen = () => {
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
+            accessible
+            accessibilityRole="list"
+            accessibilityLabel={`DOORS packages list, ${state.data.filteredPackages.length} ${
+              state.data.filteredPackages.length === 1 ? 'item' : 'items'
+            }`}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No DOORS packages found</Text>
+                <Text
+                  style={styles.emptyText}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel="No DOORS packages found"
+                >
+                  No DOORS packages found
+                </Text>
               </View>
             }
           />
@@ -311,6 +354,10 @@ const DoorsPackageManagementScreen = () => {
           style={styles.fab}
           onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
           label="New Package"
+          accessible
+          accessibilityLabel="Create new DOORS package"
+          accessibilityRole="button"
+          accessibilityHint="Double tap to open dialog for creating a new DOORS package"
         />
 
         <Portal>
@@ -318,27 +365,38 @@ const DoorsPackageManagementScreen = () => {
             visible={state.ui.filterMenuVisible}
             onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
             anchor={{ x: 0, y: 0 }}
+            accessible
+            accessibilityLabel="Status filter menu"
           >
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'pending' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by pending status');
               }}
               title="Pending"
+              accessibilityLabel="Filter by pending status"
+              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'received' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by received status');
               }}
               title="Received"
+              accessibilityLabel="Filter by received status"
+              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'reviewed' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by reviewed status');
               }}
               title="Reviewed"
+              accessibilityLabel="Filter by reviewed status"
+              accessibilityRole="menuitem"
             />
           </Menu>
         </Portal>
