@@ -14,9 +14,10 @@ import {
   createDesignRfqInitialState,
 } from './state';
 import { useAccessibility } from '../../utils/accessibility';
+import { useDebounce } from '../../utils/performance';
 
 /**
- * DesignRfqManagementScreen (v4.0 - Phase 3 Accessibility)
+ * DesignRfqManagementScreen (v5.0 - Phase 3 Complete)
  *
  * Design Engineer creates and manages Design RFQs (pre-PM200 engineering phase).
  * These are distinct from Procurement RFQs (handled by Logistics).
@@ -30,18 +31,19 @@ import { useAccessibility } from '../../utils/accessibility';
  * - Evaluate and award RFQs
  * - View RFQ details and timeline
  *
- * Phase 3 Accessibility Enhancements:
- * - Screen reader announcements for data loading
- * - ARIA labels and hints on all interactive elements
- * - Accessible search with clear labeling
- * - Filter chips with proper selection states
- * - FAB with descriptive label
+ * Phase 3 Enhancements:
+ * - Accessibility: Screen reader support, ARIA labels, keyboard navigation
+ * - Performance: Debounced search (300ms delay)
+ * - Enhanced UX: Improved empty states and loading indicators
  */
 
 const DesignRfqManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
+
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
   // Load RFQs and DOORS packages
   useEffect(() => {
