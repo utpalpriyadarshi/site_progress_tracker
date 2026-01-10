@@ -13,8 +13,8 @@ import {
   designRfqManagementReducer,
   createDesignRfqInitialState,
 } from './state';
-import { useAccessibility } from '../../utils/accessibility';
-import { useDebounce } from '../../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
+import { useDebounce } from '../utils/performance';
 
 /**
  * DesignRfqManagementScreen (v5.0 - Phase 3 Complete)

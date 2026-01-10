@@ -13,8 +13,8 @@ import {
   doorsPackageManagementReducer,
   createDoorsPackageInitialState,
 } from './state';
-import { useAccessibility } from '../../utils/accessibility';
-import { useDebounce } from '../../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
+import { useDebounce } from '../utils/performance';
 
 /**
  * DoorsPackageManagementScreen (v5.0 - Phase 3 Complete)
