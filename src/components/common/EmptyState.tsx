@@ -26,7 +26,14 @@
  * />
  * ```
  *
- * @version 2.0 - Phase 3, Task 3.3 (Enhanced)
+ * @version 2.1 - Phase 3, Task 3.3 (Enhanced + Accessibility)
+ *
+ * Phase 3 Accessibility Enhancements:
+ * - Screen reader support with comprehensive ARIA labels
+ * - Proper accessibility roles for all elements
+ * - Action buttons with hints
+ * - Icon hidden from screen readers (decorative)
+ * - Tips presented as accessible list
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -145,6 +152,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           transform: [{ scale: scaleAnim }],
         },
       ]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`${title}. ${message}${helpText ? `. ${helpText}` : ''}`}
     >
       {/* Icon with background circle */}
       <View
@@ -157,6 +167,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             borderRadius: calculatedIconSize * 0.9,
           },
         ]}
+        accessible={false}
+        importantForAccessibility="no"
       >
         <Icon name={icon} size={calculatedIconSize} color={calculatedIconColor} />
       </View>
@@ -165,6 +177,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <Text
         variant={variant === 'large' ? 'headlineMedium' : 'headlineSmall'}
         style={styles.title}
+        accessible
+        accessibilityRole="header"
       >
         {title}
       </Text>
@@ -173,27 +187,46 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <Text
         variant={variant === 'compact' ? 'bodyMedium' : 'bodyLarge'}
         style={[styles.message, variant === 'compact' && styles.compactMessage]}
+        accessible
+        accessibilityRole="text"
       >
         {message}
       </Text>
 
       {/* Help Text */}
       {helpText && (
-        <Text variant="bodySmall" style={styles.helpText}>
+        <Text
+          variant="bodySmall"
+          style={styles.helpText}
+          accessible
+          accessibilityRole="text"
+        >
           {helpText}
         </Text>
       )}
 
       {/* Tips (bullet points) */}
       {tips && tips.length > 0 && (
-        <View style={styles.tipsContainer}>
+        <View
+          style={styles.tipsContainer}
+          accessible
+          accessibilityRole="list"
+          accessibilityLabel={`Tips, ${tips.length} items`}
+        >
           {tips.map((tip, index) => (
-            <View key={index} style={styles.tipItem}>
+            <View
+              key={index}
+              style={styles.tipItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={tip}
+            >
               <Icon
                 name="information-outline"
                 size={16}
                 color={theme.colors.primary}
                 style={styles.tipIcon}
+                accessible={false}
               />
               <Text variant="bodySmall" style={styles.tipText}>
                 {tip}
@@ -212,6 +245,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             onPress={onAction}
             style={styles.primaryButton}
             contentStyle={styles.buttonContent}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={actionText}
+            accessibilityHint="Double tap to perform this action"
           >
             {actionText}
           </Button>
@@ -224,6 +261,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             onPress={onSecondaryAction}
             style={styles.secondaryButton}
             compact
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={secondaryActionText}
+            accessibilityHint="Double tap to perform this action"
           >
             {secondaryActionText}
           </Button>

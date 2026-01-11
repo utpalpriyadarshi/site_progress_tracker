@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Claude code is coding Assistant for me. You are required to manintain uniformity across the various user roles.
 
 ## Project Overview
 
@@ -144,6 +144,154 @@ The planning role has 7 dedicated tabs in `src/planning/` organized in workflow 
 - **Planners** create sites during project planning phase and assign supervisors
 - **Supervisors** can view and manage their assigned sites
 - `supervisor_id` field is optional in the Sites table to support this workflow
+
+### Design Engineer Navigation (4 Screens - Phase 3 Complete)
+The Design Engineer role has 4 dedicated screens in `src/design_engineer/` focused on DOORS package and Design RFQ management:
+
+1. **DesignEngineerDashboardScreen** 📊 - Dashboard with 5 interactive widgets
+2. **DoorsPackageManagementScreen** 📦 - DOORS Package management (100 requirements per package)
+3. **DesignRfqManagementScreen** 📝 - Design RFQ management (pre-PM200 engineering phase)
+4. **DesignEngineerSettingsScreen** ⚙️ - Settings and test data seeding
+
+**Design Engineer Responsibilities:**
+- Manage DOORS packages containing 100 requirements each for equipment/materials
+- Create and manage Design RFQs for vendor quotes during engineering phase (before PM200)
+- Track design compliance rate (target: 80% packages reviewed)
+- Monitor processing time (target: 7 days from received to reviewed)
+- One design engineer per project
+
+**Key Features (Phase 3):**
+- **Widget-Based Dashboard**: 5 interactive widgets showing DOORS package status, RFQ status, compliance metrics, processing time, and recent activity
+- **Widget Navigation**: Tap widgets to navigate to corresponding detail screens
+- **Enhanced Empty States**: Context-aware empty states for no data, no search results, and no filter results
+- **Accessibility**: Full screen reader support with ARIA labels, keyboard navigation, focus indicators
+- **Performance Optimizations**: 300ms debounced search, smooth scrolling with 50+ items
+- **Offline-First**: WatermelonDB ensures all data available offline, syncs when online
+
+**Uniformity Patterns (Aligned with Supervisor Screens):**
+- **Consistent Headers**: All screens have blue header (#007AFF) with project name, screen label, and logout button
+- **No Navigator Headers**: Headers removed from navigator, only internal screen headers shown
+- **Error Boundaries**: All screens wrapped in ErrorBoundary for crash protection
+- **Empty States**: Use EmptyState component with icon, title, message, helpText, and action buttons
+- **Status Badges**: CRITICAL - Use supervisor-style badges for ALL user roles (see Status Badge Pattern below)
+- **Forms with Dropdowns**: Site selection menus use state management (useState) for visibility control
+- **Card-Based Layout**: Material Design cards for data display with consistent spacing
+
+**Status Badge Pattern (CRITICAL - Use for ALL Roles):**
+```typescript
+// ✅ CORRECT - Supervisor-style badge (used in ItemCard, HindranceCard)
+// Use react-native-paper Chip component with mode="flat"
+import { Chip } from 'react-native-paper';
+
+<Chip
+  mode="flat"
+  style={{
+    backgroundColor: getStatusColor(status),
+  }}
+  textStyle={styles.statusChipText}>
+  {status.toUpperCase()}
+</Chip>
+
+// Styles - MUST match exactly
+statusChipText: {
+  color: 'white',        // Always 'white' (not '#FFF' or '#FFFFFF')
+  fontSize: 12,          // Consistent font size across all roles
+  fontWeight: 'bold',    // Always bold for visibility
+}
+
+// ❌ INCORRECT - Custom badges cause visibility issues
+// DO NOT use custom View+Text badges
+// DO NOT use inline styles for textStyle
+// DO NOT use different font sizes or colors across roles
+// DO NOT use Chip props like height, paddingHorizontal (let Paper handle it)
+```
+
+**Why This Pattern is Mandatory:**
+- Text is clearly visible with proper contrast on all colored backgrounds
+- Consistent appearance across ALL user roles (Supervisor, Manager, Design Engineer, etc.)
+- React Native Paper handles padding, sizing, and layout automatically
+- Proven to work in supervisor screens without visibility issues
+- No text clipping, no hard-to-read badges
+- User-tested and approved in production
+
+**Badge Implementation Checklist:**
+- ✅ Import Chip from 'react-native-paper'
+- ✅ Use `mode="flat"` (required)
+- ✅ Set backgroundColor via inline style object
+- ✅ Use statusChipText with exact styling above
+- ✅ Always use `color: 'white'` (literal string)
+- ✅ Always use `fontSize: 12` and `fontWeight: 'bold'`
+- ✅ Apply to ALL card components across ALL roles
+
+**Currently Applied To:**
+- ✅ Supervisor: ItemCard, HindranceCard, InspectionCard
+- ✅ Design Engineer: DoorsPackageCard, DesignRfqCard (Phase 3)
+- ⏳ Commercial Manager: Apply to all card components (future)
+- ⏳ All future role implementations
+
+**Widget System Pattern:**
+```typescript
+// All widgets extend BaseWidget which provides:
+// - Loading states with spinner
+// - Error states with retry
+// - Optional refresh functionality
+// - Optional onPress for navigation
+// - Consistent accessibility props
+
+// Usage:
+<DoorsPackageStatusWidget
+  data={doorsStatus.data}
+  loading={doorsStatus.loading}
+  error={doorsStatus.error}
+  onRefresh={doorsStatus.refetch}
+  onPress={() => navigation.navigate('DoorsPackages')}
+/>
+```
+
+**Empty State Pattern:**
+```typescript
+// Context-aware empty states for different scenarios
+const renderEmptyState = () => {
+  const hasNoData = state.data.packages.length === 0;
+  const hasSearchQuery = state.filters.searchQuery.length > 0;
+  const hasFilter = state.filters.status !== null;
+
+  if (hasNoData) {
+    return <EmptyState icon="package-variant" title="No DOORS Packages Yet" ... />;
+  } else if (hasSearchQuery) {
+    return <EmptyState icon="magnify" title="No Packages Found" ... variant="search" />;
+  } else if (hasFilter) {
+    return <EmptyState icon="filter-off" title="No {status} Packages" ... />;
+  }
+};
+```
+
+**Header Pattern (Consistent Across All Design Engineer Screens):**
+```typescript
+<View style={styles.header}>
+  <View style={styles.headerContent}>
+    <View>
+      <Text style={styles.projectName}>{projectName}</Text>
+      <Text style={styles.screenLabel}>Screen Title</Text>
+    </View>
+    <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+      <Text style={styles.logoutText}>Logout</Text>
+    </TouchableOpacity>
+  </View>
+</View>
+
+// Styles (consistent blue header)
+header: {
+  backgroundColor: '#007AFF',
+  paddingTop: 50,
+  paddingBottom: 16,
+  paddingHorizontal: 20,
+}
+```
+
+**Database Tables:**
+- `doors_packages` - DOORS package tracking (doorsId, siteId, category, equipmentType, materialType, totalRequirements: 100, status, receivedDate, reviewedDate)
+- `rfqs` - Request for Quotations (rfqNumber, doorsPackageId, projectId, title, description, status, rfqType: 'design', issueDate, closingDate, evaluationDate, awardDate)
 
 ### Database Architecture (WatermelonDB)
 

@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { FAB, Searchbar, Chip, Menu, Portal } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -13,9 +13,14 @@ import {
   doorsPackageManagementReducer,
   createDoorsPackageInitialState,
 } from './state';
+import { useAccessibility } from '../utils/accessibility';
+import { useDebounce } from '../utils/performance';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useAuth } from '../auth/AuthContext';
+import { EmptyState } from '../components/common/EmptyState';
 
 /**
- * DoorsPackageManagementScreen (v3.0 - Refactored)
+ * DoorsPackageManagementScreen (v5.0 - Phase 3 Complete)
  *
  * Design Engineer manages DOORS packages (100 requirements per equipment/material).
  *
@@ -27,17 +32,31 @@ import {
  * - View requirements count (100 per package)
  * - Link to Design RFQs
  *
- * Refactoring improvements:
- * - Extracted DOORS package card to separate component
- * - Extracted create dialog to separate component
- * - Extracted data operations to custom hook
- * - Extracted filter logic to custom hook
- * - Extracted types to separate file
+ * Phase 3 Enhancements:
+ * - Accessibility: Screen reader support, ARIA labels, keyboard navigation
+ * - Performance: Debounced search (300ms delay)
+ * - Enhanced UX: Improved empty states and loading indicators
  */
 
 const DoorsPackageManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
+  const { announce } = useAccessibility();
+  const navigation = useNavigation();
+  const { logout } = useAuth();
+
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as any }],
+      })
+    );
+  };
 
   // Load packages and sites
   useEffect(() => {
@@ -109,6 +128,9 @@ const DoorsPackageManagementScreen = () => {
 
       logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
       dispatch({ type: 'SET_PACKAGES', payload: { packages: packagesWithSites } });
+
+      // Accessibility announcement
+      announce(`Loaded ${packagesWithSites.length} DOORS package${packagesWithSites.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error);
       Alert.alert('Error', 'Failed to load DOORS packages');
@@ -177,6 +199,7 @@ const DoorsPackageManagementScreen = () => {
       }
 
       Alert.alert('Success', 'DOORS package created successfully');
+      announce('DOORS package created successfully');
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DoorsPackage] Error creating package:', error);
@@ -242,6 +265,61 @@ const DoorsPackageManagementScreen = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
 
+  // Render appropriate empty state
+  const renderEmptyState = () => {
+    const hasSearchQuery = state.filters.searchQuery.length > 0;
+    const hasFilter = state.filters.status !== null;
+    const hasNoPackages = state.data.packages.length === 0;
+
+    if (hasNoPackages) {
+      // No DOORS packages at all
+      return (
+        <EmptyState
+          icon="package-variant"
+          title="No DOORS Packages Yet"
+          message="Create your first DOORS package to start tracking engineering requirements"
+          helpText="Each DOORS package contains 100 requirements for a specific equipment or material."
+          actionText="Create DOORS Package"
+          onAction={() => dispatch({ type: 'OPEN_DIALOG' })}
+          variant="large"
+        />
+      );
+    } else if (hasSearchQuery) {
+      // No search results
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No Packages Found"
+          message={`No DOORS Packages match "${state.filters.searchQuery}". Try adjusting your search.`}
+          actionText="Clear Search"
+          onAction={() => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query: '' } })}
+          secondaryActionText="Create New Package"
+          onSecondaryAction={() => dispatch({ type: 'OPEN_DIALOG' })}
+          variant="search"
+        />
+      );
+    } else if (hasFilter) {
+      // No filter results
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${state.filters.status} Packages`}
+          message={`There are no DOORS Packages with "${state.filters.status}" status.`}
+          actionText="Clear Filter"
+          onAction={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
+          secondaryActionText="View All Packages"
+          onSecondaryAction={() => {
+            dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } });
+            announce('Showing all packages');
+          }}
+          variant="default"
+        />
+      );
+    }
+
+    return null;
+  };
+
   if (!projectId) {
     return (
       <ErrorBoundary>
@@ -256,12 +334,31 @@ const DoorsPackageManagementScreen = () => {
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.projectName}>{projectName}</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text
+                style={styles.projectName}
+                accessible
+                accessibilityRole="header"
+                accessibilityLabel={`Project: ${projectName}`}
+              >
+                {projectName}
+              </Text>
+              <Text style={styles.screenLabel}>DOORS Package Management</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
           <Searchbar
             placeholder="Search DOORS packages..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
             value={state.filters.searchQuery}
             style={styles.searchbar}
+            accessible
+            accessibilityLabel="Search DOORS packages"
+            accessibilityHint="Enter text to search for packages by DOORS ID or equipment type"
+            accessibilityRole="search"
           />
           <View style={styles.filterRow}>
             <Chip
@@ -269,6 +366,10 @@ const DoorsPackageManagementScreen = () => {
               selected={state.filters.status !== null}
               onPress={() => dispatch({ type: 'OPEN_FILTER_MENU' })}
               style={styles.filterChip}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={state.filters.status ? `Status filter: ${state.filters.status}` : 'Open filter menu'}
+              accessibilityHint="Double tap to open filter menu"
             >
               {state.filters.status ? `Status: ${state.filters.status}` : 'Filter'}
             </Chip>
@@ -279,6 +380,10 @@ const DoorsPackageManagementScreen = () => {
                 closeIcon="close"
                 onClose={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
                 style={styles.filterChip}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Clear status filter"
+                accessibilityHint="Double tap to remove filter"
               >
                 Clear
               </Chip>
@@ -288,7 +393,13 @@ const DoorsPackageManagementScreen = () => {
 
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator
+              size="large"
+              color="#007AFF"
+              accessible
+              accessibilityLabel="Loading DOORS packages"
+              accessibilityRole="progressbar"
+            />
           </View>
         ) : (
           <FlatList
@@ -298,11 +409,12 @@ const DoorsPackageManagementScreen = () => {
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No DOORS packages found</Text>
-              </View>
-            }
+            accessible
+            accessibilityRole="list"
+            accessibilityLabel={`DOORS packages list, ${state.data.filteredPackages.length} ${
+              state.data.filteredPackages.length === 1 ? 'item' : 'items'
+            }`}
+            ListEmptyComponent={renderEmptyState()}
           />
         )}
 
@@ -311,6 +423,10 @@ const DoorsPackageManagementScreen = () => {
           style={styles.fab}
           onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
           label="New Package"
+          accessible
+          accessibilityLabel="Create new DOORS package"
+          accessibilityRole="button"
+          accessibilityHint="Double tap to open dialog for creating a new DOORS package"
         />
 
         <Portal>
@@ -318,27 +434,38 @@ const DoorsPackageManagementScreen = () => {
             visible={state.ui.filterMenuVisible}
             onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
             anchor={{ x: 0, y: 0 }}
+            accessible
+            accessibilityLabel="Status filter menu"
           >
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'pending' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by pending status');
               }}
               title="Pending"
+              accessibilityLabel="Filter by pending status"
+              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'received' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by received status');
               }}
               title="Received"
+              accessibilityLabel="Filter by received status"
+              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
                 dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'reviewed' } });
                 dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by reviewed status');
               }}
               title="Reviewed"
+              accessibilityLabel="Filter by reviewed status"
+              accessibilityRole="menuitem"
             />
           </Menu>
         </Portal>
@@ -379,15 +506,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#FFF',
-    padding: 16,
+    backgroundColor: '#007AFF',
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   projectName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  screenLabel: {
+    fontSize: 14,
+    color: '#FFF',
+    opacity: 0.9,
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   searchbar: {
     marginBottom: 12,
