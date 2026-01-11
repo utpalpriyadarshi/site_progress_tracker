@@ -65,11 +65,6 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           },
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: 'gray',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
-              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-            </TouchableOpacity>
-          ),
         })}
       >
         <Tab.Screen
