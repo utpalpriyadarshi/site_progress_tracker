@@ -8,6 +8,7 @@ export interface BaseWidgetProps {
   subtitle?: string;
   refreshable?: boolean;
   onRefresh?: () => Promise<void>;
+  onPress?: () => void;
   loading?: boolean;
   error?: Error | null;
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export const BaseWidget: React.FC<BaseWidgetProps> = ({
   subtitle,
   refreshable = false,
   onRefresh,
+  onPress,
   loading = false,
   error = null,
   children,
@@ -81,36 +83,40 @@ export const BaseWidget: React.FC<BaseWidgetProps> = ({
     return children;
   };
 
+  const CardWrapper = onPress ? TouchableOpacity : View;
+
   return (
-    <Card
-      style={[styles.card, styles[`${size}Card`]]}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={`${title}${subtitle ? `, ${subtitle}` : ''}`}
-      testID={testID || `widget-${id}`}
-    >
-      <Card.Content>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    <CardWrapper onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+      <Card
+        style={[styles.card, styles[`${size}Card`]]}
+        accessible
+        accessibilityRole={onPress ? 'button' : 'text'}
+        accessibilityLabel={`${title}${subtitle ? `, ${subtitle}` : ''}${onPress ? '. Double tap to navigate' : ''}`}
+        testID={testID || `widget-${id}`}
+      >
+        <Card.Content>
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>{title}</Text>
+              {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            </View>
+            {refreshable && onRefresh && !loading && !error && (
+              <TouchableOpacity
+                onPress={handleRefresh}
+                disabled={isRefreshing}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={`Refresh ${title}`}
+                accessibilityHint="Double tap to refresh widget data"
+              >
+                <Text style={styles.refreshIcon}>{isRefreshing ? '⏳' : '🔄'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          {refreshable && onRefresh && !loading && !error && (
-            <TouchableOpacity
-              onPress={handleRefresh}
-              disabled={isRefreshing}
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={`Refresh ${title}`}
-              accessibilityHint="Double tap to refresh widget data"
-            >
-              <Text style={styles.refreshIcon}>{isRefreshing ? '⏳' : '🔄'}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {renderContent()}
-      </Card.Content>
-    </Card>
+          {renderContent()}
+        </Card.Content>
+      </Card>
+    </CardWrapper>
   );
 };
 

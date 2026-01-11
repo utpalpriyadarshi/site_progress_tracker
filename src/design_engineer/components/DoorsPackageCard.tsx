@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card, Chip, Button } from 'react-native-paper';
+import { Card, Button, Chip } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 
 interface DoorsPackageCardProps {
@@ -27,12 +27,15 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({ package: pkg, onMar
     <Card style={styles.card}>
       <Card.Content>
         <View style={styles.cardHeader}>
-          <Text style={styles.doorsId}>{pkg.doorsId}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.doorsId}>{pkg.doorsId}</Text>
+          </View>
           <Chip
             mode="flat"
-            style={[styles.statusChip, { backgroundColor: getStatusColor(pkg.status) }]}
-            textStyle={styles.statusChipText}
-          >
+            style={{
+              backgroundColor: getStatusColor(pkg.status),
+            }}
+            textStyle={styles.statusChipText}>
             {pkg.status.toUpperCase()}
           </Chip>
         </View>
@@ -102,18 +105,20 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
+    gap: 12,
+  },
+  titleContainer: {
+    flex: 1,
+    minWidth: 0,
   },
   doorsId: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  statusChip: {
-    height: 28,
-  },
   statusChipText: {
-    color: '#FFF',
+    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },

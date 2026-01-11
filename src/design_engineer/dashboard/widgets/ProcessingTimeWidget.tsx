@@ -8,6 +8,7 @@ export interface ProcessingTimeWidgetProps {
   loading?: boolean;
   error?: Error | null;
   onRefresh?: () => Promise<void>;
+  onPress?: () => void;
   testID?: string;
 }
 
@@ -27,6 +28,7 @@ export const ProcessingTimeWidget: React.FC<ProcessingTimeWidgetProps> = ({
   loading = false,
   error = null,
   onRefresh,
+  onPress,
   testID,
 }) => {
   const { average, benchmark, trend } = data;
@@ -124,6 +126,7 @@ export const ProcessingTimeWidget: React.FC<ProcessingTimeWidgetProps> = ({
       loading={loading}
       error={error}
       size="medium"
+      onPress={onPress}
       testID={testID}
     >
       {renderContent()}

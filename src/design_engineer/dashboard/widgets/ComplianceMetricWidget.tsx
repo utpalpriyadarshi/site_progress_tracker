@@ -8,6 +8,7 @@ export interface ComplianceMetricWidgetProps {
   loading?: boolean;
   error?: Error | null;
   onRefresh?: () => Promise<void>;
+  onPress?: () => void;
   testID?: string;
 }
 
@@ -27,6 +28,7 @@ export const ComplianceMetricWidget: React.FC<ComplianceMetricWidgetProps> = ({
   loading = false,
   error = null,
   onRefresh,
+  onPress,
   testID,
 }) => {
   const { rate, target, reviewed, total } = data;
@@ -95,6 +97,7 @@ export const ComplianceMetricWidget: React.FC<ComplianceMetricWidgetProps> = ({
       loading={loading}
       error={error}
       size="small"
+      onPress={onPress}
       testID={testID}
     >
       {renderContent()}
@@ -127,11 +130,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   circleCenter: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rateValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   rateLabel: {

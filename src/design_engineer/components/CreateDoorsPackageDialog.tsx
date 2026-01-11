@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
 import { Site } from '../types/DoorsPackageTypes';
@@ -32,6 +32,16 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   newMaterialType,
   setNewMaterialType,
 }) => {
+  const [siteMenuVisible, setSiteMenuVisible] = useState(false);
+
+  const openSiteMenu = () => setSiteMenuVisible(true);
+  const closeSiteMenu = () => setSiteMenuVisible(false);
+
+  const handleSiteSelect = (siteId: string) => {
+    setNewSiteId(siteId);
+    closeSiteMenu();
+  };
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
@@ -45,10 +55,10 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             mode="outlined"
           />
           <Menu
-            visible={false}
-            onDismiss={() => {}}
+            visible={siteMenuVisible}
+            onDismiss={closeSiteMenu}
             anchor={
-              <TouchableOpacity onPress={() => {}} style={styles.pickerButton}>
+              <TouchableOpacity onPress={openSiteMenu} style={styles.pickerButton}>
                 <Text style={styles.pickerLabel}>Site *</Text>
                 <Text style={styles.pickerValue}>
                   {sites.find((s) => s.id === newSiteId)?.name || 'Select Site'}
@@ -57,7 +67,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             }
           >
             {sites.map((site) => (
-              <Menu.Item key={site.id} onPress={() => setNewSiteId(site.id)} title={site.name} />
+              <Menu.Item key={site.id} onPress={() => handleSiteSelect(site.id)} title={site.name} />
             ))}
           </Menu>
           <TextInput

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { DashboardLayout } from './dashboard/DashboardLayout';
@@ -18,6 +18,9 @@ import {
   useRecentActivityData,
 } from './dashboard/hooks';
 import { logger } from '../services/LoggingService';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useAuth } from '../auth/AuthContext';
+import { EmptyState } from '../components/common/EmptyState';
 
 /**
  * DesignEngineerDashboardScreen (v4.0 - Phase 3 Widget System)
@@ -49,6 +52,8 @@ import { logger } from '../services/LoggingService';
 
 const DesignEngineerDashboardScreen = () => {
   const { projectId, projectName } = useDesignEngineerContext();
+  const navigation = useNavigation();
+  const { logout } = useAuth();
 
   // Fetch widget data using custom hooks
   const doorsStatus = useDoorsStatusData(projectId);
@@ -56,6 +61,16 @@ const DesignEngineerDashboardScreen = () => {
   const compliance = useComplianceData(projectId);
   const processingTime = useProcessingTimeData(projectId);
   const recentActivity = useRecentActivityData(projectId, 10);
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as any }],
+      })
+    );
+  };
 
   if (!projectId) {
     return (
@@ -70,50 +85,87 @@ const DesignEngineerDashboardScreen = () => {
 
   logger.debug('[Dashboard] Rendering with project:', projectId);
 
+  // Check if we should show welcome empty state
+  const hasNoData =
+    !doorsStatus.loading &&
+    !rfqStatus.loading &&
+    doorsStatus.data.total === 0 &&
+    rfqStatus.data.total === 0;
+
   return (
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.projectName}>{projectName}</Text>
-          <Text style={styles.roleLabel}>Design Engineer Dashboard</Text>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.projectName}>{projectName}</Text>
+              <Text style={styles.roleLabel}>Design Engineer Dashboard</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <DashboardLayout spacing={16}>
-          <DoorsPackageStatusWidget
-            data={doorsStatus.data}
-            loading={doorsStatus.loading}
-            error={doorsStatus.error}
-            onRefresh={doorsStatus.refetch}
+        {hasNoData ? (
+          <EmptyState
+            icon="rocket-launch"
+            title="Welcome to Design Engineer Dashboard"
+            message="Get started by creating your first DOORS Package or Design RFQ"
+            helpText="DOORS packages track engineering requirements (100 per package). Design RFQs manage vendor quotes during the engineering phase."
+            tips={[
+              'Start with DOORS packages to organize engineering requirements',
+              'Create Design RFQs to request quotes from vendors',
+              'Track compliance and processing times on this dashboard',
+            ]}
+            actionText="Create DOORS Package"
+            onAction={() => navigation.navigate('DoorsPackages' as never)}
+            secondaryActionText="Create Design RFQ"
+            onSecondaryAction={() => navigation.navigate('DesignRfqs' as never)}
+            variant="large"
           />
+        ) : (
+          <DashboardLayout spacing={16}>
+            <DoorsPackageStatusWidget
+              data={doorsStatus.data}
+              loading={doorsStatus.loading}
+              error={doorsStatus.error}
+              onRefresh={doorsStatus.refetch}
+              onPress={() => navigation.navigate('DoorsPackages' as never)}
+            />
 
-          <RfqStatusWidget
-            data={rfqStatus.data}
-            loading={rfqStatus.loading}
-            error={rfqStatus.error}
-            onRefresh={rfqStatus.refetch}
-          />
+            <RfqStatusWidget
+              data={rfqStatus.data}
+              loading={rfqStatus.loading}
+              error={rfqStatus.error}
+              onRefresh={rfqStatus.refetch}
+              onPress={() => navigation.navigate('DesignRfqs' as never)}
+            />
 
-          <ComplianceMetricWidget
-            data={compliance.data}
-            loading={compliance.loading}
-            error={compliance.error}
-            onRefresh={compliance.refetch}
-          />
+            <ComplianceMetricWidget
+              data={compliance.data}
+              loading={compliance.loading}
+              error={compliance.error}
+              onRefresh={compliance.refetch}
+              onPress={() => navigation.navigate('DoorsPackages' as never)}
+            />
 
-          <ProcessingTimeWidget
-            data={processingTime.data}
-            loading={processingTime.loading}
-            error={processingTime.error}
-            onRefresh={processingTime.refetch}
-          />
+            <ProcessingTimeWidget
+              data={processingTime.data}
+              loading={processingTime.loading}
+              error={processingTime.error}
+              onRefresh={processingTime.refetch}
+              onPress={() => navigation.navigate('DoorsPackages' as never)}
+            />
 
-          <RecentActivityWidget
-            data={recentActivity.data}
-            loading={recentActivity.loading}
-            error={recentActivity.error}
-            onRefresh={recentActivity.refetch}
-          />
-        </DashboardLayout>
+            <RecentActivityWidget
+              data={recentActivity.data}
+              loading={recentActivity.loading}
+              error={recentActivity.error}
+              onRefresh={recentActivity.refetch}
+            />
+          </DashboardLayout>
+        )}
       </View>
     </ErrorBoundary>
   );
@@ -132,8 +184,14 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   projectName: {
     fontSize: 24,
@@ -145,6 +203,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFF',
     opacity: 0.9,
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 18,

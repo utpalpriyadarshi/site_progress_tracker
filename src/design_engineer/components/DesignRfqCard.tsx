@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card, Chip, Button } from 'react-native-paper';
+import { Card, Button, Chip } from 'react-native-paper';
 import { DesignRfq } from '../types/DesignRfqTypes';
 
 interface DesignRfqCardProps {
@@ -33,15 +33,16 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({ rfq, onIssue, onMarkQuote
     <Card style={styles.card}>
       <Card.Content>
         <View style={styles.cardHeader}>
-          <View>
+          <View style={styles.titleContainer}>
             <Text style={styles.rfqNumber}>{rfq.rfqNumber}</Text>
-            <Text style={styles.rfqTitle}>{rfq.title}</Text>
+            <Text style={styles.rfqTitle} numberOfLines={2} ellipsizeMode="tail">{rfq.title}</Text>
           </View>
           <Chip
             mode="flat"
-            style={[styles.statusChip, { backgroundColor: getStatusColor(rfq.status) }]}
-            textStyle={styles.statusChipText}
-          >
+            style={{
+              backgroundColor: getStatusColor(rfq.status),
+            }}
+            textStyle={styles.statusChipText}>
             {rfq.status.toUpperCase()}
           </Chip>
         </View>
@@ -125,6 +126,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+    gap: 12,
+  },
+  titleContainer: {
+    flex: 1,
+    minWidth: 0,
   },
   rfqNumber: {
     fontSize: 16,
@@ -136,11 +142,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
   },
-  statusChip: {
-    height: 28,
-  },
   statusChipText: {
-    color: '#FFF',
+    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },

@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { FAB, Searchbar, Chip } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -15,6 +15,9 @@ import {
 } from './state';
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useAuth } from '../auth/AuthContext';
+import { EmptyState } from '../components/common/EmptyState';
 
 /**
  * DesignRfqManagementScreen (v5.0 - Phase 3 Complete)
@@ -41,9 +44,21 @@ const DesignRfqManagementScreen = () => {
   const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
+  const navigation = useNavigation();
+  const { logout } = useAuth();
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as any }],
+      })
+    );
+  };
 
   // Load RFQs and DOORS packages
   useEffect(() => {
@@ -256,6 +271,61 @@ const DesignRfqManagementScreen = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
 
+  // Render appropriate empty state
+  const renderEmptyState = () => {
+    const hasSearchQuery = state.filters.searchQuery.length > 0;
+    const hasFilter = state.filters.status !== null;
+    const hasNoRfqs = state.data.rfqs.length === 0;
+
+    if (hasNoRfqs) {
+      // No Design RFQs at all
+      return (
+        <EmptyState
+          icon="file-document-edit"
+          title="No Design RFQs Yet"
+          message="Create your first Design RFQ to request vendor quotes during the engineering phase"
+          helpText="Design RFQs are used before PM200 approval. Link each RFQ to a DOORS package."
+          actionText="Create Design RFQ"
+          onAction={() => dispatch({ type: 'OPEN_DIALOG' })}
+          variant="large"
+        />
+      );
+    } else if (hasSearchQuery) {
+      // No search results
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No RFQs Found"
+          message={`No Design RFQs match "${state.filters.searchQuery}". Try adjusting your search.`}
+          actionText="Clear Search"
+          onAction={() => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query: '' } })}
+          secondaryActionText="Create New RFQ"
+          onSecondaryAction={() => dispatch({ type: 'OPEN_DIALOG' })}
+          variant="search"
+        />
+      );
+    } else if (hasFilter) {
+      // No filter results
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${state.filters.status} RFQs`}
+          message={`There are no Design RFQs with "${state.filters.status}" status.`}
+          actionText="Clear Filter"
+          onAction={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
+          secondaryActionText="View All RFQs"
+          onSecondaryAction={() => {
+            dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } });
+            announce('Showing all RFQs');
+          }}
+          variant="default"
+        />
+      );
+    }
+
+    return null;
+  };
+
   if (!projectId) {
     return (
       <ErrorBoundary>
@@ -270,14 +340,22 @@ const DesignRfqManagementScreen = () => {
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text
-            style={styles.projectName}
-            accessible
-            accessibilityRole="header"
-            accessibilityLabel={`Project: ${projectName}`}
-          >
-            {projectName}
-          </Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text
+                style={styles.projectName}
+                accessible
+                accessibilityRole="header"
+                accessibilityLabel={`Project: ${projectName}`}
+              >
+                {projectName}
+              </Text>
+              <Text style={styles.screenLabel}>Design RFQ Management</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
           <Searchbar
             placeholder="Search Design RFQs..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
@@ -384,25 +462,7 @@ const DesignRfqManagementScreen = () => {
             accessibilityLabel={`Design RFQs list, ${state.data.filteredRfqs.length} ${
               state.data.filteredRfqs.length === 1 ? 'item' : 'items'
             }`}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text
-                  style={styles.emptyText}
-                  accessible
-                  accessibilityRole="text"
-                  accessibilityLabel="No Design RFQs found"
-                >
-                  No Design RFQs found
-                </Text>
-                <Text
-                  style={styles.emptySubtext}
-                  accessible
-                  accessibilityRole="text"
-                >
-                  Create your first Design RFQ to get started
-                </Text>
-              </View>
-            }
+            ListEmptyComponent={renderEmptyState()}
           />
         )}
 
@@ -456,15 +516,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#FFF',
-    padding: 16,
+    backgroundColor: '#007AFF',
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   projectName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  screenLabel: {
+    fontSize: 14,
+    color: '#FFF',
+    opacity: 0.9,
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   searchbar: {
     marginBottom: 12,

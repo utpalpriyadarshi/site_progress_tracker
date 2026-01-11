@@ -77,8 +77,7 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           component={DesignEngineerDashboardScreen}
           options={{
             title: 'Dashboard',
-            headerShown: true,
-            headerTitle: 'Design Engineer Dashboard',
+            headerShown: false,
           }}
         />
         <Tab.Screen
@@ -86,8 +85,7 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           component={DoorsPackageManagementScreen}
           options={{
             title: 'DOORS Packages',
-            headerShown: true,
-            headerTitle: 'DOORS Package Management',
+            headerShown: false,
           }}
         />
         <Tab.Screen
@@ -95,8 +93,7 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           component={DesignRfqManagementScreen}
           options={{
             title: 'Design RFQs',
-            headerShown: true,
-            headerTitle: 'Design RFQ Management',
+            headerShown: false,
           }}
         />
       </Tab.Navigator>
