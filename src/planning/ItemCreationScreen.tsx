@@ -41,11 +41,13 @@ import {
 import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
 import { database } from '../../models/database';
 import { logger } from '../services/LoggingService';
+import { useAccessibility } from '../utils/accessibility';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
 
 const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showSnackbar } = useSnackbar();
+  const { announce } = useAccessibility();
 
   // Get siteId from route params (passed from WBSManagementScreen)
   const siteId = 'siteId' in route.params ? route.params.siteId : '';
@@ -177,6 +179,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
       dispatch({ type: 'COMPLETE_SAVING' });
       showSnackbar('WBS item created successfully', 'success');
+      announce(`WBS item ${state.form.name} created successfully`);
       setTimeout(() => navigation.goBack(), 1500);
     } catch (error) {
       logger.error('[ItemCreation] Error saving item', error as Error);
@@ -187,13 +190,18 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+      <Appbar.Header accessible accessibilityRole="header">
+        <Appbar.BackAction
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+        />
         <Appbar.Content title="Create WBS Item" />
         <Appbar.Action
           icon="check"
           onPress={handleSave}
           disabled={state.ui.saving}
+          accessibilityLabel="Save item"
+          accessibilityHint="Creates the WBS item with current details"
         />
       </Appbar.Header>
 
@@ -201,7 +209,12 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={styles.scrollView}>
+        <ScrollView
+          style={styles.scrollView}
+          accessible
+          accessibilityRole="none"
+          accessibilityLabel="Create WBS item form"
+        >
           <Surface style={styles.surface}>
             {/* WBS Code Preview */}
             <WBSCodeDisplay
@@ -284,6 +297,11 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               disabled={state.ui.saving}
               style={styles.saveButton}
               icon="content-save"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Create item"
+              accessibilityHint="Creates the WBS item and returns to the previous screen"
+              accessibilityState={{ disabled: state.ui.saving }}
             >
               Create Item
             </Button>

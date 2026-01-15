@@ -51,6 +51,8 @@ import {
 import { database } from '../../models/database';
 import ItemModel from '../../models/ItemModel';
 import { logger } from '../services/LoggingService';
+import { EmptyState } from '../components/common/EmptyState';
+import { useAccessibility } from '../utils/accessibility';
 
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
@@ -59,6 +61,7 @@ type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
 const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const itemId = route.params?.itemId;
+  const { announce } = useAccessibility();
 
   // Initialize reducer state
   const [state, dispatch] = useReducer(itemEditReducer, createItemEditInitialState());
@@ -182,6 +185,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       setSnackbarMessage(MESSAGES.SUCCESS_UPDATE);
       setSnackbarType('success');
       setSnackbarVisible(true);
+      announce(`${state.form.name} updated successfully`);
 
       // Navigate back after showing snackbar
       setTimeout(() => {
@@ -209,22 +213,40 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   // Item not found
   if (!state.data.originalItem) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Item not found</Text>
+      <View style={styles.container}>
+        <Appbar.Header accessible accessibilityRole="header">
+          <Appbar.BackAction
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="Go back"
+          />
+          <Appbar.Content title="Item Not Found" />
+        </Appbar.Header>
+        <EmptyState
+          icon="file-question-outline"
+          title="Item Not Found"
+          message="The requested item could not be found"
+          helpText="It may have been deleted or moved"
+          variant="large"
+        />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+      <Appbar.Header accessible accessibilityRole="header">
+        <Appbar.BackAction
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+        />
         <Appbar.Content title={state.ui.isLocked ? 'View Item' : 'Edit WBS Item'} />
         {!state.ui.isLocked && (
           <Appbar.Action
             icon="check"
             onPress={handleUpdate}
             disabled={state.ui.saving}
+            accessibilityLabel="Save changes"
+            accessibilityHint="Updates the WBS item with current details"
           />
         )}
       </Appbar.Header>
@@ -236,7 +258,12 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={styles.scrollView}>
+        <ScrollView
+          style={styles.scrollView}
+          accessible
+          accessibilityRole="none"
+          accessibilityLabel={state.ui.isLocked ? 'View WBS item details' : 'Edit WBS item form'}
+        >
           <Surface style={styles.surface}>
             {/* WBS Code (Read-Only) */}
             <WBSCodeDisplay
@@ -315,6 +342,11 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
                 disabled={state.ui.saving}
                 style={styles.saveButton}
                 icon="content-save"
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Update item"
+                accessibilityHint="Saves changes and returns to the previous screen"
+                accessibilityState={{ disabled: state.ui.saving }}
               >
                 Update Item
               </Button>

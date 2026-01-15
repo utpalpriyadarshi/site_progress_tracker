@@ -1,12 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 
 const ResourcePlanningScreen = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Resource Planning</Text>
-      <Text>Plan resources for upcoming construction activities</Text>
+    <View
+      style={styles.container}
+      accessible
+      accessibilityRole="none"
+      accessibilityLabel="Resource Planning screen"
+    >
+      <EmptyState
+        icon="account-hard-hat"
+        title="Resource Planning"
+        message="Plan and allocate resources for construction activities"
+        helpText="Manage labor, equipment, and materials for your projects"
+        variant="large"
+      />
     </View>
   );
 };
@@ -14,14 +25,7 @@ const ResourcePlanningScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    backgroundColor: '#f5f5f5',
   },
 });
 

@@ -16,10 +16,13 @@ import { Text, Card, ActivityIndicator } from 'react-native-paper';
 import SiteModel from '../../models/SiteModel';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import ItemModel from '../../models/ItemModel';
 import { logger } from '../services/LoggingService';
+import { useAccessibility } from '../utils/accessibility';
+import { useThrottle } from '../utils/performance';
 
 // State management
 import {
@@ -43,6 +46,7 @@ const GanttChartScreen: React.FC = () => {
   // Initialize reducer state
   const [state, dispatch] = useReducer(ganttChartReducer, createGanttChartInitialState());
   const scrollViewRef = useRef<ScrollView>(null);
+  const { announce } = useAccessibility();
 
   // Load items when site changes
   useEffect(() => {
@@ -67,6 +71,7 @@ const GanttChartScreen: React.FC = () => {
         });
 
         dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+        announce(`Gantt chart loaded with ${siteItems.length} tasks`);
       } catch (error) {
         logger.error('[Gantt] Error loading items', error as Error);
         dispatch({ type: 'LOADING_ERROR' });
@@ -74,7 +79,7 @@ const GanttChartScreen: React.FC = () => {
     };
 
     loadItems();
-  }, [state.selection.selectedSite]);
+  }, [state.selection.selectedSite, announce]);
 
   // Site selection handler
   const handleSiteChange = useCallback((site: SiteModel | null) => {
@@ -122,15 +127,19 @@ const GanttChartScreen: React.FC = () => {
               <Text style={styles.loadingText}>Loading tasks...</Text>
             </View>
           ) : state.data.items.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Card.Content>
-                <Text style={styles.emptyText}>
-                  No items found for this site. Create items in the WBS tab to see them here.
-                </Text>
-              </Card.Content>
-            </Card>
+            <EmptyState
+              icon="chart-gantt"
+              title="No Tasks for Gantt View"
+              message="Add schedule items with dependencies to see Gantt visualization"
+              helpText="Create items in the WBS tab to see them here"
+              variant="default"
+            />
           ) : (
-            <ScrollView style={styles.ganttContainer}>
+            <ScrollView
+              style={styles.ganttContainer}
+              accessible
+              accessibilityLabel={`Gantt chart showing ${state.data.items.length} tasks across the project timeline`}
+            >
               {/* Header */}
               <GanttHeader
                 timelineColumns={timelineColumns}
@@ -155,13 +164,12 @@ const GanttChartScreen: React.FC = () => {
       )}
 
       {!state.selection.selectedSite && (
-        <Card style={styles.emptyCard}>
-          <Card.Content>
-            <Text style={styles.emptyText}>
-              Please select a site to view the Gantt chart
-            </Text>
-          </Card.Content>
-        </Card>
+        <EmptyState
+          icon="office-building-outline"
+          title="Select a Site"
+          message="Please select a site to view the Gantt chart"
+          variant="large"
+        />
       )}
     </View>
   );
