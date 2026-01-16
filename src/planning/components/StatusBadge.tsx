@@ -10,13 +10,13 @@
  * - fontWeight: 'bold' (always bold for visibility)
  *
  * @see docs/implementation/PLANNING_PHASE3_IMPLEMENTATION_PLAN.md
- * @version 1.0.0
+ * @version 1.1.0
  * @since Planning Phase 3
+ * @updated Fixed text clipping by using custom View+Text instead of Chip
  */
 
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 interface StatusBadgeProps {
   /**
@@ -33,7 +33,7 @@ interface StatusBadgeProps {
   /**
    * Custom style override (optional)
    */
-  style?: any;
+  style?: ViewStyle;
 
   /**
    * Accessibility label (optional, auto-generated if not provided)
@@ -92,7 +92,8 @@ const formatStatusLabel = (status: string): string => {
 /**
  * StatusBadge Component
  *
- * Displays a status badge with consistent styling across all Planning screens
+ * Displays a status badge with consistent styling across all Planning screens.
+ * Uses custom View+Text for precise control over text rendering (no clipping).
  */
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
@@ -102,33 +103,47 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const backgroundColor = getStatusColor(status);
   const label = formatStatusLabel(status);
-  const chipStyle = size === 'small' ? styles.chipSmall : styles.chipMedium;
+  const badgeStyle = size === 'small' ? styles.badgeSmall : styles.badgeMedium;
+  const textStyle = size === 'small' ? styles.textSmall : styles.textMedium;
 
   return (
-    <Chip
-      mode="flat"
-      style={[chipStyle, { backgroundColor }, style]}
-      textStyle={styles.statusChipText}
+    <View
+      style={[styles.badgeBase, badgeStyle, { backgroundColor }, style]}
       accessible={true}
       accessibilityLabel={accessibilityLabel || `Status: ${label}`}
       accessibilityRole="text"
     >
-      {label}
-    </Chip>
+      <Text style={[styles.textBase, textStyle]} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  chipMedium: {
-    height: 28,
-    minWidth: 80,
+  // Base badge style - common to all sizes
+  badgeBase: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
-  chipSmall: {
-    height: 24,
-    minWidth: 60,
+  // Medium size badge (default)
+  badgeMedium: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minWidth: 90,
+    minHeight: 28,
+  },
+  // Small size badge
+  badgeSmall: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    minWidth: 70,
+    minHeight: 24,
   },
   /**
-   * CRITICAL: Status chip text styling
+   * CRITICAL: Status badge text styling
    *
    * These values MUST NOT be changed without updating CLAUDE.md
    * and all other role implementations (Supervisor, etc.)
@@ -138,10 +153,16 @@ const styles = StyleSheet.create({
    * - fontSize: 12 (consistent size across all roles)
    * - fontWeight: 'bold' (always bold for visibility on colored backgrounds)
    */
-  statusChipText: {
+  textBase: {
     color: 'white',        // CRITICAL: Always 'white' (exact string)
-    fontSize: 12,          // CRITICAL: Consistent font size
     fontWeight: 'bold',    // CRITICAL: Always bold
+    textAlign: 'center',
+  },
+  textMedium: {
+    fontSize: 12,          // CRITICAL: Consistent font size
+  },
+  textSmall: {
+    fontSize: 11,          // Slightly smaller for small badges
   },
 });
 

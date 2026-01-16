@@ -413,6 +413,8 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     marginLeft: 8,
+    minWidth: 80,
+    alignItems: 'flex-end',
   },
   progressSection: {
     marginBottom: 12,

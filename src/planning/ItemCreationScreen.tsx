@@ -5,7 +5,7 @@
  * Refactored to use useReducer for state management
  */
 
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,7 +17,10 @@ import {
   Button,
   Appbar,
   Surface,
+  Text,
 } from 'react-native-paper';
+import SiteModel from '../../models/SiteModel';
+import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
@@ -50,8 +53,15 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { announce } = useAccessibility();
 
   // Get siteId from route params (passed from WBSManagementScreen)
-  const siteId = 'siteId' in route.params ? route.params.siteId : '';
-  const parentWbsCode = 'parentWbsCode' in route.params ? route.params.parentWbsCode || null : null;
+  // Use optional chaining to safely access params (may be undefined when navigating from drawer)
+  const routeSiteId = route.params?.siteId ?? '';
+  const parentWbsCode = route.params?.parentWbsCode ?? null;
+
+  // Local state for site selection when navigating from drawer (no siteId in params)
+  const [selectedSite, setSelectedSite] = useState<SiteModel | null>(null);
+
+  // Use route siteId if provided, otherwise use selected site from dropdown
+  const siteId = routeSiteId || selectedSite?.id || '';
 
   // Initialize reducer state
   const [state, dispatch] = useReducer(
@@ -216,6 +226,24 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           accessibilityLabel="Create WBS item form"
         >
           <Surface style={styles.surface}>
+            {/* Site Selector - shown when navigating from drawer without siteId */}
+            {!routeSiteId && (
+              <View style={styles.siteSelectionSection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Select Site
+                </Text>
+                <SimpleSiteSelector
+                  selectedSite={selectedSite}
+                  onSiteChange={setSelectedSite}
+                />
+                {!selectedSite && (
+                  <Text variant="bodySmall" style={styles.helperText}>
+                    Please select a site before creating an item
+                  </Text>
+                )}
+              </View>
+            )}
+
             {/* WBS Code Preview */}
             <WBSCodeDisplay
               generatedWbsCode={state.wbs.generatedCode}
@@ -294,16 +322,16 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               mode="contained"
               onPress={handleSave}
               loading={state.ui.saving}
-              disabled={state.ui.saving}
+              disabled={state.ui.saving || !siteId}
               style={styles.saveButton}
               icon="content-save"
               accessible
               accessibilityRole="button"
               accessibilityLabel="Create item"
-              accessibilityHint="Creates the WBS item and returns to the previous screen"
-              accessibilityState={{ disabled: state.ui.saving }}
+              accessibilityHint={!siteId ? "Select a site first" : "Creates the WBS item and returns to the previous screen"}
+              accessibilityState={{ disabled: state.ui.saving || !siteId }}
             >
-              Create Item
+              {!siteId ? 'Select Site First' : 'Create Item'}
             </Button>
           </Surface>
         </ScrollView>
@@ -328,6 +356,21 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     elevation: 2,
+  },
+  siteSelectionSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  sectionTitle: {
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  helperText: {
+    marginTop: 8,
+    color: '#F44336',
+    fontStyle: 'italic',
   },
   saveButton: {
     marginTop: 16,

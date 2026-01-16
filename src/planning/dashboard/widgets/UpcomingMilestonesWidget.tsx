@@ -162,7 +162,8 @@ export const UpcomingMilestonesWidget: React.FC<UpcomingMilestonesWidgetProps> =
 const styles = StyleSheet.create({
   milestoneRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 48,
   },
   timelineIndicator: {
     width: 20,
@@ -186,7 +187,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    minHeight: 32,
   },
   milestoneName: {
     flex: 1,

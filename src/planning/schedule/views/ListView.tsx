@@ -408,7 +408,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   statusColumn: {
-    width: 80,
+    width: 100,
+    minHeight: 32,
+    justifyContent: 'center',
   },
   mainContent: {
     flex: 1,

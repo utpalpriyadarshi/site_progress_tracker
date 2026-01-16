@@ -79,6 +79,7 @@ Ensure the following test data exists:
 | Resources Tab | Tap Resources tab | ResourcePlanning screen displays | | |
 | Tab Icons | Observe all tabs | Each tab has correct icon and label | | |
 | Active Tab Indicator | Tap each tab | Active tab is visually highlighted | | |
+Observations:-OK
 
 ### 3.1.2 Drawer Navigation
 
@@ -92,6 +93,7 @@ Ensure the following test data exists:
 | Baseline Item | Tap "Baseline" in drawer | Baseline screen displays | | |
 | Close Drawer | Tap outside drawer or swipe left | Drawer closes smoothly | | |
 | Drawer Animation | Open/close drawer multiple times | Animation is smooth, no lag | | |
+Observations: When clicking Create item, it hangs and gives error, refer screenshots in @prompts folder with images Planning1.jpeg &Planning2.jpeg, there is delay in openning &closing of drawer. Logout is not very smooth however it is working. 
 
 ### 3.1.3 Dashboard Widgets
 
@@ -105,6 +107,7 @@ Ensure the following test data exists:
 | WBS Progress Widget | View dashboard | Shows phase completion with stacked bars | | |
 | Widget Loading | Refresh dashboard | Widgets show loading state then content | | |
 | Pull to Refresh | Pull down on dashboard | All widgets refresh | | |
+Observations:- Status text in Upcoming milestone widget is not clearly visible, may be widget size(length) needs to be increased. Refer screenshot in propmts folder Planning3.jpeg
 
 ### 3.1.4 UnifiedSchedule Views
 
@@ -116,11 +119,11 @@ Ensure the following test data exists:
 | Tab Switching | Switch between tabs rapidly | No crashes, smooth transitions | | |
 | Filter Persistence | Apply filter, switch tabs | Filter remains applied across views | | |
 | Search Persistence | Enter search, switch tabs | Search query persists across views | | |
-
+Observation: Status badge "Delayed" not visible, Please check if @Status_Badge_Usage.md reference has been used for uniformity across all roles in various screens. Similarly in List tab status text is not visible. Refer screenshots in prompts folder Planning4.jpeg & Planning5.jpeg
 ---
 
 ## Task 3.2: Accessibility Testing
-
+Observations: Not tested as this is not important
 ### 3.2.1 Screen Reader Testing (VoiceOver/TalkBack)
 
 | Test | Steps | Expected Result | Pass/Fail | Notes |
@@ -173,7 +176,8 @@ Ensure the following test data exists:
 | SiteManagementScreen | No sites | "No Sites Configured" with building icon | | |
 | ResourcePlanningScreen | Default state | "Resource Planning" placeholder | | |
 | ItemEditScreen | Item not found | "Item Not Found" with question icon | | |
-
+Observations:- Site cannot be selected in WBS Breakdown screen
+Also it is observed that there is separation of projects. Each project is different(like AEP01 is diffenet with Abc1). Site should filter accordingly. It is not clear for which project details in widgets of Dashboard indicates. If we select a particular project all tabs and screens should display details of that projects. Please review. However Empty screens are displaying correctly.
 ### 3.3.2 Empty State Content Verification
 
 | Test | Steps | Expected Result | Pass/Fail | Notes |
@@ -183,7 +187,7 @@ Ensure the following test data exists:
 | Message Text | View empty state | Message explains the situation | | |
 | Help Text | View empty state | Help text provides guidance | | |
 | Action Button | If action exists, tap it | Navigates to appropriate screen | | |
-
+Observations:- OK
 ---
 
 ## Task 3.4: Performance Testing
@@ -196,7 +200,7 @@ Ensure the following test data exists:
 | Debounce Cancel | Type, then type more within 300ms | Only final filter executes | | |
 | No Input Lag | Type in search field | Characters appear immediately | | |
 | Clear Search | Clear search field | List resets immediately | | |
-
+Observations: OK
 ### 3.4.2 List Performance
 
 | Test | Steps | Expected Result | Pass/Fail | Notes |
@@ -204,7 +208,7 @@ Ensure the following test data exists:
 | Scroll Performance | Scroll through long list (50+ items) | 60fps, no jank | | |
 | Initial Render | Navigate to list screen | List renders within 500ms | | |
 | Filter Performance | Apply/remove filters | Filter applies within 100ms | | |
-
+Observations:-OK
 ### 3.4.3 Dashboard Performance
 
 | Test | Steps | Expected Result | Pass/Fail | Notes |
@@ -212,6 +216,7 @@ Ensure the following test data exists:
 | Initial Load | Navigate to dashboard | All widgets load within 2s | | |
 | Refresh Performance | Pull to refresh | Refresh completes within 3s | | |
 | Widget Independence | Slow network for one widget | Other widgets still render | | |
+Observations:-OK
 
 ---
 
@@ -224,6 +229,7 @@ Ensure the following test data exists:
 | Back Navigation | Navigate deep, press back | Returns to previous screen | | |
 | Cross-Screen Navigation | Navigate between all screens | No crashes or hangs | | |
 | State Preservation | Navigate away and back | State is preserved | | |
+Observations:-OK
 
 ### Data Integrity Regression
 
@@ -234,6 +240,7 @@ Ensure the following test data exists:
 | Item Delete | Delete item (if applicable) | Item removed from lists | | |
 | Milestone Update | Update milestone progress | Progress saved correctly | | |
 | Baseline Lock | Lock baseline | Items show locked state | | |
+Observations:-OK
 
 ### UI Regression
 
@@ -243,6 +250,7 @@ Ensure the following test data exists:
 | Layout Integrity | Rotate device (if supported) | Layout adapts correctly | | |
 | Text Truncation | View long item names | Text truncates with ellipsis | | |
 | Loading States | Trigger loading on all screens | Loading indicators display | | |
+Observations:-OK
 
 ---
 
@@ -274,7 +282,7 @@ Ensure the following test data exists:
 
 | Issue # | Severity | Description | Screen | Steps to Reproduce | Status |
 |---------|----------|-------------|--------|-------------------|--------|
-| | | | | | |
+| Issue 1_ Due to multiple projects, it is not clear where user should choose project, It is confusing.| | | | | |
 | | | | | | |
 
 ### Sign-off
