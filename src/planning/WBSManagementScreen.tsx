@@ -14,6 +14,9 @@ import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { useAccessibility } from '../utils/accessibility';
+import { useDebounce } from '../utils/performance';
 
 // State management
 import {
@@ -42,9 +45,13 @@ const SORT_OPTIONS: SortOption[] = [
 
 const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
   const { showSnackbar } = useSnackbar();
+  const { announce } = useAccessibility();
 
   // Initialize reducer state
   const [state, dispatch] = useReducer(wbsManagementReducer, createWBSManagementInitialState());
+
+  // Debounce search query for performance (300ms)
+  const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
   const loadItems = useCallback(async () => {
     if (!state.selection.selectedSite) return;
@@ -95,9 +102,9 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
   const displayedItems = useMemo(() => {
     let result = state.data.items;
 
-    // 1. Search filter (name OR WBS code)
-    if (state.filters.searchQuery.trim()) {
-      const query = state.filters.searchQuery.toLowerCase();
+    // 1. Search filter (name OR WBS code) - using debounced query
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(item =>
         item.name.toLowerCase().includes(query) ||
         item.wbsCode.toLowerCase().includes(query)
@@ -145,7 +152,14 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     return result;
-  }, [state.data.items, state.filters, state.selection.selectedPhase, state.sort]);
+  }, [state.data.items, debouncedSearchQuery, state.filters.selectedStatus, state.filters.showCriticalPathOnly, state.selection.selectedPhase, state.sort]);
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      announce(`Found ${displayedItems.length} items matching "${debouncedSearchQuery}"`);
+    }
+  }, [displayedItems.length, debouncedSearchQuery, announce]);
 
   // Load items when site changes
   useEffect(() => {
@@ -184,11 +198,11 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return state.filters.searchQuery.trim() !== '' ||
+    return debouncedSearchQuery.trim() !== '' ||
            state.selection.selectedPhase !== 'all' ||
            !state.filters.selectedStatus.includes('all') ||
            state.filters.showCriticalPathOnly;
-  }, [state.filters, state.selection.selectedPhase]);
+  }, [debouncedSearchQuery, state.filters.selectedStatus, state.filters.showCriticalPathOnly, state.selection.selectedPhase]);
 
   const handleAddItem = useCallback(() => {
     if (!state.selection.selectedSite) {
@@ -368,25 +382,43 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
               />
             )}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text variant="bodyLarge" style={styles.emptyText}>
-                  {state.ui.loading
-                    ? 'Loading items...'
-                    : hasActiveFilters
-                    ? 'No items match your filters'
-                    : 'No items yet'}
-                </Text>
-                {!state.ui.loading && (
-                  <Text variant="bodyMedium" style={styles.emptySubtext}>
-                    {hasActiveFilters
-                      ? 'Try adjusting the search or filters'
-                      : 'Tap the + button to add items'}
-                  </Text>
-                )}
-              </View>
+              state.ui.loading ? (
+                <View style={styles.emptyContainer}>
+                  <Text variant="bodyLarge" style={styles.emptyText}>Loading items...</Text>
+                </View>
+              ) : debouncedSearchQuery ? (
+                <EmptyState
+                  icon="magnify"
+                  title="No Items Found"
+                  message={`No WBS items match "${debouncedSearchQuery}"`}
+                  actionText="Clear Search"
+                  onAction={clearAllFilters}
+                  variant="compact"
+                />
+              ) : hasActiveFilters ? (
+                <EmptyState
+                  icon="filter-off"
+                  title="No Matching Items"
+                  message="No items match your current filters"
+                  actionText="Clear Filters"
+                  onAction={clearAllFilters}
+                  variant="compact"
+                />
+              ) : (
+                <EmptyState
+                  icon="sitemap"
+                  title="No WBS Items"
+                  message="Create a work breakdown structure to organize your project"
+                  actionText="Add Item"
+                  onAction={handleAddItem}
+                  variant="default"
+                />
+              )
             }
             style={styles.itemsList}
             contentContainerStyle={displayedItems.length === 0 ? styles.emptyList : styles.itemsListContent}
+            accessible
+            accessibilityLabel={`Work breakdown structure items, ${displayedItems.length} items`}
           />
 
           {/* FAB */}
@@ -395,19 +427,21 @@ const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.fab}
             onPress={handleAddItem}
             label="Add Item"
+            accessible
+            accessibilityLabel="Add new WBS item"
+            accessibilityRole="button"
+            accessibilityHint="Opens form to create a new work breakdown structure item"
           />
         </View>
       )}
 
       {!state.selection.selectedSite && (
-        <View style={styles.noSiteContainer}>
-          <Text variant="headlineSmall" style={styles.noSiteText}>
-            Select a Site
-          </Text>
-          <Text variant="bodyMedium" style={styles.noSiteSubtext}>
-            Choose a site from the selector above to view and manage work breakdown structure
-          </Text>
-        </View>
+        <EmptyState
+          icon="office-building-outline"
+          title="Select a Site"
+          message="Choose a site from the selector above to view and manage work breakdown structure"
+          variant="large"
+        />
       )}
 
       <ConfirmDialog

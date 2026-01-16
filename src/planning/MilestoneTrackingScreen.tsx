@@ -1,11 +1,12 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
 import { Card, Text, Snackbar } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import MilestoneModel from '../../models/MilestoneModel';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 import {
   ProjectSiteSelector,
   MilestoneCard,
@@ -18,6 +19,7 @@ import {
   validateMilestoneProgress,
 } from './state/milestone-tracking';
 import { logger } from '../services/LoggingService';
+import { useAccessibility } from '../utils/accessibility';
 import { MILESTONE_STATUS } from './milestone-tracking/utils/milestoneConstants';
 
 /**
@@ -42,6 +44,7 @@ const MilestoneTrackingScreenComponent = ({
     milestoneTrackingReducer,
     createMilestoneTrackingInitialState()
   );
+  const { announce } = useAccessibility();
 
   // Initialize project selection
   useEffect(() => {
@@ -233,13 +236,14 @@ const MilestoneTrackingScreenComponent = ({
           type: 'SHOW_SNACKBAR',
           payload: { message: `${milestone.milestoneName} marked as achieved!` },
         });
+        announce(`${milestone.milestoneName} marked as achieved`);
         refreshProgress();
       } catch (error) {
         logger.error('[Milestone] Error marking as achieved', error as Error);
         Alert.alert('Error', 'Failed to mark milestone as achieved');
       }
     },
-    [state.selection, getProgressForMilestone, refreshProgress]
+    [state.selection, getProgressForMilestone, refreshProgress, announce]
   );
 
   const filteredMilestones = milestones.filter((m) => m.projectId === state.selection.selectedProjectId);
@@ -257,30 +261,36 @@ const MilestoneTrackingScreenComponent = ({
       />
 
       {/* Milestones List */}
-      <ScrollView style={styles.scrollView}>
-        {filteredMilestones.map((milestone) => {
-          const progress = getProgressForMilestone(milestone.id);
-
-          return (
-            <MilestoneCard
-              key={milestone.id}
-              milestone={milestone}
-              progress={progress}
-              selectedSiteId={state.selection.selectedSiteId}
-              onEditProgress={openEditDialog}
-              onMarkAsAchieved={handleMarkAsAchieved}
-            />
-          );
-        })}
-
-        {filteredMilestones.length === 0 && (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text style={styles.emptyText}>No milestones found for this project</Text>
-            </Card.Content>
-          </Card>
-        )}
-      </ScrollView>
+      {filteredMilestones.length === 0 ? (
+        <EmptyState
+          icon="flag-checkered"
+          title="No Milestones Set"
+          message="Track important project dates by creating milestones"
+          helpText="Milestones help you track key project deliverables and deadlines"
+          variant="default"
+        />
+      ) : (
+        <FlatList
+          data={filteredMilestones}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: milestone }) => {
+            const progress = getProgressForMilestone(milestone.id);
+            return (
+              <MilestoneCard
+                milestone={milestone}
+                progress={progress}
+                selectedSiteId={state.selection.selectedSiteId}
+                onEditProgress={openEditDialog}
+                onMarkAsAchieved={handleMarkAsAchieved}
+              />
+            );
+          }}
+          style={styles.scrollView}
+          contentContainerStyle={styles.listContent}
+          accessible
+          accessibilityLabel={`Milestones, ${filteredMilestones.length} items`}
+        />
+      )}
 
       {/* Edit Progress Dialog */}
       <EditProgressDialog
@@ -341,12 +351,8 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  emptyCard: {
-    margin: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#666',
+  listContent: {
+    paddingBottom: 16,
   },
   snackbar: {
     backgroundColor: '#388E3C',

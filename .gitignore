@@ -87,3 +87,7 @@ yarn-error.log
 .env.production
 SUPABASE_CREDENTIALS.txt
 # config/jwt.config.production.ts
+
+# Claude Code temporary files
+tmpclaude-*
+nul

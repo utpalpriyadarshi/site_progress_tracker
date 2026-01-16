@@ -19,6 +19,8 @@ import DependencyModal from './components/DependencyModal';
 import ItemPlanningCard from './components/ItemPlanningCard';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { useAccessibility } from '../utils/accessibility';
 
 interface BaselineScreenProps {
   projects: ProjectModel[];
@@ -26,6 +28,7 @@ interface BaselineScreenProps {
 
 const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) => {
   const { showSnackbar } = useSnackbar();
+  const { announce } = useAccessibility();
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null);
   const [items, setItems] = useState<ItemModel[]>([]);
   const [criticalPathItems, setCriticalPathItems] = useState<string[]>([]);
@@ -85,10 +88,9 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
         itemCount: result.criticalPathItems.length,
         durationDays
       });
-      showSnackbar(
-        `Critical Path: ${result.criticalPathItems.length} items, ${durationDays} days duration`,
-        'success'
-      );
+      const message = `Critical Path: ${result.criticalPathItems.length} items, ${durationDays} days duration`;
+      showSnackbar(message, 'success');
+      announce(message);
 
       await loadItems(); // Reload to show updated flags
     } catch (error) {
@@ -111,6 +113,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
     try {
       await PlanningService.lockBaseline(selectedProject.id);
       showSnackbar('Baseline locked successfully', 'success');
+      announce('Baseline locked successfully');
       await loadItems();
     } catch (error) {
       logger.error('[Baseline] Error locking baseline', error as Error);
@@ -149,6 +152,11 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
               disabled={!hasItems || isCalculating}
               style={styles.actionButton}
               icon="chart-timeline-variant"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Calculate critical path"
+              accessibilityHint="Analyzes dependencies to find the longest path through the project"
+              accessibilityState={{ disabled: !hasItems || isCalculating }}
             >
               Calculate Critical Path
             </Button>
@@ -158,6 +166,11 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
               disabled={isBaselineLocked || !hasItems}
               style={[styles.actionButton, styles.lockButton]}
               icon={isBaselineLocked ? 'lock' : 'lock-open'}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={isBaselineLocked ? 'Baseline is locked' : 'Lock baseline'}
+              accessibilityHint={isBaselineLocked ? 'Baseline has been locked and cannot be changed' : 'Saves current planned dates as the baseline'}
+              accessibilityState={{ disabled: isBaselineLocked || !hasItems }}
             >
               {isBaselineLocked ? 'Baseline Locked' : 'Lock Baseline'}
             </Button>
@@ -197,16 +210,20 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
               <Text style={styles.loadingText}>Loading items...</Text>
             </View>
           ) : items.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text variant="headlineSmall" style={styles.emptyTitle}>
-                No Items Found
-              </Text>
-              <Text variant="bodyMedium" style={styles.emptyText}>
-                Add items to this project to start planning
-              </Text>
-            </View>
+            <EmptyState
+              icon="clipboard-list-outline"
+              title="No Items Found"
+              message="Add items to this project to start baseline planning"
+              helpText="Create work items in the WBS tab to see them here"
+              variant="default"
+            />
           ) : (
-            <ScrollView style={styles.itemsList} contentContainerStyle={styles.itemsListContent}>
+            <ScrollView
+              style={styles.itemsList}
+              contentContainerStyle={styles.itemsListContent}
+              accessible
+              accessibilityLabel={`Project items, ${items.length} items, ${criticalPathItems.length} on critical path`}
+            >
               <Text variant="titleMedium" style={styles.sectionTitle}>
                 Project Items ({items.length})
               </Text>
@@ -226,14 +243,13 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
       )}
 
       {!selectedProject && (
-        <View style={styles.emptyContainer}>
-          <Text variant="headlineSmall" style={styles.emptyTitle}>
-            Select a Project
-          </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
-            Choose a project above to start baseline planning
-          </Text>
-        </View>
+        <EmptyState
+          icon="folder-outline"
+          title="Select a Project"
+          message="Choose a project above to start baseline planning"
+          helpText="Projects contain sites and work items for scheduling"
+          variant="large"
+        />
       )}
 
       {showDependencyModal && selectedItem && (
@@ -332,20 +348,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     color: '#666',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyTitle: {
-    marginBottom: 8,
-    color: '#666',
-  },
-  emptyText: {
-    color: '#999',
-    textAlign: 'center',
   },
   itemsList: {
     flex: 1,

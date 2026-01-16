@@ -25,6 +25,7 @@ import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -233,18 +234,29 @@ const SiteManagementScreenComponent = ({
           icon="plus"
           onPress={openAddDialog}
           style={styles.addButton}
+          accessible
+          accessibilityLabel="Add new site"
+          accessibilityRole="button"
+          accessibilityHint="Opens form to create a new construction site"
         >
           Add Site
         </Button>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        accessible
+        accessibilityLabel={`Sites list, ${sites.length} sites`}
+      >
         {sites.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text>No sites found. Create your first site!</Text>
-            </Card.Content>
-          </Card>
+          <EmptyState
+            icon="office-building-outline"
+            title="No Sites Configured"
+            message="Create your first site to start planning construction activities"
+            actionText="Add Site"
+            onAction={openAddDialog}
+            variant="default"
+          />
         ) : (
           sites.map((site) => {
             const project = projects.find((p) => p.id === site.projectId);
