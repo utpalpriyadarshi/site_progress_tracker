@@ -8,7 +8,7 @@
  * @since Planning Phase 3
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { database } from '../../../models/database';
@@ -17,6 +17,7 @@ import ItemModel from '../../../models/ItemModel';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useDebounce } from '../../utils/performance';
+import { usePlanningContext } from '../context';
 
 // Views
 import { TimelineView } from './views/TimelineView';
@@ -103,17 +104,32 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
 }) => {
   const theme = useTheme();
   const { announce } = useAccessibility();
+  // Use assigned project from context (set by Admin in RoleManagement)
+  const { projectId: assignedProjectId, selectedSiteId, selectSite } = usePlanningContext();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabName>('Timeline');
 
-  // Filter state
+  // Filter state - use assigned project from context
   const [filters, setFilters] = useState<ScheduleFilters>({
-    projectId: projects[0]?.id || '',
-    siteId: '',
+    projectId: assignedProjectId || '',
+    siteId: selectedSiteId || '',
     searchQuery: '',
     showCriticalPathOnly: false,
   });
+
+  // Sync filters with context when assigned project loads
+  useEffect(() => {
+    if (assignedProjectId && assignedProjectId !== filters.projectId) {
+      setFilters((prev) => ({ ...prev, projectId: assignedProjectId, siteId: '' }));
+    }
+  }, [assignedProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (selectedSiteId !== filters.siteId) {
+      setFilters((prev) => ({ ...prev, siteId: selectedSiteId || '' }));
+    }
+  }, [selectedSiteId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounce search query for performance
   const debouncedSearchQuery = useDebounce(filters.searchQuery, 300);
@@ -228,14 +244,17 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
     }
   }, [sortedItems.length, debouncedSearchQuery, announce]);
 
-  // Filter handlers
-  const handleProjectChange = useCallback((projectId: string) => {
-    setFilters((prev) => ({ ...prev, projectId, siteId: '' }));
+  // Filter handlers - update local state and global context where applicable
+  // Note: Project is assigned by Admin, so handleProjectChange is a no-op for uniformity
+  const handleProjectChange = useCallback((_projectId: string) => {
+    // Project is restricted to assigned project - no change allowed
+    // This handler is kept for interface compatibility but does nothing
   }, []);
 
   const handleSiteChange = useCallback((siteId: string) => {
     setFilters((prev) => ({ ...prev, siteId }));
-  }, []);
+    selectSite(siteId); // Update global context
+  }, [selectSite]);
 
   const handleSearchChange = useCallback((query: string) => {
     setFilters((prev) => ({ ...prev, searchQuery: query }));
@@ -254,8 +273,8 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
     return sites.filter((s) => s.projectId === filters.projectId);
   }, [sites, filters.projectId]);
 
-  // Shared props for all views
-  const viewProps = {
+  // Shared props for all views - memoized to prevent unnecessary re-renders
+  const viewProps = useMemo(() => ({
     items: sortedItems,
     filters,
     projects,
@@ -265,7 +284,17 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
     onSearchChange: handleSearchChange,
     onCriticalPathToggle: handleCriticalPathToggle,
     onClearSearch: clearSearch,
-  };
+  }), [
+    sortedItems,
+    filters,
+    projects,
+    projectSites,
+    handleProjectChange,
+    handleSiteChange,
+    handleSearchChange,
+    handleCriticalPathToggle,
+    clearSearch,
+  ]);
 
   const handleTabChange = useCallback(
     (tabName: TabName) => {

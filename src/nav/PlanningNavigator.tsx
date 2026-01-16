@@ -21,11 +21,11 @@
  * @since Planning Phase 3
  */
 
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, View, StyleSheet, InteractionManager } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -45,6 +45,7 @@ import { UnifiedSchedule } from '../planning/schedule';
 
 import { useAuth } from '../auth/AuthContext';
 import { PlanningStackParamList } from './types';
+import { PlanningProvider } from '../planning/context';
 
 // ==================== Types ====================
 
@@ -87,8 +88,22 @@ const Stack = createNativeStackNavigator<PlanningStackParamList>();
 
 // ==================== Custom Drawer Content ====================
 
-const CustomDrawerContent: React.FC<DrawerContentComponentProps & { onLogout: () => void }> = (props) => {
+interface CustomDrawerContentProps extends DrawerContentComponentProps {
+  onLogout: () => void;
+}
+
+const CustomDrawerContent: React.FC<CustomDrawerContentProps> = memo(({ onLogout, ...props }) => {
   const theme = useTheme();
+
+  // Memoize logout handler to prevent unnecessary re-renders
+  const handleLogoutPress = useCallback(() => {
+    // Close drawer first for smoother transition
+    props.navigation.closeDrawer();
+    // Defer logout to after animations complete
+    InteractionManager.runAfterInteractions(() => {
+      onLogout();
+    });
+  }, [onLogout, props.navigation]);
 
   return (
     <DrawerContentScrollView {...props}>
@@ -109,24 +124,26 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps & { onLogout: ()
       {/* Logout */}
       <TouchableOpacity
         style={styles.logoutButton}
-        onPress={props.onLogout}
+        onPress={handleLogoutPress}
         accessible
         accessibilityRole="button"
         accessibilityLabel="Logout"
+        activeOpacity={0.7}
       >
         <Icon name="logout" size={22} color="#F44336" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </DrawerContentScrollView>
   );
-};
+});
 
 // ==================== Tab Navigator ====================
 
-const PlanningTabs: React.FC = () => {
+const PlanningTabs: React.FC = memo(() => {
   const theme = useTheme();
 
-  const getTabBarIcon = (routeName: string, focused: boolean, color: string, size: number) => {
+  // Memoize icon getter to prevent re-creation on each render
+  const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
     let iconName = 'help-circle';
 
     switch (routeName) {
@@ -145,25 +162,29 @@ const PlanningTabs: React.FC = () => {
     }
 
     return <Icon name={iconName} size={size} color={color} />;
-  };
+  }, []);
+
+  // Memoize screen options to prevent unnecessary re-renders
+  const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
+    tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getTabBarIcon(route.name, focused, color, size),
+    tabBarActiveTintColor: theme.colors.primary,
+    tabBarInactiveTintColor: 'gray',
+    headerShown: false,
+    tabBarStyle: {
+      paddingBottom: 4,
+      height: 56,
+    },
+    tabBarLabelStyle: {
+      fontSize: 11,
+      fontWeight: '500' as const,
+    },
+    // Performance: Lazy load tabs
+    lazy: true,
+  }), [theme.colors.primary, getTabBarIcon]);
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => getTabBarIcon(route.name, focused, color, size),
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false,
-        tabBarStyle: {
-          paddingBottom: 4,
-          height: 56,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
-      })}
-    >
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
         name="Dashboard"
         component={PlanningDashboard}
@@ -198,15 +219,16 @@ const PlanningTabs: React.FC = () => {
       />
     </Tab.Navigator>
   );
-};
+});
 
 // ==================== Drawer Navigator ====================
 
-const PlanningDrawer: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
+const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: parentNavigation }) => {
   const { logout } = useAuth();
   const theme = useTheme();
 
-  const handleLogout = async () => {
+  // Memoize logout handler
+  const handleLogout = useCallback(async () => {
     await logout();
     parentNavigation.dispatch(
       CommonActions.reset({
@@ -214,9 +236,10 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = ({ navigation: parentNa
         routes: [{ name: 'Auth' }],
       })
     );
-  };
+  }, [logout, parentNavigation]);
 
-  const getDrawerIcon = (routeName: string, focused: boolean, color: string, size: number) => {
+  // Memoize drawer icon getter
+  const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
     let iconName = 'help-circle';
 
     switch (routeName) {
@@ -241,23 +264,37 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = ({ navigation: parentNa
     }
 
     return <Icon name={iconName} size={size} color={color} />;
-  };
+  }, []);
+
+  // Memoize drawer content renderer
+  const renderDrawerContent = useCallback(
+    (props: DrawerContentComponentProps) => <CustomDrawerContent {...props} onLogout={handleLogout} />,
+    [handleLogout]
+  );
+
+  // Memoize screen options for better performance
+  const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
+    drawerIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getDrawerIcon(route.name, focused, color, size),
+    drawerActiveTintColor: theme.colors.primary,
+    drawerInactiveTintColor: 'gray',
+    headerStyle: {
+      backgroundColor: theme.colors.primary,
+    },
+    headerTintColor: '#FFF',
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+    },
+    // Performance optimizations
+    lazy: true, // Lazy load drawer screens
+    swipeEdgeWidth: 50, // Reduce edge detection area
+    drawerType: 'front' as const, // Better performance than 'slide'
+  }), [theme.colors.primary, getDrawerIcon]);
 
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} onLogout={handleLogout} />}
-      screenOptions={({ route }) => ({
-        drawerIcon: ({ focused, color, size }) => getDrawerIcon(route.name, focused, color, size),
-        drawerActiveTintColor: theme.colors.primary,
-        drawerInactiveTintColor: 'gray',
-        headerStyle: {
-          backgroundColor: theme.colors.primary,
-        },
-        headerTintColor: '#FFF',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      })}
+      drawerContent={renderDrawerContent}
+      screenOptions={screenOptions}
     >
       <Drawer.Screen
         name="MainTabs"
@@ -315,27 +352,29 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = ({ navigation: parentNa
       />
     </Drawer.Navigator>
   );
-};
+});
 
 // ==================== Main Stack Navigator ====================
 
 const PlanningNavigator: React.FC<PlanningNavigatorProps> = ({ navigation: parentNavigation }) => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="SiteManagement">
-        {() => <PlanningDrawer navigation={parentNavigation} />}
-      </Stack.Screen>
-      <Stack.Screen
-        name="ItemCreation"
-        component={ItemCreationScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ItemEdit"
-        component={ItemEditScreen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
+    <PlanningProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="SiteManagement">
+          {() => <PlanningDrawer navigation={parentNavigation} />}
+        </Stack.Screen>
+        <Stack.Screen
+          name="ItemCreation"
+          component={ItemCreationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ItemEdit"
+          component={ItemEditScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    </PlanningProvider>
   );
 };
 

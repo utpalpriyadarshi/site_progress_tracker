@@ -2,12 +2,19 @@
  * Widget Data Hooks
  *
  * Custom hooks for fetching and managing dashboard widget data.
+ * Uses real WatermelonDB queries filtered by assigned project.
  *
- * @version 1.0.0
- * @since Planning Phase 3
+ * @version 2.0.0
+ * @since Planning Phase 4
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { Q } from '@nozbe/watermelondb';
+import { database } from '../../../../models/database';
+import ItemModel from '../../../../models/ItemModel';
+import ProgressLogModel from '../../../../models/ProgressLogModel';
+import CategoryModel from '../../../../models/CategoryModel';
+import { usePlanningContext } from '../../context';
 import type { Milestone } from '../widgets/UpcomingMilestonesWidget';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
 import type { ScheduleOverview } from '../widgets/ScheduleOverviewWidget';
@@ -25,34 +32,64 @@ interface UseMilestonesResult {
 }
 
 export function useUpcomingMilestonesData(): UseMilestonesResult {
+  const { projectId, sites } = usePlanningContext();
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setMilestones([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      // TODO: Replace with actual API call
-      // Simulated data for now
-      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockMilestones: Milestone[] = [
-        { id: '1', name: 'Foundation Complete', dueDate: new Date(Date.now() + 7 * 86400000), status: 'in_progress', daysRemaining: 7 },
-        { id: '2', name: 'Steel Frame Erection', dueDate: new Date(Date.now() + 14 * 86400000), status: 'planned', daysRemaining: 14 },
-        { id: '3', name: 'Roof Installation', dueDate: new Date(Date.now() + 30 * 86400000), status: 'planned', daysRemaining: 30 },
-        { id: '4', name: 'Electrical Rough-in', dueDate: new Date(Date.now() + 45 * 86400000), status: 'planned', daysRemaining: 45 },
-        { id: '5', name: 'Final Inspection', dueDate: new Date(Date.now() + 90 * 86400000), status: 'planned', daysRemaining: 90 },
-      ];
+      if (siteIds.length === 0) {
+        setMilestones([]);
+        setLoading(false);
+        return;
+      }
 
-      setMilestones(mockMilestones);
+      // Query items marked as milestones for project's sites
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const milestoneItems = await itemsCollection
+        .query(
+          Q.where('site_id', Q.oneOf(siteIds)),
+          Q.where('is_milestone', true),
+          Q.sortBy('planned_end_date', Q.asc)
+        )
+        .fetch();
+
+      // Transform to Milestone type - only upcoming (not completed)
+      const now = Date.now();
+      const transformedMilestones: Milestone[] = milestoneItems
+        .filter((item) => item.status !== 'completed')
+        .slice(0, 5) // Limit to 5
+        .map((item) => {
+          const daysRemaining = Math.ceil((item.plannedEndDate - now) / 86400000);
+          return {
+            id: item.id,
+            name: item.name,
+            dueDate: new Date(item.plannedEndDate),
+            status: item.status as 'planned' | 'in_progress' | 'completed' | 'delayed',
+            daysRemaining: Math.max(0, daysRemaining),
+          };
+        });
+
+      setMilestones(transformedMilestones);
     } catch (err) {
+      console.error('Error loading milestones:', err);
       setError('Failed to load milestones');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
@@ -71,31 +108,73 @@ interface UseCriticalPathResult {
 }
 
 export function useCriticalPathData(): UseCriticalPathResult {
+  const { projectId, sites } = usePlanningContext();
   const [items, setItems] = useState<CriticalPathItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockItems: CriticalPathItem[] = [
-        { id: '1', name: 'Concrete Pour - Section A', riskLevel: 'high', delayImpact: 5, progress: 60, dueDate: new Date() },
-        { id: '2', name: 'Structural Steel Delivery', riskLevel: 'high', delayImpact: 8, progress: 40, dueDate: new Date() },
-        { id: '3', name: 'MEP Coordination', riskLevel: 'medium', delayImpact: 3, progress: 75, dueDate: new Date() },
-        { id: '4', name: 'Waterproofing', riskLevel: 'medium', delayImpact: 2, progress: 85, dueDate: new Date() },
-      ];
+      if (siteIds.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
 
-      setItems(mockItems);
+      // Query critical path items
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const criticalItems = await itemsCollection
+        .query(
+          Q.where('site_id', Q.oneOf(siteIds)),
+          Q.where('is_critical_path', true),
+          Q.where('status', Q.notEq('completed')),
+          Q.sortBy('planned_end_date', Q.asc)
+        )
+        .fetch();
+
+      // Transform to CriticalPathItem type
+      const now = Date.now();
+      const transformedItems: CriticalPathItem[] = criticalItems.map((item) => {
+        const daysUntilDue = Math.ceil((item.plannedEndDate - now) / 86400000);
+        const isDelayed = item.status === 'delayed' || daysUntilDue < 0;
+
+        // Determine risk level based on delay and float
+        let riskLevel: 'low' | 'medium' | 'high' = 'low';
+        if (isDelayed || daysUntilDue < 0) {
+          riskLevel = 'high';
+        } else if (daysUntilDue < 7 || (item.floatDays !== undefined && item.floatDays < 3)) {
+          riskLevel = 'medium';
+        }
+
+        return {
+          id: item.id,
+          name: item.name,
+          riskLevel,
+          delayImpact: isDelayed ? Math.abs(daysUntilDue) : 0,
+          progress: item.getProgressPercentage(),
+          dueDate: new Date(item.plannedEndDate),
+        };
+      });
+
+      setItems(transformedItems);
     } catch (err) {
+      console.error('Error loading critical path:', err);
       setError('Failed to load critical path data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
@@ -114,35 +193,84 @@ interface UseScheduleOverviewResult {
 }
 
 export function useScheduleOverviewData(): UseScheduleOverviewResult {
+  const { projectId, sites } = usePlanningContext();
   const [overview, setOverview] = useState<ScheduleOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setOverview(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 300));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockOverview: ScheduleOverview = {
-        totalItems: 48,
-        completedItems: 18,
-        onTrackItems: 22,
-        delayedItems: 8,
-        overallProgress: 65,
-        projectStartDate: new Date(Date.now() - 60 * 86400000),
-        projectEndDate: new Date(Date.now() + 120 * 86400000),
-        daysRemaining: 120,
-      };
+      if (siteIds.length === 0) {
+        setOverview(null);
+        setLoading(false);
+        return;
+      }
 
-      setOverview(mockOverview);
+      // Query all items for the project's sites
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const allItems = await itemsCollection
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      if (allItems.length === 0) {
+        setOverview(null);
+        setLoading(false);
+        return;
+      }
+
+      // Calculate metrics
+      const totalItems = allItems.length;
+      const completedItems = allItems.filter((i) => i.status === 'completed').length;
+      const delayedItems = allItems.filter((i) => i.status === 'delayed').length;
+      const onTrackItems = allItems.filter(
+        (i) => i.status === 'in_progress' || i.status === 'not_started'
+      ).length;
+
+      // Calculate overall progress (weighted by item progress)
+      const totalProgress = allItems.reduce((sum, item) => sum + item.getProgressPercentage(), 0);
+      const overallProgress = Math.round(totalProgress / totalItems);
+
+      // Get project date range from items
+      const startDates = allItems.map((i) => i.plannedStartDate).filter(Boolean);
+      const endDates = allItems.map((i) => i.plannedEndDate).filter(Boolean);
+
+      const projectStartDate = startDates.length > 0
+        ? new Date(Math.min(...startDates))
+        : new Date();
+      const projectEndDate = endDates.length > 0
+        ? new Date(Math.max(...endDates))
+        : new Date(Date.now() + 180 * 86400000);
+
+      const daysRemaining = Math.max(0, Math.ceil((projectEndDate.getTime() - Date.now()) / 86400000));
+
+      setOverview({
+        totalItems,
+        completedItems,
+        onTrackItems,
+        delayedItems,
+        overallProgress,
+        projectStartDate,
+        projectEndDate,
+        daysRemaining,
+      });
     } catch (err) {
+      console.error('Error loading schedule overview:', err);
       setError('Failed to load schedule overview');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
@@ -161,32 +289,74 @@ interface UseRecentActivitiesResult {
 }
 
 export function useRecentActivitiesData(): UseRecentActivitiesResult {
+  const { projectId, sites } = usePlanningContext();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 350));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockActivities: Activity[] = [
-        { id: '1', type: 'created', itemName: 'Electrical Panel Installation', itemType: 'schedule', timestamp: new Date(Date.now() - 30 * 60000) },
-        { id: '2', type: 'completed', itemName: 'Site Survey', itemType: 'milestone', timestamp: new Date(Date.now() - 2 * 3600000) },
-        { id: '3', type: 'updated', itemName: 'Foundation Works', itemType: 'wbs', timestamp: new Date(Date.now() - 4 * 3600000) },
-        { id: '4', type: 'status_changed', itemName: 'Concrete Curing', itemType: 'schedule', timestamp: new Date(Date.now() - 24 * 3600000) },
-        { id: '5', type: 'created', itemName: 'Crane Operator', itemType: 'resource', timestamp: new Date(Date.now() - 48 * 3600000) },
-      ];
+      if (siteIds.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
 
-      setActivities(mockActivities);
+      // Get items for the project's sites
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const projectItems = await itemsCollection
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      const itemIds = projectItems.map((i) => i.id);
+
+      if (itemIds.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
+
+      // Query recent progress logs
+      const logsCollection = database.collections.get<ProgressLogModel>('progress_logs');
+      const recentLogs = await logsCollection
+        .query(
+          Q.where('item_id', Q.oneOf(itemIds)),
+          Q.sortBy('date', Q.desc),
+          Q.take(10)
+        )
+        .fetch();
+
+      // Create a map of item IDs to names
+      const itemNameMap = new Map(projectItems.map((i) => [i.id, i.name]));
+
+      // Transform to Activity type
+      const transformedActivities: Activity[] = recentLogs.slice(0, 5).map((log) => ({
+        id: log.id,
+        type: 'updated' as const,
+        itemName: itemNameMap.get(log.itemId) || 'Unknown Item',
+        itemType: 'schedule' as const,
+        timestamp: new Date(log.date),
+      }));
+
+      setActivities(transformedActivities);
     } catch (err) {
+      console.error('Error loading recent activities:', err);
       setError('Failed to load recent activities');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
@@ -206,40 +376,112 @@ interface UseResourceUtilizationResult {
 }
 
 export function useResourceUtilizationData(): UseResourceUtilizationResult {
+  const { projectId, sites } = usePlanningContext();
   const [resources, setResources] = useState<Resource[]>([]);
   const [summary, setSummary] = useState<ResourceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setResources([]);
+      setSummary(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 450));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockResources: Resource[] = [
-        { id: '1', name: 'Concrete Crew', type: 'labor', allocated: 110, available: 40, utilized: 44 },
-        { id: '2', name: 'Tower Crane', type: 'equipment', allocated: 95, available: 100, utilized: 95 },
-        { id: '3', name: 'Steel Workers', type: 'labor', allocated: 85, available: 60, utilized: 51 },
-        { id: '4', name: 'Ready-mix Concrete', type: 'material', allocated: 60, available: 500, utilized: 300 },
-      ];
+      if (siteIds.length === 0) {
+        setResources([]);
+        setSummary(null);
+        setLoading(false);
+        return;
+      }
 
-      const mockSummary: ResourceSummary = {
-        totalResources: 12,
-        overAllocated: 2,
-        optimallyAllocated: 7,
-        underAllocated: 3,
+      // Query items for the project - aggregate by phase as "resources"
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const projectItems = await itemsCollection
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      // Group items by project phase and calculate utilization metrics
+      const phaseGroups = new Map<string, ItemModel[]>();
+      projectItems.forEach((item) => {
+        const phase = item.projectPhase || 'other';
+        if (!phaseGroups.has(phase)) {
+          phaseGroups.set(phase, []);
+        }
+        phaseGroups.get(phase)!.push(item);
+      });
+
+      // Transform phases into resource utilization format
+      const phaseLabels: Record<string, string> = {
+        design: 'Design Team',
+        approvals: 'Approvals',
+        mobilization: 'Mobilization',
+        procurement: 'Procurement',
+        interface: 'Interface',
+        site_prep: 'Site Prep Crew',
+        construction: 'Construction Crew',
+        testing: 'Testing Team',
+        commissioning: 'Commissioning',
+        sat: 'SAT Team',
+        handover: 'Handover',
+        other: 'Other',
       };
 
-      setResources(mockResources);
-      setSummary(mockSummary);
+      const transformedResources: Resource[] = [];
+      let overAllocated = 0;
+      let optimallyAllocated = 0;
+      let underAllocated = 0;
+
+      phaseGroups.forEach((items, phase) => {
+        const totalItems = items.length;
+        const inProgress = items.filter((i) => i.status === 'in_progress').length;
+        const completed = items.filter((i) => i.status === 'completed').length;
+
+        // Calculate utilization as percentage of work being actively done
+        const utilization = totalItems > 0 ? Math.round((inProgress / totalItems) * 100) : 0;
+        const allocated = totalItems > 0 ? Math.round(((inProgress + completed) / totalItems) * 100) : 0;
+
+        // Categorize allocation status
+        if (allocated > 90) {
+          overAllocated++;
+        } else if (allocated > 50) {
+          optimallyAllocated++;
+        } else {
+          underAllocated++;
+        }
+
+        transformedResources.push({
+          id: phase,
+          name: phaseLabels[phase] || phase,
+          type: 'labor',
+          allocated,
+          available: 100,
+          utilized: utilization,
+        });
+      });
+
+      setResources(transformedResources);
+      setSummary({
+        totalResources: phaseGroups.size,
+        overAllocated,
+        optimallyAllocated,
+        underAllocated,
+      });
     } catch (err) {
+      console.error('Error loading resource utilization:', err);
       setError('Failed to load resource data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
@@ -259,41 +501,117 @@ interface UseWBSProgressResult {
 }
 
 export function useWBSProgressData(): UseWBSProgressResult {
+  const { projectId, sites } = usePlanningContext();
   const [phases, setPhases] = useState<WBSPhase[]>([]);
   const [summary, setSummary] = useState<WBSSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setPhases([]);
+      setSummary(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      const siteIds = sites.map((s) => s.id);
 
-      const mockPhases: WBSPhase[] = [
-        { id: '1', name: 'Site Preparation', totalItems: 8, completedItems: 8, inProgressItems: 0, notStartedItems: 0 },
-        { id: '2', name: 'Foundation', totalItems: 12, completedItems: 10, inProgressItems: 2, notStartedItems: 0 },
-        { id: '3', name: 'Structural', totalItems: 15, completedItems: 5, inProgressItems: 6, notStartedItems: 4 },
-        { id: '4', name: 'MEP', totalItems: 20, completedItems: 0, inProgressItems: 4, notStartedItems: 16 },
-        { id: '5', name: 'Finishing', totalItems: 10, completedItems: 0, inProgressItems: 0, notStartedItems: 10 },
+      if (siteIds.length === 0) {
+        setPhases([]);
+        setSummary(null);
+        setLoading(false);
+        return;
+      }
+
+      // Query all items for the project's sites
+      const itemsCollection = database.collections.get<ItemModel>('items');
+      const allItems = await itemsCollection
+        .query(Q.where('site_id', Q.oneOf(siteIds)))
+        .fetch();
+
+      // Group items by project phase
+      const phaseGroups = new Map<string, ItemModel[]>();
+      allItems.forEach((item) => {
+        const phase = item.projectPhase || 'other';
+        if (!phaseGroups.has(phase)) {
+          phaseGroups.set(phase, []);
+        }
+        phaseGroups.get(phase)!.push(item);
+      });
+
+      // Phase display order and labels
+      const phaseOrder = [
+        'design', 'approvals', 'mobilization', 'procurement', 'interface',
+        'site_prep', 'construction', 'testing', 'commissioning', 'sat', 'handover'
       ];
 
-      const mockSummary: WBSSummary = {
-        totalPhases: 5,
-        totalItems: 65,
-        completedItems: 23,
-        overallProgress: 35,
+      const phaseLabels: Record<string, string> = {
+        design: 'Design & Engineering',
+        approvals: 'Statutory Approvals',
+        mobilization: 'Mobilization',
+        procurement: 'Procurement',
+        interface: 'Interface Coordination',
+        site_prep: 'Site Preparation',
+        construction: 'Construction',
+        testing: 'Testing',
+        commissioning: 'Commissioning',
+        sat: 'Site Acceptance Test',
+        handover: 'Handover',
+        other: 'Other',
       };
 
-      setPhases(mockPhases);
-      setSummary(mockSummary);
+      // Transform to WBSPhase type
+      const transformedPhases: WBSPhase[] = phaseOrder
+        .filter((phase) => phaseGroups.has(phase))
+        .map((phase) => {
+          const items = phaseGroups.get(phase)!;
+          return {
+            id: phase,
+            name: phaseLabels[phase] || phase,
+            totalItems: items.length,
+            completedItems: items.filter((i) => i.status === 'completed').length,
+            inProgressItems: items.filter((i) => i.status === 'in_progress').length,
+            notStartedItems: items.filter((i) => i.status === 'not_started').length,
+          };
+        });
+
+      // Add 'other' phase if it exists
+      if (phaseGroups.has('other')) {
+        const items = phaseGroups.get('other')!;
+        transformedPhases.push({
+          id: 'other',
+          name: phaseLabels['other'],
+          totalItems: items.length,
+          completedItems: items.filter((i) => i.status === 'completed').length,
+          inProgressItems: items.filter((i) => i.status === 'in_progress').length,
+          notStartedItems: items.filter((i) => i.status === 'not_started').length,
+        });
+      }
+
+      // Calculate summary
+      const totalItems = allItems.length;
+      const completedItems = allItems.filter((i) => i.status === 'completed').length;
+      const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+      setPhases(transformedPhases);
+      setSummary({
+        totalPhases: transformedPhases.length,
+        totalItems,
+        completedItems,
+        overallProgress,
+      });
     } catch (err) {
+      console.error('Error loading WBS progress:', err);
       setError('Failed to load WBS data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, sites]);
 
   useEffect(() => {
     fetchData();
