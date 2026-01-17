@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { logger } from '../services/LoggingService';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
 import { InventoryItem, InventoryLocation } from '../services/InventoryOptimizationService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { useDebounce } from '../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
 
 // Import all inventory components
 import {
@@ -45,13 +49,22 @@ import { ViewMode, StatusFilter, ABCFilter } from './inventory/utils';
  */
 
 const InventoryManagementScreen = () => {
-  const { selectedProjectId } = useLogistics();
+  const {
+    selectedProjectId,
+    isOffline,
+    pendingSyncCount,
+    triggerSync,
+  } = useLogistics();
+  const { announce } = useAccessibility();
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [abcFilter, setAbcFilter] = useState<ABCFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Debounce search for performance (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Data hooks
   const {
@@ -64,14 +77,21 @@ const InventoryManagementScreen = () => {
     refresh,
   } = useInventoryData();
 
-  // Filter items
+  // Filter items using debounced search
   const filteredItems = useInventoryFilters(
     items,
     statusFilter,
     'all', // locationFilter - currently not used in UI
     abcFilter,
-    searchQuery
+    debouncedSearchQuery
   );
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery && !loading) {
+      announce(`Found ${filteredItems.length} items matching "${debouncedSearchQuery}"`);
+    }
+  }, [filteredItems.length, debouncedSearchQuery, loading, announce]);
 
   // Calculate statistics
   const stats = useInventoryStats(items);
@@ -101,6 +121,64 @@ const InventoryManagementScreen = () => {
     transfers: transfers.filter(t => t.status === 'requested').length,
   };
 
+  // Empty state rendering for overview mode
+  const renderOverviewEmptyState = () => {
+    const hasNoData = items.length === 0;
+    const hasSearchQuery = debouncedSearchQuery.length > 0;
+    const hasFilter = statusFilter !== 'all' || abcFilter !== 'all';
+    const noFilteredResults = filteredItems.length === 0;
+
+    // No data at all
+    if (hasNoData) {
+      return (
+        <EmptyState
+          icon="package-variant"
+          title="No Inventory Items"
+          message="Start tracking inventory by adding your first item."
+          helpText="Inventory items can be linked to BOM requirements and purchase orders."
+          actionText="Add Item"
+          onAction={() => {
+            logger.info('[Inventory] Add item action pressed');
+            // TODO: Open add item dialog
+          }}
+        />
+      );
+    }
+
+    // No search results
+    if (hasSearchQuery && noFilteredResults) {
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No Items Found"
+          message={`No items match "${debouncedSearchQuery}"`}
+          variant="search"
+          actionText="Clear Search"
+          onAction={() => setSearchQuery('')}
+        />
+      );
+    }
+
+    // No filter results
+    if (hasFilter && noFilteredResults) {
+      const filterDesc = statusFilter !== 'all' ? statusFilter : abcFilter;
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${filterDesc.charAt(0).toUpperCase() + filterDesc.slice(1)} Items`}
+          message="Try selecting a different filter or remove filters."
+          actionText="Clear Filters"
+          onAction={() => {
+            setStatusFilter('all');
+            setAbcFilter('all');
+          }}
+        />
+      );
+    }
+
+    return null;
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -114,6 +192,14 @@ const InventoryManagementScreen = () => {
   // Main render
   return (
     <View style={styles.container}>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOnline={!isOffline}
+        pendingCount={pendingSyncCount}
+        onSync={triggerSync}
+        showWhenPending={true}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Inventory Management</Text>
@@ -150,7 +236,9 @@ const InventoryManagementScreen = () => {
         }
       >
         {viewMode === 'overview' && (
-          <OverviewSection items={filteredItems} onItemPress={handleItemPress} />
+          renderOverviewEmptyState() || (
+            <OverviewSection items={filteredItems} onItemPress={handleItemPress} />
+          )
         )}
         {viewMode === 'locations' && (
           <LocationsView

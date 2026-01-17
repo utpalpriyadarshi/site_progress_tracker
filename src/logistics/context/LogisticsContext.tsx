@@ -1,21 +1,44 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { logger } from '../../services/LoggingService';
-
-import { database } from '../../../models/database';
-import ProjectModel from '../../../models/ProjectModel';
-import MaterialModel from '../../../models/MaterialModel';
-
 /**
- * LogisticsContext
+ * LogisticsContext - Enhanced
  *
- * Provides shared state management across all logistics tabs:
- * - Centralized data loading and caching
- * - Real-time alert management
- * - Cross-tab communication
- * - Performance optimization
+ * Global context for Logistics role screens.
+ * Follows PlanningContext pattern for project/site selection.
+ * Stores selected project, site, and logistics-specific data.
+ *
+ * Features:
+ * - useReducer for predictable state management
+ * - Project/Site selection with AsyncStorage persistence
+ * - Alerts & pending actions management
+ * - KPI tracking
+ * - Offline status indicator
+ *
+ * @version 2.0.0
+ * @since Logistics Phase 3
  */
 
-// ===== TYPES & INTERFACES =====
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import { Q } from '@nozbe/watermelondb';
+import { database } from '../../../models/database';
+import ProjectModel from '../../../models/ProjectModel';
+import SiteModel from '../../../models/SiteModel';
+import MaterialModel from '../../../models/MaterialModel';
+import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
+
+// ==================== Sync Types ====================
+
+export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
+
+// ==================== Storage Keys ====================
+
+const STORAGE_KEYS = {
+  PROJECT_ID: '@logistics_project_id',
+  SITE_ID: '@logistics_site_id',
+};
+
+// ==================== Types ====================
 
 export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type AlertType = 'material' | 'equipment' | 'delivery' | 'inventory';
@@ -47,97 +70,286 @@ export interface PendingAction {
 }
 
 export interface LogisticsKPIs {
-  // Material KPIs
   totalMaterialsTracked: number;
   materialsAtRisk: number;
-  procurementCycleTime: number; // Days
-
-  // Equipment KPIs
+  procurementCycleTime: number;
   totalEquipment: number;
-  equipmentAvailability: number; // Percentage
-  maintenanceCompliance: number; // Percentage
-
-  // Delivery KPIs
+  equipmentAvailability: number;
+  maintenanceCompliance: number;
   deliveriesThisWeek: number;
   onTimeDeliveryRate: number;
   averageDeliveryCost: number;
-
-  // Inventory KPIs
   totalInventoryValue: number;
   inventoryTurnover: number;
-  stockAccuracy: number; // Percentage
+  stockAccuracy: number;
 }
 
-export interface LogisticsContextValue {
-  // Shared Data
+export interface LogisticsStats {
+  pendingDeliveries: number;
+  lowStockItems: number;
+  openPurchaseOrders: number;
+  pendingRfqs: number;
+}
+
+interface LogisticsState {
+  // Project/Site Selection (following PlanningContext pattern)
   selectedProjectId: string | null;
-  setSelectedProjectId: (projectId: string | null) => void;
+  selectedProject: ProjectModel | null;
+  selectedSiteId: string | null;
+  selectedSite: SiteModel | null;
   projects: ProjectModel[];
+  sites: SiteModel[];
   materials: MaterialModel[];
 
-  // Loading States
-  loading: boolean;
-  refreshing: boolean;
-
-  // Alerts & Actions
+  // Logistics-specific data
+  stats: LogisticsStats;
+  kpis: LogisticsKPIs;
   alerts: LogisticsAlert[];
   pendingActions: PendingAction[];
+
+  // UI State
+  loading: boolean;
+  refreshing: boolean;
+  error: string | null;
+  isOffline: boolean;
+  lastRefreshTime: Date | null;
+
+  // Sync State
+  syncStatus: SyncStatus;
+  pendingSyncCount: number;
+  lastSyncTime: number | null;
+}
+
+type LogisticsAction =
+  | { type: 'SET_PROJECT'; payload: { projectId: string | null; project: ProjectModel | null } }
+  | { type: 'SET_SITE'; payload: { siteId: string | null; site: SiteModel | null } }
+  | { type: 'SET_PROJECTS'; payload: ProjectModel[] }
+  | { type: 'SET_SITES'; payload: SiteModel[] }
+  | { type: 'SET_MATERIALS'; payload: MaterialModel[] }
+  | { type: 'SET_STATS'; payload: Partial<LogisticsStats> }
+  | { type: 'SET_KPIS'; payload: LogisticsKPIs }
+  | { type: 'SET_ALERTS'; payload: LogisticsAlert[] }
+  | { type: 'ADD_ALERT'; payload: LogisticsAlert }
+  | { type: 'ACKNOWLEDGE_ALERT'; payload: string }
+  | { type: 'DISMISS_ALERT'; payload: string }
+  | { type: 'SET_PENDING_ACTIONS'; payload: PendingAction[] }
+  | { type: 'ADD_PENDING_ACTION'; payload: PendingAction }
+  | { type: 'UPDATE_ACTION_STATUS'; payload: { actionId: string; status: PendingAction['status'] } }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_REFRESHING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_OFFLINE'; payload: boolean }
+  | { type: 'SET_LAST_REFRESH'; payload: Date | null }
+  | { type: 'SET_SYNC_STATUS'; payload: SyncStatus }
+  | { type: 'SET_PENDING_SYNC_COUNT'; payload: number }
+  | { type: 'SET_LAST_SYNC_TIME'; payload: number | null }
+  | { type: 'RESET' };
+
+interface LogisticsContextValue extends LogisticsState {
+  // Project/Site Selection
+  selectProject: (projectId: string | null) => void;
+  selectSite: (siteId: string | null) => void;
+
+  // Data Refresh
+  refreshProjects: () => Promise<void>;
+  refreshSites: () => Promise<void>;
+  refreshMaterials: () => Promise<void>;
+  refreshLogisticsStats: () => Promise<void>;
+  refresh: () => Promise<void>;
+
+  // Alerts Management
   addAlert: (alert: Omit<LogisticsAlert, 'id' | 'timestamp' | 'acknowledged'>) => void;
   acknowledgeAlert: (alertId: string) => void;
   dismissAlert: (alertId: string) => void;
+
+  // Actions Management
   addPendingAction: (action: Omit<PendingAction, 'id'>) => void;
   updateActionStatus: (actionId: string, status: PendingAction['status']) => void;
 
-  // KPIs
-  kpis: LogisticsKPIs;
-
-  // Data Refresh
-  refresh: () => Promise<void>;
-  refreshProjects: () => Promise<void>;
-  refreshMaterials: () => Promise<void>;
-
-  // Cache Management
-  lastRefreshTime: Date | null;
+  // Sync Management
+  triggerSync: () => Promise<void>;
+  setPendingSyncCount: (count: number) => void;
 }
 
-// ===== CONTEXT =====
+// ==================== Initial State ====================
+
+const initialKPIs: LogisticsKPIs = {
+  totalMaterialsTracked: 0,
+  materialsAtRisk: 0,
+  procurementCycleTime: 0,
+  totalEquipment: 0,
+  equipmentAvailability: 0,
+  maintenanceCompliance: 0,
+  deliveriesThisWeek: 0,
+  onTimeDeliveryRate: 0,
+  averageDeliveryCost: 0,
+  totalInventoryValue: 0,
+  inventoryTurnover: 0,
+  stockAccuracy: 0,
+};
+
+const initialStats: LogisticsStats = {
+  pendingDeliveries: 0,
+  lowStockItems: 0,
+  openPurchaseOrders: 0,
+  pendingRfqs: 0,
+};
+
+const initialState: LogisticsState = {
+  selectedProjectId: null,
+  selectedProject: null,
+  selectedSiteId: null,
+  selectedSite: null,
+  projects: [],
+  sites: [],
+  materials: [],
+  stats: initialStats,
+  kpis: initialKPIs,
+  alerts: [],
+  pendingActions: [],
+  loading: true,
+  refreshing: false,
+  error: null,
+  isOffline: false,
+  lastRefreshTime: null,
+  // Sync State
+  syncStatus: 'idle',
+  pendingSyncCount: 0,
+  lastSyncTime: null,
+};
+
+// ==================== Reducer ====================
+
+function logisticsReducer(state: LogisticsState, action: LogisticsAction): LogisticsState {
+  switch (action.type) {
+    case 'SET_PROJECT':
+      return {
+        ...state,
+        selectedProjectId: action.payload.projectId,
+        selectedProject: action.payload.project,
+        // Reset site when project changes
+        selectedSiteId: null,
+        selectedSite: null,
+      };
+
+    case 'SET_SITE':
+      return {
+        ...state,
+        selectedSiteId: action.payload.siteId,
+        selectedSite: action.payload.site,
+      };
+
+    case 'SET_PROJECTS':
+      return { ...state, projects: action.payload };
+
+    case 'SET_SITES':
+      return { ...state, sites: action.payload };
+
+    case 'SET_MATERIALS':
+      return { ...state, materials: action.payload };
+
+    case 'SET_STATS':
+      return { ...state, stats: { ...state.stats, ...action.payload } };
+
+    case 'SET_KPIS':
+      return { ...state, kpis: action.payload };
+
+    case 'SET_ALERTS':
+      return { ...state, alerts: action.payload };
+
+    case 'ADD_ALERT':
+      return { ...state, alerts: [action.payload, ...state.alerts] };
+
+    case 'ACKNOWLEDGE_ALERT':
+      return {
+        ...state,
+        alerts: state.alerts.map(alert =>
+          alert.id === action.payload ? { ...alert, acknowledged: true } : alert
+        ),
+      };
+
+    case 'DISMISS_ALERT':
+      return {
+        ...state,
+        alerts: state.alerts.filter(alert => alert.id !== action.payload),
+      };
+
+    case 'SET_PENDING_ACTIONS':
+      return { ...state, pendingActions: action.payload };
+
+    case 'ADD_PENDING_ACTION':
+      return { ...state, pendingActions: [action.payload, ...state.pendingActions] };
+
+    case 'UPDATE_ACTION_STATUS':
+      return {
+        ...state,
+        pendingActions: state.pendingActions.map(pendingAction =>
+          pendingAction.id === action.payload.actionId
+            ? { ...pendingAction, status: action.payload.status }
+            : pendingAction
+        ),
+      };
+
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+
+    case 'SET_REFRESHING':
+      return { ...state, refreshing: action.payload };
+
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+
+    case 'SET_OFFLINE':
+      return { ...state, isOffline: action.payload };
+
+    case 'SET_LAST_REFRESH':
+      return { ...state, lastRefreshTime: action.payload };
+
+    case 'SET_SYNC_STATUS':
+      return { ...state, syncStatus: action.payload };
+
+    case 'SET_PENDING_SYNC_COUNT':
+      return { ...state, pendingSyncCount: action.payload };
+
+    case 'SET_LAST_SYNC_TIME':
+      return { ...state, lastSyncTime: action.payload };
+
+    case 'RESET':
+      return initialState;
+
+    default:
+      return state;
+  }
+}
+
+// ==================== Context ====================
 
 const LogisticsContext = createContext<LogisticsContextValue | undefined>(undefined);
 
-// ===== PROVIDER =====
+// ==================== Provider ====================
 
 interface LogisticsProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }) => {
-  // State
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [materials, setMaterials] = useState<MaterialModel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [alerts, setAlerts] = useState<LogisticsAlert[]>([]);
-  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const { user } = useAuth();
+  const [state, dispatch] = useReducer(logisticsReducer, initialState);
 
-  // KPIs state (will be calculated from data)
-  const [kpis, setKpis] = useState<LogisticsKPIs>({
-    totalMaterialsTracked: 0,
-    materialsAtRisk: 0,
-    procurementCycleTime: 0,
-    totalEquipment: 0,
-    equipmentAvailability: 0,
-    maintenanceCompliance: 0,
-    deliveriesThisWeek: 0,
-    onTimeDeliveryRate: 0,
-    averageDeliveryCost: 0,
-    totalInventoryValue: 0,
-    inventoryTurnover: 0,
-    stockAccuracy: 0,
-  });
+  // ===== Network Status Monitoring =====
 
-  // ===== DATA LOADING =====
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((netState: NetInfoState) => {
+      dispatch({
+        type: 'SET_OFFLINE',
+        payload: !(netState.isConnected ?? true),
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ===== Data Loading Functions =====
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -145,96 +357,171 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         .get<ProjectModel>('projects')
         .query()
         .fetch();
-      setProjects(projectsList);
+      dispatch({ type: 'SET_PROJECTS', payload: projectsList });
 
       // Auto-select first project if none selected
-      if (!selectedProjectId && projectsList.length > 0) {
-        setSelectedProjectId(projectsList[0].id);
+      if (!state.selectedProjectId && projectsList.length > 0) {
+        const firstProject = projectsList[0];
+        dispatch({
+          type: 'SET_PROJECT',
+          payload: { projectId: firstProject.id, project: firstProject },
+        });
+        await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
       }
     } catch (error) {
-      logger.error('Error loading projects:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load projects' });
     }
-  }, [selectedProjectId]);
+  }, [state.selectedProjectId]);
+
+  const refreshSites = useCallback(async () => {
+    if (!state.selectedProjectId) {
+      dispatch({ type: 'SET_SITES', payload: [] });
+      return;
+    }
+
+    try {
+      const sitesCollection = database.collections.get<SiteModel>('sites');
+      const projectSites = await sitesCollection
+        .query(Q.where('project_id', state.selectedProjectId))
+        .fetch();
+      dispatch({ type: 'SET_SITES', payload: projectSites });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load sites' });
+    }
+  }, [state.selectedProjectId]);
 
   const refreshMaterials = useCallback(async () => {
     try {
-      const materialsList = await database.collections
-        .get<MaterialModel>('materials')
-        .query()
-        .fetch();
-      setMaterials(materialsList);
+      let query = database.collections.get<MaterialModel>('materials').query();
+
+      if (state.selectedProjectId) {
+        query = database.collections
+          .get<MaterialModel>('materials')
+          .query(Q.where('project_id', state.selectedProjectId));
+      }
+
+      const materialsList = await query.fetch();
+      dispatch({ type: 'SET_MATERIALS', payload: materialsList });
     } catch (error) {
-      logger.error('Error loading materials:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load materials' });
     }
-  }, []);
+  }, [state.selectedProjectId]);
 
-  const calculateKPIs = useCallback(async () => {
+  const refreshLogisticsStats = useCallback(async () => {
+    if (!state.selectedProjectId) return;
+
     try {
-      // Material KPIs
-      const totalMaterialsTracked = materials.length;
-      const materialsAtRisk = materials.filter(m => {
-        // Consider material at risk if quantity is low
-        // This is a simplified calculation - will be enhanced with BOM data
-        return m.quantityAvailable < m.quantityRequired * 0.3;
-      }).length;
+      // Fetch stats from various collections
+      const [rfqs, purchaseOrders] = await Promise.all([
+        database.collections.get('rfqs')
+          .query(Q.where('project_id', state.selectedProjectId))
+          .fetch(),
+        database.collections.get('purchase_orders')
+          .query(Q.where('project_id', state.selectedProjectId))
+          .fetch(),
+      ]);
 
-      // For now, use placeholder values for KPIs that require more complex data
-      // These will be enhanced as we build out each module
-      setKpis({
+      // Calculate stats
+      const pendingRfqs = rfqs.filter((r: any) => r.status === 'pending' || r.status === 'draft').length;
+      const openPurchaseOrders = purchaseOrders.filter((p: any) => p.status !== 'completed' && p.status !== 'cancelled').length;
+
+      // Low stock calculation from materials
+      const lowStockItems = state.materials.filter(m =>
+        m.quantityAvailable < m.quantityRequired * 0.3
+      ).length;
+
+      dispatch({
+        type: 'SET_STATS',
+        payload: {
+          pendingRfqs,
+          openPurchaseOrders,
+          lowStockItems,
+          pendingDeliveries: 0, // Will be enhanced with delivery tracking
+        },
+      });
+    } catch (error) {
+      // Stats are non-critical, don't set error
+    }
+  }, [state.selectedProjectId, state.materials]);
+
+  const calculateKPIs = useCallback(() => {
+    const materials = state.materials;
+
+    const totalMaterialsTracked = materials.length;
+    const materialsAtRisk = materials.filter(m =>
+      m.quantityAvailable < m.quantityRequired * 0.3
+    ).length;
+
+    dispatch({
+      type: 'SET_KPIS',
+      payload: {
         totalMaterialsTracked,
         materialsAtRisk,
         procurementCycleTime: 7, // Placeholder
-        totalEquipment: 0, // Will be calculated when equipment module is added
+        totalEquipment: 0,
         equipmentAvailability: 0,
         maintenanceCompliance: 0,
         deliveriesThisWeek: 0,
         onTimeDeliveryRate: 0,
         averageDeliveryCost: 0,
-        totalInventoryValue: 0, // TODO: Add unitCost field to MaterialModel to calculate inventory value
+        totalInventoryValue: 0,
         inventoryTurnover: 0,
-        stockAccuracy: 100, // Placeholder
-      });
-    } catch (error) {
-      logger.error('Error calculating KPIs:', error);
-    }
-  }, [materials]);
+        stockAccuracy: 100,
+      },
+    });
+  }, [state.materials]);
 
   const refresh = useCallback(async () => {
-    setRefreshing(true);
+    dispatch({ type: 'SET_REFRESHING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+
     try {
-      await Promise.all([
-        refreshProjects(),
-        refreshMaterials(),
-      ]);
-      await calculateKPIs();
-      setLastRefreshTime(new Date());
+      await refreshProjects();
+      await refreshSites();
+      await refreshMaterials();
+      await refreshLogisticsStats();
+      calculateKPIs();
+      dispatch({ type: 'SET_LAST_REFRESH', payload: new Date() });
     } catch (error) {
-      logger.error('Error refreshing logistics data:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to refresh logistics data' });
     } finally {
-      setRefreshing(false);
+      dispatch({ type: 'SET_REFRESHING', payload: false });
     }
-  }, [refreshProjects, refreshMaterials, calculateKPIs]);
+  }, [refreshProjects, refreshSites, refreshMaterials, refreshLogisticsStats, calculateKPIs]);
 
-  // Initial load
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
-      try {
-        await refresh();
-      } finally {
-        setLoading(false);
-      }
-    };
+  // ===== Project/Site Selection =====
 
-    loadInitialData();
-  }, []);
+  const selectProject = useCallback(async (projectId: string | null) => {
+    const project = state.projects.find(p => p.id === projectId) || null;
+    dispatch({
+      type: 'SET_PROJECT',
+      payload: { projectId, project },
+    });
 
-  // Recalculate KPIs when data changes
-  useEffect(() => {
-    calculateKPIs();
-  }, [materials, calculateKPIs]);
+    // Persist selection
+    if (projectId) {
+      await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, projectId);
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.PROJECT_ID);
+    }
+  }, [state.projects]);
 
-  // ===== ALERT MANAGEMENT =====
+  const selectSite = useCallback(async (siteId: string | null) => {
+    const site = state.sites.find(s => s.id === siteId) || null;
+    dispatch({
+      type: 'SET_SITE',
+      payload: { siteId, site },
+    });
+
+    // Persist selection
+    if (siteId) {
+      await AsyncStorage.setItem(STORAGE_KEYS.SITE_ID, siteId);
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.SITE_ID);
+    }
+  }, [state.sites]);
+
+  // ===== Alerts Management =====
 
   const addAlert = useCallback((alertData: Omit<LogisticsAlert, 'id' | 'timestamp' | 'acknowledged'>) => {
     const newAlert: LogisticsAlert = {
@@ -243,68 +530,192 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
       timestamp: new Date(),
       acknowledged: false,
     };
-
-    setAlerts(prev => [newAlert, ...prev]);
+    dispatch({ type: 'ADD_ALERT', payload: newAlert });
   }, []);
 
   const acknowledgeAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.map(alert =>
-      alert.id === alertId ? { ...alert, acknowledged: true } : alert
-    ));
+    dispatch({ type: 'ACKNOWLEDGE_ALERT', payload: alertId });
   }, []);
 
   const dismissAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+    dispatch({ type: 'DISMISS_ALERT', payload: alertId });
   }, []);
 
-  // ===== ACTION MANAGEMENT =====
+  // ===== Actions Management =====
 
   const addPendingAction = useCallback((actionData: Omit<PendingAction, 'id'>) => {
     const newAction: PendingAction = {
       ...actionData,
       id: `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
-
-    setPendingActions(prev => [newAction, ...prev]);
+    dispatch({ type: 'ADD_PENDING_ACTION', payload: newAction });
   }, []);
 
   const updateActionStatus = useCallback((actionId: string, status: PendingAction['status']) => {
-    setPendingActions(prev => prev.map(action =>
-      action.id === actionId ? { ...action, status } : action
-    ));
+    dispatch({ type: 'UPDATE_ACTION_STATUS', payload: { actionId, status } });
   }, []);
 
-  // ===== CONTEXT VALUE =====
+  // ===== Sync Management =====
 
-  const contextValue: LogisticsContextValue = {
-    selectedProjectId,
-    setSelectedProjectId,
-    projects,
-    materials,
-    loading,
-    refreshing,
-    alerts,
-    pendingActions,
+  const setPendingSyncCount = useCallback((count: number) => {
+    dispatch({ type: 'SET_PENDING_SYNC_COUNT', payload: count });
+  }, []);
+
+  const triggerSync = useCallback(async () => {
+    // Don't sync if already syncing or offline
+    if (state.syncStatus === 'syncing' || state.isOffline) {
+      if (state.isOffline) {
+        logger.warn('[LogisticsContext] Cannot sync while offline');
+      }
+      return;
+    }
+
+    dispatch({ type: 'SET_SYNC_STATUS', payload: 'syncing' });
+
+    try {
+      logger.info('[LogisticsContext] Sync started', {
+        pendingCount: state.pendingSyncCount,
+      });
+
+      // Perform a full refresh which will sync data
+      await refresh();
+
+      dispatch({ type: 'SET_SYNC_STATUS', payload: 'success' });
+      dispatch({ type: 'SET_LAST_SYNC_TIME', payload: Date.now() });
+      dispatch({ type: 'SET_PENDING_SYNC_COUNT', payload: 0 });
+
+      logger.info('[LogisticsContext] Sync completed successfully');
+
+      // Reset to idle after success feedback
+      setTimeout(() => {
+        dispatch({ type: 'SET_SYNC_STATUS', payload: 'idle' });
+      }, 2000);
+    } catch (error) {
+      dispatch({ type: 'SET_SYNC_STATUS', payload: 'error' });
+      logger.error('[LogisticsContext] Sync failed', error as Error);
+
+      // Reset to idle after error feedback
+      setTimeout(() => {
+        dispatch({ type: 'SET_SYNC_STATUS', payload: 'idle' });
+      }, 3000);
+    }
+  }, [state.syncStatus, state.isOffline, state.pendingSyncCount, refresh]);
+
+  // ===== Effects =====
+
+  // Load saved state from AsyncStorage
+  useEffect(() => {
+    const loadSavedState = async () => {
+      try {
+        const [savedProjectId, savedSiteId] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.PROJECT_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.SITE_ID),
+        ]);
+
+        if (savedProjectId) {
+          // Project will be set once projects are loaded
+          dispatch({
+            type: 'SET_PROJECT',
+            payload: { projectId: savedProjectId, project: null },
+          });
+        }
+
+        if (savedSiteId) {
+          dispatch({
+            type: 'SET_SITE',
+            payload: { siteId: savedSiteId, site: null },
+          });
+        }
+      } catch (error) {
+        // Non-critical error
+      }
+    };
+
+    loadSavedState();
+  }, []);
+
+  // Initial data load
+  useEffect(() => {
+    const loadInitialData = async () => {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      try {
+        await refresh();
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  // Load sites when project changes
+  useEffect(() => {
+    if (state.selectedProjectId) {
+      refreshSites();
+      refreshMaterials();
+      refreshLogisticsStats();
+    }
+  }, [state.selectedProjectId]);
+
+  // Update project object when projects list is loaded
+  useEffect(() => {
+    if (state.selectedProjectId && state.projects.length > 0 && !state.selectedProject) {
+      const project = state.projects.find(p => p.id === state.selectedProjectId);
+      if (project) {
+        dispatch({
+          type: 'SET_PROJECT',
+          payload: { projectId: state.selectedProjectId, project },
+        });
+      }
+    }
+  }, [state.projects, state.selectedProjectId, state.selectedProject]);
+
+  // Update site object when sites list is loaded
+  useEffect(() => {
+    if (state.selectedSiteId && state.sites.length > 0 && !state.selectedSite) {
+      const site = state.sites.find(s => s.id === state.selectedSiteId);
+      if (site) {
+        dispatch({
+          type: 'SET_SITE',
+          payload: { siteId: state.selectedSiteId, site },
+        });
+      }
+    }
+  }, [state.sites, state.selectedSiteId, state.selectedSite]);
+
+  // Recalculate KPIs when materials change
+  useEffect(() => {
+    calculateKPIs();
+  }, [state.materials, calculateKPIs]);
+
+  // ===== Context Value =====
+
+  const value: LogisticsContextValue = {
+    ...state,
+    selectProject,
+    selectSite,
+    refreshProjects,
+    refreshSites,
+    refreshMaterials,
+    refreshLogisticsStats,
+    refresh,
     addAlert,
     acknowledgeAlert,
     dismissAlert,
     addPendingAction,
     updateActionStatus,
-    kpis,
-    refresh,
-    refreshProjects,
-    refreshMaterials,
-    lastRefreshTime,
+    triggerSync,
+    setPendingSyncCount,
   };
 
   return (
-    <LogisticsContext.Provider value={contextValue}>
+    <LogisticsContext.Provider value={value}>
       {children}
     </LogisticsContext.Provider>
   );
 };
 
-// ===== HOOK =====
+// ==================== Hooks ====================
 
 export const useLogistics = (): LogisticsContextValue => {
   const context = useContext(LogisticsContext);
@@ -313,5 +724,8 @@ export const useLogistics = (): LogisticsContextValue => {
   }
   return context;
 };
+
+// Alias for consistency with other contexts
+export const useLogisticsContext = useLogistics;
 
 export default LogisticsContext;

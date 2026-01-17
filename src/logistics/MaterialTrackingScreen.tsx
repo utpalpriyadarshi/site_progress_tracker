@@ -28,6 +28,10 @@ import DoorsEditService from '../services/DoorsEditService';
 import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { useDebounce } from '../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
 
 // Import Material Tracking components
 import {
@@ -76,20 +80,27 @@ interface MaterialTrackingScreenProps {
 const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigation }) => {
   const {
     selectedProjectId,
-    setSelectedProjectId,
+    selectProject: setSelectedProjectId,
     projects,
     materials,
     loading: contextLoading,
     refresh: refreshContext,
+    isOffline,
+    pendingSyncCount,
+    triggerSync,
   } = useLogistics();
 
   const { user } = useAuth();
+  const { announce } = useAccessibility();
 
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [appMode, setAppModeState] = useState(AppMode.getMode());
+
+  // Debounce search for performance (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // BOM expansion state - track which BOMs are expanded
   const [expandedBoms, setExpandedBoms] = useState<Set<string>>(new Set());
@@ -312,8 +323,8 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       });
     }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (req) =>
           req.itemCode.toLowerCase().includes(query) ||
@@ -323,19 +334,26 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, searchQuery, selectedCategory]);
+  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedCategory]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
-    if (!searchQuery.trim()) return purchaseSuggestions;
+    if (!debouncedSearchQuery.trim()) return purchaseSuggestions;
 
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     return purchaseSuggestions.filter(
       (sug) =>
         sug.materialName.toLowerCase().includes(query) ||
         sug.itemCode.toLowerCase().includes(query)
     );
-  }, [purchaseSuggestions, searchQuery]);
+  }, [purchaseSuggestions, debouncedSearchQuery]);
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery && !loading) {
+      announce(`Found ${filteredRequirements.length} materials matching "${debouncedSearchQuery}"`);
+    }
+  }, [filteredRequirements.length, debouncedSearchQuery, loading, announce]);
 
   // Get statistics
   const stats = React.useMemo(() => {
@@ -348,11 +366,65 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     return { total, critical, shortageCount, sufficient, procurementPending };
   }, [materialRequirements, shortages, purchaseSuggestions]);
 
+  // Empty state rendering for requirements view
+  const renderRequirementsEmptyState = () => {
+    const hasNoData = materialRequirements.length === 0;
+    const hasSearchQuery = debouncedSearchQuery.trim().length > 0;
+    const hasFilter = selectedCategory !== null && selectedCategory !== 'all';
+    const noFilteredResults = filteredRequirements.length === 0;
+
+    // No BOM requirements linked at all
+    if (hasNoData && !bomLoading && !loading) {
+      return (
+        <EmptyState
+          icon="clipboard-text-outline"
+          title="No BOM Requirements"
+          message="Link materials to a Bill of Materials to track requirements."
+          helpText="BOM requirements help track material needs across your project."
+          actionText={appMode === 'mock' ? 'Load Sample Data' : 'Link BOM'}
+          onAction={appMode === 'mock' ? handleLoadSampleData : () => {
+            logger.info('[MaterialTracking] Link BOM action pressed');
+          }}
+        />
+      );
+    }
+
+    // No search results
+    if (hasSearchQuery && noFilteredResults && materialRequirements.length > 0) {
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No Materials Found"
+          message={`No materials match "${debouncedSearchQuery}"`}
+          variant="search"
+          actionText="Clear Search"
+          onAction={() => setSearchQuery('')}
+        />
+      );
+    }
+
+    // No filter results
+    if (hasFilter && noFilteredResults && materialRequirements.length > 0) {
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${selectedCategory} Materials`}
+          message="Try selecting a different category filter."
+          actionText="Clear Filter"
+          onAction={() => setSelectedCategory(null)}
+        />
+      );
+    }
+
+    return null;
+  };
+
   const renderContent = () => {
     switch (viewMode) {
       case 'requirements':
       case 'shortages':
-        return (
+        // Show empty state if applicable, otherwise show RequirementsList
+        return renderRequirementsEmptyState() || (
           <RequirementsList
             boms={boms}
             filteredRequirements={filteredRequirements}
@@ -387,6 +459,14 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   return (
     <View style={styles.container}>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOnline={!isOffline}
+        pendingCount={pendingSyncCount}
+        onSync={triggerSync}
+        showWhenPending={true}
+      />
+
       {/* Project Selector */}
       <ProjectSelector
         projects={projects}

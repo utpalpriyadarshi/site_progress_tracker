@@ -3,6 +3,11 @@
  *
  * Displays cost breakdown, cost trends, and procurement bundle opportunities
  * Phase 4: Major Components
+ *
+ * WCAG 2.1 AA Accessibility:
+ * - Text alternatives for cost visualization bars
+ * - Proper accessibility labels for interactive elements
+ * - Screen reader descriptions for financial data
  */
 
 import React from 'react';
@@ -49,8 +54,13 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
       {/* Cost Breakdown */}
       {costOptimization && (
         <AnalyticsCard title="Cost Breakdown">
-          <View style={styles.costBreakdown}>
-            <View style={styles.costItem}>
+          <View
+            style={styles.costBreakdown}
+            accessible
+            accessibilityRole="summary"
+            accessibilityLabel={`Cost breakdown: Materials ${costOptimization.currentCosts.costPercentages.materials}% at $${(costOptimization.currentCosts.materialCosts / 1000).toFixed(0)}K, Transportation ${costOptimization.currentCosts.costPercentages.transportation}% at $${(costOptimization.currentCosts.transportationCosts / 1000).toFixed(0)}K, Storage ${costOptimization.currentCosts.costPercentages.storage}% at $${(costOptimization.currentCosts.storageCosts / 1000).toFixed(0)}K`}
+          >
+            <View style={styles.costItem} accessible={false}>
               <Text style={styles.costLabel}>Materials</Text>
               <View style={styles.costBar}>
                 <View
@@ -68,7 +78,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
                 {costOptimization.currentCosts.costPercentages.materials}%)
               </Text>
             </View>
-            <View style={styles.costItem}>
+            <View style={styles.costItem} accessible={false}>
               <Text style={styles.costLabel}>Transportation</Text>
               <View style={styles.costBar}>
                 <View
@@ -86,7 +96,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
                 {costOptimization.currentCosts.costPercentages.transportation}%)
               </Text>
             </View>
-            <View style={styles.costItem}>
+            <View style={styles.costItem} accessible={false}>
               <Text style={styles.costLabel}>Storage</Text>
               <View style={styles.costBar}>
                 <View
@@ -115,6 +125,10 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
             key={index}
             style={styles.trendItem}
             onPress={() => onShowDetail(trend, 'cost')}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${trend.materialName}: current cost $${trend.currentCost.toFixed(0)}, ${trend.volatility} volatility, trend ${trend.trend.direction} ${Math.abs(trend.trend.growthRate).toFixed(1)}%, budget impact ${trend.budgetImpact.projectedCostIncrease > 0 ? 'increase' : 'decrease'} ${Math.abs(trend.budgetImpact.projectedCostIncrease).toFixed(1)}%`}
+            accessibilityHint="Double tap to view cost trend details"
           >
             <View style={styles.trendHeader}>
               <Text style={styles.trendMaterial}>{trend.materialName}</Text>
@@ -150,6 +164,10 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
               key={index}
               style={styles.bundleItem}
               onPress={() => onShowDetail(bundle, 'bundle')}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={`${bundle.name}: potential savings $${(bundle.savings / 1000).toFixed(1)}K, ${bundle.savingsPercentage.toFixed(1)}%, ${bundle.materials.length} materials, ${bundle.materials.reduce((sum, m) => sum + m.quantity, 0)} total units${bundle.feasible ? ', marked as feasible' : ''}`}
+              accessibilityHint="Double tap to view bundle details"
             >
               <View style={styles.bundleHeader}>
                 <Text style={styles.bundleName}>{bundle.name}</Text>

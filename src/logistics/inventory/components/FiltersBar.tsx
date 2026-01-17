@@ -17,6 +17,11 @@ interface FiltersBarProps {
  * Combined search and filter controls for inventory management.
  * Includes search input, status filters, and ABC category filters.
  *
+ * WCAG 2.1 AA Accessibility:
+ * - Proper labels for search input
+ * - Accessibility roles for filter buttons
+ * - Clear state indication for selected filters
+ *
  * Extracted from InventoryManagementScreen.tsx Phase 3.
  */
 export const FiltersBar: React.FC<FiltersBarProps> = ({
@@ -42,7 +47,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessible={false}>
       {/* Search Input */}
       <TextInput
         style={styles.searchInput}
@@ -50,6 +55,8 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
         placeholderTextColor="#9ca3af"
         value={searchQuery}
         onChangeText={onSearchChange}
+        accessibilityLabel="Search inventory"
+        accessibilityHint="Enter item name, code, or category to filter inventory"
       />
 
       {/* Status Filters */}
@@ -58,12 +65,20 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
         showsHorizontalScrollIndicator={false}
         style={styles.filterScroll}
         contentContainerStyle={styles.filterScrollContent}
+        accessible
+        accessibilityRole="tablist"
+        accessibilityLabel="Stock status filter options"
       >
         {statusFilters.map(({ value, label }) => (
           <TouchableOpacity
             key={value}
             style={[styles.filterChip, statusFilter === value && styles.filterChipActive]}
             onPress={() => onStatusFilterChange(value)}
+            accessible
+            accessibilityRole="tab"
+            accessibilityLabel={`${label} filter`}
+            accessibilityState={{ selected: statusFilter === value }}
+            accessibilityHint={statusFilter === value ? 'Currently selected' : 'Double tap to filter by this status'}
           >
             <Text
               style={[
@@ -83,12 +98,20 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
         showsHorizontalScrollIndicator={false}
         style={styles.filterScroll}
         contentContainerStyle={styles.filterScrollContent}
+        accessible
+        accessibilityRole="tablist"
+        accessibilityLabel="ABC category filter options"
       >
         {abcFilters.map(({ value, label }) => (
           <TouchableOpacity
             key={value}
             style={[styles.filterChip, abcFilter === value && styles.filterChipActive]}
             onPress={() => onABCFilterChange(value)}
+            accessible
+            accessibilityRole="tab"
+            accessibilityLabel={`${label} filter`}
+            accessibilityState={{ selected: abcFilter === value }}
+            accessibilityHint={abcFilter === value ? 'Currently selected' : 'Double tap to filter by this category'}
           >
             <Text
               style={[

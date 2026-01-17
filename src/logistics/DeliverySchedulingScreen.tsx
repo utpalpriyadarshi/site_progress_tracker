@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,10 @@ import {
 import { useLogistics } from './context/LogisticsContext';
 import { DeliverySchedule, RouteOptimization } from '../services/DeliverySchedulingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { useDebounce } from '../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
 import {
   ViewModeTabs,
   StatCards,
@@ -37,7 +41,13 @@ import { ViewMode } from './delivery-scheduling/utils/deliveryConstants';
  */
 
 const DeliverySchedulingScreen = () => {
-  const { selectedProjectId } = useLogistics();
+  const {
+    selectedProjectId,
+    isOffline,
+    pendingSyncCount,
+    triggerSync,
+  } = useLogistics();
+  const { announce } = useAccessibility();
 
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('schedule');
@@ -46,6 +56,10 @@ const DeliverySchedulingScreen = () => {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliverySchedule | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteOptimization | null>(null);
+
+  // Local search state for debouncing
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(localSearchQuery, 300);
 
   // Data hooks
   const {
@@ -59,7 +73,7 @@ const DeliverySchedulingScreen = () => {
     handleRefresh,
   } = useDeliveryData();
 
-  // Filter hooks
+  // Filter hooks - use debounced search
   const {
     statusFilter,
     setStatusFilter,
@@ -67,6 +81,18 @@ const DeliverySchedulingScreen = () => {
     setSearchQuery,
     filteredDeliveries,
   } = useDeliveryFilters(deliveries, selectedProjectId);
+
+  // Sync debounced search to filter hook
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+  }, [debouncedSearchQuery, setSearchQuery]);
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery && !loading) {
+      announce(`Found ${filteredDeliveries.length} deliveries matching "${debouncedSearchQuery}"`);
+    }
+  }, [filteredDeliveries.length, debouncedSearchQuery, loading, announce]);
 
   // Handlers
   const handleDeliveryPress = (delivery: DeliverySchedule) => {
@@ -77,6 +103,59 @@ const DeliverySchedulingScreen = () => {
   const handleCloseModal = () => {
     setShowDetailsModal(false);
     setSelectedDelivery(null);
+  };
+
+  // Empty state rendering for schedule view
+  const renderScheduleEmptyState = () => {
+    const hasNoData = deliveries.length === 0;
+    const hasSearchQuery = debouncedSearchQuery.length > 0;
+    const hasFilter = statusFilter !== 'all';
+    const noFilteredResults = filteredDeliveries.length === 0;
+
+    // No deliveries at all
+    if (hasNoData) {
+      return (
+        <EmptyState
+          icon="truck-delivery-outline"
+          title="No Deliveries Scheduled"
+          message="Schedule your first delivery to start tracking."
+          helpText="Deliveries can be linked to purchase orders and material requirements."
+          actionText="Schedule Delivery"
+          onAction={() => {
+            // TODO: Open schedule delivery dialog
+          }}
+        />
+      );
+    }
+
+    // No search results
+    if (hasSearchQuery && noFilteredResults) {
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No Deliveries Found"
+          message={`No deliveries match "${debouncedSearchQuery}"`}
+          variant="search"
+          actionText="Clear Search"
+          onAction={() => setLocalSearchQuery('')}
+        />
+      );
+    }
+
+    // No filter results
+    if (hasFilter && noFilteredResults) {
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace('_', ' ')} Deliveries`}
+          message="Try selecting a different status filter."
+          actionText="Clear Filter"
+          onAction={() => setStatusFilter('all')}
+        />
+      );
+    }
+
+    return null;
   };
 
   // Loading state
@@ -90,6 +169,14 @@ const DeliverySchedulingScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOnline={!isOffline}
+        pendingCount={pendingSyncCount}
+        onSync={triggerSync}
+        showWhenPending={true}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Delivery Scheduling</Text>
@@ -114,8 +201,8 @@ const DeliverySchedulingScreen = () => {
           <TextInput
             style={styles.searchInput}
             placeholder="Search deliveries..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+            value={localSearchQuery}
+            onChangeText={setLocalSearchQuery}
           />
           <StatusFilterChips
             selectedFilter={statusFilter}
@@ -130,7 +217,9 @@ const DeliverySchedulingScreen = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {viewMode === 'schedule' && (
-          <ScheduleView deliveries={filteredDeliveries} onDeliveryPress={handleDeliveryPress} />
+          renderScheduleEmptyState() || (
+            <ScheduleView deliveries={filteredDeliveries} onDeliveryPress={handleDeliveryPress} />
+          )
         )}
         {viewMode === 'tracking' && <TrackingView deliveries={deliveries} />}
         {viewMode === 'routes' && <RoutesView routes={routes} />}
