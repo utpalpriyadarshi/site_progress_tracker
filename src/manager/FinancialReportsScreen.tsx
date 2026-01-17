@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -24,6 +24,8 @@ import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { useAccessibility } from '../utils/accessibility';
+import { EmptyState } from '../components/common/EmptyState';
 
 interface FinancialData {
   // Budget Metrics
@@ -66,6 +68,8 @@ interface FinancialData {
 
 const FinancialReportsScreen = () => {
   const { projectId, projectName } = useManager();
+  const { announce } = useAccessibility();
+  const previousBudgetUtilRef = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -227,17 +231,20 @@ const FinancialReportsScreen = () => {
       const projectedProfit = contractValue - actualCost;
       const profitMargin = contractValue > 0 ? (projectedProfit / contractValue) * 100 : 0;
 
+      const roundedBudgetUtil = Math.round(budgetUtilization * 10) / 10;
+      const roundedProfitMargin = Math.round(profitMargin * 10) / 10;
+
       setFinancialData({
         projectBudget,
         budgetAllocated,
         budgetSpent,
         budgetRemaining,
-        budgetUtilization: Math.round(budgetUtilization * 10) / 10,
+        budgetUtilization: roundedBudgetUtil,
         contractValue,
         estimatedCost,
         actualCost,
         projectedProfit,
-        profitMargin: Math.round(profitMargin * 10) / 10,
+        profitMargin: roundedProfitMargin,
         totalBOMs,
         bomsDraft,
         bomsApproved,
@@ -256,9 +263,16 @@ const FinancialReportsScreen = () => {
         equipmentCost,
         subcontractorCost,
       });
+      // Announce data load for screen readers
+      if (previousBudgetUtilRef.current !== roundedBudgetUtil) {
+        const statusText = roundedBudgetUtil > 100 ? 'over budget' : roundedBudgetUtil > 90 ? 'near budget limit' : 'within budget';
+        announce(`Financial data loaded: Budget ${roundedBudgetUtil}% utilized, ${statusText}. Profit margin ${roundedProfitMargin}%`);
+        previousBudgetUtilRef.current = roundedBudgetUtil;
+      }
     } catch (error) {
       logger.error('[FinancialReports] Error loading financial data', error as Error);
       Alert.alert('Error', 'Failed to load financial data');
+      announce('Failed to load financial data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -267,6 +281,7 @@ const FinancialReportsScreen = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    announce('Refreshing financial data');
     loadFinancialData();
   };
 
@@ -417,12 +432,45 @@ const FinancialReportsScreen = () => {
     );
   }
 
+  // No project assigned
+  if (!projectId) {
+    return (
+      <EmptyState
+        icon="chart-line-variant"
+        title="No Project Assigned"
+        message="Financial reports require a project assignment. Contact your administrator to get started."
+        helpText="Once assigned to a project, you'll see budget overview, profitability metrics, and cost breakdowns."
+        variant="large"
+      />
+    );
+  }
+
+  // No financial data available (budget is 0 and no BOMs/POs)
+  if (financialData.projectBudget === 0 && financialData.totalBOMs === 0 && financialData.totalPOs === 0) {
+    return (
+      <EmptyState
+        icon="currency-usd-off"
+        title="No Financial Data Yet"
+        message="This project doesn't have any financial data set up. Add a budget, BOMs, or purchase orders to see reports."
+        helpText="Financial reports are generated from your project budget, bills of materials, and purchase orders."
+        tips={[
+          'Set up your project budget in project settings',
+          'Create BOMs to track material costs',
+          'Add purchase orders as you procure items',
+        ]}
+        variant="default"
+      />
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
+      accessible
+      accessibilityLabel={`Financial Reports for ${projectName || 'project'}. Budget utilization ${financialData.budgetUtilization}%, profit margin ${financialData.profitMargin}%`}
     >
       {/* Export Button */}
       <View style={styles.header}>
@@ -433,6 +481,8 @@ const FinancialReportsScreen = () => {
           disabled={exporting}
           icon="file-excel"
           style={styles.exportButton}
+          accessibilityLabel="Export financial report to Excel"
+          accessibilityHint="Creates an Excel file with all financial data"
         >
           Export to Excel
         </Button>

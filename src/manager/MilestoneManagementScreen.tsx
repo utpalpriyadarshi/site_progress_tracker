@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -20,12 +20,16 @@ import {
   ProgressBar,
   ActivityIndicator,
   DataTable,
+  Checkbox,
+  Text,
 } from 'react-native-paper';
 import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { useAccessibility } from '../utils/accessibility';
+import { EmptyState } from '../components/common/EmptyState';
 
 interface Milestone {
   id: string;
@@ -63,6 +67,8 @@ interface MilestoneWithProgress extends Milestone {
 
 const MilestoneManagementScreen = () => {
   const { projectId } = useManager();
+  const { announce } = useAccessibility();
+  const previousMilestoneCountRef = useRef<number>(0);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,6 +95,13 @@ const MilestoneManagementScreen = () => {
 
   // Expanded milestone for timeline view
   const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
+
+  // Batch Approval State
+  const [batchApprovalMode, setBatchApprovalMode] = useState(false);
+  const [batchApprovalDialogVisible, setBatchApprovalDialogVisible] = useState(false);
+  const [batchSelectedMilestone, setBatchSelectedMilestone] = useState<MilestoneWithProgress | null>(null);
+  const [selectedSitesForApproval, setSelectedSitesForApproval] = useState<Set<string>>(new Set());
+  const [batchApproving, setBatchApproving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -197,9 +210,19 @@ const MilestoneManagementScreen = () => {
       }
 
       setMilestones(milestonesWithProgress);
+
+      // Announce milestone data for screen readers
+      if (milestonesWithProgress.length !== previousMilestoneCountRef.current) {
+        const avgProgress = milestonesWithProgress.length > 0
+          ? Math.round(milestonesWithProgress.reduce((sum, m) => sum + m.overallProgress, 0) / milestonesWithProgress.length)
+          : 0;
+        announce(`Milestone data loaded: ${milestonesWithProgress.length} milestones, average progress ${avgProgress}%`);
+        previousMilestoneCountRef.current = milestonesWithProgress.length;
+      }
     } catch (error) {
       logger.error('[MilestoneManagement] Error loading data', error as Error);
       Alert.alert('Error', 'Failed to load milestone data');
+      announce('Failed to load milestone data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -208,6 +231,7 @@ const MilestoneManagementScreen = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    announce('Refreshing milestone data');
     loadData();
   };
 
@@ -360,6 +384,110 @@ const MilestoneManagementScreen = () => {
     setProgressDialogVisible(true);
   };
 
+  // Batch Approval Functions
+  const openBatchApprovalDialog = useCallback((milestone: MilestoneWithProgress) => {
+    setBatchSelectedMilestone(milestone);
+    // Pre-select all sites that are in progress or not started (not already completed)
+    const eligibleSites = milestone.siteProgress
+      .filter(sp => sp.status !== 'completed' && sp.progressPercentage < 100)
+      .map(sp => sp.siteId);
+    setSelectedSitesForApproval(new Set(eligibleSites));
+    setBatchApprovalDialogVisible(true);
+  }, []);
+
+  const closeBatchApprovalDialog = useCallback(() => {
+    setBatchApprovalDialogVisible(false);
+    setBatchSelectedMilestone(null);
+    setSelectedSitesForApproval(new Set());
+  }, []);
+
+  const toggleSiteSelection = useCallback((siteId: string) => {
+    setSelectedSitesForApproval(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(siteId)) {
+        newSet.delete(siteId);
+      } else {
+        newSet.add(siteId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const selectAllEligibleSites = useCallback(() => {
+    if (!batchSelectedMilestone) return;
+    const eligibleSites = batchSelectedMilestone.siteProgress
+      .filter(sp => sp.status !== 'completed' && sp.progressPercentage < 100)
+      .map(sp => sp.siteId);
+    setSelectedSitesForApproval(new Set(eligibleSites));
+  }, [batchSelectedMilestone]);
+
+  const deselectAllSites = useCallback(() => {
+    setSelectedSitesForApproval(new Set());
+  }, []);
+
+  const handleBatchApproval = async () => {
+    if (!batchSelectedMilestone || selectedSitesForApproval.size === 0) {
+      Alert.alert('No Sites Selected', 'Please select at least one site to approve.');
+      return;
+    }
+
+    setBatchApproving(true);
+
+    try {
+      await database.write(async () => {
+        for (const siteId of selectedSitesForApproval) {
+          // Find existing progress record or create new one
+          const existingProgress = await database.collections
+            .get('milestone_progress')
+            .query(
+              Q.where('milestone_id', batchSelectedMilestone.id),
+              Q.where('site_id', siteId)
+            )
+            .fetch();
+
+          if (existingProgress.length > 0) {
+            // Update existing record
+            await existingProgress[0].update((record: any) => {
+              record.progressPercentage = 100;
+              record.status = 'completed';
+              record.actualEndDate = Date.now();
+              record.appSyncStatus = 'pending';
+              record.version = (record.version || 0) + 1;
+            });
+          } else {
+            // Create new progress record
+            await database.collections.get('milestone_progress').create((record: any) => {
+              record.milestoneId = batchSelectedMilestone.id;
+              record.siteId = siteId;
+              record.progressPercentage = 100;
+              record.status = 'completed';
+              record.actualStartDate = Date.now();
+              record.actualEndDate = Date.now();
+              record.appSyncStatus = 'pending';
+              record.version = 1;
+            });
+          }
+        }
+      });
+
+      const count = selectedSitesForApproval.size;
+      announce(`Batch approval completed: ${count} site${count === 1 ? '' : 's'} marked as completed for ${batchSelectedMilestone.milestoneName}`);
+      Alert.alert(
+        'Batch Approval Complete',
+        `Successfully marked ${count} site${count === 1 ? '' : 's'} as completed for "${batchSelectedMilestone.milestoneName}".`
+      );
+
+      closeBatchApprovalDialog();
+      loadData(); // Refresh data
+    } catch (error) {
+      logger.error('[MilestoneManagement] Error in batch approval', error as Error);
+      Alert.alert('Error', 'Failed to process batch approval. Please try again.');
+      announce('Batch approval failed');
+    } finally {
+      setBatchApproving(false);
+    }
+  };
+
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'completed':
@@ -466,6 +594,17 @@ const MilestoneManagementScreen = () => {
             >
               View Progress
             </Button>
+            {/* Batch Approve button - only show if there are sites not yet completed */}
+            {milestone.sitesNotStarted + milestone.sitesInProgress > 0 && (
+              <Button
+                mode="contained"
+                onPress={() => openBatchApprovalDialog(milestone)}
+                style={[styles.actionButton, styles.batchApproveButton]}
+                icon="check-all"
+              >
+                Batch Approve
+              </Button>
+            )}
             {milestone.isCustom && (
               <>
                 <Button
@@ -602,11 +741,20 @@ const MilestoneManagementScreen = () => {
         {milestones.map(renderMilestoneCard)}
 
         {milestones.length === 0 && (
-          <View style={styles.emptyState}>
-            <Paragraph style={styles.emptyStateText}>
-              No milestones found. Add a custom milestone to get started.
-            </Paragraph>
-          </View>
+          <EmptyState
+            icon="flag-checkered"
+            title="No Milestones Defined"
+            message="Milestones help track project phases and progress. Add milestones to monitor your project timeline."
+            helpText="Standard milestones (PM100-PM700) can be configured by your administrator, or you can add custom milestones here."
+            tips={[
+              'Milestones are weighted to calculate overall progress',
+              'Track progress per site for each milestone',
+              'Set planned and actual dates for schedule tracking',
+            ]}
+            actionText="Add Milestone"
+            onAction={() => setAddDialogVisible(true)}
+            variant="default"
+          />
         )}
       </ScrollView>
 
@@ -725,6 +873,102 @@ const MilestoneManagementScreen = () => {
           </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={() => setProgressDialogVisible(false)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Batch Approval Dialog */}
+      <Portal>
+        <Dialog
+          visible={batchApprovalDialogVisible}
+          onDismiss={closeBatchApprovalDialog}
+          style={styles.batchApprovalDialog}
+        >
+          <Dialog.Title>Batch Approve Sites</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.batchApprovalSubtitle}>
+              Milestone: {batchSelectedMilestone?.milestoneName}
+            </Text>
+            <Text style={styles.batchApprovalHelp}>
+              Select sites to mark as 100% complete for this milestone.
+            </Text>
+            <View style={styles.batchSelectionButtons}>
+              <Button
+                mode="text"
+                onPress={selectAllEligibleSites}
+                compact
+                icon="checkbox-multiple-marked"
+              >
+                Select All
+              </Button>
+              <Button
+                mode="text"
+                onPress={deselectAllSites}
+                compact
+                icon="checkbox-multiple-blank-outline"
+              >
+                Deselect All
+              </Button>
+            </View>
+            <Divider style={styles.batchDivider} />
+          </Dialog.Content>
+          <Dialog.ScrollArea style={styles.batchScrollArea}>
+            <ScrollView>
+              {batchSelectedMilestone?.siteProgress.map((sp) => {
+                const isCompleted = sp.status === 'completed' || sp.progressPercentage === 100;
+                const isSelected = selectedSitesForApproval.has(sp.siteId);
+
+                return (
+                  <TouchableOpacity
+                    key={sp.siteId}
+                    style={[
+                      styles.batchSiteItem,
+                      isCompleted && styles.batchSiteItemCompleted,
+                    ]}
+                    onPress={() => !isCompleted && toggleSiteSelection(sp.siteId)}
+                    disabled={isCompleted}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected, disabled: isCompleted }}
+                    accessibilityLabel={`${sp.siteName}, ${sp.progressPercentage}% complete`}
+                  >
+                    <Checkbox
+                      status={isCompleted ? 'checked' : isSelected ? 'checked' : 'unchecked'}
+                      onPress={() => !isCompleted && toggleSiteSelection(sp.siteId)}
+                      disabled={isCompleted}
+                    />
+                    <View style={styles.batchSiteInfo}>
+                      <Text style={[
+                        styles.batchSiteName,
+                        isCompleted && styles.batchSiteNameCompleted,
+                      ]}>
+                        {sp.siteName}
+                      </Text>
+                      <Text style={styles.batchSiteProgress}>
+                        {isCompleted ? '✅ Already completed' : `${sp.progressPercentage}% complete`}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Content>
+            <Text style={styles.batchSelectionCount}>
+              {selectedSitesForApproval.size} site{selectedSitesForApproval.size !== 1 ? 's' : ''} selected for approval
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={closeBatchApprovalDialog} disabled={batchApproving}>
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleBatchApproval}
+              disabled={selectedSitesForApproval.size === 0 || batchApproving}
+              loading={batchApproving}
+            >
+              {batchApproving ? 'Approving...' : `Approve ${selectedSitesForApproval.size} Site${selectedSitesForApproval.size !== 1 ? 's' : ''}`}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -968,6 +1212,72 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     height: 20,
+  },
+  // Batch Approval Styles
+  batchApproveButton: {
+    backgroundColor: '#4CAF50',
+  },
+  batchApprovalDialog: {
+    maxHeight: '80%',
+  },
+  batchApprovalSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  batchApprovalHelp: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+  },
+  batchSelectionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  batchDivider: {
+    marginTop: 8,
+  },
+  batchScrollArea: {
+    maxHeight: 300,
+    paddingHorizontal: 0,
+  },
+  batchSiteItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  batchSiteItemCompleted: {
+    backgroundColor: '#f5f5f5',
+    opacity: 0.7,
+  },
+  batchSiteInfo: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  batchSiteName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  batchSiteNameCompleted: {
+    color: '#999',
+  },
+  batchSiteProgress: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  batchSelectionCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2196F3',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 

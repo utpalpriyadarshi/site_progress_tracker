@@ -8,7 +8,7 @@
  * - Performance comparison
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import {
   Card,
@@ -18,6 +18,8 @@ import {
   Chip,
   ProgressBar,
   Divider,
+  Searchbar,
+  Text,
 } from 'react-native-paper';
 import { useManagerContext } from './context/ManagerContext';
 import { database } from '../../models/database';
@@ -25,6 +27,9 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { TeamPerformanceSkeleton } from './shared';
+import { useAccessibility } from '../utils/accessibility';
+import { useDebounce } from '../utils/performance';
+import { EmptyState } from '../components/common/EmptyState';
 
 interface SupervisorPerformance {
   userId: string;
@@ -46,15 +51,47 @@ interface SupervisorPerformance {
 
 const TeamPerformanceScreen = () => {
   const { projectId } = useManagerContext();
+  const { announce } = useAccessibility();
+  const previousSupervisorCountRef = useRef<number>(0);
+  const previousSearchResultsRef = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [supervisors, setSupervisors] = useState<SupervisorPerformance[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [projectStats, setProjectStats] = useState({
     totalSupervisors: 0,
     avgProgress: 0,
     totalReports: 0,
     avgProductivity: 0,
   });
+
+  // Memoized filtered supervisors based on search query
+  const filteredSupervisors = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return supervisors;
+    const lowerQuery = debouncedSearchQuery.toLowerCase();
+    return supervisors.filter(
+      supervisor =>
+        supervisor.name.toLowerCase().includes(lowerQuery) ||
+        supervisor.siteName.toLowerCase().includes(lowerQuery)
+    );
+  }, [supervisors, debouncedSearchQuery]);
+
+  const isSearching = searchQuery.trim().length > 0;
+
+  // Announce search results for screen readers
+  useEffect(() => {
+    if (debouncedSearchQuery && previousSearchResultsRef.current !== filteredSupervisors.length) {
+      if (filteredSupervisors.length === 0) {
+        announce(`No supervisors found matching "${debouncedSearchQuery}"`);
+      } else {
+        announce(`Found ${filteredSupervisors.length} supervisor${filteredSupervisors.length === 1 ? '' : 's'} matching "${debouncedSearchQuery}"`);
+      }
+      previousSearchResultsRef.current = filteredSupervisors.length;
+    } else if (!debouncedSearchQuery) {
+      previousSearchResultsRef.current = null;
+    }
+  }, [debouncedSearchQuery, filteredSupervisors.length, announce]);
 
   const loadPerformanceData = useCallback(async () => {
     if (!projectId) return;
@@ -216,10 +253,17 @@ const TeamPerformanceScreen = () => {
         totalReports,
         avgProductivity,
       });
+
+      // Announce team data for screen readers
+      if (totalSupervisors !== previousSupervisorCountRef.current) {
+        announce(`Team performance loaded: ${totalSupervisors} supervisors, average progress ${avgProgress}%, average productivity ${avgProductivity} items per day`);
+        previousSupervisorCountRef.current = totalSupervisors;
+      }
     } catch (error) {
       logger.error('[TeamPerformance] Error loading data', error as Error);
+      announce('Failed to load team performance data');
     }
-  }, [projectId]);
+  }, [projectId, announce]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -233,6 +277,7 @@ const TeamPerformanceScreen = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    announce('Refreshing team performance data');
     await loadPerformanceData();
     setRefreshing(false);
   };
@@ -241,6 +286,29 @@ const TeamPerformanceScreen = () => {
     if (percentage >= 75) return '#4CAF50'; // Green
     if (percentage >= 50) return '#FFC107'; // Yellow
     return '#F44336'; // Red
+  };
+
+  const renderSearchBar = () => {
+    if (supervisors.length === 0) return null;
+
+    return (
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="Search by supervisor name or site..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchBar}
+          inputStyle={styles.searchInput}
+          accessibilityLabel="Search supervisors"
+          accessibilityHint="Type to filter supervisors by name or site"
+        />
+        {isSearching && (
+          <Text style={styles.resultCount}>
+            Showing {filteredSupervisors.length} of {supervisors.length}
+          </Text>
+        )}
+      </View>
+    );
   };
 
   const renderProjectSummary = () => {
@@ -277,11 +345,37 @@ const TeamPerformanceScreen = () => {
   const renderSupervisorList = () => {
     if (supervisors.length === 0) {
       return (
-        <Card style={styles.card}>
-          <Card.Content>
-            <Paragraph style={styles.emptyText}>No supervisors assigned to this project</Paragraph>
-          </Card.Content>
-        </Card>
+        <EmptyState
+          icon="account-hard-hat-outline"
+          title="No Supervisors Assigned"
+          message="There are no supervisors assigned to sites in this project yet."
+          helpText="Supervisors are assigned to sites and track daily progress, reports, and hindrances."
+          tips={[
+            'Assign supervisors to sites in Team Management',
+            'Supervisors submit daily reports from the mobile app',
+            'Performance metrics update automatically from their activity',
+          ]}
+          variant="compact"
+        />
+      );
+    }
+
+    // Search returned no results
+    if (filteredSupervisors.length === 0 && isSearching) {
+      return (
+        <EmptyState
+          icon="account-search-outline"
+          title="No Matching Supervisors"
+          message={`No supervisors found matching "${debouncedSearchQuery}".`}
+          helpText="Try adjusting your search terms or clear the search to see all supervisors."
+          tips={[
+            'Search by supervisor name or site name',
+            'Use partial names for broader results',
+          ]}
+          actionText="Clear Search"
+          onAction={() => setSearchQuery('')}
+          variant="compact"
+        />
       );
     }
 
@@ -290,12 +384,14 @@ const TeamPerformanceScreen = () => {
         <Card.Content>
           <Title style={styles.cardTitle}>Supervisor Performance</Title>
           <Paragraph style={styles.cardSubtitle}>
-            {supervisors.length} supervisors across all sites
+            {isSearching
+              ? `${filteredSupervisors.length} of ${supervisors.length} supervisors`
+              : `${supervisors.length} supervisors across all sites`}
           </Paragraph>
 
           <Divider style={styles.divider} />
 
-          {supervisors.map((supervisor, index) => (
+          {filteredSupervisors.map((supervisor, index) => (
             <View key={supervisor.userId} style={styles.supervisorCard}>
               <View style={styles.supervisorHeader}>
                 <View style={styles.supervisorInfo}>
@@ -356,7 +452,7 @@ const TeamPerformanceScreen = () => {
                 </View>
               </View>
 
-              {index < supervisors.length - 1 && <Divider style={styles.divider} />}
+              {index < filteredSupervisors.length - 1 && <Divider style={styles.divider} />}
             </View>
           ))}
         </Card.Content>
@@ -365,7 +461,7 @@ const TeamPerformanceScreen = () => {
   };
 
   const renderPerformanceTable = () => {
-    if (supervisors.length === 0) return null;
+    if (supervisors.length === 0 || filteredSupervisors.length === 0) return null;
 
     return (
       <Card style={styles.card}>
@@ -382,7 +478,7 @@ const TeamPerformanceScreen = () => {
                 <DataTable.Title style={styles.tableCell} numeric>Days Active</DataTable.Title>
               </DataTable.Header>
 
-              {supervisors.map((supervisor) => (
+              {filteredSupervisors.map((supervisor) => (
                 <DataTable.Row key={supervisor.userId}>
                   <DataTable.Cell style={styles.tableCell}>{supervisor.name}</DataTable.Cell>
                   <DataTable.Cell style={styles.tableCell}>{supervisor.siteName}</DataTable.Cell>
@@ -413,9 +509,13 @@ const TeamPerformanceScreen = () => {
 
   if (!projectId) {
     return (
-      <View style={styles.emptyContainer}>
-        <Paragraph style={styles.emptyText}>No project assigned</Paragraph>
-      </View>
+      <EmptyState
+        icon="account-group-outline"
+        title="No Project Assigned"
+        message="Team performance tracking requires a project assignment. Contact your administrator to get started."
+        helpText="Once assigned, you'll see supervisor metrics, productivity data, and performance comparisons."
+        variant="large"
+      />
     );
   }
 
@@ -427,6 +527,7 @@ const TeamPerformanceScreen = () => {
       }
     >
       {renderProjectSummary()}
+      {renderSearchBar()}
       {renderSupervisorList()}
       {renderPerformanceTable()}
     </ScrollView>
@@ -437,6 +538,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  searchContainer: {
+    marginHorizontal: 15,
+    marginBottom: 10,
+  },
+  searchBar: {
+    elevation: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+  },
+  searchInput: {
+    fontSize: 14,
+  },
+  resultCount: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'right',
   },
   loadingContainer: {
     flex: 1,
