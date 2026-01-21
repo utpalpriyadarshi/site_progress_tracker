@@ -14,6 +14,8 @@ import {
 import EquipmentManagementService, {
   Equipment,
   EquipmentStatus,
+  MaintenanceSchedule,
+  EquipmentAllocation,
 } from '../services/EquipmentManagementService';
 import mockEquipment, {
   mockMaintenanceRecords,
@@ -21,6 +23,7 @@ import mockEquipment, {
   mockOperatorCertifications,
 } from '../data/mockEquipment';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 import {
   equipmentManagementReducer,
   initialEquipmentManagementState,
@@ -533,25 +536,96 @@ const EquipmentManagementScreen = () => {
     );
   };
 
+  // Empty state rendering for overview mode
+  const renderOverviewEmptyState = () => {
+    const hasNoData = state.data.equipment.length === 0;
+    const hasSearchQuery = state.ui.searchQuery.trim().length > 0;
+    const hasFilter = state.ui.statusFilter !== 'all';
+    const noFilteredResults = filteredEquipment.length === 0;
+
+    // No equipment at all
+    if (hasNoData) {
+      return (
+        <EmptyState
+          icon="excavator"
+          title="No Equipment Registered"
+          message="Add your first equipment to start tracking usage and maintenance."
+          helpText="Track equipment status, schedule maintenance, and monitor performance."
+          actionText="Add Equipment"
+          onAction={() => {
+            logger.info('[Equipment] Add equipment action pressed');
+          }}
+        />
+      );
+    }
+
+    // No search results
+    if (hasSearchQuery && noFilteredResults) {
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No Equipment Found"
+          message={`No equipment matches "${state.ui.searchQuery}"`}
+          variant="search"
+          actionText="Clear Search"
+          onAction={() => dispatch({ type: 'SET_SEARCH_QUERY', payload: '' })}
+        />
+      );
+    }
+
+    // No filter results
+    if (hasFilter && noFilteredResults) {
+      return (
+        <EmptyState
+          icon="filter-off"
+          title={`No ${state.ui.statusFilter.charAt(0).toUpperCase() + state.ui.statusFilter.slice(1).replace('_', ' ')} Equipment`}
+          message="Try selecting a different status filter."
+          actionText="Clear Filter"
+          onAction={() => dispatch({ type: 'SET_STATUS_FILTER', payload: 'all' })}
+        />
+      );
+    }
+
+    return null;
+  };
+
   const renderContent = () => {
     switch (state.ui.viewMode) {
       case 'overview':
         return (
-          <ScrollView style={styles.contentScroll}>
-            {filteredEquipment.map(eq => renderEquipmentCard(eq))}
-          </ScrollView>
+          renderOverviewEmptyState() || (
+            <ScrollView style={styles.contentScroll}>
+              {filteredEquipment.map(eq => renderEquipmentCard(eq))}
+            </ScrollView>
+          )
         );
       case 'maintenance':
         return (
-          <ScrollView style={styles.contentScroll}>
-            {state.data.maintenanceSchedule.map(schedule => renderMaintenanceScheduleItem(schedule))}
-          </ScrollView>
+          state.data.maintenanceSchedule.length === 0 ? (
+            <EmptyState
+              icon="wrench-outline"
+              title="No Maintenance Scheduled"
+              message="No maintenance tasks are scheduled for your equipment."
+            />
+          ) : (
+            <ScrollView style={styles.contentScroll}>
+              {state.data.maintenanceSchedule.map(schedule => renderMaintenanceScheduleItem(schedule))}
+            </ScrollView>
+          )
         );
       case 'allocation':
         return (
-          <ScrollView style={styles.contentScroll}>
-            {state.data.allocations.map(allocation => renderAllocationItem(allocation))}
-          </ScrollView>
+          state.data.allocations.length === 0 ? (
+            <EmptyState
+              icon="account-multiple-outline"
+              title="No Allocations"
+              message="No equipment has been allocated to projects yet."
+            />
+          ) : (
+            <ScrollView style={styles.contentScroll}>
+              {state.data.allocations.map(allocation => renderAllocationItem(allocation))}
+            </ScrollView>
+          )
         );
       case 'performance':
         return renderPerformanceMetrics();

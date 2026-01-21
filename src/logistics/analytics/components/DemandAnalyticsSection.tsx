@@ -3,6 +3,11 @@
  *
  * Displays demand forecasts, lead time predictions, and consumption patterns
  * Phase 4: Major Components
+ *
+ * WCAG 2.1 AA Accessibility:
+ * - Screen reader labels for analytics data
+ * - Proper roles for interactive elements
+ * - Text alternatives for visual metrics
  */
 
 import React from 'react';
@@ -56,11 +61,21 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
     <View>
       {/* Demand Forecasts */}
       <AnalyticsCard title="Demand Forecasts">
-        {demandForecasts.map((forecast, index) => (
+        {demandForecasts.map((forecast, index) => {
+          const avgForecast = (
+            forecast.forecast.predictions.reduce((s, p) => s + p.predictedValue, 0) /
+            forecast.forecast.predictions.length
+          ).toFixed(0);
+
+          return (
           <TouchableOpacity
             key={index}
             style={styles.forecastItem}
             onPress={() => onShowDetail(forecast, 'demand')}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${forecast.materialName}: current demand ${forecast.currentDemand.toFixed(0)}, average forecast ${avgForecast}, trend ${forecast.forecast.trend.direction}, recommended order ${forecast.recommendedOrderQuantity} ${forecast.unit}`}
+            accessibilityHint="Double tap to view forecast details"
           >
             <View style={styles.forecastHeader}>
               <Text style={styles.forecastMaterial}>{forecast.materialName}</Text>
@@ -86,7 +101,8 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
               Recommended Order: {forecast.recommendedOrderQuantity} {forecast.unit}
             </Text>
           </TouchableOpacity>
-        ))}
+        );
+        })}
       </AnalyticsCard>
 
       {/* Lead Time Predictions */}
@@ -96,6 +112,10 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
             key={index}
             style={styles.predictionItem}
             onPress={() => onShowDetail(prediction, 'leadtime')}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${prediction.supplierName}: ${prediction.reliability.toFixed(0)}% reliability, predicted lead time ${prediction.predictedLeadTime} days, historical average ${prediction.historicalLeadTime.average.toFixed(0)} days, risk score ${prediction.riskScore.toFixed(0)}`}
+            accessibilityHint="Double tap to view supplier details"
           >
             <View style={styles.predictionHeader}>
               <Text style={styles.predictionSupplier}>{prediction.supplierName}</Text>
@@ -139,6 +159,10 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
             key={index}
             style={styles.patternItem}
             onPress={() => onShowDetail(pattern, 'consumption')}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${pattern.materialName}: average daily consumption ${pattern.averageConsumption.toFixed(1)}, pattern type ${pattern.patternType.replace(/_/g, ' ')}, ${pattern.predictability.toFixed(0)}% predictability`}
+            accessibilityHint="Double tap to view consumption details"
           >
             <Text style={styles.patternMaterial}>{pattern.materialName}</Text>
             <View style={styles.patternMetrics}>

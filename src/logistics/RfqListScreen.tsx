@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { logger } from '../services/LoggingService';
 
 import {
@@ -22,6 +22,10 @@ import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
 import { createRfqsDemoData, clearRfqDemoData } from '../utils/demoData/RfqSeeder';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { useDebounce } from '../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
+import { useLogistics } from './context/LogisticsContext';
 
 /**
  * RFQ List Screen
@@ -41,10 +45,15 @@ interface RfqListScreenProps {
 
 const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
   const { user } = useAuth();
+  const { announce } = useAccessibility();
+  const { isOffline, pendingSyncCount, triggerSync } = useLogistics();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | RfqStatus>('all');
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Debounce search for performance (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Force refresh when screen comes into focus
   useFocusEffect(
@@ -58,9 +67,9 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
   const filteredRfqs = useMemo(() => {
     let filtered = [...rfqs];
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Search filter - use debounced value
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (rfq) =>
           rfq.rfqNumber.toLowerCase().includes(query) ||
@@ -78,7 +87,14 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
     filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return filtered;
-  }, [rfqs, searchQuery, selectedStatus, refreshKey]);
+  }, [rfqs, debouncedSearchQuery, selectedStatus, refreshKey]);
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery && !loading) {
+      announce(`Found ${filteredRfqs.length} RFQs matching "${debouncedSearchQuery}"`);
+    }
+  }, [filteredRfqs.length, debouncedSearchQuery, loading, announce]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -284,6 +300,14 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
 
   return (
     <View style={styles.container}>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOnline={!isOffline}
+        pendingCount={pendingSyncCount}
+        onSync={triggerSync}
+        showWhenPending={true}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>RFQs</Text>

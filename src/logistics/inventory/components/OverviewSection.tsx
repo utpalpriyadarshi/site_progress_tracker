@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { InventoryItem } from '../../../services/InventoryOptimizationService';
 import { getStatusColor, getABCColor } from '../utils';
 import { StockLevelBadge } from './StockLevelBadge';
 import { ABCCategoryChip } from './ABCCategoryChip';
+import { useAccessibility } from '../../../utils/accessibility';
 
 interface OverviewSectionProps {
   items: InventoryItem[];
@@ -19,29 +20,78 @@ interface OverviewSectionProps {
  * - Visual stock level indicator
  * - Turnover and age metrics
  *
+ * WCAG 2.1 AA Accessibility:
+ * - Screen reader announcements for item count
+ * - Proper accessibility labels for each inventory card
+ * - Role-based structure for lists
+ *
  * Extracted from InventoryManagementScreen.tsx Phase 4.
  */
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
   items,
   onItemPress,
 }) => {
+  const { announce } = useAccessibility();
+  const hasAnnouncedRef = useRef(false);
+
+  // Announce item count when items change
+  useEffect(() => {
+    if (items.length > 0 && !hasAnnouncedRef.current) {
+      const lowStockCount = items.filter(i => i.status === 'low_stock').length;
+      const outOfStockCount = items.filter(i => i.status === 'out_of_stock').length;
+
+      let announcement = `Showing ${items.length} inventory items`;
+      if (lowStockCount > 0) announcement += `, ${lowStockCount} low stock`;
+      if (outOfStockCount > 0) announcement += `, ${outOfStockCount} out of stock`;
+
+      announce(announcement);
+      hasAnnouncedRef.current = true;
+    }
+  }, [items, announce]);
+
   if (items.length === 0) {
     return (
-      <View style={styles.emptyState}>
+      <View
+        style={styles.emptyState}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel="No inventory items found. Try adjusting your filters or search query."
+      >
         <Text style={styles.emptyStateText}>No inventory items found</Text>
       </View>
     );
   }
 
-  const renderInventoryCard = (item: InventoryItem) => {
+  // Helper function to get status text
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'in_stock': return 'in stock';
+      case 'low_stock': return 'low stock';
+      case 'out_of_stock': return 'out of stock';
+      case 'critical': return 'critical';
+      default: return status;
+    }
+  };
+
+  const renderInventoryCard = (item: InventoryItem, index: number) => {
     const stockPercent = Math.min((item.quantity / item.maxStock) * 100, 100);
     const reorderPercent = (item.reorderLevel / item.maxStock) * 100;
+
+    const accessibilityLabel = `${item.materialName}, ${item.category}, ${getStatusText(item.status)}, ` +
+      `${item.quantity} ${item.unit} in stock, ` +
+      `${item.availableQuantity} available, ` +
+      `value ${item.totalValue.toLocaleString()} rupees, ` +
+      `at ${item.locationName}`;
 
     return (
       <TouchableOpacity
         key={item.id}
         style={styles.card}
         onPress={() => onItemPress?.(item)}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Double tap to view item details"
       >
         {/* Header */}
         <View style={styles.header}>
@@ -121,8 +171,13 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   };
 
   return (
-    <ScrollView style={styles.scroll}>
-      {items.map(item => renderInventoryCard(item))}
+    <ScrollView
+      style={styles.scroll}
+      accessible
+      accessibilityRole="list"
+      accessibilityLabel={`Inventory list with ${items.length} items`}
+    >
+      {items.map((item, index) => renderInventoryCard(item, index))}
     </ScrollView>
   );
 };

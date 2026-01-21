@@ -3,6 +3,11 @@
  *
  * Displays performance benchmarking metrics
  * Phase 4: Major Components
+ *
+ * WCAG 2.1 AA Accessibility:
+ * - Text alternatives for performance bars
+ * - Proper accessibility labels for benchmark items
+ * - Screen reader descriptions for percentile data
  */
 
 import React from 'react';
@@ -46,6 +51,10 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             key={index}
             style={styles.benchmarkItem}
             onPress={() => onShowDetail(benchmark, 'benchmark')}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${benchmark.metric.replace(/_/g, ' ')}: ${benchmark.rating} rating, current value ${benchmark.currentValue.toFixed(1)} ${benchmark.unit}, industry average ${benchmark.industryAverage.toFixed(1)} ${benchmark.unit}, best in class ${benchmark.industryBest.toFixed(1)} ${benchmark.unit}, ${benchmark.percentile}th percentile`}
+            accessibilityHint="Double tap to view benchmark details"
           >
             <View style={styles.benchmarkHeader}>
               <Text style={styles.benchmarkMetric}>
@@ -70,7 +79,13 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 value={`${benchmark.industryBest.toFixed(1)} ${benchmark.unit}`}
               />
             </View>
-            <View style={styles.benchmarkBar}>
+            <View
+              style={styles.benchmarkBar}
+              accessible
+              accessibilityRole="progressbar"
+              accessibilityLabel={`Performance at ${benchmark.percentile}th percentile`}
+              accessibilityValue={{ min: 0, max: 100, now: benchmark.percentile }}
+            >
               <View
                 style={[
                   styles.benchmarkBarFill,

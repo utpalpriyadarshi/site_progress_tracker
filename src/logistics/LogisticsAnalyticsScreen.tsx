@@ -36,6 +36,7 @@ import {
 } from '../services/CostOptimizationService';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
 import { logger } from '../services/LoggingService';
 
 // Analytics components
@@ -363,6 +364,27 @@ const LogisticsAnalyticsScreen: React.FC = () => {
     dispatch({ type: 'SHOW_DETAIL_MODAL', payload: { detail, detailType: type } });
   };
 
+  // Check if we have enough data for analytics
+  const hasAnalyticsData = state.analytics.summary !== null ||
+    state.analytics.demandForecasts.length > 0 ||
+    state.optimization.costOptimization !== null;
+
+  // Empty state for insufficient data
+  const renderAnalyticsEmptyState = () => {
+    if (!hasAnalyticsData && !state.ui.loading) {
+      return (
+        <EmptyState
+          icon="chart-line"
+          title="Not Enough Data"
+          message="Analytics require sufficient historical data to generate insights."
+          helpText="Continue using the logistics features to build up data for predictive analytics."
+          variant="large"
+        />
+      );
+    }
+    return null;
+  };
+
   // -------------------------------------------------------------------------
   // Main Render
   // -------------------------------------------------------------------------
@@ -385,7 +407,9 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={state.ui.refreshing} onRefresh={handleRefresh} />}
       >
-        {state.ui.viewMode === 'overview' && <OverviewSection analyticsSummary={state.analytics.summary} />}
+        {renderAnalyticsEmptyState() || (
+          <>
+            {state.ui.viewMode === 'overview' && <OverviewSection analyticsSummary={state.analytics.summary} />}
         {state.ui.viewMode === 'demand' && (
           <DemandAnalyticsSection
             demandForecasts={state.analytics.demandForecasts}
@@ -411,6 +435,8 @@ const LogisticsAnalyticsScreen: React.FC = () => {
             transportationOpt={state.optimization.transportation}
             storageOpt={state.optimization.storage}
           />
+        )}
+          </>
         )}
       </ScrollView>
 

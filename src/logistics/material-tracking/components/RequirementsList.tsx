@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { MaterialRequirement } from '../../../services/BomLogisticsService';
 import BomRequirementCard from '../../components/BomRequirementCard';
-import BomModel from '../../../models/BomModel';
+import BomModel from '../../../../models/BomModel';
+import { useAccessibility } from '../../../utils/accessibility';
 
 interface RequirementsListProps {
   boms: BomModel[];
@@ -39,6 +40,11 @@ interface RequirementsListProps {
  * - BomRequirementCard for each item
  * - DOORS integration
  *
+ * WCAG 2.1 AA Accessibility:
+ * - Screen reader announcements for list updates
+ * - Proper roles for expandable sections
+ * - Clear accessibility labels
+ *
  * Extracted from MaterialTrackingScreen Phase 4.
  */
 export const RequirementsList: React.FC<RequirementsListProps> = ({
@@ -57,9 +63,32 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
   onNavigateToDoorsDetail,
   onLinkPress,
 }) => {
+  const { announce } = useAccessibility();
+  const hasAnnouncedRef = useRef(false);
+
+  // Announce requirements count when data loads
+  useEffect(() => {
+    if (!loading && !bomLoading && filteredRequirements.length > 0 && !hasAnnouncedRef.current) {
+      const criticalCount = filteredRequirements.filter(r => r.status === 'critical').length;
+      const shortageCount = filteredRequirements.filter(r => r.status === 'shortage').length;
+
+      let announcement = `${filteredRequirements.length} material requirements loaded`;
+      if (criticalCount > 0) announcement += `, ${criticalCount} critical`;
+      if (shortageCount > 0) announcement += `, ${shortageCount} with shortage`;
+
+      announce(announcement);
+      hasAnnouncedRef.current = true;
+    }
+  }, [loading, bomLoading, filteredRequirements, announce]);
+
   if (bomLoading || loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View
+        style={styles.loadingContainer}
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel="Loading BOM requirements"
+      >
         <ActivityIndicator size="large" color="#2196F3" />
         <Text style={styles.loadingText}>Loading BOM requirements...</Text>
       </View>
@@ -68,7 +97,12 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
 
   if (boms.length === 0) {
     return (
-      <View style={styles.emptyState}>
+      <View
+        style={styles.emptyState}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel="No Bills of Materials available. Contact your Project Manager to create BOMs."
+      >
         <Text style={styles.emptyStateIcon}>📋</Text>
         <Text style={styles.emptyStateTitle}>No Bills of Materials (BOMs)</Text>
         <Text style={styles.emptyStateText}>
@@ -146,7 +180,13 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
   }, {} as Record<string, { bomId: string; bomName: string; items: typeof filteredRequirements }>);
 
   return (
-    <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.list}
+      showsVerticalScrollIndicator={false}
+      accessible
+      accessibilityRole="list"
+      accessibilityLabel={`BOM requirements list with ${Object.keys(groupedByBom).length} groups`}
+    >
       {Object.values(groupedByBom).map((bomGroup) => {
         const isExpanded = expandedBoms.has(bomGroup.bomId);
         const totalItems = bomGroup.items.length;
@@ -160,6 +200,11 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
               style={styles.bomHeader}
               onPress={() => onToggleBom(bomGroup.bomId)}
               activeOpacity={0.7}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={`${bomGroup.bomName}, ${totalItems} item${totalItems !== 1 ? 's' : ''}${criticalItems > 0 ? `, ${criticalItems} critical` : ''}${shortageItems > 0 ? `, ${shortageItems} shortage` : ''}`}
+              accessibilityHint={isExpanded ? 'Double tap to collapse' : 'Double tap to expand'}
+              accessibilityState={{ expanded: isExpanded }}
             >
               <View style={styles.bomHeaderLeft}>
                 <Text style={styles.bomHeaderIcon}>{isExpanded ? '▼' : '▶'}</Text>

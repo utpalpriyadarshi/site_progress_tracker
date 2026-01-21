@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import { logger } from '../services/LoggingService';
 import {
   View,
@@ -13,6 +13,10 @@ import { database } from '../../models/database';
 import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { EmptyState } from '../components/common/EmptyState';
+import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { useDebounce } from '../utils/performance';
+import { useAccessibility } from '../utils/accessibility';
 
 // Purchase Order state management
 import {
@@ -38,10 +42,33 @@ import {
  */
 
 const PurchaseOrderManagementScreen = () => {
-  const { selectedProjectId, projects } = useLogistics();
+  const {
+    selectedProjectId,
+    projects,
+    isOffline,
+    pendingSyncCount,
+    triggerSync,
+  } = useLogistics();
+  const { announce } = useAccessibility();
 
   // Centralized state management with useReducer (replaces 13 useState hooks)
   const [state, dispatch] = useReducer(poManagementReducer, initialPOManagementState);
+
+  // Local search state for debouncing
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(localSearchQuery, 300);
+
+  // Sync debounced search to reducer
+  useEffect(() => {
+    dispatch({ type: 'SET_SEARCH_QUERY', payload: debouncedSearchQuery });
+  }, [debouncedSearchQuery]);
+
+  // Announce search results for accessibility
+  useEffect(() => {
+    if (debouncedSearchQuery && !state.ui.loading) {
+      announce(`Found ${state.data.filteredPOs.length} purchase orders matching "${debouncedSearchQuery}"`);
+    }
+  }, [state.data.filteredPOs.length, debouncedSearchQuery, state.ui.loading, announce]);
 
   const loadVendors = useCallback(async () => {
     try {
@@ -350,12 +377,20 @@ const PurchaseOrderManagementScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOnline={!isOffline}
+        pendingCount={pendingSyncCount}
+        onSync={triggerSync}
+        showWhenPending={true}
+      />
+
       <View style={styles.header}>
         <Text style={styles.projectName}>{selectedProject?.name || 'Project'}</Text>
         <Searchbar
           placeholder="Search purchase orders..."
-          onChangeText={(text) => dispatch({ type: 'SET_SEARCH_QUERY', payload: text })}
-          value={state.filters.searchQuery}
+          onChangeText={setLocalSearchQuery}
+          value={localSearchQuery}
           style={styles.searchbar}
         />
         <View style={styles.filterRow}>
@@ -384,10 +419,30 @@ const PurchaseOrderManagementScreen = () => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No Purchase Orders found</Text>
-              <Text style={styles.emptySubtext}>Create your first PO to get started</Text>
-            </View>
+            debouncedSearchQuery || state.filters.filterStatus ? (
+              <EmptyState
+                icon="magnify"
+                title="No Matching POs"
+                message={debouncedSearchQuery
+                  ? `No purchase orders match "${debouncedSearchQuery}"`
+                  : `No ${state.filters.filterStatus} purchase orders found`}
+                variant="search"
+                actionText="Clear Filters"
+                onAction={() => {
+                  setLocalSearchQuery('');
+                  dispatch({ type: 'TOGGLE_FILTER_STATUS', payload: '' });
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon="clipboard-text-outline"
+                title="No Purchase Orders"
+                message="Create your first PO to start tracking purchases."
+                helpText="Purchase orders help track vendor deliveries and payments."
+                actionText="Create PO"
+                onAction={() => dispatch({ type: 'SHOW_CREATE_DIALOG' })}
+              />
+            )
           }
         />
       )}

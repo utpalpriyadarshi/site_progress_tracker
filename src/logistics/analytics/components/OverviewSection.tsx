@@ -3,6 +3,11 @@
  *
  * Displays analytics overview with health score, insights, risks, and opportunities
  * Phase 4: Major Components
+ *
+ * WCAG 2.1 AA Accessibility:
+ * - Proper accessibility labels for health score and metrics
+ * - Screen reader descriptions for risks and opportunities
+ * - Clear labels for all data visualizations
  */
 
 import React from 'react';
@@ -70,7 +75,12 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
     <View>
       {/* Health Score */}
       <AnalyticsCard title="Logistics Health Score">
-        <View style={styles.healthScoreContainer}>
+        <View
+          style={styles.healthScoreContainer}
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={`Logistics health score: ${analyticsSummary.healthScore} out of 100, rated ${analyticsSummary.healthRating}. Forecast accuracy ${analyticsSummary.metrics.forecastAccuracy.toFixed(0)}%, Cost stability ${analyticsSummary.metrics.costStability.toFixed(0)}%, Supply reliability ${analyticsSummary.metrics.supplyReliability.toFixed(0)}%`}
+        >
           <HealthScoreCircle
             score={analyticsSummary.healthScore}
             color={getHealthColor(analyticsSummary.healthRating)}
@@ -121,7 +131,13 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
       {analyticsSummary.risks.length > 0 && (
         <AnalyticsCard title="Risk Alerts">
           {analyticsSummary.risks.map((risk, index) => (
-            <View key={index} style={styles.riskItem}>
+            <View
+              key={index}
+              style={styles.riskItem}
+              accessible
+              accessibilityRole="alert"
+              accessibilityLabel={`Risk alert: ${risk.riskType.replace(/_/g, ' ')}, ${risk.impact} impact. ${risk.description}. Mitigation: ${risk.mitigation}. Timeline: ${risk.timeline}`}
+            >
               <View style={styles.riskHeader}>
                 <Icon name="warning" size={20} color="#FF6B6B" />
                 <Text style={styles.riskType}>
@@ -144,7 +160,13 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
       {analyticsSummary.opportunities.length > 0 && (
         <AnalyticsCard title="Cost Savings Opportunities">
           {analyticsSummary.opportunities.map((opp, index) => (
-            <View key={index} style={styles.opportunityItem}>
+            <View
+              key={index}
+              style={styles.opportunityItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Cost savings opportunity: $${(opp.value / 1000).toFixed(0)}K potential. ${opp.description}. Timeline: ${opp.timeline}. ${opp.effort} effort required`}
+            >
               <View style={styles.opportunityHeader}>
                 <Icon name="trending-up" size={20} color="#4CAF50" />
                 <Text style={styles.opportunityValue}>

@@ -4,6 +4,11 @@
  * Displays optimization recommendations including quick wins, strategic initiatives,
  * transportation and storage optimization
  * Phase 4: Major Components
+ *
+ * WCAG 2.1 AA Accessibility:
+ * - Proper accessibility labels for recommendations
+ * - Screen reader descriptions for savings data
+ * - Clear labels for optimization strategies
  */
 
 import React from 'react';
@@ -48,7 +53,13 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
       {costOptimization && costOptimization.quickWins.length > 0 && (
         <AnalyticsCard title="Quick Wins (Low Effort, High Impact)">
           {costOptimization.quickWins.map((rec, index) => (
-            <View key={index} style={styles.recommendationItem}>
+            <View
+              key={index}
+              style={styles.recommendationItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Quick win: ${rec.action}. ${rec.rationale}. Expected savings $${(rec.expectedSavings / 1000).toFixed(0)}K. Timeline: ${rec.timeline}`}
+            >
               <View style={styles.recommendationHeader}>
                 <Icon name="flash-on" size={20} color="#FFD700" />
                 <Text style={styles.recommendationAction}>{rec.action}</Text>
@@ -69,7 +80,13 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
       {costOptimization && costOptimization.strategicInitiatives.length > 0 && (
         <AnalyticsCard title="Strategic Initiatives">
           {costOptimization.strategicInitiatives.map((rec, index) => (
-            <View key={index} style={styles.recommendationItem}>
+            <View
+              key={index}
+              style={styles.recommendationItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Strategic initiative: ${rec.action}. ${rec.rationale}. Expected savings $${(rec.expectedSavings / 1000).toFixed(0)}K. ${rec.effort} effort required`}
+            >
               <View style={styles.recommendationHeader}>
                 <Icon name="trending-up" size={20} color="#2196F3" />
                 <Text style={styles.recommendationAction}>{rec.action}</Text>
@@ -92,7 +109,12 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
       {/* Transportation Optimization */}
       {transportationOpt && (
         <AnalyticsCard title="Transportation Optimization">
-          <View style={styles.optimizationSummary}>
+          <View
+            style={styles.optimizationSummary}
+            accessible
+            accessibilityRole="summary"
+            accessibilityLabel={`Transportation optimization: Current costs $${(transportationOpt.currentCosts / 1000).toFixed(0)}K, Optimized costs $${(transportationOpt.optimizedCosts / 1000).toFixed(0)}K, Potential savings $${(transportationOpt.savings / 1000).toFixed(0)}K or ${transportationOpt.savingsPercentage.toFixed(1)}%`}
+          >
             <MetricBox
               label="Current Costs"
               value={`$${(transportationOpt.currentCosts / 1000).toFixed(0)}K`}
@@ -108,7 +130,13 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
             />
           </View>
           {transportationOpt.strategies.map((strategy, index) => (
-            <View key={index} style={styles.strategyItem}>
+            <View
+              key={index}
+              style={styles.strategyItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Strategy: ${strategy.strategy}. ${strategy.description}. Savings $${(strategy.savings / 1000).toFixed(0)}K`}
+            >
               <Text style={styles.strategyName}>{strategy.strategy}</Text>
               <Text style={styles.strategyDescription}>{strategy.description}</Text>
               <Text style={styles.strategySavings}>
@@ -122,7 +150,12 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
       {/* Storage Optimization */}
       {storageOpt && (
         <AnalyticsCard title="Storage Optimization">
-          <View style={styles.optimizationSummary}>
+          <View
+            style={styles.optimizationSummary}
+            accessible
+            accessibilityRole="summary"
+            accessibilityLabel={`Storage optimization: ${storageOpt.utilizationRate.toFixed(0)}% utilization, Current costs $${(storageOpt.currentCosts / 1000).toFixed(0)}K, Potential savings $${(storageOpt.savings / 1000).toFixed(0)}K`}
+          >
             <MetricBox
               label="Utilization"
               value={`${storageOpt.utilizationRate.toFixed(0)}%`}
@@ -138,7 +171,13 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
             />
           </View>
           {storageOpt.opportunities.map((opp, index) => (
-            <View key={index} style={styles.opportunityItem}>
+            <View
+              key={index}
+              style={styles.opportunityItem}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Opportunity: ${opp.description}. Savings $${(opp.savings / 1000).toFixed(0)}K`}
+            >
               <Text style={styles.opportunityDescription}>{opp.description}</Text>
               <Text style={styles.opportunityValue}>
                 Savings: ${(opp.savings / 1000).toFixed(0)}K
