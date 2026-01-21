@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import MaterialModel from '../../../models/MaterialModel';
-import BomItemModel from '../../../models/BomItemModel';
+import MaterialModel from '../../../../models/MaterialModel';
+import BomItemModel from '../../../../models/BomItemModel';
 import MaterialProcurementService, {
   PurchaseSuggestion,
   SupplierQuote,

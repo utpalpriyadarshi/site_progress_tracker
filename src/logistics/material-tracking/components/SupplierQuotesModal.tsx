@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SupplierQuote } from '../../../services/MaterialProcurementService';
-import MaterialModel from '../../../models/MaterialModel';
+import MaterialModel from '../../../../models/MaterialModel';
 
 interface SupplierQuotesModalProps {
   visible: boolean;

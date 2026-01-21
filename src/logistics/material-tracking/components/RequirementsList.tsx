@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialRequirement } from '../../../services/BomLogisticsService';
 import BomRequirementCard from '../../components/BomRequirementCard';
-import BomModel from '../../../models/BomModel';
+import BomModel from '../../../../models/BomModel';
 import { useAccessibility } from '../../../utils/accessibility';
 
 interface RequirementsListProps {

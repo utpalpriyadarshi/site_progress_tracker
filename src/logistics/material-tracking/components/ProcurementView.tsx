@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { PurchaseSuggestion } from '../../../services/MaterialProcurementService';
-import MaterialModel from '../../../models/MaterialModel';
+import MaterialModel from '../../../../models/MaterialModel';
 import { ProcurementSuggestionCard } from './ProcurementSuggestionCard';
 
 interface ProcurementViewProps {

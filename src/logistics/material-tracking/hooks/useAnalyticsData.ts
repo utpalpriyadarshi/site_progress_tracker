@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import MaterialModel from '../../../models/MaterialModel';
+import MaterialModel from '../../../../models/MaterialModel';
 import MaterialProcurementService, {
   ConsumptionData,
 } from '../../../services/MaterialProcurementService';
