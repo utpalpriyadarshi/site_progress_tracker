@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { InvoiceFormData, Invoice } from '../hooks';
 import { PAYMENT_STATUSES, validateInvoiceForm } from '../utils';
+import { useAccessibility } from '../../../utils/accessibility';
 
 interface InvoiceFormDialogProps {
   visible: boolean;
@@ -20,6 +21,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
   editingInvoice,
   title,
 }) => {
+  const { announce } = useAccessibility();
   const [formInvoiceNumber, setFormInvoiceNumber] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formPoId, setFormPoId] = useState('');
@@ -29,6 +31,39 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
   const [formPaymentStatus, setFormPaymentStatus] = useState('pending');
   const [showInvoiceDatePicker, setShowInvoiceDatePicker] = useState(false);
   const [showPaymentDatePicker, setShowPaymentDatePicker] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Refs for focus management
+  const invoiceNumberRef = useRef<any>(null);
+  const poIdRef = useRef<any>(null);
+  const vendorNameRef = useRef<any>(null);
+  const amountRef = useRef<any>(null);
+
+  // Announce dialog open/close
+  useEffect(() => {
+    if (visible) {
+      const mode = editingInvoice ? 'Edit' : 'Create';
+      announce(`${mode} invoice dialog opened. ${editingInvoice ? 'Editing invoice ' + editingInvoice.invoiceNumber : 'Fill in the required fields to create a new invoice.'}`);
+      // Focus first field after dialog opens
+      setTimeout(() => {
+        invoiceNumberRef.current?.focus();
+      }, 300);
+    }
+  }, [visible, editingInvoice, announce]);
+
+  // Clear validation errors when form values change
+  const handleFieldChange = useCallback((field: string, setter: (value: string) => void) => {
+    return (value: string) => {
+      setter(value);
+      if (validationErrors[field]) {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    };
+  }, [validationErrors]);
 
   // Populate form when editing
   useEffect(() => {
@@ -57,6 +92,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
     setFormInvoiceDate(new Date());
     setFormPaymentDate(undefined);
     setFormPaymentStatus('pending');
+    setValidationErrors({});
   };
 
   const handleSubmit = async () => {
@@ -72,63 +108,161 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
 
     const validation = validateInvoiceForm(formData);
     if (!validation.isValid) {
+      // Set validation errors and announce them
+      const errors: Record<string, string> = {};
+      if (!formInvoiceNumber) errors.invoiceNumber = 'Invoice number is required';
+      if (!formPoId) errors.poId = 'Purchase order number is required';
+      if (!formVendorName) errors.vendorName = 'Vendor name is required';
+      if (!formAmount || isNaN(parseFloat(formAmount))) errors.amount = 'Valid amount is required';
+      setValidationErrors(errors);
+
+      // Announce validation error for screen readers
+      const errorCount = Object.keys(errors).length;
+      announce(`Validation failed. ${errorCount} ${errorCount === 1 ? 'error' : 'errors'} found. ${validation.error}`);
+
       Alert.alert('Validation Error', validation.error);
       return;
     }
 
     const success = await onSubmit(formData);
     if (success) {
+      announce(`Invoice ${editingInvoice ? 'updated' : 'created'} successfully`);
       resetForm();
       onDismiss();
+    } else {
+      announce('Failed to save invoice. Please try again.');
+    }
+  };
+
+  // Handle payment status change with announcement
+  const handlePaymentStatusChange = (status: string) => {
+    setFormPaymentStatus(status);
+    const statusLabel = PAYMENT_STATUSES.find(s => s.value === status)?.label || status;
+    announce(`Payment status changed to ${statusLabel}`);
+  };
+
+  // Handle date selection with announcement
+  const handleInvoiceDateChange = (event: any, selectedDate?: Date) => {
+    setShowInvoiceDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFormInvoiceDate(selectedDate);
+      announce(`Invoice date set to ${selectedDate.toLocaleDateString()}`);
+    }
+  };
+
+  const handlePaymentDateChange = (event: any, selectedDate?: Date) => {
+    setShowPaymentDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFormPaymentDate(selectedDate);
+      announce(`Payment date set to ${selectedDate.toLocaleDateString()}`);
     }
   };
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={onDismiss}>
-        <Dialog.Title>{title}</Dialog.Title>
+      <Dialog
+        visible={visible}
+        onDismiss={onDismiss}
+      >
+        <Dialog.Title accessibilityRole="header">{title}</Dialog.Title>
         <Dialog.ScrollArea>
-          <ScrollView style={styles.dialogContent}>
+          <ScrollView
+            style={styles.dialogContent}
+            accessibilityLabel="Invoice form"
+          >
             <TextInput
+              ref={invoiceNumberRef}
               label="Invoice Number *"
               value={formInvoiceNumber}
-              onChangeText={setFormInvoiceNumber}
+              onChangeText={handleFieldChange('invoiceNumber', setFormInvoiceNumber)}
               mode="outlined"
               style={styles.input}
+              error={!!validationErrors.invoiceNumber}
+              accessibilityLabel="Invoice Number, required field"
+              accessibilityHint="Enter the invoice number"
+              accessibilityState={{ disabled: false }}
+              returnKeyType="next"
+              onSubmitEditing={() => poIdRef.current?.focus()}
             />
+            {validationErrors.invoiceNumber && (
+              <Text style={styles.errorText} accessibilityRole="alert">
+                {validationErrors.invoiceNumber}
+              </Text>
+            )}
 
             <TextInput
+              ref={poIdRef}
               label="Purchase Order # *"
               value={formPoId}
-              onChangeText={setFormPoId}
+              onChangeText={handleFieldChange('poId', setFormPoId)}
               mode="outlined"
               style={styles.input}
+              error={!!validationErrors.poId}
+              accessibilityLabel="Purchase Order Number, required field"
+              accessibilityHint="Enter the associated purchase order number"
+              returnKeyType="next"
+              onSubmitEditing={() => vendorNameRef.current?.focus()}
             />
+            {validationErrors.poId && (
+              <Text style={styles.errorText} accessibilityRole="alert">
+                {validationErrors.poId}
+              </Text>
+            )}
 
             <TextInput
+              ref={vendorNameRef}
               label="Vendor Name *"
               value={formVendorName}
-              onChangeText={setFormVendorName}
+              onChangeText={handleFieldChange('vendorName', setFormVendorName)}
               mode="outlined"
               style={styles.input}
               placeholder="Enter vendor name"
+              error={!!validationErrors.vendorName}
+              accessibilityLabel="Vendor Name, required field"
+              accessibilityHint="Enter the name of the vendor"
+              returnKeyType="next"
+              onSubmitEditing={() => amountRef.current?.focus()}
             />
+            {validationErrors.vendorName && (
+              <Text style={styles.errorText} accessibilityRole="alert">
+                {validationErrors.vendorName}
+              </Text>
+            )}
 
             <TextInput
+              ref={amountRef}
               label="Amount *"
               value={formAmount}
-              onChangeText={setFormAmount}
+              onChangeText={handleFieldChange('amount', setFormAmount)}
               keyboardType="numeric"
               mode="outlined"
               style={styles.input}
               left={<TextInput.Affix text="$" />}
+              error={!!validationErrors.amount}
+              accessibilityLabel="Invoice Amount in dollars, required field"
+              accessibilityHint="Enter the invoice amount"
+              returnKeyType="done"
             />
+            {validationErrors.amount && (
+              <Text style={styles.errorText} accessibilityRole="alert">
+                {validationErrors.amount}
+              </Text>
+            )}
 
-            <Text style={styles.dialogLabel}>Invoice Date *</Text>
+            <Text
+              style={styles.dialogLabel}
+              accessibilityRole="text"
+              nativeID="invoiceDateLabel"
+            >
+              Invoice Date *
+            </Text>
             <Button
               mode="outlined"
               onPress={() => setShowInvoiceDatePicker(true)}
               style={styles.dateButton}
+              accessibilityLabel={`Invoice date: ${formInvoiceDate.toLocaleDateString()}`}
+              accessibilityHint="Tap to change the invoice date"
+              accessibilityRole="button"
             >
               {formInvoiceDate.toLocaleDateString()}
             </Button>
@@ -138,24 +272,33 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
                 value={formInvoiceDate}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedDate) => {
-                  setShowInvoiceDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) {
-                    setFormInvoiceDate(selectedDate);
-                  }
-                }}
+                onChange={handleInvoiceDateChange}
               />
             )}
 
-            <Text style={styles.dialogLabel}>Payment Status *</Text>
-            <View style={styles.statusButtons}>
+            <Text
+              style={styles.dialogLabel}
+              accessibilityRole="text"
+              nativeID="paymentStatusLabel"
+            >
+              Payment Status *
+            </Text>
+            <View
+              style={styles.statusButtons}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Payment status options"
+            >
               {PAYMENT_STATUSES.filter((s) => s.value !== 'overdue').map((status) => (
                 <Chip
                   key={status.value}
                   selected={formPaymentStatus === status.value}
-                  onPress={() => setFormPaymentStatus(status.value)}
+                  onPress={() => handlePaymentStatusChange(status.value)}
                   style={styles.statusButton}
                   selectedColor="#007AFF"
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: formPaymentStatus === status.value }}
+                  accessibilityLabel={`${status.label}${formPaymentStatus === status.value ? ', selected' : ''}`}
+                  accessibilityHint={`Select ${status.label} as payment status`}
                 >
                   {status.label}
                 </Chip>
@@ -164,11 +307,20 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
 
             {formPaymentStatus === 'paid' && (
               <>
-                <Text style={styles.dialogLabel}>Payment Date</Text>
+                <Text
+                  style={styles.dialogLabel}
+                  accessibilityRole="text"
+                  nativeID="paymentDateLabel"
+                >
+                  Payment Date
+                </Text>
                 <Button
                   mode="outlined"
                   onPress={() => setShowPaymentDatePicker(true)}
                   style={styles.dateButton}
+                  accessibilityLabel={`Payment date: ${formPaymentDate ? formPaymentDate.toLocaleDateString() : 'Not selected'}`}
+                  accessibilityHint="Tap to select the payment date"
+                  accessibilityRole="button"
                 >
                   {formPaymentDate ? formPaymentDate.toLocaleDateString() : 'Select Date'}
                 </Button>
@@ -178,12 +330,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
                     value={formPaymentDate || new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, selectedDate) => {
-                      setShowPaymentDatePicker(Platform.OS === 'ios');
-                      if (selectedDate) {
-                        setFormPaymentDate(selectedDate);
-                      }
-                    }}
+                    onChange={handlePaymentDateChange}
                   />
                 )}
               </>
@@ -191,8 +338,22 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={handleSubmit}>{editingInvoice ? 'Save' : 'Create'}</Button>
+          <Button
+            onPress={onDismiss}
+            accessibilityLabel="Cancel"
+            accessibilityHint="Dismiss the dialog without saving"
+            accessibilityRole="button"
+          >
+            Cancel
+          </Button>
+          <Button
+            onPress={handleSubmit}
+            accessibilityLabel={editingInvoice ? 'Save invoice' : 'Create invoice'}
+            accessibilityHint={editingInvoice ? 'Save changes to this invoice' : 'Create a new invoice with the entered details'}
+            accessibilityRole="button"
+          >
+            {editingInvoice ? 'Save' : 'Create'}
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>
@@ -225,5 +386,12 @@ const styles = StyleSheet.create({
   },
   statusButton: {
     marginRight: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#d32f2f',
+    marginTop: -12,
+    marginBottom: 12,
+    marginLeft: 4,
   },
 });
