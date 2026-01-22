@@ -35,3 +35,18 @@ export type {
   Transaction,
   TransactionType,
 } from './RecentTransactionsWidget';
+
+// Interactive Chart
+export {
+  InteractiveChart,
+  useInteractiveDataPoints,
+  chartOptionMenus,
+} from './InteractiveChart';
+export type {
+  InteractiveChartProps,
+  ChartDataPoint,
+  ChartRenderProps,
+  TooltipPosition,
+  TooltipRenderProps,
+  OptionsMenuItem,
+} from './InteractiveChart';
