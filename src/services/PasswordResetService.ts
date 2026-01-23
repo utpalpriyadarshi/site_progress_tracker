@@ -10,6 +10,8 @@ import { Q } from '@nozbe/watermelondb';
 import { supabase } from './supabase/supabaseClient';
 import { logger } from './LoggingService';
 import bcrypt from 'react-native-bcrypt';
+// @ts-ignore - react-native-randombytes has no type declarations
+import { randomBytes } from 'react-native-randombytes';
 
 export interface PasswordResetResult {
   success: boolean;
@@ -52,15 +54,18 @@ class PasswordResetService {
   }
 
   /**
-   * Generate a secure random token
+   * Generate a cryptographically secure random token
+   * Uses react-native-randombytes for secure random generation
    */
   private generateToken(): string {
-    // Generate a random UUID-like token
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    // Generate 32 bytes (256 bits) of cryptographically secure random data
+    const bytes = randomBytes(32);
+    // Convert to hex string for URL-safe token
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+      hex += bytes[i].toString(16).padStart(2, '0');
+    }
+    return hex;
   }
 
   /**
