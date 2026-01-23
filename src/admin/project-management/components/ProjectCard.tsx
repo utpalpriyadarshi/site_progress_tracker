@@ -13,7 +13,12 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete }) => {
   return (
-    <Card style={styles.card}>
+    <Card
+      style={styles.card}
+      accessible={true}
+      accessibilityLabel={`Project card for ${project.name}, ${project.client}, status ${project.status}`}
+      accessibilityRole="button"
+    >
       <Card.Content>
         <View style={styles.cardHeader}>
           <Title style={styles.projectName}>{project.name}</Title>
@@ -26,8 +31,21 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDel
         </Paragraph>
       </Card.Content>
       <Card.Actions>
-        <Button onPress={() => onEdit(project)}>Edit</Button>
-        <Button textColor="#F44336" onPress={() => onDelete(project)}>
+        <Button
+          onPress={() => onEdit(project)}
+          accessibilityLabel={`Edit ${project.name}`}
+          accessibilityHint="Opens form to edit project details"
+          accessibilityRole="button"
+        >
+          Edit
+        </Button>
+        <Button
+          textColor="#F44336"
+          onPress={() => onDelete(project)}
+          accessibilityLabel={`Delete ${project.name}`}
+          accessibilityHint="Permanently removes this project"
+          accessibilityRole="button"
+        >
           Delete
         </Button>
       </Card.Actions>

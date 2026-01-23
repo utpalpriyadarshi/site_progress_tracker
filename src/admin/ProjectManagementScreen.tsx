@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { FAB, Searchbar, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { FAB, Searchbar, ActivityIndicator } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
@@ -15,6 +15,7 @@ import {
   useProjectForm,
   useProjectDelete,
 } from './project-management/hooks';
+import { NoProjectsEmptyState } from './shared/components';
 
 const ProjectManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -78,13 +79,17 @@ const ProjectManagementScreen = () => {
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchbar}
+        accessibilityLabel="Search projects"
+        accessibilityHint="Type to search by project name, client, or status"
+        accessibilityRole="search"
       />
 
       <ScrollView style={styles.scrollView}>
         {filteredProjects.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Paragraph>No projects found</Paragraph>
-          </View>
+          <NoProjectsEmptyState
+            searchQuery={searchQuery}
+            onAddProject={openCreateModal}
+          />
         ) : (
           filteredProjects.map((project) => (
             <ProjectCard
@@ -97,7 +102,14 @@ const ProjectManagementScreen = () => {
         )}
       </ScrollView>
 
-      <FAB style={styles.fab} icon="plus" onPress={openCreateModal} />
+      <FAB
+        style={styles.fab}
+        icon="plus"
+        onPress={openCreateModal}
+        accessibilityLabel="Add new project"
+        accessibilityHint="Opens form to create a new project"
+        accessibilityRole="button"
+      />
 
       <ProjectFormDialog
         visible={modalVisible}
@@ -143,12 +155,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 50,
   },
   fab: {
     position: 'absolute',
