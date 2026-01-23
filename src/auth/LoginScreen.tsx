@@ -165,66 +165,74 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         </TouchableOpacity>
       </View>
 
-      <View style={styles.demoSection}>
-        <Text style={styles.demoTitle}>Demo Users</Text>
-        <View style={styles.demoButtons}>
-          <TouchableOpacity
-            style={[styles.demoButton, styles.adminButton]}
-            onPress={() => handleDefaultLogin('admin', 'Admin@2025')}
-          >
-            <Text style={styles.demoButtonText}>Admin</Text>
-          </TouchableOpacity>
+      {/* Demo section - only visible in development builds */}
+      {__DEV__ && (
+        <View style={styles.demoSection}>
+          <Text style={styles.demoTitle}>Demo Users (Dev Only)</Text>
+          <View style={styles.demoButtons}>
+            <TouchableOpacity
+              style={[styles.demoButton, styles.adminButton]}
+              onPress={() => handleDefaultLogin('admin', 'Admin@2025')}
+            >
+              <Text style={styles.demoButtonText}>Admin</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={() => handleDefaultLogin('supervisor', 'Supervisor@2025')}
-          >
-            <Text style={styles.demoButtonText}>Supervisor</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.demoButton}
+              onPress={() => handleDefaultLogin('supervisor', 'Supervisor@2025')}
+            >
+              <Text style={styles.demoButtonText}>Supervisor</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={() => handleDefaultLogin('manager', 'Manager@2025')}
-          >
-            <Text style={styles.demoButtonText}>Manager</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.demoButton}
+              onPress={() => handleDefaultLogin('manager', 'Manager@2025')}
+            >
+              <Text style={styles.demoButtonText}>Manager</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.demoButtons, styles.demoButtonsSecondRow]}>
+            <TouchableOpacity
+              style={styles.demoButton}
+              onPress={() => handleDefaultLogin('planner', 'Planner@2025')}
+            >
+              <Text style={styles.demoButtonText}>Planner</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.demoButton}
+              onPress={() => handleDefaultLogin('logistics', 'Logistics@2025')}
+            >
+              <Text style={styles.demoButtonText}>Logistics</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={[styles.demoButtons, styles.demoButtonsSecondRow]}>
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={() => handleDefaultLogin('planner', 'Planner@2025')}
-          >
-            <Text style={styles.demoButtonText}>Planner</Text>
-          </TouchableOpacity>
+      )}
 
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={() => handleDefaultLogin('logistics', 'Logistics@2025')}
-          >
-            <Text style={styles.demoButtonText}>Logistics</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <View style={styles.footer}>
-        <TouchableOpacity onPress={() => setShowCredentialsDialog(true)}>
-          <Text style={styles.linkText}>Show Default Credentials</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Credentials dialog - only visible in development builds */}
+      {__DEV__ && (
+        <>
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={() => setShowCredentialsDialog(true)}>
+              <Text style={styles.linkText}>Show Default Credentials</Text>
+            </TouchableOpacity>
+          </View>
 
-      <ConfirmDialog
-        visible={showCredentialsDialog}
-        title="Default Test Accounts"
-        message="• admin / Admin@2025
+          <ConfirmDialog
+            visible={showCredentialsDialog}
+            title="Default Test Accounts"
+            message="• admin / Admin@2025
 • supervisor / Supervisor@2025
 • manager / Manager@2025
 • planner / Planner@2025
 • logistics / Logistics@2025"
-        confirmText="OK"
-        onConfirm={() => setShowCredentialsDialog(false)}
-        onCancel={() => setShowCredentialsDialog(false)}
-        destructive={false}
-      />
+            confirmText="OK"
+            onConfirm={() => setShowCredentialsDialog(false)}
+            onCancel={() => setShowCredentialsDialog(false)}
+            destructive={false}
+          />
+        </>
+      )}
     </ScrollView>
   );
 };
