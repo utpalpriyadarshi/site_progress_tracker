@@ -383,6 +383,76 @@ class PasswordResetService {
       };
     }
   }
+
+  /**
+   * Reset password by admin - Direct password reset without token
+   * Used by admin role management screen
+   */
+  async resetPasswordByAdmin(
+    userId: string,
+    newPassword: string,
+    adminUserId: string
+  ): Promise<{ success: boolean; error?: string; details?: string }> {
+    try {
+      logger.info('Admin resetting password', {
+        component: 'PasswordResetService',
+        action: 'resetPasswordByAdmin',
+        userId,
+        adminUserId,
+      });
+
+      // Step 1: Find user in WatermelonDB
+      const user = await database.collections
+        .get('users')
+        .find(userId);
+
+      if (!user) {
+        logger.warn('User not found during admin password reset', {
+          component: 'PasswordResetService',
+          action: 'resetPasswordByAdmin',
+          userId,
+        });
+
+        return {
+          success: false,
+          error: 'User not found.',
+        };
+      }
+
+      // Step 2: Hash new password
+      const hashedPassword = await this.hashPassword(newPassword);
+
+      // Step 3: Update password in WatermelonDB
+      await database.write(async () => {
+        await user.update((u: any) => {
+          u.passwordHash = hashedPassword;
+        });
+      });
+
+      logger.info('Admin password reset completed successfully', {
+        component: 'PasswordResetService',
+        action: 'resetPasswordByAdmin',
+        userId,
+        adminUserId,
+      });
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      logger.error('Error in admin password reset', error as Error, {
+        component: 'PasswordResetService',
+        action: 'resetPasswordByAdmin',
+        userId,
+      });
+
+      return {
+        success: false,
+        error: 'An error occurred while resetting the password.',
+        details: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
 }
 
 export default PasswordResetService.getInstance();

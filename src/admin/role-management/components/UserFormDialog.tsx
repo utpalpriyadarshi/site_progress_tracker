@@ -62,6 +62,8 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             style={styles.input}
             mode="outlined"
             autoCapitalize="none"
+            accessibilityLabel="Username"
+            accessibilityHint="Enter a unique username for the user"
           />
 
           <TextInput
@@ -72,6 +74,8 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             mode="outlined"
             secureTextEntry
             autoCapitalize="none"
+            accessibilityLabel={editingUser ? 'Password, leave blank to keep current' : 'Password'}
+            accessibilityHint="Enter a secure password"
           />
 
           <TextInput
@@ -80,6 +84,8 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             onChangeText={(text) => onFormDataChange({ fullName: text })}
             style={styles.input}
             mode="outlined"
+            accessibilityLabel="Full Name"
+            accessibilityHint="Enter the user's full name"
           />
 
           <TextInput
@@ -90,6 +96,8 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             mode="outlined"
             keyboardType="email-address"
             autoCapitalize="none"
+            accessibilityLabel="Email, optional"
+            accessibilityHint="Enter the user's email address"
           />
 
           <TextInput
@@ -99,6 +107,8 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             style={styles.input}
             mode="outlined"
             keyboardType="phone-pad"
+            accessibilityLabel="Phone, optional"
+            accessibilityHint="Enter the user's phone number"
           />
 
           <Paragraph style={styles.label}>Role</Paragraph>
@@ -190,8 +200,21 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
           </View>
 
           <View style={styles.modalActions}>
-            <Button onPress={onDismiss}>Cancel</Button>
-            <Button mode="contained" onPress={onSave}>
+            <Button
+              onPress={onDismiss}
+              accessibilityLabel="Cancel"
+              accessibilityHint="Closes the form without saving"
+              accessibilityRole="button"
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={onSave}
+              accessibilityLabel={editingUser ? 'Update user' : 'Create user'}
+              accessibilityHint={editingUser ? 'Saves changes to the user' : 'Creates a new user'}
+              accessibilityRole="button"
+            >
               {editingUser ? 'Update' : 'Create'}
             </Button>
           </View>

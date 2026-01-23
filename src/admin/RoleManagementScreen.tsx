@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { FAB, Searchbar, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { FAB, Searchbar, ActivityIndicator } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
@@ -16,6 +16,7 @@ import {
   useUserForm,
   usePasswordReset,
 } from './role-management/hooks';
+import { NoUsersEmptyState } from './shared/components';
 
 const RoleManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -90,13 +91,17 @@ const RoleManagementScreen = () => {
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchbar}
+        accessibilityLabel="Search users"
+        accessibilityHint="Type to search by name, username, or email"
+        accessibilityRole="search"
       />
 
       <ScrollView style={styles.scrollView}>
         {filteredUsers.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Paragraph>No users found</Paragraph>
-          </View>
+          <NoUsersEmptyState
+            searchQuery={searchQuery}
+            onAddUser={openCreateModal}
+          />
         ) : (
           filteredUsers.map((user) => (
             <UserCard
@@ -113,7 +118,14 @@ const RoleManagementScreen = () => {
         )}
       </ScrollView>
 
-      <FAB style={styles.fab} icon="plus" onPress={openCreateModal} />
+      <FAB
+        style={styles.fab}
+        icon="plus"
+        onPress={openCreateModal}
+        accessibilityLabel="Add new user"
+        accessibilityHint="Opens form to create a new user"
+        accessibilityRole="button"
+      />
 
       <UserFormDialog
         visible={modalVisible}
@@ -176,12 +188,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 50,
   },
   fab: {
     position: 'absolute',

@@ -32,7 +32,12 @@ export const UserCard: React.FC<UserCardProps> = ({
   const showProject = roleRequiresProject(roleName);
 
   return (
-    <Card style={styles.card}>
+    <Card
+      style={styles.card}
+      accessible={true}
+      accessibilityLabel={`User card for ${user.fullName}, ${roleName}, ${user.isActive ? 'active' : 'inactive'}`}
+      accessibilityRole="button"
+    >
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.userInfo}>
@@ -56,10 +61,22 @@ export const UserCard: React.FC<UserCardProps> = ({
 
       <Card.Actions style={styles.cardActions}>
         <View style={styles.buttonRow}>
-          <Button onPress={() => onToggleStatus(user)} style={styles.actionButton}>
+          <Button
+            onPress={() => onToggleStatus(user)}
+            style={styles.actionButton}
+            accessibilityLabel={user.isActive ? `Deactivate ${user.fullName}` : `Activate ${user.fullName}`}
+            accessibilityHint={user.isActive ? 'Deactivates this user account' : 'Activates this user account'}
+            accessibilityRole="button"
+          >
             {user.isActive ? 'Deactivate' : 'Activate'}
           </Button>
-          <Button onPress={() => onEdit(user)} style={styles.actionButton}>
+          <Button
+            onPress={() => onEdit(user)}
+            style={styles.actionButton}
+            accessibilityLabel={`Edit ${user.fullName}`}
+            accessibilityHint="Opens form to edit user details"
+            accessibilityRole="button"
+          >
             Edit
           </Button>
         </View>
@@ -69,6 +86,9 @@ export const UserCard: React.FC<UserCardProps> = ({
             onPress={() => onResetPassword(user)}
             icon="lock-reset"
             style={styles.actionButton}
+            accessibilityLabel={`Reset password for ${user.fullName}`}
+            accessibilityHint="Opens dialog to set a new password"
+            accessibilityRole="button"
           >
             Reset Password
           </Button>
@@ -76,6 +96,9 @@ export const UserCard: React.FC<UserCardProps> = ({
             textColor="#F44336"
             onPress={() => onDelete(user)}
             style={styles.actionButton}
+            accessibilityLabel={`Delete ${user.fullName}`}
+            accessibilityHint="Permanently removes this user"
+            accessibilityRole="button"
           >
             Delete
           </Button>

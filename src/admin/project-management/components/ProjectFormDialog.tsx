@@ -56,6 +56,8 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             onChangeText={(text) => onFormDataChange({ name: text })}
             style={styles.input}
             mode="outlined"
+            accessibilityLabel="Project Name"
+            accessibilityHint="Enter the name of the project"
           />
 
           <TextInput
@@ -64,6 +66,8 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             onChangeText={(text) => onFormDataChange({ client: text })}
             style={styles.input}
             mode="outlined"
+            accessibilityLabel="Client"
+            accessibilityHint="Enter the client name"
           />
 
           <TextInput
@@ -73,6 +77,8 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             style={styles.input}
             mode="outlined"
             keyboardType="numeric"
+            accessibilityLabel="Budget"
+            accessibilityHint="Enter the project budget amount"
           />
 
           <DatePickerField
@@ -106,8 +112,21 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </View>
 
           <View style={styles.modalActions}>
-            <Button onPress={onDismiss}>Cancel</Button>
-            <Button mode="contained" onPress={onSave}>
+            <Button
+              onPress={onDismiss}
+              accessibilityLabel="Cancel"
+              accessibilityHint="Closes the form without saving"
+              accessibilityRole="button"
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={onSave}
+              accessibilityLabel={editingProject ? 'Update project' : 'Create project'}
+              accessibilityHint={editingProject ? 'Saves changes to the project' : 'Creates a new project'}
+              accessibilityRole="button"
+            >
               {editingProject ? 'Update' : 'Create'}
             </Button>
           </View>

@@ -1,27 +1,44 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useAdminContext } from './context/AdminContext';
 import { useNavigation } from '@react-navigation/native';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import {
   DashboardHeader,
-  StatCard,
   RoleSwitcherCard,
   ManagementCard,
   PasswordMigrationCard,
   CategoryMigrationCard,
   DatabaseResetCard,
 } from './dashboard/components';
-import { useAdminDashboard } from './dashboard/hooks';
+import {
+  SystemHealthWidget,
+  UserActivityWidget,
+  SyncStatusWidget,
+  QuickStatsWidget,
+} from './dashboard/widgets';
+import { useAdminDashboard, useWidgetData } from './dashboard/hooks';
 
+/**
+ * AdminDashboardScreen Component
+ *
+ * Main dashboard for Admin role with:
+ * - System health monitoring widget
+ * - User activity metrics widget
+ * - Sync status widget
+ * - Quick stats with navigation
+ * - Role switcher
+ * - Management navigation cards
+ * - Migration and maintenance tools
+ *
+ * Phase 3 - Task 3.1: Dashboard Redesign
+ */
 const AdminDashboardScreen = () => {
   const { selectedRole, setSelectedRole } = useAdminContext();
   const navigation = useNavigation();
 
-  // Consolidated dashboard hook (replaces 5 individual hooks)
+  // Existing dashboard hook for role switching and migrations
   const {
-    stats,
-    reloadStats,
     menuVisible,
     setMenuVisible,
     handleRoleSwitch,
@@ -33,17 +50,39 @@ const AdminDashboardScreen = () => {
     handleDatabaseReset,
   } = useAdminDashboard(selectedRole, setSelectedRole);
 
+  // New widget data hook
+  const {
+    loading,
+    error,
+    healthStatus,
+    userActivity,
+    syncStatus,
+    isConnected,
+    quickStats,
+    refresh,
+    handleManualSync,
+  } = useWidgetData();
+
   // Navigation handlers
   const handleManageProjects = () => {
-    navigation.navigate('ProjectManagement' as any);
+    navigation.navigate('ProjectManagement' as never);
   };
 
   const handleManageUsers = () => {
-    navigation.navigate('RoleManagement' as any);
+    navigation.navigate('RoleManagement' as never);
+  };
+
+  const handleSyncMonitoring = () => {
+    navigation.navigate('SyncMonitoring' as never);
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={refresh} />
+      }
+    >
       <DashboardHeader />
 
       <RoleSwitcherCard
@@ -53,16 +92,40 @@ const AdminDashboardScreen = () => {
         onRoleSelect={handleRoleSwitch}
       />
 
-      {/* Statistics Cards */}
-      <View style={styles.statsContainer}>
-        <StatCard value={stats.totalProjects} label="Total Projects" />
-        <StatCard value={stats.totalSites} label="Total Sites" />
-      </View>
+      {/* System Health Widget */}
+      <SystemHealthWidget
+        health={healthStatus}
+        loading={loading}
+        error={error}
+        onPress={handleSyncMonitoring}
+      />
 
-      <View style={styles.statsContainer}>
-        <StatCard value={stats.totalUsers} label="Total Users" />
-        <StatCard value={stats.totalItems} label="Total Items" />
-      </View>
+      {/* Quick Stats Widget */}
+      <QuickStatsWidget
+        stats={quickStats}
+        loading={loading}
+        error={error}
+        onProjectsPress={handleManageProjects}
+        onUsersPress={handleManageUsers}
+      />
+
+      {/* User Activity Widget */}
+      <UserActivityWidget
+        data={userActivity}
+        loading={loading}
+        error={error}
+        onPress={handleManageUsers}
+      />
+
+      {/* Sync Status Widget */}
+      <SyncStatusWidget
+        data={syncStatus}
+        isConnected={isConnected}
+        loading={loading}
+        error={error}
+        onPress={handleSyncMonitoring}
+        onSyncPress={handleManualSync}
+      />
 
       {/* Management Cards */}
       <ManagementCard
@@ -92,6 +155,9 @@ const AdminDashboardScreen = () => {
       />
 
       <DatabaseResetCard onReset={handleDatabaseReset} />
+
+      {/* Bottom padding */}
+      <View style={styles.bottomPadding} />
     </ScrollView>
   );
 };
@@ -101,11 +167,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    marginBottom: 10,
+  bottomPadding: {
+    height: 24,
   },
 });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Menu, Button } from 'react-native-paper';
-import { AdminRole } from '../../../context/AdminContext';
+import { AdminRole } from '../../context/AdminContext';
 import { AVAILABLE_ROLES } from '../utils';
 
 interface RoleSwitcherCardProps {

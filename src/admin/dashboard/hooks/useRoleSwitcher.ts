@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { AdminRole } from '../../../context/AdminContext';
+import { AdminRole } from '../../context/AdminContext';
 import { ROLE_NAVIGATION_MAP } from '../utils';
 
 export const useRoleSwitcher = (
