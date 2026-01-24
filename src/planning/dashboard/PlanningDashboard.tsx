@@ -209,18 +209,6 @@ const PlanningDashboardScreen: React.FC = () => {
       accessible
       accessibilityLabel="Planning Dashboard"
     >
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <Text variant="titleLarge" style={styles.headerTitle}>
-          Planning Dashboard
-        </Text>
-        {state.lastUpdated && (
-          <Text variant="labelSmall" style={styles.lastUpdated}>
-            Updated {formatTimeAgo(state.lastUpdated)}
-          </Text>
-        )}
-      </View>
-
       {/* Scrollable Content */}
       <ScrollView
         style={styles.scrollView}
@@ -260,19 +248,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 8,
-  },
-  headerTitle: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  lastUpdated: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
   },
   scrollView: {
     flex: 1,

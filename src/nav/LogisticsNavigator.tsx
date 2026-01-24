@@ -171,11 +171,7 @@ const LogisticsTabs = memo(() => {
 
 // ==================== Custom Drawer Content ====================
 
-interface CustomDrawerContentProps extends DrawerContentComponentProps {
-  onLogout: () => void;
-}
-
-const CustomDrawerContent = memo<CustomDrawerContentProps>(({ navigation, state, onLogout }) => {
+const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, state }) => {
   const { isOffline, selectedProject } = useLogisticsContext();
   const projectName = selectedProject ? (selectedProject as any).name : 'No Project Selected';
 
@@ -260,17 +256,6 @@ const CustomDrawerContent = memo<CustomDrawerContentProps>(({ navigation, state,
           accessibilityLabel="Navigate to RFQ Management"
         />
       </View>
-
-      {/* Logout */}
-      <View style={styles.logoutSection}>
-        <DrawerItem
-          label="Logout"
-          icon={({ color, size }) => <Icon name="logout" color="#FF3B30" size={size} />}
-          onPress={onLogout}
-          labelStyle={styles.logoutLabel}
-          accessibilityLabel="Logout from application"
-        />
-      </View>
     </DrawerContentScrollView>
   );
 });
@@ -294,20 +279,28 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
     );
   }, [logout, parentNavigation]);
 
+  // Logout button component for header
+  const LogoutButton = useCallback(() => (
+    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+      <Text style={styles.headerLogoutText}>Logout</Text>
+    </TouchableOpacity>
+  ), [handleLogout]);
+
   return (
     <Drawer.Navigator
       screenOptions={{
         headerShown: true,
         headerStyle: styles.header,
         headerTintColor: '#FFF',
-        headerTitleStyle: styles.headerTitle,
+        headerTitleStyle: styles.headerTitleStyle,
+        headerRight: LogoutButton,
         drawerType: 'front',
         swipeEdgeWidth: 50,
         lazy: true,
         drawerStyle: styles.drawer,
       }}
       drawerContent={(props) => (
-        <CustomDrawerContent {...props} onLogout={handleLogout} />
+        <CustomDrawerContent {...props} />
       )}
     >
       <Drawer.Screen
@@ -460,19 +453,21 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     letterSpacing: 0.5,
   },
-  logoutSection: {
-    marginTop: 'auto',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  logoutLabel: {
-    color: '#FF3B30',
-    fontWeight: '500',
-  },
   header: {
     backgroundColor: '#007AFF',
+  },
+  headerTitleStyle: {
+    fontWeight: '700',
+  },
+  headerLogoutButton: {
+    marginRight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerLogoutText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
