@@ -21,6 +21,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
+import { useAuth } from '../../auth/AuthContext';
 import { dashboardReducer, initialState } from './dashboardReducer';
 
 // Widgets
@@ -50,7 +51,16 @@ const PlanningDashboardScreen: React.FC = () => {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const { announce } = useAccessibility();
+  const { user } = useAuth();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
+
+  // Format current date like Supervisor dashboard
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   // Widget data hooks
   const milestones = useUpcomingMilestonesData();
@@ -224,6 +234,16 @@ const PlanningDashboardScreen: React.FC = () => {
         accessible
         accessibilityLabel="Dashboard widgets, pull to refresh"
       >
+        {/* Welcome Header - Similar to Supervisor Dashboard */}
+        <View style={styles.header}>
+          <Text variant="bodyLarge" style={styles.dateText}>
+            {currentDate}
+          </Text>
+          <Text variant="headlineSmall" style={styles.greeting}>
+            Welcome, {user?.fullName || user?.username || 'Planner'}!
+          </Text>
+        </View>
+
         {renderWidgets()}
       </ScrollView>
     </View>
@@ -254,6 +274,20 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingVertical: 8,
+  },
+  header: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    marginBottom: 8,
+  },
+  dateText: {
+    color: '#666',
+  },
+  greeting: {
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   row: {
     flexDirection: 'row',
