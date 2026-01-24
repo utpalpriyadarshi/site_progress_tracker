@@ -19,6 +19,7 @@ import {
   Switch,
   Button,
 } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 import { database } from '../../../../models/database';
 import { logger } from '../../../services/LoggingService';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -52,6 +53,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   onCriticalPathToggle,
   onClearSearch,
 }) => {
+  const navigation = useNavigation<any>();
   const criticalPathCount = items.filter((item) => item.isCriticalPath).length;
 
   const handleToggleCriticalPath = async (itemId: string, currentValue: boolean) => {
@@ -200,7 +202,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         message="Start planning by creating your first schedule item"
         actionText="Create Schedule Item"
         onAction={() => {
-          // Navigate to item creation
+          navigation.navigate('CreateItem');
         }}
       />
     );
