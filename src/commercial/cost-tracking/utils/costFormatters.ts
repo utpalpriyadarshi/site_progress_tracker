@@ -1,5 +1,8 @@
+import { formatCurrencySimple } from '../../../utils/currencyFormatter';
+
+// Re-export centralized currency formatter
 export const formatCurrency = (amount: number): string => {
-  return `$${amount.toLocaleString()}`;
+  return formatCurrencySimple(amount);
 };
 
 export const formatDate = (timestamp: number): string => {

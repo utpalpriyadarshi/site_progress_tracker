@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import { TrendIndicator } from './TrendIndicator';
+import { formatCurrencySmart, getCurrencySymbol } from '../../../utils/currencyFormatter';
 
 /**
  * BudgetHealthWidget Component
@@ -104,28 +105,24 @@ export const BudgetHealthWidget: React.FC<BudgetHealthWidgetProps> = ({
 
   const isEmpty = totalBudget === 0;
 
+  const currencySymbol = getCurrencySymbol();
+
   const accessibilityLabel = useMemo(() => {
     if (isEmpty) return 'Budget health widget, no budget data available';
 
     const parts = [
       `Budget health: ${statusLabel}`,
       `${percentageUsed.toFixed(1)} percent used`,
-      `$${totalSpent.toLocaleString()} spent of $${totalBudget.toLocaleString()} total`,
+      `${currencySymbol}${totalSpent.toLocaleString()} spent of ${currencySymbol}${totalBudget.toLocaleString()} total`,
       remaining >= 0
-        ? `$${remaining.toLocaleString()} remaining`
-        : `$${Math.abs(remaining).toLocaleString()} over budget`,
+        ? `${currencySymbol}${remaining.toLocaleString()} remaining`
+        : `${currencySymbol}${Math.abs(remaining).toLocaleString()} over budget`,
     ];
     return parts.join('. ');
-  }, [isEmpty, statusLabel, percentageUsed, totalSpent, totalBudget, remaining]);
+  }, [isEmpty, statusLabel, percentageUsed, totalSpent, totalBudget, remaining, currencySymbol]);
 
-  const formatCurrency = (value: number): string => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
-    }
-    return `$${value.toLocaleString()}`;
-  };
+  // Use centralized currency formatter
+  const formatCurrency = formatCurrencySmart;
 
   // Calculate progress for circular indicator (max 100%)
   const progressPercent = Math.min(percentageUsed, 100);

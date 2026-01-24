@@ -5,6 +5,12 @@ import {
   HEALTH_SCORE_COLORS,
   TRANSFER_STATUS_COLORS
 } from './inventoryConstants';
+import {
+  formatCurrency,
+  formatCurrencyK,
+  formatCurrencyM,
+  formatCurrencySmart,
+} from '../../../utils/currencyFormatter';
 
 /**
  * Inventory Management Formatters
@@ -16,46 +22,9 @@ import {
  */
 
 // ============================================================================
-// CURRENCY FORMATTING
+// CURRENCY FORMATTING - Re-exported from centralized utility
 // ============================================================================
-
-/**
- * Format currency with rupee symbol
- * @example formatCurrency(1234567) => "₹1,234,567"
- */
-export const formatCurrency = (value: number): string => {
-  return `₹${value.toLocaleString('en-IN')}`;
-};
-
-/**
- * Format currency with K suffix for thousands
- * @example formatCurrencyK(45000) => "₹45K"
- */
-export const formatCurrencyK = (value: number): string => {
-  return `₹${(value / 1000).toFixed(0)}K`;
-};
-
-/**
- * Format currency with M suffix for millions
- * @example formatCurrencyM(1500000) => "₹1.5M"
- */
-export const formatCurrencyM = (value: number, decimals: number = 1): string => {
-  return `₹${(value / 1000000).toFixed(decimals)}M`;
-};
-
-/**
- * Smart currency formatter - automatically chooses K or M suffix
- * @example formatCurrencySmart(500000) => "₹500K"
- * @example formatCurrencySmart(5000000) => "₹5.0M"
- */
-export const formatCurrencySmart = (value: number): string => {
-  if (value >= 1000000) {
-    return formatCurrencyM(value);
-  } else if (value >= 1000) {
-    return formatCurrencyK(value);
-  }
-  return formatCurrency(value);
-};
+export { formatCurrency, formatCurrencyK, formatCurrencyM, formatCurrencySmart };
 
 // ============================================================================
 // QUANTITY FORMATTING
