@@ -20,12 +20,14 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
+import { usePlanningContext } from './context';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -548,13 +550,35 @@ const SiteManagementScreenComponent = ({
   );
 };
 
-// Enhance component with WatermelonDB observables
-const enhance = withObservables([], () => ({
-  sites: database.collections.get('sites').query(), // Load ALL sites for planner
+// Enhance component with WatermelonDB observables - filter by assigned project
+const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
+  sites: database.collections
+    .get('sites')
+    .query(Q.where('project_id', projectId)), // Only show sites for assigned project
   projects: database.collections.get('projects').query(),
 }));
 
-const SiteManagementScreen = enhance(SiteManagementScreenComponent as any);
+const EnhancedSiteManagementScreen = enhance(SiteManagementScreenComponent as any);
+
+// Wrapper component that provides projectId from context
+const SiteManagementScreen = () => {
+  const { projectId } = usePlanningContext();
+
+  if (!projectId) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+        <EmptyState
+          icon="folder-alert-outline"
+          title="No Project Assigned"
+          message="Please contact your administrator to assign a project to your account."
+          variant="large"
+        />
+      </View>
+    );
+  }
+
+  return <EnhancedSiteManagementScreen projectId={projectId} />;
+};
 
 const styles = StyleSheet.create({
   container: {
