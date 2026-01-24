@@ -25,7 +25,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, TouchableOpacity, View, StyleSheet, InteractionManager } from 'react-native';
+import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -88,22 +88,8 @@ const Stack = createNativeStackNavigator<PlanningStackParamList>();
 
 // ==================== Custom Drawer Content ====================
 
-interface CustomDrawerContentProps extends DrawerContentComponentProps {
-  onLogout: () => void;
-}
-
-const CustomDrawerContent: React.FC<CustomDrawerContentProps> = memo(({ onLogout, ...props }) => {
+const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) => {
   const theme = useTheme();
-
-  // Memoize logout handler to prevent unnecessary re-renders
-  const handleLogoutPress = useCallback(() => {
-    // Close drawer first for smoother transition
-    props.navigation.closeDrawer();
-    // Defer logout to after animations complete
-    InteractionManager.runAfterInteractions(() => {
-      onLogout();
-    });
-  }, [onLogout, props.navigation]);
 
   return (
     <DrawerContentScrollView {...props}>
@@ -118,21 +104,6 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = memo(({ onLogout
 
       {/* Navigation Items */}
       <DrawerItemList {...props} />
-
-      <Divider style={styles.divider} />
-
-      {/* Logout */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleLogoutPress}
-        accessible
-        accessibilityRole="button"
-        accessibilityLabel="Logout"
-        activeOpacity={0.7}
-      >
-        <Icon name="logout" size={22} color="#F44336" />
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
     </DrawerContentScrollView>
   );
 });
@@ -238,6 +209,13 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
     );
   }, [logout, parentNavigation]);
 
+  // Logout button component for header
+  const LogoutButton = useCallback(() => (
+    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+      <Text style={styles.headerLogoutText}>Logout</Text>
+    </TouchableOpacity>
+  ), [handleLogout]);
+
   // Memoize drawer icon getter
   const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
     let iconName = 'help-circle';
@@ -268,8 +246,8 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
 
   // Memoize drawer content renderer
   const renderDrawerContent = useCallback(
-    (props: DrawerContentComponentProps) => <CustomDrawerContent {...props} onLogout={handleLogout} />,
-    [handleLogout]
+    (props: DrawerContentComponentProps) => <CustomDrawerContent {...props} />,
+    []
   );
 
   // Memoize screen options for better performance
@@ -285,11 +263,12 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
+    headerRight: LogoutButton,
     // Performance optimizations
     lazy: true, // Lazy load drawer screens
     swipeEdgeWidth: 50, // Reduce edge detection area
     drawerType: 'front' as const, // Better performance than 'slide'
-  }), [theme.colors.primary, getDrawerIcon]);
+  }), [theme.colors.primary, getDrawerIcon, LogoutButton]);
 
   return (
     <Drawer.Navigator
@@ -395,20 +374,15 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  divider: {
-    marginVertical: 8,
+  headerLogoutButton: {
+    marginRight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    marginTop: 8,
-  },
-  logoutText: {
-    marginLeft: 32,
-    fontSize: 14,
+  headerLogoutText: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '500',
-    color: '#F44336',
   },
 });
 
