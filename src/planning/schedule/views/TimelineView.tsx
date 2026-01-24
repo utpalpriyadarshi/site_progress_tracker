@@ -211,31 +211,19 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       {/* Header Card with Filters */}
       <Card style={styles.headerCard}>
         <Card.Content>
-          {/* Project Selector */}
-          <Text style={styles.label}>Project:</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.chipContainer}
-            accessible
-            accessibilityRole="menubar"
-            accessibilityLabel="Project selector"
-          >
-            {projects.map((project) => (
-              <Chip
-                key={project.id}
-                mode={filters.projectId === project.id ? 'flat' : 'outlined'}
-                selected={filters.projectId === project.id}
-                onPress={() => onProjectChange(project.id)}
-                style={styles.chip}
-                accessible
-                accessibilityRole="menuitem"
-                accessibilityState={{ selected: filters.projectId === project.id }}
-              >
-                {project.name}
-              </Chip>
-            ))}
-          </ScrollView>
+          {/* Project Display (read-only - assigned by Admin) */}
+          <View style={styles.projectHeader}>
+            <Text style={styles.projectLabel}>Project:</Text>
+            <Chip
+              mode="flat"
+              selected
+              icon="folder-outline"
+              style={styles.projectChip}
+              textStyle={styles.projectChipText}
+            >
+              {projects.find((p) => p.id === filters.projectId)?.name || 'No Project Assigned'}
+            </Chip>
+          </View>
 
           {/* Site Selector */}
           <Text style={styles.label}>Site:</Text>
@@ -336,6 +324,23 @@ const styles = StyleSheet.create({
   headerCard: {
     margin: 16,
     marginBottom: 8,
+  },
+  projectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  projectLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  projectChip: {
+    backgroundColor: '#E3F2FD',
+  },
+  projectChipText: {
+    color: '#1976D2',
+    fontWeight: '600',
   },
   label: {
     fontSize: 14,
