@@ -1,4 +1,3 @@
-export * from './DashboardHeader';
 export * from './StatCard';
 export * from './RoleSwitcherCard';
 export * from './ManagementCard';

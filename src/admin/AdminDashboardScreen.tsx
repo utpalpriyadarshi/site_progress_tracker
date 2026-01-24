@@ -4,7 +4,6 @@ import { useAdminContext } from './context/AdminContext';
 import { useNavigation } from '@react-navigation/native';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import {
-  DashboardHeader,
   RoleSwitcherCard,
   ManagementCard,
   PasswordMigrationCard,
@@ -83,8 +82,6 @@ const AdminDashboardScreen = () => {
         <RefreshControl refreshing={loading} onRefresh={refresh} />
       }
     >
-      <DashboardHeader />
-
       <RoleSwitcherCard
         selectedRole={selectedRole}
         menuVisible={menuVisible}
