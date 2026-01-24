@@ -299,7 +299,7 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
         options={{
           title: 'WBS',
           drawerLabel: 'Work Breakdown',
-          headerTitle: 'Work Breakdown Structure',
+          headerTitle: 'WBS',
         }}
       />
       <Drawer.Screen
