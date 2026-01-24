@@ -4,17 +4,10 @@
  * Utility functions for formatting data in Material Tracking screen
  */
 
-/**
- * Format currency value
- */
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
+import { formatCurrency } from '../../../utils/currencyFormatter';
+
+// Re-export centralized currency formatter
+export { formatCurrency };
 
 /**
  * Format quantity with unit

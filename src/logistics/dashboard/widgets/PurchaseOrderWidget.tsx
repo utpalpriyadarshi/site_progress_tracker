@@ -20,16 +20,13 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { usePurchaseOrderData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { formatCurrency as formatCurrencyCentral } from '../../../utils/currencyFormatter';
 
 // ==================== Helper ====================
 
+// Use centralized currency formatter
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrencyCentral(value);
 }
 
 function getStatusType(status: string): 'pending' | 'in_transit' | 'delivered' | 'default' {

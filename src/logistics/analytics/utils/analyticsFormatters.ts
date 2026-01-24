@@ -5,34 +5,40 @@
  * Phase 1: Utils and Constants
  */
 
+import {
+  formatCurrencyPrecise,
+  formatCurrencyK as formatCurrencyKCentral,
+  formatCurrencyM as formatCurrencyMCentral,
+} from '../../../utils/currencyFormatter';
+
 /**
  * Format currency value
  * @param value - The numeric value to format
- * @param currency - Currency symbol (default: '$')
+ * @param _currency - Deprecated: Currency symbol (ignored, uses centralized config)
  * @param decimals - Number of decimal places (default: 2)
  */
-export const formatCurrency = (value: number, currency: string = '$', decimals: number = 2): string => {
-  return `${currency}${value.toFixed(decimals)}`;
+export const formatCurrency = (value: number, _currency: string = '₹', decimals: number = 2): string => {
+  return formatCurrencyPrecise(value);
 };
 
 /**
  * Format currency in thousands (K)
  * @param value - The numeric value to format
- * @param currency - Currency symbol (default: '$')
+ * @param _currency - Deprecated: Currency symbol (ignored, uses centralized config)
  * @param decimals - Number of decimal places (default: 1)
  */
-export const formatCurrencyK = (value: number, currency: string = '$', decimals: number = 1): string => {
-  return `${currency}${(value / 1000).toFixed(decimals)}K`;
+export const formatCurrencyK = (value: number, _currency: string = '₹', decimals: number = 1): string => {
+  return formatCurrencyKCentral(value, decimals);
 };
 
 /**
  * Format currency in millions (M)
  * @param value - The numeric value to format
- * @param currency - Currency symbol (default: '$')
+ * @param _currency - Deprecated: Currency symbol (ignored, uses centralized config)
  * @param decimals - Number of decimal places (default: 2)
  */
-export const formatCurrencyM = (value: number, currency: string = '$', decimals: number = 2): string => {
-  return `${currency}${(value / 1000000).toFixed(decimals)}M`;
+export const formatCurrencyM = (value: number, _currency: string = '₹', decimals: number = 2): string => {
+  return formatCurrencyMCentral(value, decimals);
 };
 
 /**

@@ -4,21 +4,17 @@
  * Helper functions for formatting data in the Manager Dashboard
  */
 
+import { formatCurrency } from '../../../utils/currencyFormatter';
+
+// Re-export centralized currency formatter
+export { formatCurrency };
+
 export const formatDate = (timestamp: number): string => {
   return new Date(timestamp).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
-};
-
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 };
 
 export const getHealthStatus = (

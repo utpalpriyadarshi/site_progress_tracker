@@ -3,11 +3,13 @@
  * Utility functions for formatting BOM-related data
  */
 
+import { formatCurrencySimple } from '../../../utils/currencyFormatter';
+
 /**
- * Format number as Indian currency
+ * Format number as currency
  */
 export const formatCurrency = (amount: number): string => {
-  return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  return formatCurrencySimple(amount);
 };
 
 /**

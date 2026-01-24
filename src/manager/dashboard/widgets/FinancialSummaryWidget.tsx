@@ -15,18 +15,12 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { useFinancialData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 // ==================== Helpers ====================
 
-const formatCurrency = (value: number): string => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(2)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
-};
+// Use centralized currency formatter
+const formatCurrency = formatCurrencySmart;
 
 // ==================== Component ====================
 
