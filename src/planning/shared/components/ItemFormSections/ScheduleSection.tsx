@@ -11,7 +11,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, TextInput, HelperText } from 'react-native-paper';
-import DatePickerField from '../../components/DatePickerField';
+import DatePickerField from '../../../components/DatePickerField';
 
 interface ScheduleSectionProps {
   startDate: Date;
