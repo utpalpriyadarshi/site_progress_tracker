@@ -16,6 +16,7 @@ import { database } from '../../../models/database';
 import ProjectModel from '../../../models/ProjectModel';
 import SiteModel from '../../../models/SiteModel';
 import { useAuth } from '../../auth/AuthContext';
+import { logger } from '../../services/LoggingService';
 
 // ==================== Storage Keys ====================
 
@@ -150,7 +151,11 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
         }
       }
     } catch (error) {
-      console.error('PlanningContext: Failed to load user project:', error);
+      logger.error('[PlanningContext] Failed to load user project', error as Error, {
+        component: 'PlanningContext',
+        action: 'loadUserProject',
+        userId: user?.userId,
+      });
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load assigned project' });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -166,7 +171,11 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
         .fetch();
       dispatch({ type: 'SET_SITES', payload: projectSites });
     } catch (error) {
-      console.error('PlanningContext: Failed to load sites:', error);
+      logger.error('[PlanningContext] Failed to load sites', error as Error, {
+        component: 'PlanningContext',
+        action: 'loadSites',
+        projectId,
+      });
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load sites' });
     }
   }, []);
@@ -198,7 +207,11 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
           });
         }
       } catch (error) {
-        console.error('PlanningContext: Failed to load saved state:', error);
+        logger.warn('[PlanningContext] Failed to load saved state from AsyncStorage', {
+          component: 'PlanningContext',
+          action: 'loadSavedState',
+          error: (error as Error).message,
+        });
       }
     };
 

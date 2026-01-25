@@ -55,7 +55,13 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
             if (!this.dependencies) return [];
             try {
               return JSON.parse(this.dependencies);
-            } catch {
+            } catch (parseError) {
+              logger.warn('[DependencyModal] Failed to parse dependencies JSON', {
+                component: 'DependencyModal',
+                action: 'getDependencies',
+                itemId: this.id,
+                rawValue: this.dependencies,
+              });
               return [];
             }
           }
@@ -142,20 +148,29 @@ const DependencyModal: React.FC<DependencyModalProps> = ({
               </Text>
             </View>
           ) : (
-            availableItems.map(availableItem => (
-              <View key={availableItem.id} style={styles.itemRow}>
-                <Checkbox.Item
-                  label={availableItem.name}
-                  status={selectedDeps.has(availableItem.id) ? 'checked' : 'unchecked'}
-                  onPress={() => handleToggleDependency(availableItem.id)}
-                  labelStyle={styles.checkboxLabel}
-                />
-                <Text variant="bodySmall" style={styles.itemDetails}>
-                  {new Date(availableItem.plannedStartDate).toLocaleDateString()} -{' '}
-                  {new Date(availableItem.plannedEndDate).toLocaleDateString()}
-                </Text>
-              </View>
-            ))
+            availableItems.map(availableItem => {
+              // Safe date formatting with null checks
+              const startDate = availableItem.plannedStartDate
+                ? new Date(availableItem.plannedStartDate).toLocaleDateString()
+                : 'Not set';
+              const endDate = availableItem.plannedEndDate
+                ? new Date(availableItem.plannedEndDate).toLocaleDateString()
+                : 'Not set';
+
+              return (
+                <View key={availableItem.id} style={styles.itemRow}>
+                  <Checkbox.Item
+                    label={availableItem.name}
+                    status={selectedDeps.has(availableItem.id) ? 'checked' : 'unchecked'}
+                    onPress={() => handleToggleDependency(availableItem.id)}
+                    labelStyle={styles.checkboxLabel}
+                  />
+                  <Text variant="bodySmall" style={styles.itemDetails}>
+                    {startDate} - {endDate}
+                  </Text>
+                </View>
+              );
+            })
           )}
         </ScrollView>
 
