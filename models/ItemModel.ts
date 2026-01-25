@@ -23,6 +23,7 @@ export default class ItemModel extends Model {
   static associations: Associations = {
     categories: { type: 'belongs_to', key: 'category_id' },
     sites: { type: 'belongs_to', key: 'site_id' },
+    key_dates: { type: 'belongs_to', key: 'key_date_id' },
     progress_logs: { type: 'has_many', foreignKey: 'item_id' },
     materials: { type: 'has_many', foreignKey: 'item_id' },
     hindrances: { type: 'has_many', foreignKey: 'item_id' },
@@ -68,6 +69,9 @@ export default class ItemModel extends Model {
 
   // Milestone linking (v2.10)
   @field('milestone_id') milestoneId?: string; // linked milestone
+
+  // Key Date linking (v35 - Phase 5a)
+  @field('key_date_id') keyDateId?: string; // linked key date
 
   // Sync Management (v18 - Activity 2 prep)
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column

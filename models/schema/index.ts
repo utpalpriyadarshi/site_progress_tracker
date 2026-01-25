@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 34, // Added PDF generation status for async queue (Phase B: Share Button Photo Issue fix)
+  version: 35, // Added Key Dates tables for Phase 5a (Planning Key Dates Architecture)
   tables: [
     tableSchema({
       name: 'projects',
@@ -76,6 +76,8 @@ export default appSchema({
         { name: 'risk_notes', type: 'string', isOptional: true }, // risk description
         // Milestone linking (v2.10)
         { name: 'milestone_id', type: 'string', isOptional: true, isIndexed: true }, // linked milestone
+        // Key Date linking (v35 - Phase 5a)
+        { name: 'key_date_id', type: 'string', isOptional: true, isIndexed: true }, // linked key date
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],
@@ -660,6 +662,68 @@ export default appSchema({
         { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v35: Key Dates tables (Phase 5a - Planning Key Dates Architecture)
+    tableSchema({
+      name: 'key_dates',
+      columns: [
+        // Key Date identification
+        { name: 'code', type: 'string', isIndexed: true }, // KD-G-01, KD-A-01, etc.
+        { name: 'category', type: 'string', isIndexed: true }, // G, A, B, C, D, E, F
+        { name: 'category_name', type: 'string' }, // Full category name
+        { name: 'description', type: 'string' }, // Key date description
+        // Schedule
+        { name: 'target_days', type: 'number' }, // Calendar days from commencement
+        { name: 'target_date', type: 'number', isOptional: true }, // Calculated target date
+        { name: 'actual_date', type: 'number', isOptional: true }, // Actual completion date
+        // Status tracking
+        { name: 'status', type: 'string', isIndexed: true }, // not_started, in_progress, completed, delayed
+        { name: 'progress_percentage', type: 'number' }, // 0-100
+        // Delay damages (INR Lakhs per day)
+        { name: 'delay_damages_initial', type: 'number' }, // Days 1-28
+        { name: 'delay_damages_extended', type: 'number' }, // From day 29 onwards
+        { name: 'delay_damages_special', type: 'string', isOptional: true }, // Special cases
+        // Relationships
+        { name: 'project_id', type: 'string', isIndexed: true },
+        // Sequence for ordering
+        { name: 'sequence_order', type: 'number' },
+        // Dependencies (JSON array of key_date IDs)
+        { name: 'dependencies', type: 'string', isOptional: true },
+        // Audit
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        // Sync
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'key_date_sites',
+      columns: [
+        // Foreign keys
+        { name: 'key_date_id', type: 'string', isIndexed: true },
+        { name: 'site_id', type: 'string', isIndexed: true },
+        // Contribution tracking
+        { name: 'contribution_percentage', type: 'number' }, // How much this site contributes to KD
+        { name: 'progress_percentage', type: 'number' }, // Current progress at this site
+        // Status
+        { name: 'status', type: 'string' }, // not_started, in_progress, completed
+        // Schedule (site-specific dates for this key date)
+        { name: 'planned_start_date', type: 'number', isOptional: true },
+        { name: 'planned_end_date', type: 'number', isOptional: true },
+        { name: 'actual_start_date', type: 'number', isOptional: true },
+        { name: 'actual_end_date', type: 'number', isOptional: true },
+        // Notes
+        { name: 'notes', type: 'string', isOptional: true },
+        // Audit
+        { name: 'updated_by', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        // Sync
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
       ],

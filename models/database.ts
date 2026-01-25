@@ -36,6 +36,8 @@ import PurchaseOrderModel from './PurchaseOrderModel';
 import BudgetModel from './BudgetModel';
 import CostModel from './CostModel';
 import InvoiceModel from './InvoiceModel';
+import KeyDateModel from './KeyDateModel';
+import KeyDateSiteModel from './KeyDateSiteModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -79,5 +81,7 @@ export const database = new Database({
     BudgetModel,
     CostModel,
     InvoiceModel,
+    KeyDateModel,
+    KeyDateSiteModel,
   ],
 });

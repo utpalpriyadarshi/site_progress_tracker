@@ -4,6 +4,7 @@ import { v31Migration } from './v31_add_multi_role_tables';
 import { v32Migration } from './v32_add_vendor_name_to_invoices';
 import { v33Migration } from './v33_add_pdf_error_tracking';
 import { v34Migration } from './v34_add_pdf_generation_status';
+import { v35Migration } from './v35_add_key_dates_tables';
 
 export default schemaMigrations({
   migrations: [
@@ -571,5 +572,7 @@ export default schemaMigrations({
     v33Migration,
     // v34: Add PDF generation status for async queue (Phase B: Share Button Photo Issue fix)
     v34Migration,
+    // v35: Add Key Dates tables (Phase 5a - Planning Key Dates Architecture)
+    v35Migration,
   ],
 });
