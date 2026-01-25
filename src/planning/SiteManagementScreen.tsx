@@ -1,4 +1,14 @@
-import React, { useState } from 'react';
+/**
+ * SiteManagementScreen
+ *
+ * Manages construction sites for the assigned project.
+ * Refactored to use useReducer for state management (21 useState → 1 useReducer).
+ *
+ * @version 2.0.0
+ * @since Phase 2 Code Improvements
+ */
+
+import React, { useReducer, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,6 +38,11 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { usePlanningContext } from './context';
+import {
+  siteManagementReducer,
+  createInitialState,
+  selectIsEditing,
+} from './state/siteManagementReducer';
 
 const SiteManagementScreenComponent = ({
   sites,
@@ -36,197 +51,196 @@ const SiteManagementScreenComponent = ({
   sites: SiteModel[];
   projects: any[];
 }) => {
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [supervisorPickerVisible, setSupervisorPickerVisible] = useState(false);
-  const [editingSite, setEditingSite] = useState<SiteModel | null>(null);
-  const [siteName, setSiteName] = useState('');
-  const [siteLocation, setSiteLocation] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
-  const [supervisorName, setSupervisorName] = useState('Unassigned');
+  // Single useReducer replaces 21 useState calls
+  const [state, dispatch] = useReducer(siteManagementReducer, undefined, createInitialState);
 
-  // v2.11 Phase 4: Date fields
-  const [plannedStartDate, setPlannedStartDate] = useState<Date | undefined>(undefined);
-  const [plannedEndDate, setPlannedEndDate] = useState<Date | undefined>(undefined);
-  const [actualStartDate, setActualStartDate] = useState<Date | undefined>(undefined);
-  const [actualEndDate, setActualEndDate] = useState<Date | undefined>(undefined);
-  const [showPlannedStartPicker, setShowPlannedStartPicker] = useState(false);
-  const [showPlannedEndPicker, setShowPlannedEndPicker] = useState(false);
-  const [showActualStartPicker, setShowActualStartPicker] = useState(false);
-  const [showActualEndPicker, setShowActualEndPicker] = useState(false);
+  // Destructure for cleaner access
+  const { ui, form, dialog } = state;
+  const isEditing = selectIsEditing(state);
 
-  // Snackbar state
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
+  // ==================== Dialog Handlers ====================
 
-  // Dialog for delete confirmation
-  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-  const [siteToDelete, setSiteToDelete] = useState<SiteModel | null>(null);
+  const openAddDialog = useCallback(() => {
+    dispatch({
+      type: 'OPEN_ADD_DIALOG',
+      payload: { defaultProjectId: projects[0]?.id || '' },
+    });
+  }, [projects]);
 
-  const openAddDialog = () => {
-    setEditingSite(null);
-    setSiteName('');
-    setSiteLocation('');
-    setSelectedProjectId(projects[0]?.id || '');
-    setSelectedSupervisorId(undefined);
-    setSupervisorName('Unassigned');
-    setPlannedStartDate(undefined);
-    setPlannedEndDate(undefined);
-    setActualStartDate(undefined);
-    setActualEndDate(undefined);
-    setDialogVisible(true);
-  };
-
-  const openEditDialog = async (site: SiteModel) => {
-    setEditingSite(site);
-    setSiteName(site.name);
-    setSiteLocation(site.location);
-    setSelectedProjectId(site.projectId);
-    setSelectedSupervisorId(site.supervisorId);
-
+  const openEditDialog = useCallback(async (site: SiteModel) => {
     // Load supervisor name
+    let supervisorName = 'Unassigned';
     if (site.supervisorId) {
       try {
         const supervisor = await database.collections
           .get('users')
           .find(site.supervisorId) as UserModel;
-        setSupervisorName(supervisor.fullName);
+        supervisorName = supervisor.fullName;
       } catch (error) {
-        setSupervisorName('Unassigned');
+        supervisorName = 'Unassigned';
       }
-    } else {
-      setSupervisorName('Unassigned');
     }
 
-    // v2.11 Phase 4: Load dates
-    setPlannedStartDate(site.plannedStartDate ? new Date(site.plannedStartDate) : undefined);
-    setPlannedEndDate(site.plannedEndDate ? new Date(site.plannedEndDate) : undefined);
-    setActualStartDate(site.actualStartDate ? new Date(site.actualStartDate) : undefined);
-    setActualEndDate(site.actualEndDate ? new Date(site.actualEndDate) : undefined);
+    dispatch({
+      type: 'OPEN_EDIT_DIALOG',
+      payload: { site, supervisorName },
+    });
+  }, []);
 
-    setDialogVisible(true);
-  };
+  const closeDialog = useCallback(() => {
+    dispatch({ type: 'CLOSE_DIALOG' });
+  }, []);
 
-  const closeDialog = () => {
-    setDialogVisible(false);
-    setEditingSite(null);
-    setSiteName('');
-    setSiteLocation('');
-    setSelectedProjectId('');
-    setSelectedSupervisorId(undefined);
-    setSupervisorName('Unassigned');
-  };
+  const openDeleteDialog = useCallback((site: SiteModel) => {
+    dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { site } });
+  }, []);
 
-  const handleSupervisorSelect = async (supervisorId?: string) => {
-    setSelectedSupervisorId(supervisorId);
+  const closeDeleteDialog = useCallback(() => {
+    dispatch({ type: 'CLOSE_DELETE_DIALOG' });
+  }, []);
+
+  // ==================== Supervisor Handler ====================
+
+  const handleSupervisorSelect = useCallback(async (supervisorId?: string) => {
+    let supervisorName = 'Unassigned';
 
     if (supervisorId) {
       try {
         const supervisor = await database.collections
           .get('users')
           .find(supervisorId) as UserModel;
-        setSupervisorName(supervisor.fullName);
+        supervisorName = supervisor.fullName;
       } catch (error) {
-        setSupervisorName('Unassigned');
+        supervisorName = 'Unassigned';
       }
-    } else {
-      setSupervisorName('Unassigned');
     }
-  };
 
-  const handleSave = async () => {
-    if (!siteName.trim() || !siteLocation.trim()) {
-      setSnackbarMessage('Please fill in all required fields');
-      setSnackbarType('error');
-      setSnackbarVisible(true);
+    dispatch({
+      type: 'SET_SUPERVISOR',
+      payload: { id: supervisorId, name: supervisorName },
+    });
+  }, []);
+
+  // ==================== Save Handler ====================
+
+  const handleSave = useCallback(async () => {
+    if (!form.siteName.trim() || !form.siteLocation.trim()) {
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Please fill in all required fields', type: 'error' },
+      });
       return;
     }
 
     try {
       await database.write(async () => {
-        if (editingSite) {
+        if (dialog.editingSite) {
           // Update existing site
-          await editingSite.update((site: any) => {
-            site.name = siteName.trim();
-            site.location = siteLocation.trim();
-            site.projectId = selectedProjectId;
-            site.supervisorId = selectedSupervisorId || null;
-            // v2.11 Phase 4: Save dates
-            site.plannedStartDate = plannedStartDate?.getTime() || null;
-            site.plannedEndDate = plannedEndDate?.getTime() || null;
-            site.actualStartDate = actualStartDate?.getTime() || null;
-            site.actualEndDate = actualEndDate?.getTime() || null;
+          await dialog.editingSite.update((site: any) => {
+            site.name = form.siteName.trim();
+            site.location = form.siteLocation.trim();
+            site.projectId = form.selectedProjectId;
+            site.supervisorId = form.selectedSupervisorId || null;
+            site.plannedStartDate = form.plannedStartDate?.getTime() || null;
+            site.plannedEndDate = form.plannedEndDate?.getTime() || null;
+            site.actualStartDate = form.actualStartDate?.getTime() || null;
+            site.actualEndDate = form.actualEndDate?.getTime() || null;
           });
-          setSnackbarMessage('Site updated successfully');
+          dispatch({
+            type: 'SHOW_SNACKBAR',
+            payload: { message: 'Site updated successfully', type: 'success' },
+          });
         } else {
           // Create new site
           await database.collections.get('sites').create((site: any) => {
-            site.name = siteName.trim();
-            site.location = siteLocation.trim();
-            site.projectId = selectedProjectId;
-            site.supervisorId = selectedSupervisorId || null;
-            // v2.11 Phase 4: Save dates
-            site.plannedStartDate = plannedStartDate?.getTime() || null;
-            site.plannedEndDate = plannedEndDate?.getTime() || null;
-            site.actualStartDate = actualStartDate?.getTime() || null;
-            site.actualEndDate = actualEndDate?.getTime() || null;
+            site.name = form.siteName.trim();
+            site.location = form.siteLocation.trim();
+            site.projectId = form.selectedProjectId;
+            site.supervisorId = form.selectedSupervisorId || null;
+            site.plannedStartDate = form.plannedStartDate?.getTime() || null;
+            site.plannedEndDate = form.plannedEndDate?.getTime() || null;
+            site.actualStartDate = form.actualStartDate?.getTime() || null;
+            site.actualEndDate = form.actualEndDate?.getTime() || null;
           });
-          setSnackbarMessage('Site created successfully');
+          dispatch({
+            type: 'SHOW_SNACKBAR',
+            payload: { message: 'Site created successfully', type: 'success' },
+          });
         }
-        setSnackbarType('success');
-        setSnackbarVisible(true);
       });
       closeDialog();
     } catch (error) {
       logger.error('Error saving site', error as Error, {
-        component: 'PlanningsSiteManagementScreen',
+        component: 'SiteManagementScreen',
         action: 'handleSave',
-        editMode: editingSite ? 'update' : 'create',
+        editMode: isEditing ? 'update' : 'create',
       });
-      setSnackbarMessage('Failed to save site: ' + (error as Error).message);
-      setSnackbarType('error');
-      setSnackbarVisible(true);
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Failed to save site: ' + (error as Error).message, type: 'error' },
+      });
     }
-  };
+  }, [form, dialog.editingSite, isEditing, closeDialog]);
 
-  const openDeleteDialog = (site: SiteModel) => {
-    setSiteToDelete(site);
-    setDeleteDialogVisible(true);
-  };
+  // ==================== Delete Handler ====================
 
-  const handleDelete = async () => {
-    if (!siteToDelete) return;
+  const handleDelete = useCallback(async () => {
+    if (!dialog.siteToDelete) return;
 
     try {
       await database.write(async () => {
-        // Note: In production, you should cascade delete or handle related items
-        await siteToDelete.markAsDeleted();
+        await dialog.siteToDelete!.markAsDeleted();
       });
-      setSnackbarMessage('Site deleted successfully');
-      setSnackbarType('success');
-      setSnackbarVisible(true);
-      setDeleteDialogVisible(false);
-      setSiteToDelete(null);
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Site deleted successfully', type: 'success' },
+      });
+      closeDeleteDialog();
     } catch (error) {
       logger.error('Error deleting site', error as Error, {
-        component: 'PlanningSiteManagementScreen',
+        component: 'SiteManagementScreen',
         action: 'handleDelete',
-        siteId: siteToDelete?.id,
-        siteName: siteToDelete?.name,
+        siteId: dialog.siteToDelete?.id,
+        siteName: dialog.siteToDelete?.name,
       });
-      setSnackbarMessage('Failed to delete site: ' + (error as Error).message);
-      setSnackbarType('error');
-      setSnackbarVisible(true);
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Failed to delete site: ' + (error as Error).message, type: 'error' },
+      });
     }
-  };
+  }, [dialog.siteToDelete, closeDeleteDialog]);
 
-  // Get supervisor display info
-  const getSupervisorInfo = (site: SiteModel) => {
-    // This will be reactive through WatermelonDB
-    // For simplicity, we'll show the ID or "Unassigned"
-    return site.supervisorId || null;
-  };
+  // ==================== Date Picker Handlers ====================
+
+  const handlePlannedStartDateChange = useCallback((event: any, selectedDate?: Date) => {
+    dispatch({ type: 'SHOW_PLANNED_START_PICKER', payload: Platform.OS === 'ios' });
+    if (selectedDate) {
+      dispatch({ type: 'SET_PLANNED_START_DATE', payload: selectedDate });
+    }
+  }, []);
+
+  const handlePlannedEndDateChange = useCallback((event: any, selectedDate?: Date) => {
+    dispatch({ type: 'SHOW_PLANNED_END_PICKER', payload: Platform.OS === 'ios' });
+    if (selectedDate) {
+      dispatch({ type: 'SET_PLANNED_END_DATE', payload: selectedDate });
+    }
+  }, []);
+
+  const handleActualStartDateChange = useCallback((event: any, selectedDate?: Date) => {
+    dispatch({ type: 'SHOW_ACTUAL_START_PICKER', payload: Platform.OS === 'ios' });
+    if (selectedDate) {
+      dispatch({ type: 'SET_ACTUAL_START_DATE', payload: selectedDate });
+    }
+  }, []);
+
+  const handleActualEndDateChange = useCallback((event: any, selectedDate?: Date) => {
+    dispatch({ type: 'SHOW_ACTUAL_END_PICKER', payload: Platform.OS === 'ios' });
+    if (selectedDate) {
+      dispatch({ type: 'SET_ACTUAL_END_DATE', payload: selectedDate });
+    }
+  }, []);
+
+  // ==================== Render ====================
 
   return (
     <View style={styles.container}>
@@ -309,22 +323,22 @@ const SiteManagementScreenComponent = ({
 
       {/* Add/Edit Site Dialog */}
       <Portal>
-        <Dialog visible={dialogVisible} onDismiss={closeDialog}>
+        <Dialog visible={ui.dialogVisible} onDismiss={closeDialog}>
           <Dialog.Title>
-            {editingSite ? 'Edit Site' : 'Add New Site'}
+            {isEditing ? 'Edit Site' : 'Add New Site'}
           </Dialog.Title>
           <Dialog.Content>
             <TextInput
               label="Site Name *"
-              value={siteName}
-              onChangeText={setSiteName}
+              value={form.siteName}
+              onChangeText={(text) => dispatch({ type: 'SET_SITE_NAME', payload: text })}
               mode="outlined"
               style={styles.input}
             />
             <TextInput
               label="Location *"
-              value={siteLocation}
-              onChangeText={setSiteLocation}
+              value={form.siteLocation}
+              onChangeText={(text) => dispatch({ type: 'SET_SITE_LOCATION', payload: text })}
               mode="outlined"
               style={styles.input}
               multiline
@@ -343,13 +357,13 @@ const SiteManagementScreenComponent = ({
                         <List.Icon
                           {...props}
                           icon={
-                            selectedProjectId === project.id
+                            form.selectedProjectId === project.id
                               ? 'radiobox-marked'
                               : 'radiobox-blank'
                           }
                         />
                       )}
-                      onPress={() => setSelectedProjectId(project.id)}
+                      onPress={() => dispatch({ type: 'SET_SELECTED_PROJECT_ID', payload: project.id })}
                     />
                   ))}
                 </ScrollView>
@@ -362,14 +376,14 @@ const SiteManagementScreenComponent = ({
               <Button
                 mode="outlined"
                 icon="account"
-                onPress={() => setSupervisorPickerVisible(true)}
+                onPress={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: true })}
                 style={styles.supervisorButton}
               >
-                {supervisorName}
+                {form.supervisorName}
               </Button>
             </View>
 
-            {/* v2.11 Phase 4: Date Fields */}
+            {/* Date Fields */}
             <View style={styles.dateSection}>
               <Text style={styles.sectionTitle}>Schedule Dates</Text>
 
@@ -379,16 +393,16 @@ const SiteManagementScreenComponent = ({
                 <Button
                   mode="outlined"
                   icon="calendar"
-                  onPress={() => setShowPlannedStartPicker(true)}
+                  onPress={() => dispatch({ type: 'SHOW_PLANNED_START_PICKER', payload: true })}
                   style={styles.dateButton}
                 >
-                  {plannedStartDate ? plannedStartDate.toLocaleDateString() : 'Not Set'}
+                  {form.plannedStartDate ? form.plannedStartDate.toLocaleDateString() : 'Not Set'}
                 </Button>
-                {plannedStartDate && (
+                {form.plannedStartDate && (
                   <IconButton
                     icon="close"
                     size={16}
-                    onPress={() => setPlannedStartDate(undefined)}
+                    onPress={() => dispatch({ type: 'SET_PLANNED_START_DATE', payload: undefined })}
                   />
                 )}
               </View>
@@ -399,16 +413,16 @@ const SiteManagementScreenComponent = ({
                 <Button
                   mode="outlined"
                   icon="calendar"
-                  onPress={() => setShowPlannedEndPicker(true)}
+                  onPress={() => dispatch({ type: 'SHOW_PLANNED_END_PICKER', payload: true })}
                   style={styles.dateButton}
                 >
-                  {plannedEndDate ? plannedEndDate.toLocaleDateString() : 'Not Set'}
+                  {form.plannedEndDate ? form.plannedEndDate.toLocaleDateString() : 'Not Set'}
                 </Button>
-                {plannedEndDate && (
+                {form.plannedEndDate && (
                   <IconButton
                     icon="close"
                     size={16}
-                    onPress={() => setPlannedEndDate(undefined)}
+                    onPress={() => dispatch({ type: 'SET_PLANNED_END_DATE', payload: undefined })}
                   />
                 )}
               </View>
@@ -419,16 +433,16 @@ const SiteManagementScreenComponent = ({
                 <Button
                   mode="outlined"
                   icon="calendar"
-                  onPress={() => setShowActualStartPicker(true)}
+                  onPress={() => dispatch({ type: 'SHOW_ACTUAL_START_PICKER', payload: true })}
                   style={styles.dateButton}
                 >
-                  {actualStartDate ? actualStartDate.toLocaleDateString() : 'Not Set'}
+                  {form.actualStartDate ? form.actualStartDate.toLocaleDateString() : 'Not Set'}
                 </Button>
-                {actualStartDate && (
+                {form.actualStartDate && (
                   <IconButton
                     icon="close"
                     size={16}
-                    onPress={() => setActualStartDate(undefined)}
+                    onPress={() => dispatch({ type: 'SET_ACTUAL_START_DATE', payload: undefined })}
                   />
                 )}
               </View>
@@ -439,16 +453,16 @@ const SiteManagementScreenComponent = ({
                 <Button
                   mode="outlined"
                   icon="calendar"
-                  onPress={() => setShowActualEndPicker(true)}
+                  onPress={() => dispatch({ type: 'SHOW_ACTUAL_END_PICKER', payload: true })}
                   style={styles.dateButton}
                 >
-                  {actualEndDate ? actualEndDate.toLocaleDateString() : 'Not Set'}
+                  {form.actualEndDate ? form.actualEndDate.toLocaleDateString() : 'Not Set'}
                 </Button>
-                {actualEndDate && (
+                {form.actualEndDate && (
                   <IconButton
                     icon="close"
                     size={16}
-                    onPress={() => setActualEndDate(undefined)}
+                    onPress={() => dispatch({ type: 'SET_ACTUAL_END_DATE', payload: undefined })}
                   />
                 )}
               </View>
@@ -457,25 +471,25 @@ const SiteManagementScreenComponent = ({
           <Dialog.Actions>
             <Button onPress={closeDialog}>Cancel</Button>
             <Button onPress={handleSave}>
-              {editingSite ? 'Update' : 'Create'}
+              {isEditing ? 'Update' : 'Create'}
             </Button>
           </Dialog.Actions>
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <Dialog
-          visible={deleteDialogVisible}
-          onDismiss={() => setDeleteDialogVisible(false)}
+          visible={ui.deleteDialogVisible}
+          onDismiss={closeDeleteDialog}
         >
           <Dialog.Title>Delete Site</Dialog.Title>
           <Dialog.Content>
             <Text>
-              Are you sure you want to delete "{siteToDelete?.name}"? This will
+              Are you sure you want to delete "{dialog.siteToDelete?.name}"? This will
               also delete all associated items and data.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
+            <Button onPress={closeDeleteDialog}>Cancel</Button>
             <Button onPress={handleDelete} textColor="#FF3B30">
               Delete
             </Button>
@@ -483,69 +497,57 @@ const SiteManagementScreenComponent = ({
         </Dialog>
       </Portal>
 
-      {/* v2.11 Phase 4: Date Pickers */}
-      {showPlannedStartPicker && (
+      {/* Date Pickers */}
+      {ui.showPlannedStartPicker && (
         <DateTimePicker
-          value={plannedStartDate || new Date()}
+          value={form.plannedStartDate || new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowPlannedStartPicker(Platform.OS === 'ios');
-            if (selectedDate) setPlannedStartDate(selectedDate);
-          }}
+          onChange={handlePlannedStartDateChange}
         />
       )}
-      {showPlannedEndPicker && (
+      {ui.showPlannedEndPicker && (
         <DateTimePicker
-          value={plannedEndDate || new Date()}
+          value={form.plannedEndDate || new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowPlannedEndPicker(Platform.OS === 'ios');
-            if (selectedDate) setPlannedEndDate(selectedDate);
-          }}
+          onChange={handlePlannedEndDateChange}
         />
       )}
-      {showActualStartPicker && (
+      {ui.showActualStartPicker && (
         <DateTimePicker
-          value={actualStartDate || new Date()}
+          value={form.actualStartDate || new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowActualStartPicker(Platform.OS === 'ios');
-            if (selectedDate) setActualStartDate(selectedDate);
-          }}
+          onChange={handleActualStartDateChange}
         />
       )}
-      {showActualEndPicker && (
+      {ui.showActualEndPicker && (
         <DateTimePicker
-          value={actualEndDate || new Date()}
+          value={form.actualEndDate || new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowActualEndPicker(Platform.OS === 'ios');
-            if (selectedDate) setActualEndDate(selectedDate);
-          }}
+          onChange={handleActualEndDateChange}
         />
       )}
 
       {/* Supervisor Assignment Picker */}
       <SupervisorAssignmentPicker
-        visible={supervisorPickerVisible}
-        selectedSupervisorId={selectedSupervisorId}
-        onDismiss={() => setSupervisorPickerVisible(false)}
+        visible={ui.supervisorPickerVisible}
+        selectedSupervisorId={form.selectedSupervisorId}
+        onDismiss={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: false })}
         onSelect={handleSupervisorSelect}
       />
 
       {/* Snackbar for notifications - wrapped in Portal to appear above dialogs */}
       <Portal>
         <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
+          visible={ui.snackbarVisible}
+          onDismiss={() => dispatch({ type: 'HIDE_SNACKBAR' })}
           duration={3000}
-          style={snackbarType === 'error' ? styles.errorSnackbar : styles.successSnackbar}
+          style={ui.snackbarType === 'error' ? styles.errorSnackbar : styles.successSnackbar}
         >
-          {snackbarMessage}
+          {ui.snackbarMessage}
         </Snackbar>
       </Portal>
     </View>
@@ -667,7 +669,6 @@ const styles = StyleSheet.create({
   supervisorButton: {
     marginTop: 4,
   },
-  // v2.11 Phase 4: Date section styles
   dateSection: {
     marginTop: 16,
     paddingTop: 16,
