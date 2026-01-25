@@ -537,15 +537,17 @@ const SiteManagementScreenComponent = ({
         onSelect={handleSupervisorSelect}
       />
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        style={snackbarType === 'error' ? styles.errorSnackbar : styles.successSnackbar}
-      >
-        {snackbarMessage}
-      </Snackbar>
+      {/* Snackbar for notifications - wrapped in Portal to appear above dialogs */}
+      <Portal>
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          style={snackbarType === 'error' ? styles.errorSnackbar : styles.successSnackbar}
+        >
+          {snackbarMessage}
+        </Snackbar>
+      </Portal>
     </View>
   );
 };
