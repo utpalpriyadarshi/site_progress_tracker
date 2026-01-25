@@ -16,3 +16,6 @@ export * from './gantt-chart';
 
 // WBS Management
 export * from './wbs-management';
+
+// Site Management (Phase 2 Code Improvements)
+export * from './siteManagementReducer';
