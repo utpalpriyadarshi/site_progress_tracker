@@ -23,6 +23,7 @@ export type AuthStackParamList = {
 };
 
 export type PlanningStackParamList = {
+  SiteManagement: undefined; // Main drawer container screen
   WBSManagement: undefined;
   ItemCreation: {
     siteId: string;

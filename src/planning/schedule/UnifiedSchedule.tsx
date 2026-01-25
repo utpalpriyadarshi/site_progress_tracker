@@ -14,6 +14,9 @@ import { Text, useTheme } from 'react-native-paper';
 import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import ItemModel from '../../../models/ItemModel';
+import ProjectModel from '../../../models/ProjectModel';
+import SiteModel from '../../../models/SiteModel';
+import CategoryModel from '../../../models/CategoryModel';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useDebounce } from '../../utils/performance';
@@ -87,16 +90,16 @@ const TabButton: React.FC<TabButtonProps> = ({ name, isActive, onPress, theme })
   </Pressable>
 );
 
-// ==================== Component ====================
+// ==================== Component Props ====================
 
-interface UnifiedScheduleProps {
+interface UnifiedScheduleObservedProps {
   items: ItemModel[];
-  projects: any[];
-  sites: any[];
-  categories: any[];
+  projects: ProjectModel[];
+  sites: SiteModel[];
+  categories: CategoryModel[];
 }
 
-const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
+const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
   items,
   projects,
   sites,
@@ -358,13 +361,17 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleProps> = ({
 // ==================== Database Connection ====================
 
 const enhance = withObservables([], () => ({
-  items: database.collections.get('items').query(),
-  projects: database.collections.get('projects').query(),
-  sites: database.collections.get('sites').query(),
-  categories: database.collections.get('categories').query(),
+  items: database.collections.get<ItemModel>('items').query(),
+  projects: database.collections.get<ProjectModel>('projects').query(),
+  sites: database.collections.get<SiteModel>('sites').query(),
+  categories: database.collections.get<CategoryModel>('categories').query(),
 }));
 
-const UnifiedSchedule = enhance(UnifiedScheduleComponent as any);
+// Type assertion: withObservables transforms observable queries to resolved arrays
+// The HOC injects observed props at runtime, so we need to cast the component type
+const UnifiedSchedule = enhance(
+  UnifiedScheduleComponent as React.ComponentType<unknown>
+);
 
 // ==================== Styles ====================
 

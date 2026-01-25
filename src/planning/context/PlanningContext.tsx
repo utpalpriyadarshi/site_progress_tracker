@@ -15,6 +15,7 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../models/database';
 import ProjectModel from '../../../models/ProjectModel';
 import SiteModel from '../../../models/SiteModel';
+import UserModel from '../../../models/UserModel';
 import { useAuth } from '../../auth/AuthContext';
 import { logger } from '../../services/LoggingService';
 
@@ -122,15 +123,19 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
       dispatch({ type: 'SET_ERROR', payload: null });
 
       // Fetch user from database to get project assignment
-      const userRecord = await database.collections.get('users').find(user.userId);
+      const userRecord = await database.collections
+        .get<UserModel>('users')
+        .find(user.userId);
 
       if (userRecord) {
-        const assignedProjectId = (userRecord as any).projectId;
+        const assignedProjectId = userRecord.projectId;
 
         if (assignedProjectId) {
           // Fetch project details
-          const project = await database.collections.get<ProjectModel>('projects').find(assignedProjectId);
-          const projectName = (project as any).name || 'Unknown Project';
+          const project = await database.collections
+            .get<ProjectModel>('projects')
+            .find(assignedProjectId);
+          const projectName = project.name || 'Unknown Project';
 
           // Update context state
           dispatch({
