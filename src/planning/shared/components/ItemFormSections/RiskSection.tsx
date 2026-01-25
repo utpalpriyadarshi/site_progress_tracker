@@ -1,27 +1,34 @@
 /**
- * RiskSection Component
+ * RiskSection Component (Shared)
  *
- * Dependency risk level selection and risk notes
+ * Dependency risk level selection and risk notes.
+ * Used by both ItemCreation and ItemEdit screens.
+ *
+ * @version 1.0.0
+ * @since Phase 3 Code Improvements
  */
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Chip } from 'react-native-paper';
+import { Text, Chip, TextInput } from 'react-native-paper';
+
+type RiskLevel = 'low' | 'medium' | 'high';
 
 interface RiskSectionProps {
-  dependencyRisk: 'low' | 'medium' | 'high' | '';
+  dependencyRisk: RiskLevel | '';
   riskNotes: string;
-  isLocked: boolean;
-  onRiskChange: (risk: 'low' | 'medium' | 'high') => void;
+  onRiskChange: (risk: RiskLevel) => void;
   onRiskNotesChange: (text: string) => void;
+  /** When true, all fields are disabled (edit mode for locked items) */
+  isLocked?: boolean;
 }
 
 export const RiskSection: React.FC<RiskSectionProps> = ({
   dependencyRisk,
   riskNotes,
-  isLocked,
   onRiskChange,
   onRiskNotesChange,
+  isLocked = false,
 }) => {
   return (
     <View style={styles.section}>
@@ -93,3 +100,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
+
+export default RiskSection;

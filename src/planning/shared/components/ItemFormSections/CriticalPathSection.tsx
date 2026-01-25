@@ -1,6 +1,16 @@
+/**
+ * CriticalPathSection Component (Shared)
+ *
+ * Milestone and Critical Path toggles with float days field.
+ * Used by both ItemCreation and ItemEdit screens.
+ *
+ * @version 1.0.0
+ * @since Phase 3 Code Improvements
+ */
+
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip, TextInput } from 'react-native-paper';
+import { Text, TextInput, Chip } from 'react-native-paper';
 
 interface CriticalPathSectionProps {
   isMilestone: boolean;
@@ -9,6 +19,8 @@ interface CriticalPathSectionProps {
   onMilestoneToggle: () => void;
   onCriticalPathToggle: () => void;
   onFloatDaysChange: (value: string) => void;
+  /** When true, all fields are disabled (edit mode for locked items) */
+  isLocked?: boolean;
 }
 
 export const CriticalPathSection: React.FC<CriticalPathSectionProps> = ({
@@ -18,6 +30,7 @@ export const CriticalPathSection: React.FC<CriticalPathSectionProps> = ({
   onMilestoneToggle,
   onCriticalPathToggle,
   onFloatDaysChange,
+  isLocked = false,
 }) => {
   return (
     <View style={styles.section}>
@@ -31,6 +44,7 @@ export const CriticalPathSection: React.FC<CriticalPathSectionProps> = ({
           onPress={onMilestoneToggle}
           style={styles.chip}
           icon={isMilestone ? 'star' : 'star-outline'}
+          disabled={isLocked}
         >
           Milestone
         </Chip>
@@ -40,6 +54,7 @@ export const CriticalPathSection: React.FC<CriticalPathSectionProps> = ({
           onPress={onCriticalPathToggle}
           style={styles.chip}
           icon={isCriticalPath ? 'alert-circle' : 'alert-circle-outline'}
+          disabled={isLocked}
         >
           Critical Path
         </Chip>
@@ -53,6 +68,7 @@ export const CriticalPathSection: React.FC<CriticalPathSectionProps> = ({
           mode="outlined"
           keyboardType="number-pad"
           style={styles.marginTop}
+          disabled={isLocked}
         />
       )}
     </View>
@@ -79,3 +95,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
+
+export default CriticalPathSection;
