@@ -7,6 +7,7 @@ import { Q } from '@nozbe/watermelondb';
 import MilestoneModel from '../../models/MilestoneModel';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
+import { usePlanningContext } from './context';
 import {
   ProjectSiteSelector,
   MilestoneCard,
@@ -335,13 +336,40 @@ const MilestoneTrackingScreenComponent = ({
   );
 };
 
-const enhance = withObservables([], () => ({
-  milestones: database.collections.get('milestones').query(Q.where('is_active', true)),
-  sites: database.collections.get('sites').query(),
-  projects: database.collections.get('projects').query(),
+// Enhance component with WatermelonDB observables - filter by assigned project
+const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
+  milestones: database.collections
+    .get('milestones')
+    .query(Q.where('project_id', projectId), Q.where('is_active', true)),
+  sites: database.collections
+    .get('sites')
+    .query(Q.where('project_id', projectId)), // Only show sites for assigned project
+  projects: database.collections
+    .get('projects')
+    .query(Q.where('id', projectId)), // Only show assigned project
 }));
 
-const MilestoneTrackingScreen = enhance(MilestoneTrackingScreenComponent as any);
+const EnhancedMilestoneTrackingScreen = enhance(MilestoneTrackingScreenComponent as any);
+
+// Wrapper component that provides projectId from context
+const MilestoneTrackingScreen = () => {
+  const { projectId } = usePlanningContext();
+
+  if (!projectId) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+        <EmptyState
+          icon="folder-alert-outline"
+          title="No Project Assigned"
+          message="Please contact your administrator to assign a project to your account."
+          variant="large"
+        />
+      </View>
+    );
+  }
+
+  return <EnhancedMilestoneTrackingScreen projectId={projectId} />;
+};
 
 const styles = StyleSheet.create({
   container: {
