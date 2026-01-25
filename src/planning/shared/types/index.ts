@@ -6,3 +6,4 @@ export * from './item';
 export * from './milestone';
 export * from './gantt';
 export * from './wbs';
+export * from './database';

@@ -9,16 +9,17 @@ import { View, StyleSheet } from 'react-native';
 import { Text, TextInput, HelperText } from 'react-native-paper';
 import CategorySelector from '../../components/CategorySelector';
 import PhaseSelector from '../../components/PhaseSelector';
+import { ProjectPhase } from '../../../../models/ItemModel';
 
 interface ItemDetailsSectionProps {
   name: string;
   categoryId: string;
-  phase: string;
+  phase: ProjectPhase;
   errors: Record<string, string>;
   isLocked: boolean;
   onNameChange: (text: string) => void;
   onCategoryChange: (categoryId: string) => void;
-  onPhaseChange: (phase: string) => void;
+  onPhaseChange: (phase: ProjectPhase) => void;
 }
 
 export const ItemDetailsSection: React.FC<ItemDetailsSectionProps> = ({
@@ -71,8 +72,8 @@ export const ItemDetailsSection: React.FC<ItemDetailsSectionProps> = ({
           Project Phase *
         </Text>
         <PhaseSelector
-          value={phase as any}
-          onSelect={(selectedPhase) => onPhaseChange(selectedPhase as string)}
+          value={phase}
+          onSelect={onPhaseChange}
           disabled={isLocked}
         />
       </View>
