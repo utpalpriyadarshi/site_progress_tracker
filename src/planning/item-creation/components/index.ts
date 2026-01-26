@@ -20,4 +20,5 @@ export {
   QuantitySection,
   CriticalPathSection,
   RiskSection,
+  KeyDateSection,
 } from '../../shared/components/ItemFormSections';

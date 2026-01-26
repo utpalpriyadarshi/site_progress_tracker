@@ -26,6 +26,7 @@ export interface ItemEditFormData {
   floatDays: string;
   dependencyRisk: 'low' | 'medium' | 'high' | '';
   riskNotes: string;
+  keyDateId: string | null; // Link to Key Date (Phase 5c)
 }
 
 export interface ItemEditState {
@@ -116,6 +117,7 @@ export const createInitialState = (): ItemEditState => ({
     floatDays: '0',
     dependencyRisk: 'low',
     riskNotes: '',
+    keyDateId: null,
   },
   validation: {
     errors: {},
@@ -147,6 +149,7 @@ const itemToFormData = (item: ItemModel): ItemEditFormData => {
     floatDays: (item.floatDays || 0).toString(),
     dependencyRisk: item.dependencyRisk || 'low',
     riskNotes: item.riskNotes || '',
+    keyDateId: item.keyDateId || null,
   };
 };
 
@@ -172,6 +175,7 @@ const hasFormChanges = (formData: ItemEditFormData, originalItem: ItemModel | nu
     formData.floatDays !== originalFormData.floatDays ||
     formData.dependencyRisk !== originalFormData.dependencyRisk ||
     formData.riskNotes !== originalFormData.riskNotes ||
+    formData.keyDateId !== originalFormData.keyDateId ||
     formData.startDate.getTime() !== originalFormData.startDate.getTime() ||
     formData.endDate.getTime() !== originalFormData.endDate.getTime()
   );
