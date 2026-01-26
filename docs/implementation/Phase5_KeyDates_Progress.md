@@ -118,47 +118,45 @@ Special cases (e.g., KD-C-07, KD-E-04, KD-F-04):
 
 ---
 
-## Phase 5b: Key Date Management UI (PENDING)
+## Phase 5b: Key Date Management UI ✅ COMPLETED
+
+**PR:** #79
+**Branch:** `feature/planner-key-dates-phase5b`
 
 ### Tasks
-- [ ] Create `KeyDateManagementScreen.tsx`
-- [ ] Create `KeyDateCard.tsx` component
-- [ ] Create `KeyDateForm.tsx` for add/edit
-- [ ] Create `KeyDateStatusBadge.tsx` component
-- [ ] Add to PlanningNavigator (drawer item)
-- [ ] Create state management (reducer pattern)
+- [x] Create `KeyDateManagementScreen.tsx`
+- [x] Create `KeyDateCard.tsx` component
+- [x] Create `KeyDateStatusBadge.tsx` component
+- [x] Create `KeyDateProgressBar.tsx` component
+- [x] Add to PlanningNavigator (drawer item)
+- [x] Create state management (keyDateReducer.ts)
 
-### Suggested File Structure
+### Files Created
 ```
-src/planning/
-├── key-dates/
-│   ├── KeyDateManagementScreen.tsx
-│   ├── components/
-│   │   ├── KeyDateCard.tsx
-│   │   ├── KeyDateForm.tsx
-│   │   ├── KeyDateStatusBadge.tsx
-│   │   ├── KeyDateProgressBar.tsx
-│   │   └── index.ts
-│   ├── hooks/
-│   │   ├── useKeyDates.ts
-│   │   └── index.ts
-│   └── utils/
-│       ├── keyDateHelpers.ts
-│       └── index.ts
+src/planning/key-dates/
+├── KeyDateManagementScreen.tsx    # Main screen with CRUD operations
+├── components/
+│   ├── KeyDateCard.tsx            # Card component for displaying key dates
+│   ├── KeyDateStatusBadge.tsx     # Status badge (not_started, in_progress, etc.)
+│   ├── KeyDateProgressBar.tsx     # Progress bar with category colors
+│   └── index.ts                   # Barrel export
 ├── state/
-│   └── key-dates/
-│       ├── keyDateReducer.ts
-│       └── index.ts
+│   ├── keyDateReducer.ts          # State management with useReducer
+│   └── index.ts                   # Barrel export
+├── utils/
+│   ├── keyDateConstants.ts        # Colors, labels, formatters
+│   └── index.ts                   # Barrel export
+└── index.ts                       # Module export
 ```
 
-### UI Features to Implement
-1. **List View:** Display key dates grouped by category
-2. **Filter:** By status, category, project
-3. **Search:** By code or description
-4. **Detail View:** Show progress, sites, linked items
-5. **Add/Edit Form:** Create/modify key dates
-6. **Progress Update:** Update progress percentage
-7. **Site Mapping:** Assign sites to key dates with contribution %
+### UI Features Implemented
+1. **List View:** Display key dates with cards
+2. **Filter:** By status (segmented buttons), category (dropdown menu)
+3. **Search:** By code, description, or category name
+4. **Add/Edit Form:** Create/modify key dates via dialog
+5. **Progress Update:** Dedicated dialog for updating progress
+6. **Delete:** Confirmation dialog for deletion
+7. **FAB:** Floating action button for adding new key dates
 
 ---
 
@@ -209,7 +207,7 @@ src/planning/
 | Branch | Status | PR |
 |--------|--------|-----|
 | `feature/planner-key-dates-phase5a` | Completed | #78 |
-| `feature/planner-key-dates-phase5b` | Not created | - |
+| `feature/planner-key-dates-phase5b` | Completed | #79 |
 | `feature/planner-key-dates-phase5c` | Not created | - |
 
 ---

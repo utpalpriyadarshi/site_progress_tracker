@@ -42,6 +42,7 @@ import SiteManagementScreen from '../planning/SiteManagementScreen';
 import ResourcePlanningScreen from '../planning/ResourcePlanningScreen';
 import { PlanningDashboard } from '../planning/dashboard';
 import { UnifiedSchedule } from '../planning/schedule';
+import { KeyDateManagementScreen } from '../planning/key-dates';
 
 import { useAuth } from '../auth/AuthContext';
 import { PlanningStackParamList } from './types';
@@ -69,6 +70,7 @@ export type PlanningTabParamList = {
 
 export type PlanningDrawerParamList = {
   MainTabs: undefined;
+  KeyDates: undefined;
   Sites: undefined;
   WBS: undefined;
   CreateItem: undefined;
@@ -224,6 +226,9 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
       case 'MainTabs':
         iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
         break;
+      case 'KeyDates':
+        iconName = focused ? 'calendar-check' : 'calendar-check-outline';
+        break;
       case 'Sites':
         iconName = focused ? 'office-building' : 'office-building-outline';
         break;
@@ -282,6 +287,15 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
           title: 'Dashboard',
           drawerLabel: 'Dashboard',
           headerTitle: 'Planning',
+        }}
+      />
+      <Drawer.Screen
+        name="KeyDates"
+        component={KeyDateManagementScreen}
+        options={{
+          title: 'Key Dates',
+          drawerLabel: 'Key Dates',
+          headerTitle: 'Key Date Management',
         }}
       />
       <Drawer.Screen
