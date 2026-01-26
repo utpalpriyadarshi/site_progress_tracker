@@ -5,6 +5,8 @@ import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import MilestoneModel from '../../models/MilestoneModel';
+import SiteModel from '../../models/SiteModel';
+import ProjectModel from '../../models/ProjectModel';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { usePlanningContext } from './context';
@@ -31,14 +33,26 @@ import { MILESTONE_STATUS } from './milestone-tracking/utils/milestoneConstants'
  * Refactored to use useReducer for state management (18 useState → 1 useReducer, 94% reduction)
  */
 
-const MilestoneTrackingScreenComponent = ({
+// ==================== Types ====================
+
+interface MilestoneTrackingInputProps {
+  projectId: string;
+}
+
+interface MilestoneTrackingObservedProps {
+  milestones: MilestoneModel[];
+  sites: SiteModel[];
+  projects: ProjectModel[];
+}
+
+type MilestoneTrackingScreenProps = MilestoneTrackingInputProps & MilestoneTrackingObservedProps;
+
+// ==================== Component ====================
+
+const MilestoneTrackingScreenComponent: React.FC<MilestoneTrackingScreenProps> = ({
   milestones,
   sites,
   projects,
-}: {
-  milestones: MilestoneModel[];
-  sites: any[];
-  projects: any[];
 }) => {
   // Initialize reducer state
   const [state, dispatch] = useReducer(
@@ -337,19 +351,25 @@ const MilestoneTrackingScreenComponent = ({
 };
 
 // Enhance component with WatermelonDB observables - filter by assigned project
-const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
-  milestones: database.collections
-    .get('milestones')
-    .query(Q.where('project_id', projectId), Q.where('is_active', true)),
-  sites: database.collections
-    .get('sites')
-    .query(Q.where('project_id', projectId)), // Only show sites for assigned project
-  projects: database.collections
-    .get('projects')
-    .query(Q.where('id', projectId)), // Only show assigned project
-}));
+const enhance = withObservables(
+  ['projectId'],
+  ({ projectId }: MilestoneTrackingInputProps) => ({
+    milestones: database.collections
+      .get<MilestoneModel>('milestones')
+      .query(Q.where('project_id', projectId), Q.where('is_active', true)),
+    sites: database.collections
+      .get<SiteModel>('sites')
+      .query(Q.where('project_id', projectId)), // Only show sites for assigned project
+    projects: database.collections
+      .get<ProjectModel>('projects')
+      .query(Q.where('id', projectId)), // Only show assigned project
+  })
+);
 
-const EnhancedMilestoneTrackingScreen = enhance(MilestoneTrackingScreenComponent as any);
+// Type assertion: withObservables transforms observable queries to resolved arrays
+const EnhancedMilestoneTrackingScreen = enhance(
+  MilestoneTrackingScreenComponent as React.ComponentType<MilestoneTrackingInputProps>
+);
 
 // Wrapper component that provides projectId from context
 const MilestoneTrackingScreen = () => {

@@ -33,6 +33,7 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
+import ProjectModel from '../../models/ProjectModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -44,12 +45,24 @@ import {
   selectIsEditing,
 } from './state/siteManagementReducer';
 
-const SiteManagementScreenComponent = ({
+// ==================== Types ====================
+
+interface SiteManagementInputProps {
+  projectId: string;
+}
+
+interface SiteManagementObservedProps {
+  sites: SiteModel[];
+  projects: ProjectModel[];
+}
+
+type SiteManagementScreenProps = SiteManagementInputProps & SiteManagementObservedProps;
+
+// ==================== Component ====================
+
+const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
   sites,
   projects,
-}: {
-  sites: SiteModel[];
-  projects: any[];
 }) => {
   // Single useReducer replaces 21 useState calls
   const [state, dispatch] = useReducer(siteManagementReducer, undefined, createInitialState);
@@ -555,14 +568,20 @@ const SiteManagementScreenComponent = ({
 };
 
 // Enhance component with WatermelonDB observables - filter by assigned project
-const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
-  sites: database.collections
-    .get('sites')
-    .query(Q.where('project_id', projectId)), // Only show sites for assigned project
-  projects: database.collections.get('projects').query(),
-}));
+const enhance = withObservables(
+  ['projectId'],
+  ({ projectId }: SiteManagementInputProps) => ({
+    sites: database.collections
+      .get<SiteModel>('sites')
+      .query(Q.where('project_id', projectId)), // Only show sites for assigned project
+    projects: database.collections.get<ProjectModel>('projects').query(),
+  })
+);
 
-const EnhancedSiteManagementScreen = enhance(SiteManagementScreenComponent as any);
+// Type assertion: withObservables transforms observable queries to resolved arrays
+const EnhancedSiteManagementScreen = enhance(
+  SiteManagementScreenComponent as React.ComponentType<SiteManagementInputProps>
+);
 
 // Wrapper component that provides projectId from context
 const SiteManagementScreen = () => {

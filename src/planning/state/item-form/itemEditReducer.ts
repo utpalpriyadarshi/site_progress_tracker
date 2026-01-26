@@ -9,12 +9,12 @@
  * Reduction: 8 useState → 1 useReducer (88% reduction)
  */
 
-import ItemModel from '../../../../models/ItemModel';
+import ItemModel, { ProjectPhase } from '../../../../models/ItemModel';
 
 export interface ItemEditFormData {
   name: string;
   categoryId: string;
-  phase: string;
+  phase: ProjectPhase;
   duration: string;
   startDate: Date;
   endDate: Date;
