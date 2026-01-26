@@ -160,56 +160,67 @@ Created shared components in `src/planning/shared/components/ItemFormSections/`:
 ---
 
 ### Phase 5: Key Dates / Schedule Architecture (8-12 hours)
-**Status:** Planning
+**Status:** In Progress (Split into sub-phases)
 **Depends on:** Phase 4
 
 **Reference:** KeyDatesCMRL.pdf analysis
 
-**New Data Model:**
-```typescript
-// Key Date (Contract milestone)
-interface KeyDate {
-  id: string;
-  code: string;           // KD-G-01, KD-A-01, etc.
-  category: string;       // G, A, B, C, D, E, F
-  description: string;
-  targetDays: number;     // Days from commencement
-  targetDate: Date;       // Calculated from project start
-  actualDate?: Date;
-  status: 'not_started' | 'in_progress' | 'completed' | 'delayed';
-  delayDamages: number;   // INR Lakhs per day
-  projectId: string;
-}
+**Sub-phases:**
 
-// Key Date to Site mapping
-interface KeyDateSite {
-  keyDateId: string;
-  siteId: string;
-  contribution: number;   // Percentage contribution to KD completion
-}
+#### Phase 5a: Database Models & Schema ✅ Completed (PR #78)
+**New files created:**
+- `models/KeyDateModel.ts` - Contract key dates with delay damages
+- `models/KeyDateSiteModel.ts` - Junction table for key date to site mapping
+- `models/migrations/v35_add_key_dates_tables.ts` - Database migration
 
-// Work Item (under Key Date)
-interface WorkItem {
-  id: string;
-  keyDateId: string;
-  siteId?: string;        // Optional - some items span sites
-  type: 'design' | 'procurement' | 'installation' | 'testing' | 'commissioning';
-  name: string;
-  startDate: Date;
-  endDate: Date;
-  progress: number;
-  dependencies: string[]; // Other work item IDs
-}
-```
+**Schema changes (v35):**
+- Added `key_dates` table
+- Added `key_date_sites` table
+- Added `key_date_id` column to `items` table
 
+**Tasks (5a):**
+- [x] Create KeyDateModel in WatermelonDB
+- [x] Create KeyDateSiteModel for many-to-many relationship
+- [x] Update Item model to reference KeyDate
+- [x] Create v35 migration
+- [x] Update schema.ts and database.ts
+
+#### Phase 5b: Key Date Management UI (Pending)
 **Tasks:**
-- [ ] Create KeyDate model in WatermelonDB
-- [ ] Create KeyDateSite model for many-to-many relationship
-- [ ] Update WorkItem/Item model to reference KeyDate
-- [ ] Create KeyDateManagement screen
+- [ ] Create KeyDateManagementScreen
+- [ ] Create KeyDateCard component
+- [ ] Create KeyDateForm for add/edit
+- [ ] Add to navigation
+
+#### Phase 5c: Integration & Timeline (Pending)
+**Tasks:**
 - [ ] Update Schedule tab to show Key Dates timeline
 - [ ] Implement dependency tracking between Key Dates
 - [ ] Update Gantt chart to visualize Key Dates
+
+**Data Model (implemented in 5a):**
+```typescript
+// Key Date Categories (based on CMRL contract)
+type KeyDateCategory = 'G' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+
+// Key Date fields
+interface KeyDate {
+  code: string;                    // KD-G-01, KD-A-01, etc.
+  category: KeyDateCategory;       // G, A, B, C, D, E, F
+  categoryName: string;            // Full name (General, Design, etc.)
+  description: string;
+  targetDays: number;              // Days from commencement
+  targetDate?: number;             // Calculated target date
+  actualDate?: number;             // Actual completion date
+  status: 'not_started' | 'in_progress' | 'completed' | 'delayed';
+  progressPercentage: number;
+  delayDamagesInitial: number;     // INR Lakhs/day (days 1-28)
+  delayDamagesExtended: number;    // INR Lakhs/day (day 29+)
+  projectId: string;
+  sequenceOrder: number;
+  dependencies?: string;           // JSON array of key_date IDs
+}
+```
 
 ---
 
@@ -243,8 +254,10 @@ interface WorkItem {
 | Phase 1 | ✅ Completed | #74 | ✅ Yes |
 | Phase 2 | ✅ Completed | #75 | ✅ Yes |
 | Phase 3 | ✅ Completed | #76 | ✅ Yes |
-| Phase 4 | ✅ Completed | #77 | Pending |
-| Phase 5 | Planning | - | - |
+| Phase 4 | ✅ Completed | #77 | ✅ Yes |
+| Phase 5a | ✅ Completed | #78 | Pending |
+| Phase 5b | Pending | - | - |
+| Phase 5c | Pending | - | - |
 | Phase 6 | Pending | - | - |
 
 ---
