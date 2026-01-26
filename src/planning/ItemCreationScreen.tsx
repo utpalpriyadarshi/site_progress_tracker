@@ -34,6 +34,7 @@ import {
   QuantitySection,
   CriticalPathSection,
   RiskSection,
+  KeyDateSection,
 } from './item-creation/components';
 import {
   itemCreationReducer,
@@ -45,12 +46,14 @@ import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
 import { database } from '../../models/database';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
+import { usePlanningContext } from './context';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
 
 const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showSnackbar } = useSnackbar();
   const { announce } = useAccessibility();
+  const { projectId } = usePlanningContext();
 
   // Get siteId from route params (passed from WBSManagementScreen)
   // Use optional chaining to safely access params (may be undefined when navigating from drawer)
@@ -184,6 +187,9 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
           item.floatDays = state.form.isCriticalPath ? 0 : (parseFloat(state.form.floatDays) || 0);
           item.dependencyRisk = state.form.dependencyRisk;
           item.riskNotes = state.form.riskNotes.trim() || null;
+
+          // Key Date linking (Phase 5c)
+          item.keyDateId = state.form.keyDateId || null;
         });
       });
 
@@ -270,6 +276,15 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               phase={state.form.phase}
               onPhaseSelect={(phase) => updateField('phase', phase)}
             />
+
+            {/* Key Date Linking */}
+            {projectId && (
+              <KeyDateSection
+                projectId={projectId}
+                keyDateId={state.form.keyDateId}
+                onKeyDateChange={(keyDateId) => updateField('keyDateId', keyDateId)}
+              />
+            )}
 
             {/* Schedule Section */}
             <ScheduleSection

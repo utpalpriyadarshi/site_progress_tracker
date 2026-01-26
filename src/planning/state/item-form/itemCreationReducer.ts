@@ -27,6 +27,7 @@ export interface ItemFormData {
   floatDays: string;
   dependencyRisk: 'low' | 'medium' | 'high' | '';
   riskNotes: string;
+  keyDateId: string | null; // Link to Key Date (Phase 5c)
 }
 
 export interface ItemCreationState {
@@ -112,6 +113,7 @@ export const createInitialState = (parentWbsCode: string | null = null): ItemCre
     floatDays: '0',
     dependencyRisk: 'low',
     riskNotes: '',
+    keyDateId: null,
   },
   validation: {
     errors: {},

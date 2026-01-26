@@ -20,9 +20,11 @@ import { EmptyState } from '../components/common/EmptyState';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import ItemModel from '../../models/ItemModel';
+import KeyDateModel from '../../models/KeyDateModel';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
 import { useThrottle } from '../utils/performance';
+import { usePlanningContext } from './context';
 
 // State management
 import {
@@ -40,6 +42,7 @@ import {
   GanttLegend,
   GanttHeader,
   TaskRow,
+  KeyDateMilestoneRow,
 } from './gantt-chart/components';
 
 const GanttChartScreen: React.FC = () => {
@@ -47,6 +50,10 @@ const GanttChartScreen: React.FC = () => {
   const [state, dispatch] = useReducer(ganttChartReducer, createGanttChartInitialState());
   const scrollViewRef = useRef<ScrollView>(null);
   const { announce } = useAccessibility();
+  const { projectId } = usePlanningContext();
+
+  // State for key dates
+  const [keyDates, setKeyDates] = React.useState<KeyDateModel[]>([]);
 
   // Load items when site changes
   useEffect(() => {
@@ -80,6 +87,31 @@ const GanttChartScreen: React.FC = () => {
 
     loadItems();
   }, [state.selection.selectedSite, announce]);
+
+  // Load key dates when project changes
+  useEffect(() => {
+    const loadKeyDates = async () => {
+      if (!projectId) {
+        setKeyDates([]);
+        return;
+      }
+
+      try {
+        const projectKeyDates = await database.collections
+          .get<KeyDateModel>('key_dates')
+          .query(Q.where('project_id', projectId))
+          .fetch();
+
+        // Sort by target days
+        projectKeyDates.sort((a, b) => a.targetDays - b.targetDays);
+        setKeyDates(projectKeyDates);
+      } catch (error) {
+        logger.error('[Gantt] Error loading key dates', error as Error);
+      }
+    };
+
+    loadKeyDates();
+  }, [projectId]);
 
   // Site selection handler
   const handleSiteChange = useCallback((site: SiteModel | null) => {
@@ -158,6 +190,24 @@ const GanttChartScreen: React.FC = () => {
                   todayPosition={todayPosition}
                 />
               ))}
+
+              {/* Key Date Milestones */}
+              {keyDates.length > 0 && (
+                <>
+                  <View style={styles.keyDateSectionHeader}>
+                    <Text style={styles.keyDateSectionTitle}>Key Dates</Text>
+                  </View>
+                  {keyDates.map((keyDate) => (
+                    <KeyDateMilestoneRow
+                      key={keyDate.id}
+                      keyDate={keyDate}
+                      timelineStart={timelineBounds.start}
+                      zoomLevel={state.selection.zoomLevel}
+                      totalTimelineWidth={totalTimelineWidth}
+                    />
+                  ))}
+                </>
+              )}
             </ScrollView>
           )}
         </>
@@ -206,6 +256,20 @@ const styles = StyleSheet.create({
   },
   ganttContainer: {
     flex: 1,
+  },
+  keyDateSectionHeader: {
+    backgroundColor: '#FFF8E1',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderTopWidth: 2,
+    borderTopColor: '#FFB300',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE082',
+  },
+  keyDateSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FF8F00',
   },
 });
 

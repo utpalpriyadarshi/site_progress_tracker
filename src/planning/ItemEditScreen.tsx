@@ -37,6 +37,7 @@ import {
   QuantitySection,
   CriticalPathSection,
   RiskSection,
+  KeyDateSection,
   ItemInfoCard,
 } from './item-edit/components';
 
@@ -53,6 +54,7 @@ import ItemModel from '../../models/ItemModel';
 import { logger } from '../services/LoggingService';
 import { EmptyState } from '../components/common/EmptyState';
 import { useAccessibility } from '../utils/accessibility';
+import { usePlanningContext } from './context';
 
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
@@ -62,6 +64,7 @@ type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const itemId = route.params?.itemId;
   const { announce } = useAccessibility();
+  const { projectId } = usePlanningContext();
 
   // Initialize reducer state
   const [state, dispatch] = useReducer(itemEditReducer, createItemEditInitialState());
@@ -178,6 +181,9 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
           i.floatDays = state.form.isCriticalPath ? 0 : (parseFloat(state.form.floatDays) || 0);
           i.dependencyRisk = state.form.dependencyRisk;
           i.riskNotes = state.form.riskNotes.trim() || null;
+
+          // Key Date linking (Phase 5c)
+          i.keyDateId = state.form.keyDateId || null;
         });
       });
 
@@ -326,6 +332,16 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
               onRiskChange={(risk) => updateField('dependencyRisk', risk)}
               onRiskNotesChange={(text) => updateField('riskNotes', text)}
             />
+
+            {/* Key Date Linking */}
+            {projectId && (
+              <KeyDateSection
+                projectId={projectId}
+                keyDateId={state.form.keyDateId}
+                onKeyDateChange={(keyDateId) => updateField('keyDateId', keyDateId)}
+                isLocked={state.ui.isLocked}
+              />
+            )}
 
             {/* Item Information */}
             <ItemInfoCard

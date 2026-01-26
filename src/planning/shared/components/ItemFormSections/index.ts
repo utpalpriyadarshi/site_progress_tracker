@@ -12,3 +12,4 @@ export { ScheduleSection } from './ScheduleSection';
 export { QuantitySection } from './QuantitySection';
 export { RiskSection } from './RiskSection';
 export { CriticalPathSection } from './CriticalPathSection';
+export { KeyDateSection } from './KeyDateSection';

@@ -5,3 +5,4 @@ export * from './TaskInfo';
 export * from './TaskBar';
 export * from './TaskRow';
 export * from './GanttHeader';
+export * from './KeyDateMilestoneRow';
