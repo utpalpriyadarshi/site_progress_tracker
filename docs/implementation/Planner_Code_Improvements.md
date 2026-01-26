@@ -185,12 +185,22 @@ Created shared components in `src/planning/shared/components/ItemFormSections/`:
 - [x] Create v35 migration
 - [x] Update schema.ts and database.ts
 
-#### Phase 5b: Key Date Management UI (Pending)
+#### Phase 5b: Key Date Management UI ✅ Completed (PR #79)
+**New files created:**
+- `src/planning/key-dates/KeyDateManagementScreen.tsx` - Main screen with CRUD operations
+- `src/planning/key-dates/components/KeyDateCard.tsx` - Card component for displaying key dates
+- `src/planning/key-dates/components/KeyDateStatusBadge.tsx` - Status badge component
+- `src/planning/key-dates/components/KeyDateProgressBar.tsx` - Progress bar component
+- `src/planning/key-dates/state/keyDateReducer.ts` - State management with useReducer
+- `src/planning/key-dates/utils/keyDateConstants.ts` - Constants and utilities
+
 **Tasks:**
-- [ ] Create KeyDateManagementScreen
-- [ ] Create KeyDateCard component
-- [ ] Create KeyDateForm for add/edit
-- [ ] Add to navigation
+- [x] Create KeyDateManagementScreen with filtering and search
+- [x] Create KeyDateCard component
+- [x] Create KeyDateStatusBadge component
+- [x] Create KeyDateProgressBar component
+- [x] Create state management (keyDateReducer)
+- [x] Add to navigation (drawer item)
 
 #### Phase 5c: Integration & Timeline (Pending)
 **Tasks:**
@@ -255,8 +265,8 @@ interface KeyDate {
 | Phase 2 | ✅ Completed | #75 | ✅ Yes |
 | Phase 3 | ✅ Completed | #76 | ✅ Yes |
 | Phase 4 | ✅ Completed | #77 | ✅ Yes |
-| Phase 5a | ✅ Completed | #78 | Pending |
-| Phase 5b | Pending | - | - |
+| Phase 5a | ✅ Completed | #78 | ✅ Yes |
+| Phase 5b | ✅ Completed | #79 | Pending |
 | Phase 5c | Pending | - | - |
 | Phase 6 | Pending | - | - |
 
