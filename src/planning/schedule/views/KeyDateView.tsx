@@ -9,7 +9,7 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList } from 'react-native';
 import {
   Card,
   Text,
@@ -17,13 +17,13 @@ import {
   Searchbar,
   SegmentedButtons,
   ProgressBar,
-  Divider,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
-import KeyDateModel, { KeyDateCategory, KeyDateStatus } from '../../../../models/KeyDateModel';
+import KeyDateModel, { KeyDateStatus } from '../../../../models/KeyDateModel';
+import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { usePlanningContext } from '../../context';
 import {
@@ -49,6 +49,152 @@ interface KeyDateViewFilters {
 }
 
 type KeyDateViewProps = KeyDateViewInputProps & KeyDateViewObservedProps;
+
+// ==================== Helper Functions ====================
+
+/**
+ * Calculate aggregated progress from associated sites
+ */
+const calculateAggregatedProgress = (sites: KeyDateSiteModel[]): number => {
+  if (!sites || sites.length === 0) return 0;
+  return sites.reduce((total, site) => total + site.getWeightedProgress(), 0);
+};
+
+/**
+ * Derive status from calculated progress
+ */
+const deriveStatusFromProgress = (
+  progress: number,
+  originalStatus: KeyDateStatus,
+  hasSites: boolean
+): KeyDateStatus => {
+  if (!hasSites) return originalStatus;
+  if (progress >= 100) return 'completed';
+  if (progress > 0) return 'in_progress';
+  return 'not_started';
+};
+
+// ==================== KeyDateViewItem Component ====================
+
+interface KeyDateViewItemProps {
+  keyDate: KeyDateModel;
+  keyDateSites?: KeyDateSiteModel[];
+  onPress: () => void;
+}
+
+const KeyDateViewItemInner: React.FC<KeyDateViewItemProps> = ({
+  keyDate,
+  keyDateSites = [],
+  onPress,
+}) => {
+  // Calculate progress from associated sites
+  const calculatedProgress = useMemo(() => {
+    if (keyDateSites.length > 0) {
+      return calculateAggregatedProgress(keyDateSites);
+    }
+    return keyDate.progressPercentage;
+  }, [keyDateSites, keyDate.progressPercentage]);
+
+  // Derive status from calculated progress
+  const derivedStatus = useMemo(() => {
+    return deriveStatusFromProgress(
+      calculatedProgress,
+      keyDate.status,
+      keyDateSites.length > 0
+    );
+  }, [calculatedProgress, keyDate.status, keyDateSites.length]);
+
+  const daysRemaining = keyDate.getDaysRemaining();
+  const daysDelayed = keyDate.getDaysDelayed();
+  const isCritical = keyDate.isCritical();
+  const categoryColor = KEY_DATE_CATEGORY_COLORS[keyDate.category];
+  const statusColor = KEY_DATE_STATUS_COLORS[derivedStatus];
+
+  return (
+    <Card
+      style={[styles.keyDateCard, isCritical && styles.criticalCard]}
+      onPress={onPress}
+    >
+      {/* Category Color Bar */}
+      <View style={[styles.categoryBar, { backgroundColor: categoryColor }]} />
+
+      <Card.Content style={styles.cardContent}>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View style={styles.codeContainer}>
+            <Text style={[styles.code, { color: categoryColor }]}>{keyDate.code}</Text>
+            <Chip
+              mode="flat"
+              compact
+              style={[styles.statusChip, { backgroundColor: statusColor }]}
+              textStyle={styles.statusChipText}
+            >
+              {KEY_DATE_STATUS_LABELS[derivedStatus]}
+            </Chip>
+          </View>
+        </View>
+
+        {/* Category */}
+        <Text style={styles.category}>{keyDate.categoryName}</Text>
+
+        {/* Description */}
+        <Text style={styles.description} numberOfLines={2}>
+          {keyDate.description}
+        </Text>
+
+        {/* Progress */}
+        <View style={styles.progressSection}>
+          <Text style={styles.progressLabel}>
+            Progress: {calculatedProgress.toFixed(0)}%
+          </Text>
+          <ProgressBar
+            progress={calculatedProgress / 100}
+            color={derivedStatus === 'delayed' ? '#F44336' : categoryColor}
+            style={styles.progressBar}
+          />
+          {keyDateSites.length > 0 && (
+            <Text style={styles.siteCountText}>
+              {keyDateSites.length} site{keyDateSites.length !== 1 ? 's' : ''} contributing
+            </Text>
+          )}
+        </View>
+
+        {/* Timeline Info */}
+        <View style={styles.timelineInfo}>
+          <View style={styles.timelineItem}>
+            <Text style={styles.timelineLabel}>Target</Text>
+            <Text style={styles.timelineValue}>{keyDate.targetDays} days</Text>
+          </View>
+
+          <View style={styles.timelineDivider} />
+
+          <View style={styles.timelineItem}>
+            <Text style={styles.timelineLabel}>Status</Text>
+            <Text
+              style={[
+                styles.timelineValue,
+                daysDelayed > 0 && styles.delayedText,
+              ]}
+            >
+              {formatDaysRemaining(daysRemaining)}
+            </Text>
+          </View>
+        </View>
+      </Card.Content>
+    </Card>
+  );
+};
+
+// Enhance KeyDateViewItem with withObservables to fetch sites
+const enhanceItem = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => ({
+  keyDate,
+  keyDateSites: database.collections
+    .get<KeyDateSiteModel>('key_date_sites')
+    .query(Q.where('key_date_id', keyDate.id))
+    .observe(),
+}));
+
+const KeyDateViewItem = enhanceItem(KeyDateViewItemInner);
 
 // ==================== Main Component ====================
 
@@ -109,81 +255,13 @@ const KeyDateViewComponent: React.FC<KeyDateViewProps> = ({ keyDates }) => {
     navigation.navigate('KeyDates');
   }, [navigation]);
 
-  // Render item
+  // Render item using the enhanced KeyDateViewItem component
   const renderKeyDateItem = useCallback(({ item }: { item: KeyDateModel }) => {
-    const daysRemaining = item.getDaysRemaining();
-    const daysDelayed = item.getDaysDelayed();
-    const isCritical = item.isCritical();
-    const categoryColor = KEY_DATE_CATEGORY_COLORS[item.category];
-    const statusColor = KEY_DATE_STATUS_COLORS[item.status];
-
     return (
-      <Card
-        style={[styles.keyDateCard, isCritical && styles.criticalCard]}
+      <KeyDateViewItem
+        keyDate={item}
         onPress={handleNavigateToKeyDates}
-      >
-        {/* Category Color Bar */}
-        <View style={[styles.categoryBar, { backgroundColor: categoryColor }]} />
-
-        <Card.Content style={styles.cardContent}>
-          {/* Header Row */}
-          <View style={styles.headerRow}>
-            <View style={styles.codeContainer}>
-              <Text style={[styles.code, { color: categoryColor }]}>{item.code}</Text>
-              <Chip
-                mode="flat"
-                compact
-                style={[styles.statusChip, { backgroundColor: statusColor }]}
-                textStyle={styles.statusChipText}
-              >
-                {KEY_DATE_STATUS_LABELS[item.status]}
-              </Chip>
-            </View>
-          </View>
-
-          {/* Category */}
-          <Text style={styles.category}>{item.categoryName}</Text>
-
-          {/* Description */}
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-
-          {/* Progress */}
-          <View style={styles.progressSection}>
-            <Text style={styles.progressLabel}>
-              Progress: {item.progressPercentage.toFixed(0)}%
-            </Text>
-            <ProgressBar
-              progress={item.progressPercentage / 100}
-              color={item.status === 'delayed' ? '#F44336' : categoryColor}
-              style={styles.progressBar}
-            />
-          </View>
-
-          {/* Timeline Info */}
-          <View style={styles.timelineInfo}>
-            <View style={styles.timelineItem}>
-              <Text style={styles.timelineLabel}>Target</Text>
-              <Text style={styles.timelineValue}>{item.targetDays} days</Text>
-            </View>
-
-            <View style={styles.timelineDivider} />
-
-            <View style={styles.timelineItem}>
-              <Text style={styles.timelineLabel}>Status</Text>
-              <Text
-                style={[
-                  styles.timelineValue,
-                  daysDelayed > 0 && styles.delayedText,
-                ]}
-              >
-                {formatDaysRemaining(daysRemaining)}
-              </Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
+      />
     );
   }, [handleNavigateToKeyDates]);
 
@@ -385,12 +463,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statusChip: {
-    height: 24,
+    height: 26,
   },
   statusChipText: {
     color: 'white',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   category: {
     fontSize: 12,
@@ -414,6 +492,12 @@ const styles = StyleSheet.create({
   progressBar: {
     height: 6,
     borderRadius: 3,
+  },
+  siteCountText: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    textAlign: 'right',
   },
   timelineInfo: {
     flexDirection: 'row',
