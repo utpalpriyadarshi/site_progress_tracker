@@ -45,11 +45,11 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: 'white',
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   compactText: {
-    fontSize: 10,
+    fontSize: 11,
   },
 });
 
