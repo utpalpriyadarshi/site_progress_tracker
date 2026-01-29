@@ -2,16 +2,21 @@
  * Key Date Card Component
  *
  * Displays a single key date with its details, progress, and actions.
+ * Progress is automatically calculated from associated KeyDateSites.
  *
- * @version 1.0.0
+ * @version 1.1.0
  * @since Phase 5b - Key Dates UI
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Button, IconButton, Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
+import { database } from '../../../../models/database';
 import KeyDateModel from '../../../../models/KeyDateModel';
+import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { KeyDateStatusBadge } from './KeyDateStatusBadge';
 import { KeyDateProgressBar } from './KeyDateProgressBar';
 import {
@@ -23,14 +28,43 @@ import {
 
 interface KeyDateCardProps {
   keyDate: KeyDateModel;
+  keyDateSites?: KeyDateSiteModel[];
   onEdit: (keyDate: KeyDateModel) => void;
   onUpdateProgress: (keyDate: KeyDateModel) => void;
   onManageSites?: (keyDate: KeyDateModel) => void;
   onViewDetails?: (keyDate: KeyDateModel) => void;
 }
 
-export const KeyDateCard: React.FC<KeyDateCardProps> = ({
+/**
+ * Calculate aggregated progress from associated sites
+ * Progress = sum of (contribution% × progress%) for all sites
+ */
+const calculateAggregatedProgress = (sites: KeyDateSiteModel[]): number => {
+  if (!sites || sites.length === 0) return 0;
+  return sites.reduce((total, site) => total + site.getWeightedProgress(), 0);
+};
+
+/**
+ * Derive status from calculated progress
+ * This ensures the displayed status matches the actual progress from sites
+ */
+const deriveStatusFromProgress = (
+  progress: number,
+  originalStatus: string,
+  hasSites: boolean
+): string => {
+  // If no sites are associated, use the original status from the key date
+  if (!hasSites) return originalStatus;
+
+  // Derive status based on progress
+  if (progress >= 100) return 'completed';
+  if (progress > 0) return 'in_progress';
+  return 'not_started';
+};
+
+const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
   keyDate,
+  keyDateSites = [],
   onEdit,
   onUpdateProgress,
   onManageSites,
@@ -42,6 +76,23 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
   const daysDelayed = keyDate.getDaysDelayed();
   const estimatedDamages = keyDate.getEstimatedDelayDamages();
   const isCritical = keyDate.isCritical();
+
+  // Calculate progress from associated sites (if sites exist, use calculated; otherwise use stored value)
+  const calculatedProgress = useMemo(() => {
+    if (keyDateSites.length > 0) {
+      return calculateAggregatedProgress(keyDateSites);
+    }
+    return keyDate.progressPercentage;
+  }, [keyDateSites, keyDate.progressPercentage]);
+
+  // Derive the display status from calculated progress to ensure consistency
+  const derivedStatus = useMemo(() => {
+    return deriveStatusFromProgress(
+      calculatedProgress,
+      keyDate.status,
+      keyDateSites.length > 0
+    );
+  }, [calculatedProgress, keyDate.status, keyDateSites.length]);
 
   return (
     <Card
@@ -60,7 +111,7 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
               {keyDate.getFormattedCode()}
             </Text>
           </View>
-          <KeyDateStatusBadge status={keyDate.status} />
+          <KeyDateStatusBadge status={derivedStatus as any} />
         </View>
 
         {/* Category Chip */}
@@ -78,12 +129,17 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
           {keyDate.description}
         </Text>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - uses calculated progress from associated sites */}
         <KeyDateProgressBar
-          progressPercentage={keyDate.progressPercentage}
+          progressPercentage={calculatedProgress}
           category={keyDate.category}
-          status={keyDate.status}
+          status={derivedStatus as any}
         />
+        {keyDateSites.length > 0 && (
+          <Text style={styles.siteCountText}>
+            {keyDateSites.length} site{keyDateSites.length !== 1 ? 's' : ''} contributing
+          </Text>
+        )}
 
         {/* Schedule Info */}
         <View style={styles.scheduleSection}>
@@ -103,7 +159,7 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
             </View>
           )}
 
-          {keyDate.status !== 'completed' && (
+          {derivedStatus !== 'completed' && (
             <View style={styles.scheduleRow}>
               <Icon
                 name={daysDelayed > 0 ? 'alert-circle' : 'clock-outline'}
@@ -276,6 +332,24 @@ const styles = StyleSheet.create({
   actionButton: {
     minWidth: 100,
   },
+  siteCountText: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    textAlign: 'right',
+  },
 });
+
+// WatermelonDB observable enhancement - fetches associated sites for progress calculation
+const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => ({
+  keyDate,
+  keyDateSites: database.collections
+    .get<KeyDateSiteModel>('key_date_sites')
+    .query(Q.where('key_date_id', keyDate.id))
+    .observe(),
+}));
+
+// Enhanced component with reactive data
+export const KeyDateCard = enhance(KeyDateCardInner);
 
 export default KeyDateCard;
