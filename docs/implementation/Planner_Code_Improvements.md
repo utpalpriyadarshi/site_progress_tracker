@@ -160,7 +160,7 @@ Created shared components in `src/planning/shared/components/ItemFormSections/`:
 ---
 
 ### Phase 5: Key Dates / Schedule Architecture (8-12 hours)
-**Status:** In Progress (Split into sub-phases)
+**Status:** ✅ Completed (PRs #78, #79, #80)
 **Depends on:** Phase 4
 
 **Reference:** KeyDatesCMRL.pdf analysis
@@ -202,11 +202,19 @@ Created shared components in `src/planning/shared/components/ItemFormSections/`:
 - [x] Create state management (keyDateReducer)
 - [x] Add to navigation (drawer item)
 
-#### Phase 5c: Integration & Timeline (Pending)
+#### Phase 5c: Integration & Timeline ✅ Completed (PR #80)
+**New files created:**
+- `src/planning/key-dates/components/KeyDateSelector.tsx` - Reusable picker for selecting key dates
+- `src/planning/schedule/views/KeyDateView.tsx` - Key Dates tab in Schedule screen
+- `src/planning/gantt-chart/components/KeyDateMilestoneRow.tsx` - Diamond milestones for Gantt chart
+- `src/planning/shared/components/ItemFormSections/KeyDateSection.tsx` - Form section for item linking
+
 **Tasks:**
-- [ ] Update Schedule tab to show Key Dates timeline
-- [ ] Implement dependency tracking between Key Dates
-- [ ] Update Gantt chart to visualize Key Dates
+- [x] Create KeyDateSelector component with search and filtering
+- [x] Add Key Dates tab to UnifiedSchedule screen
+- [x] Update Gantt chart with Key Date milestone markers
+- [x] Add KeyDateSelector to ItemCreation/ItemEdit forms
+- [x] Update item form reducers with keyDateId field
 
 **Data Model (implemented in 5a):**
 ```typescript
@@ -266,8 +274,8 @@ interface KeyDate {
 | Phase 3 | ✅ Completed | #76 | ✅ Yes |
 | Phase 4 | ✅ Completed | #77 | ✅ Yes |
 | Phase 5a | ✅ Completed | #78 | ✅ Yes |
-| Phase 5b | ✅ Completed | #79 | Pending |
-| Phase 5c | Pending | - | - |
+| Phase 5b | ✅ Completed | #79 | ✅ Yes |
+| Phase 5c | ✅ Completed | #80 | ✅ Yes |
 | Phase 6 | Pending | - | - |
 
 ---
@@ -301,6 +309,20 @@ interface KeyDate {
 - [x] Type inference works in IDE
 - [ ] Planning context loads user project correctly
 - [ ] withObservables components render without errors
+
+### Phase 5 Testing
+- [ ] Key Dates Management screen (5b)
+  - [ ] Create key date works
+  - [ ] Edit key date works
+  - [ ] Delete key date works
+  - [ ] Status filters work
+  - [ ] Search works
+- [ ] Key Dates Integration (5c)
+  - [ ] Key Dates tab appears in Schedule screen
+  - [ ] Key date milestones appear in Gantt chart
+  - [ ] KeyDateSelector works in item creation form
+  - [ ] KeyDateSelector works in item edit form
+  - [ ] Key date linking persists after save
 
 ---
 
