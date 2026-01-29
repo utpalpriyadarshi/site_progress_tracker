@@ -8,7 +8,7 @@
  * @since Phase 5b - Key Dates UI
  */
 
-import React, { useReducer, useCallback, useMemo } from 'react';
+import React, { useReducer, useCallback, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -35,10 +35,12 @@ import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import KeyDateModel, { KeyDateCategory, KeyDateStatus } from '../../../models/KeyDateModel';
+import ProjectModel from '../../../models/ProjectModel';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { EmptyState } from '../../components/common/EmptyState';
 import { usePlanningContext } from '../context';
-import { KeyDateCard } from './components';
+import { KeyDateCard, KeyDateSiteManager } from './components';
+import { useTargetDateCalculation } from './hooks';
 import {
   keyDateReducer,
   createKeyDateInitialState,
@@ -62,6 +64,7 @@ interface KeyDateManagementInputProps {
 
 interface KeyDateManagementObservedProps {
   keyDates: KeyDateModel[];
+  project: ProjectModel;
 }
 
 type KeyDateManagementProps = KeyDateManagementInputProps & KeyDateManagementObservedProps;
@@ -71,10 +74,21 @@ type KeyDateManagementProps = KeyDateManagementInputProps & KeyDateManagementObs
 const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
   keyDates,
   projectId,
+  project,
 }) => {
   const [state, dispatch] = useReducer(keyDateReducer, undefined, createKeyDateInitialState);
   const isEditing = selectIsEditing(state);
   const hasActiveFilters = selectHasActiveFilters(state);
+
+  // Hook for auto-calculating targetDate from targetDays
+  const { handleTargetDaysChange } = useTargetDateCalculation({
+    projectStartDate: project?.startDate || null,
+    dispatch,
+  });
+
+  // State for site manager dialog
+  const [siteManagerVisible, setSiteManagerVisible] = useState(false);
+  const [siteManagerKeyDate, setSiteManagerKeyDate] = useState<KeyDateModel | null>(null);
 
   // Memoized filtered key dates
   const filteredKeyDates = useMemo(() => {
@@ -120,9 +134,17 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
 
   // ==================== Handlers ====================
 
+  // Calculate next sequence order for new key dates
+  const getNextSequenceOrder = useCallback(() => {
+    if (keyDates.length === 0) return 1;
+    return Math.max(...keyDates.map(kd => kd.sequenceOrder)) + 1;
+  }, [keyDates]);
+
   const handleOpenAdd = useCallback(() => {
     dispatch({ type: 'OPEN_ADD_DIALOG' });
-  }, []);
+    // Set auto-incremented sequence order
+    dispatch({ type: 'SET_FORM_SEQUENCE', payload: getNextSequenceOrder().toString() });
+  }, [getNextSequenceOrder]);
 
   const handleEdit = useCallback((keyDate: KeyDateModel) => {
     dispatch({ type: 'OPEN_EDIT_DIALOG', payload: { keyDate } });
@@ -130,6 +152,16 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
 
   const handleUpdateProgress = useCallback((keyDate: KeyDateModel) => {
     dispatch({ type: 'OPEN_PROGRESS_DIALOG', payload: { keyDate } });
+  }, []);
+
+  const handleManageSites = useCallback((keyDate: KeyDateModel) => {
+    setSiteManagerKeyDate(keyDate);
+    setSiteManagerVisible(true);
+  }, []);
+
+  const handleCloseSiteManager = useCallback(() => {
+    setSiteManagerVisible(false);
+    setSiteManagerKeyDate(null);
   }, []);
 
   const handleCloseEditDialog = useCallback(() => {
@@ -299,9 +331,10 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         keyDate={item}
         onEdit={handleEdit}
         onUpdateProgress={handleUpdateProgress}
+        onManageSites={handleManageSites}
       />
     ),
-    [handleEdit, handleUpdateProgress]
+    [handleEdit, handleUpdateProgress, handleManageSites]
   );
 
   const categoryOptions = getCategoryOptions();
@@ -493,11 +526,21 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
               <TextInput
                 label="Target Days (from commencement) *"
                 value={state.form.targetDays}
-                onChangeText={(text) => dispatch({ type: 'SET_FORM_TARGET_DAYS', payload: text })}
+                onChangeText={handleTargetDaysChange}
                 mode="outlined"
                 style={styles.input}
                 keyboardType="numeric"
               />
+
+              {/* Calculated Target Date Display */}
+              {state.form.targetDate && (
+                <View style={styles.targetDateDisplay}>
+                  <Text style={styles.targetDateLabel}>Calculated Target Date:</Text>
+                  <Text style={styles.targetDateValue}>
+                    {state.form.targetDate.toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
 
               <TextInput
                 label="Sequence Order"
@@ -582,6 +625,40 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
                 </Chip>
               ))}
             </View>
+
+            {/* Actual Completion Date */}
+            <Text style={[styles.fieldLabel, styles.fieldLabelMargin]}>Actual Completion Date:</Text>
+            <Button
+              mode="outlined"
+              onPress={() => dispatch({ type: 'TOGGLE_PROGRESS_DATE_PICKER' })}
+              icon="calendar"
+              style={styles.dateButton}
+            >
+              {state.progressForm.actualDate?.toLocaleDateString() || 'Select Date'}
+            </Button>
+
+            {state.ui.showProgressDatePicker && (
+              <DateTimePicker
+                value={state.progressForm.actualDate || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => {
+                  dispatch({ type: 'TOGGLE_PROGRESS_DATE_PICKER' });
+                  if (date) dispatch({ type: 'SET_PROGRESS_ACTUAL_DATE', payload: date });
+                }}
+              />
+            )}
+
+            {/* Notes */}
+            <TextInput
+              label="Notes"
+              value={state.progressForm.notes}
+              onChangeText={(text) => dispatch({ type: 'SET_PROGRESS_NOTES', payload: text })}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+              style={styles.notesInput}
+            />
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={handleCloseProgressDialog}>Cancel</Button>
@@ -610,6 +687,16 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             </Button>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Site Manager Dialog */}
+        {siteManagerKeyDate && (
+          <KeyDateSiteManager
+            visible={siteManagerVisible}
+            keyDate={siteManagerKeyDate}
+            projectId={projectId}
+            onDismiss={handleCloseSiteManager}
+          />
+        )}
       </Portal>
 
       {/* Snackbar */}
@@ -638,6 +725,9 @@ const enhance = withObservables(
       .get<KeyDateModel>('key_dates')
       .query(Q.where('project_id', projectId))
       .observe(),
+    project: database.collections
+      .get<ProjectModel>('projects')
+      .findAndObserve(projectId),
   })
 );
 
@@ -765,6 +855,35 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     marginTop: 4,
+  },
+  fieldLabelMargin: {
+    marginTop: 16,
+  },
+  dateButton: {
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  notesInput: {
+    marginTop: 8,
+  },
+  targetDateDisplay: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  targetDateLabel: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '500',
+  },
+  targetDateValue: {
+    fontSize: 14,
+    color: '#1B5E20',
+    fontWeight: 'bold',
   },
   errorSnackbar: {
     backgroundColor: '#D32F2F',

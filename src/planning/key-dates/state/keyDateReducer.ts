@@ -18,6 +18,7 @@ export interface KeyDateManagementState {
     progressDialogVisible: boolean;
     deleteDialogVisible: boolean;
     filterMenuVisible: boolean;
+    showProgressDatePicker: boolean;
     snackbarVisible: boolean;
     snackbarMessage: string;
     snackbarType: 'success' | 'error';
@@ -93,6 +94,7 @@ export type KeyDateManagementAction =
   | { type: 'SET_PROGRESS_STATUS'; payload: KeyDateStatus }
   | { type: 'SET_PROGRESS_ACTUAL_DATE'; payload: Date | undefined }
   | { type: 'SET_PROGRESS_NOTES'; payload: string }
+  | { type: 'TOGGLE_PROGRESS_DATE_PICKER' }
 
   // Snackbar Actions
   | { type: 'SHOW_SNACKBAR'; payload: { message: string; type?: 'success' | 'error' } }
@@ -129,6 +131,7 @@ export const createKeyDateInitialState = (): KeyDateManagementState => ({
     progressDialogVisible: false,
     deleteDialogVisible: false,
     filterMenuVisible: false,
+    showProgressDatePicker: false,
     snackbarVisible: false,
     snackbarMessage: '',
     snackbarType: 'success',
@@ -215,7 +218,7 @@ export const keyDateReducer = (
     case 'CLOSE_PROGRESS_DIALOG':
       return {
         ...state,
-        ui: { ...state.ui, progressDialogVisible: false },
+        ui: { ...state.ui, progressDialogVisible: false, showProgressDatePicker: false },
       };
 
     case 'OPEN_DELETE_DIALOG':
@@ -320,6 +323,12 @@ export const keyDateReducer = (
     case 'SET_PROGRESS_NOTES':
       return { ...state, progressForm: { ...state.progressForm, notes: action.payload } };
 
+    case 'TOGGLE_PROGRESS_DATE_PICKER':
+      return {
+        ...state,
+        ui: { ...state.ui, showProgressDatePicker: !state.ui.showProgressDatePicker },
+      };
+
     // Snackbar Actions
     case 'SHOW_SNACKBAR':
       return {
@@ -377,6 +386,17 @@ export const validateKeyDateForm = (form: KeyDateManagementState['form']): {
   const progress = parseFloat(form.progressPercentage);
   if (isNaN(progress) || progress < 0 || progress > 100) {
     errors.progressPercentage = 'Progress must be between 0 and 100';
+  }
+
+  // Delay damages validation
+  const damagesInitial = parseFloat(form.delayDamagesInitial);
+  if (isNaN(damagesInitial) || damagesInitial < 0 || damagesInitial > 100) {
+    errors.delayDamagesInitial = 'Initial rate must be 0-100 INR Lakhs';
+  }
+
+  const damagesExtended = parseFloat(form.delayDamagesExtended);
+  if (isNaN(damagesExtended) || damagesExtended < 0 || damagesExtended > 500) {
+    errors.delayDamagesExtended = 'Extended rate must be 0-500 INR Lakhs';
   }
 
   return {
