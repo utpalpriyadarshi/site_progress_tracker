@@ -23,20 +23,16 @@ export class SimpleDatabaseService {
   static async initializeDefaultData(): Promise<void> {
     try {
       // Check if we already have data to avoid duplicates
-      // Check both projects AND users to be thorough
+      // Check projects, users, AND roles to be thorough
       const projects = await database.collections.get('projects').query().fetch();
       const users = await database.collections.get('users').query().fetch();
+      const roles = await database.collections.get('roles').query().fetch();
 
-      if (projects.length > 0 && users.length > 0) {
+      // Skip if ANY of the core data already exists (prevents duplicates)
+      if (projects.length > 0 || users.length > 0 || roles.length > 0) {
         console.log('Default data already exists, skipping initialization');
-        console.log(`  - Found ${projects.length} projects and ${users.length} users`);
+        console.log(`  - Found ${projects.length} projects, ${users.length} users, ${roles.length} roles`);
         return;
-      }
-
-      if (projects.length > 0 || users.length > 0) {
-        console.log('⚠️  Partial data found! This may indicate incomplete reset.');
-        console.log(`  - Projects: ${projects.length}, Users: ${users.length}`);
-        console.log('  - Proceeding with initialization...');
       }
 
       console.log('🚀 Initializing default data...');

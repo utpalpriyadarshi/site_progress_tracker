@@ -37,12 +37,29 @@ export const AVAILABLE_ROLES: Array<{ key: AdminRole; label: string }> = [
 
 /**
  * Database collections to reset
+ * Must match schema/index.ts table names exactly
  */
 export const DATABASE_COLLECTIONS = [
-  'users', 'roles', 'projects', 'sites', 'categories', 'items',
-  'reports', 'materials', 'material_requests', 'material_deliveries',
-  'suppliers', 'sessions', 'milestones', 'milestone_progress',
-  'doors_packages', 'doors_requirements', 'rfqs', 'rfq_vendors',
-  'rfq_vendor_quotes', 'purchase_orders', 'vendors', 'boms',
-  'bom_items', 'budgets', 'costs', 'invoices'
+  // Core tables
+  'users', 'roles', 'sessions', 'password_history',
+  'projects', 'sites', 'categories', 'items',
+  // Progress tracking
+  'progress_logs', 'hindrances', 'materials',
+  'daily_reports', 'site_inspections',
+  // Planning
+  'schedule_revisions', 'template_modules', 'interface_points',
+  'sync_queue',
+  // Teams & Resources
+  'teams', 'team_members', 'resource_requests',
+  // BOMs
+  'boms', 'bom_items',
+  // DOORS & RFQs
+  'doors_packages', 'doors_requirements',
+  'vendors', 'rfqs', 'rfq_vendor_quotes', 'purchase_orders',
+  // Milestones
+  'milestones', 'milestone_progress',
+  // Commercial
+  'budgets', 'costs', 'invoices',
+  // Key Dates (Phase 5a)
+  'key_dates', 'key_date_sites',
 ];
