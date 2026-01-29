@@ -295,7 +295,7 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
         options={{
           title: 'Key Dates',
           drawerLabel: 'Key Dates',
-          headerTitle: 'Key Date Management',
+          headerTitle: 'KD Management',
         }}
       />
       <Drawer.Screen

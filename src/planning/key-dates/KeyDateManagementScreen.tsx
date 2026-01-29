@@ -14,9 +14,9 @@ import {
   StyleSheet,
   FlatList,
   Platform,
+  ScrollView,
 } from 'react-native';
 import {
-  Appbar,
   Button,
   Portal,
   Dialog,
@@ -34,7 +34,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
-import KeyDateModel, { KeyDateCategory, KeyDateStatus } from '../../../models/KeyDateModel';
+import KeyDateModel, { KeyDateStatus } from '../../../models/KeyDateModel';
 import ProjectModel from '../../../models/ProjectModel';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -119,8 +119,9 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     return result.sort((a, b) => a.sequenceOrder - b.sequenceOrder);
   }, [keyDates, state.filters]);
 
-  // Group key dates by category for section headers
-  const groupedKeyDates = useMemo(() => {
+  // Group key dates by category for section headers (prepared for future SectionList view)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _groupedKeyDates = useMemo(() => {
     const groups: Record<string, KeyDateModel[]> = {};
     filteredKeyDates.forEach((kd) => {
       const key = kd.category;
@@ -172,7 +173,9 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     dispatch({ type: 'CLOSE_PROGRESS_DIALOG' });
   }, []);
 
-  const handleDelete = useCallback((keyDate: KeyDateModel) => {
+  // Handler for delete action (prepared for future card swipe-to-delete or context menu)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleDelete = useCallback((keyDate: KeyDateModel) => {
     dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { keyDate } });
   }, []);
 
@@ -234,7 +237,6 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10) || 1;
             record.dependencies = state.form.dependencies || null;
             record.createdBy = 'planner';
-            record.createdAt = Date.now();
             record.updatedAt = Date.now();
             record.appSyncStatus = 'pending';
             record.version = 1;
@@ -462,8 +464,9 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           <Dialog.Title>
             {isEditing ? 'Edit Key Date' : 'Add Key Date'}
           </Dialog.Title>
-          <Dialog.ScrollArea style={styles.dialogScrollArea}>
-            <View style={styles.formContainer}>
+          <Dialog.Content style={styles.dialogContent}>
+            <ScrollView style={styles.dialogScrollView} showsVerticalScrollIndicator>
+              <View style={styles.formContainer}>
               <TextInput
                 label="Code *"
                 value={state.form.code}
@@ -581,7 +584,8 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
                 placeholder="e.g., 0.1% of Contract Price"
               />
             </View>
-          </Dialog.ScrollArea>
+            </ScrollView>
+          </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={handleCloseEditDialog}>Cancel</Button>
             <Button onPress={handleSave} mode="contained">
@@ -699,19 +703,21 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         )}
       </Portal>
 
-      {/* Snackbar */}
-      <Snackbar
-        visible={state.ui.snackbarVisible}
-        onDismiss={() => dispatch({ type: 'HIDE_SNACKBAR' })}
-        duration={3000}
-        style={
-          state.ui.snackbarType === 'error'
-            ? styles.errorSnackbar
-            : styles.successSnackbar
-        }
-      >
-        {state.ui.snackbarMessage}
-      </Snackbar>
+      {/* Snackbar - wrapped in Portal to appear above dialogs */}
+      <Portal>
+        <Snackbar
+          visible={state.ui.snackbarVisible}
+          onDismiss={() => dispatch({ type: 'HIDE_SNACKBAR' })}
+          duration={3000}
+          style={
+            state.ui.snackbarType === 'error'
+              ? styles.errorSnackbar
+              : styles.successSnackbar
+          }
+        >
+          {state.ui.snackbarMessage}
+        </Snackbar>
+      </Portal>
     </View>
   );
 };
@@ -808,8 +814,12 @@ const styles = StyleSheet.create({
   dialog: {
     maxHeight: '80%',
   },
-  dialogScrollArea: {
+  dialogContent: {
     paddingHorizontal: 0,
+    maxHeight: 450,
+  },
+  dialogScrollView: {
+    flexGrow: 1,
   },
   formContainer: {
     padding: 16,
