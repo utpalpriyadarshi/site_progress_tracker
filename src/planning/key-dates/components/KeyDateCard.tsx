@@ -25,6 +25,7 @@ interface KeyDateCardProps {
   keyDate: KeyDateModel;
   onEdit: (keyDate: KeyDateModel) => void;
   onUpdateProgress: (keyDate: KeyDateModel) => void;
+  onManageSites?: (keyDate: KeyDateModel) => void;
   onViewDetails?: (keyDate: KeyDateModel) => void;
 }
 
@@ -32,6 +33,7 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
   keyDate,
   onEdit,
   onUpdateProgress,
+  onManageSites,
   onViewDetails,
 }) => {
   const categoryColor = KEY_DATE_CATEGORY_COLORS[keyDate.category] || '#666666';
@@ -141,6 +143,19 @@ export const KeyDateCard: React.FC<KeyDateCardProps> = ({
 
         {/* Actions */}
         <View style={styles.actionsRow}>
+          {onManageSites && (
+            <Button
+              mode="text"
+              onPress={() => onManageSites(keyDate)}
+              style={styles.actionButton}
+              compact
+              icon="map-marker-multiple"
+              accessibilityLabel="Manage sites"
+            >
+              Sites
+            </Button>
+          )}
+
           <Button
             mode="outlined"
             onPress={() => onUpdateProgress(keyDate)}
