@@ -17,12 +17,12 @@ import {
   Text,
   TextInput,
   IconButton,
-  List,
   Chip,
   Divider,
   ProgressBar,
   Menu,
   Surface,
+  Snackbar,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { withObservables } from '@nozbe/watermelondb/react';
@@ -55,6 +55,7 @@ interface SiteAssociationItemProps {
   association: KeyDateSiteModel;
   site: SiteModel | undefined;
   onUpdateContribution: (id: string, contribution: string) => void;
+  onUpdateProgress: (id: string, progress: string) => void;
   onRemove: (id: string) => void;
 }
 
@@ -62,19 +63,32 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
   association,
   site,
   onUpdateContribution,
+  onUpdateProgress,
   onRemove,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingContribution, setIsEditingContribution] = useState(false);
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
   const [contribution, setContribution] = useState(association.contributionPercentage.toString());
+  const [progress, setProgress] = useState(association.progressPercentage.toString());
 
-  const handleSave = () => {
+  const handleSaveContribution = () => {
     onUpdateContribution(association.id, contribution);
-    setIsEditing(false);
+    setIsEditingContribution(false);
   };
 
-  const handleCancel = () => {
+  const handleCancelContribution = () => {
     setContribution(association.contributionPercentage.toString());
-    setIsEditing(false);
+    setIsEditingContribution(false);
+  };
+
+  const handleSaveProgress = () => {
+    onUpdateProgress(association.id, progress);
+    setIsEditingProgress(false);
+  };
+
+  const handleCancelProgress = () => {
+    setProgress(association.progressPercentage.toString());
+    setIsEditingProgress(false);
   };
 
   return (
@@ -94,7 +108,7 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
 
       <View style={styles.contributionRow}>
         <Text style={styles.contributionLabel}>Contribution:</Text>
-        {isEditing ? (
+        {isEditingContribution ? (
           <View style={styles.editRow}>
             <TextInput
               value={contribution}
@@ -105,14 +119,14 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
               dense
             />
             <Text style={styles.percentSymbol}>%</Text>
-            <IconButton icon="check" size={18} iconColor="#4CAF50" onPress={handleSave} />
-            <IconButton icon="close" size={18} iconColor="#F44336" onPress={handleCancel} />
+            <IconButton icon="check" size={18} iconColor="#4CAF50" onPress={handleSaveContribution} />
+            <IconButton icon="close" size={18} iconColor="#F44336" onPress={handleCancelContribution} />
           </View>
         ) : (
           <View style={styles.editRow}>
             <Chip
               mode="outlined"
-              onPress={() => setIsEditing(true)}
+              onPress={() => setIsEditingContribution(true)}
               style={styles.contributionChip}
             >
               {association.contributionPercentage}%
@@ -122,13 +136,39 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
       </View>
 
       <View style={styles.progressRow}>
-        <Text style={styles.progressLabel}>Progress: {association.progressPercentage}%</Text>
-        <ProgressBar
-          progress={association.progressPercentage / 100}
-          color={association.status === 'completed' ? '#4CAF50' : '#2196F3'}
-          style={styles.progressBar}
-        />
+        <Text style={styles.progressLabel}>Progress:</Text>
+        {isEditingProgress ? (
+          <View style={styles.editRow}>
+            <TextInput
+              value={progress}
+              onChangeText={setProgress}
+              keyboardType="numeric"
+              style={styles.contributionInput}
+              mode="outlined"
+              dense
+            />
+            <Text style={styles.percentSymbol}>%</Text>
+            <IconButton icon="check" size={18} iconColor="#4CAF50" onPress={handleSaveProgress} />
+            <IconButton icon="close" size={18} iconColor="#F44336" onPress={handleCancelProgress} />
+          </View>
+        ) : (
+          <View style={styles.editRow}>
+            <Chip
+              mode="outlined"
+              onPress={() => setIsEditingProgress(true)}
+              style={styles.progressChip}
+            >
+              {association.progressPercentage}%
+            </Chip>
+          </View>
+        )}
       </View>
+
+      <ProgressBar
+        progress={association.progressPercentage / 100}
+        color={association.status === 'completed' ? '#4CAF50' : '#2196F3'}
+        style={styles.progressBar}
+      />
 
       <Chip
         mode="outlined"
@@ -147,7 +187,7 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
 const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   visible,
   keyDate,
-  projectId,
+  projectId: _projectId,
   onDismiss,
   keyDateSites,
   allSites,
@@ -211,7 +251,6 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
           record.contributionPercentage = contribution;
           record.progressPercentage = 0;
           record.status = 'not_started';
-          record.createdAt = Date.now();
           record.updatedAt = Date.now();
           record.appSyncStatus = 'pending';
           record.version = 1;
@@ -257,6 +296,41 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
     }
   }, []);
 
+  const handleUpdateProgress = useCallback(async (id: string, progressValue: string) => {
+    const progressNum = parseFloat(progressValue);
+    if (isNaN(progressNum) || progressNum < 0 || progressNum > 100) {
+      setSnackbarMessage('Progress must be between 0 and 100');
+      return;
+    }
+
+    try {
+      const association = await database.collections
+        .get<KeyDateSiteModel>('key_date_sites')
+        .find(id);
+      await database.write(async () => {
+        await association.update((record: any) => {
+          record.progressPercentage = progressNum;
+          // Auto-update status based on progress
+          if (progressNum === 0) {
+            record.status = 'not_started';
+          } else if (progressNum >= 100) {
+            record.status = 'completed';
+          } else {
+            record.status = 'in_progress';
+          }
+          record.updatedAt = Date.now();
+        });
+      });
+      setSnackbarMessage('Progress updated');
+    } catch (error) {
+      logger.error('Error updating progress', error as Error, {
+        component: 'KeyDateSiteManager',
+        action: 'handleUpdateProgress',
+      });
+      setSnackbarMessage('Failed to update progress');
+    }
+  }, []);
+
   const handleRemoveSite = useCallback(async (id: string) => {
     try {
       const association = await database.collections
@@ -283,10 +357,11 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
         association={item}
         site={getSiteById(item.siteId)}
         onUpdateContribution={handleUpdateContribution}
+        onUpdateProgress={handleUpdateProgress}
         onRemove={handleRemoveSite}
       />
     ),
-    [getSiteById, handleUpdateContribution, handleRemoveSite]
+    [getSiteById, handleUpdateContribution, handleUpdateProgress, handleRemoveSite]
   );
 
   return (
@@ -412,6 +487,19 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
           </Button>
         </Dialog.Actions>
       </Dialog>
+
+      {/* Snackbar for feedback messages */}
+      <Snackbar
+        visible={!!snackbarMessage}
+        onDismiss={() => setSnackbarMessage('')}
+        duration={3000}
+        action={{
+          label: 'OK',
+          onPress: () => setSnackbarMessage(''),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </Portal>
   );
 };
@@ -532,17 +620,24 @@ const styles = StyleSheet.create({
   contributionChip: {
     height: 28,
   },
+  progressChip: {
+    height: 28,
+    backgroundColor: '#E3F2FD',
+  },
   progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
   },
   progressLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    marginBottom: 4,
+    marginRight: 8,
   },
   progressBar: {
     height: 6,
     borderRadius: 3,
+    marginTop: 8,
   },
   statusChip: {
     alignSelf: 'flex-start',
