@@ -15,10 +15,8 @@ import KeyDateModel, { KeyDateCategory, KeyDateStatus } from '../../../../models
 export interface KeyDateManagementState {
   ui: {
     editDialogVisible: boolean;
-    progressDialogVisible: boolean;
     deleteDialogVisible: boolean;
     filterMenuVisible: boolean;
-    showProgressDatePicker: boolean;
     snackbarVisible: boolean;
     snackbarMessage: string;
     snackbarType: 'success' | 'error';
@@ -47,12 +45,6 @@ export interface KeyDateManagementState {
     sequenceOrder: string;
     dependencies: string;
   };
-  progressForm: {
-    progressPercentage: string;
-    status: KeyDateStatus;
-    actualDate: Date | undefined;
-    notes: string;
-  };
 }
 
 // ==================== Action Types ====================
@@ -62,8 +54,6 @@ export type KeyDateManagementAction =
   | { type: 'OPEN_ADD_DIALOG' }
   | { type: 'OPEN_EDIT_DIALOG'; payload: { keyDate: KeyDateModel } }
   | { type: 'CLOSE_EDIT_DIALOG' }
-  | { type: 'OPEN_PROGRESS_DIALOG'; payload: { keyDate: KeyDateModel } }
-  | { type: 'CLOSE_PROGRESS_DIALOG' }
   | { type: 'OPEN_DELETE_DIALOG'; payload: { keyDate: KeyDateModel } }
   | { type: 'CLOSE_DELETE_DIALOG' }
   | { type: 'TOGGLE_FILTER_MENU' }
@@ -89,13 +79,6 @@ export type KeyDateManagementAction =
   | { type: 'SET_FORM_SEQUENCE'; payload: string }
   | { type: 'SET_FORM_DEPENDENCIES'; payload: string }
 
-  // Progress Form Actions
-  | { type: 'SET_PROGRESS_PERCENTAGE'; payload: string }
-  | { type: 'SET_PROGRESS_STATUS'; payload: KeyDateStatus }
-  | { type: 'SET_PROGRESS_ACTUAL_DATE'; payload: Date | undefined }
-  | { type: 'SET_PROGRESS_NOTES'; payload: string }
-  | { type: 'TOGGLE_PROGRESS_DATE_PICKER' }
-
   // Snackbar Actions
   | { type: 'SHOW_SNACKBAR'; payload: { message: string; type?: 'success' | 'error' } }
   | { type: 'HIDE_SNACKBAR' };
@@ -118,20 +101,11 @@ const getDefaultFormState = (): KeyDateManagementState['form'] => ({
   dependencies: '',
 });
 
-const getDefaultProgressFormState = (): KeyDateManagementState['progressForm'] => ({
-  progressPercentage: '0',
-  status: 'not_started',
-  actualDate: undefined,
-  notes: '',
-});
-
 export const createKeyDateInitialState = (): KeyDateManagementState => ({
   ui: {
     editDialogVisible: false,
-    progressDialogVisible: false,
     deleteDialogVisible: false,
     filterMenuVisible: false,
-    showProgressDatePicker: false,
     snackbarVisible: false,
     snackbarMessage: '',
     snackbarType: 'success',
@@ -146,7 +120,6 @@ export const createKeyDateInitialState = (): KeyDateManagementState => ({
     keyDateToDelete: null,
   },
   form: getDefaultFormState(),
-  progressForm: getDefaultProgressFormState(),
 });
 
 // ==================== Helper Functions ====================
@@ -165,15 +138,6 @@ const populateFormFromKeyDate = (keyDate: KeyDateModel): KeyDateManagementState[
   delayDamagesSpecial: keyDate.delayDamagesSpecial || '',
   sequenceOrder: keyDate.sequenceOrder.toString(),
   dependencies: keyDate.dependencies || '',
-});
-
-const populateProgressFormFromKeyDate = (
-  keyDate: KeyDateModel
-): KeyDateManagementState['progressForm'] => ({
-  progressPercentage: keyDate.progressPercentage.toString(),
-  status: keyDate.status,
-  actualDate: keyDate.actualDate ? new Date(keyDate.actualDate) : undefined,
-  notes: '',
 });
 
 // ==================== Reducer ====================
@@ -205,20 +169,6 @@ export const keyDateReducer = (
         ...state,
         ui: { ...state.ui, editDialogVisible: false },
         dialog: { ...state.dialog, editingKeyDate: null },
-      };
-
-    case 'OPEN_PROGRESS_DIALOG':
-      return {
-        ...state,
-        ui: { ...state.ui, progressDialogVisible: true },
-        dialog: { ...state.dialog, editingKeyDate: action.payload.keyDate },
-        progressForm: populateProgressFormFromKeyDate(action.payload.keyDate),
-      };
-
-    case 'CLOSE_PROGRESS_DIALOG':
-      return {
-        ...state,
-        ui: { ...state.ui, progressDialogVisible: false, showProgressDatePicker: false },
       };
 
     case 'OPEN_DELETE_DIALOG':
@@ -310,25 +260,6 @@ export const keyDateReducer = (
     case 'SET_FORM_DEPENDENCIES':
       return { ...state, form: { ...state.form, dependencies: action.payload } };
 
-    // Progress Form Actions
-    case 'SET_PROGRESS_PERCENTAGE':
-      return { ...state, progressForm: { ...state.progressForm, progressPercentage: action.payload } };
-
-    case 'SET_PROGRESS_STATUS':
-      return { ...state, progressForm: { ...state.progressForm, status: action.payload } };
-
-    case 'SET_PROGRESS_ACTUAL_DATE':
-      return { ...state, progressForm: { ...state.progressForm, actualDate: action.payload } };
-
-    case 'SET_PROGRESS_NOTES':
-      return { ...state, progressForm: { ...state.progressForm, notes: action.payload } };
-
-    case 'TOGGLE_PROGRESS_DATE_PICKER':
-      return {
-        ...state,
-        ui: { ...state.ui, showProgressDatePicker: !state.ui.showProgressDatePicker },
-      };
-
     // Snackbar Actions
     case 'SHOW_SNACKBAR':
       return {
@@ -405,19 +336,3 @@ export const validateKeyDateForm = (form: KeyDateManagementState['form']): {
   };
 };
 
-export const validateProgressForm = (form: KeyDateManagementState['progressForm']): {
-  isValid: boolean;
-  errors: Record<string, string>;
-} => {
-  const errors: Record<string, string> = {};
-
-  const progress = parseFloat(form.progressPercentage);
-  if (isNaN(progress) || progress < 0 || progress > 100) {
-    errors.progressPercentage = 'Progress must be between 0 and 100';
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  };
-};

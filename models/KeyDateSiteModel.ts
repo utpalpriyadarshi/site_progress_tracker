@@ -28,6 +28,7 @@ export default class KeyDateSiteModel extends Model {
 
   // Contribution tracking
   @field('contribution_percentage') contributionPercentage!: number; // 0-100, how much this site contributes to KD completion
+  /** @deprecated Progress is now auto-calculated from supervisor item data at the site */
   @field('progress_percentage') progressPercentage!: number; // 0-100, current progress at this site for this KD
 
   // Status
@@ -60,6 +61,7 @@ export default class KeyDateSiteModel extends Model {
   /**
    * Get weighted progress contribution
    * Returns the actual progress contribution to the overall key date
+   * @deprecated Progress is now auto-calculated from supervisor item data at the site
    */
   getWeightedProgress(): number {
     return (this.contributionPercentage / 100) * this.progressPercentage;

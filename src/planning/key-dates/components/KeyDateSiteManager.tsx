@@ -27,10 +27,12 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
+import { switchMap, combineLatest, of, map } from 'rxjs';
 import { database } from '../../../../models/database';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import SiteModel from '../../../../models/SiteModel';
+import ItemModel from '../../../../models/ItemModel';
 import { logger } from '../../../services/LoggingService';
 
 // ==================== Types ====================
@@ -42,9 +44,15 @@ interface KeyDateSiteManagerInputProps {
   onDismiss: () => void;
 }
 
+interface SiteProgressEntry {
+  siteId: string;
+  calculatedProgress: number;
+}
+
 interface KeyDateSiteManagerObservedProps {
   keyDateSites: KeyDateSiteModel[];
   allSites: SiteModel[];
+  siteProgressData: SiteProgressEntry[];
 }
 
 type KeyDateSiteManagerProps = KeyDateSiteManagerInputProps & KeyDateSiteManagerObservedProps;
@@ -54,22 +62,20 @@ type KeyDateSiteManagerProps = KeyDateSiteManagerInputProps & KeyDateSiteManager
 interface SiteAssociationItemProps {
   association: KeyDateSiteModel;
   site: SiteModel | undefined;
+  calculatedProgress: number;
   onUpdateContribution: (id: string, contribution: string) => void;
-  onUpdateProgress: (id: string, progress: string) => void;
   onRemove: (id: string) => void;
 }
 
 const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
   association,
   site,
+  calculatedProgress,
   onUpdateContribution,
-  onUpdateProgress,
   onRemove,
 }) => {
   const [isEditingContribution, setIsEditingContribution] = useState(false);
-  const [isEditingProgress, setIsEditingProgress] = useState(false);
   const [contribution, setContribution] = useState(association.contributionPercentage.toString());
-  const [progress, setProgress] = useState(association.progressPercentage.toString());
 
   const handleSaveContribution = () => {
     onUpdateContribution(association.id, contribution);
@@ -81,15 +87,19 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
     setIsEditingContribution(false);
   };
 
-  const handleSaveProgress = () => {
-    onUpdateProgress(association.id, progress);
-    setIsEditingProgress(false);
-  };
+  // Derive status from calculated progress
+  const derivedStatus = calculatedProgress >= 100
+    ? 'completed'
+    : calculatedProgress > 0
+      ? 'in_progress'
+      : 'not_started';
 
-  const handleCancelProgress = () => {
-    setProgress(association.progressPercentage.toString());
-    setIsEditingProgress(false);
+  const statusColors: Record<string, string> = {
+    not_started: '#9E9E9E',
+    in_progress: '#2196F3',
+    completed: '#4CAF50',
   };
+  const statusColor = statusColors[derivedStatus] || '#9E9E9E';
 
   return (
     <Surface style={styles.siteItem} elevation={1}>
@@ -137,52 +147,47 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
 
       <View style={styles.progressRow}>
         <Text style={styles.progressLabel}>Progress:</Text>
-        {isEditingProgress ? (
-          <View style={styles.editRow}>
-            <TextInput
-              value={progress}
-              onChangeText={setProgress}
-              keyboardType="numeric"
-              style={styles.contributionInput}
-              mode="outlined"
-              dense
-            />
-            <Text style={styles.percentSymbol}>%</Text>
-            <IconButton icon="check" size={18} iconColor="#4CAF50" onPress={handleSaveProgress} />
-            <IconButton icon="close" size={18} iconColor="#F44336" onPress={handleCancelProgress} />
-          </View>
-        ) : (
-          <View style={styles.editRow}>
-            <Chip
-              mode="outlined"
-              onPress={() => setIsEditingProgress(true)}
-              style={styles.progressChip}
-            >
-              {association.progressPercentage}%
-            </Chip>
-          </View>
-        )}
+        <Chip
+          mode="outlined"
+          style={styles.progressChip}
+        >
+          {Math.round(calculatedProgress)}% (auto)
+        </Chip>
       </View>
 
       <ProgressBar
-        progress={association.progressPercentage / 100}
-        color={association.status === 'completed' ? '#4CAF50' : '#2196F3'}
+        progress={calculatedProgress / 100}
+        color={derivedStatus === 'completed' ? '#4CAF50' : '#2196F3'}
         style={styles.progressBar}
       />
 
       <Chip
         mode="outlined"
-        style={[styles.statusChip, { borderColor: association.getStatusColor() }]}
-        textStyle={{ color: association.getStatusColor(), fontSize: 11 }}
+        style={[styles.statusChip, { borderColor: statusColor }]}
+        textStyle={{ color: statusColor, fontSize: 11 }}
         compact
       >
-        {association.status.replace('_', ' ')}
+        {derivedStatus.replace('_', ' ')}
       </Chip>
     </Surface>
   );
 };
 
 // ==================== Main Component ====================
+
+/**
+ * Calculate weighted progress from item data for a set of items at a site
+ * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
+ */
+const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
+  if (!items || items.length === 0) return 0;
+  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
+  if (totalWeightage === 0) return 0;
+  return items.reduce(
+    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
+    0
+  ) / totalWeightage;
+};
 
 const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   visible,
@@ -191,6 +196,7 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   onDismiss,
   keyDateSites,
   allSites,
+  siteProgressData,
 }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -215,6 +221,15 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
     () => keyDateSites.reduce((sum, kds) => sum + kds.contributionPercentage, 0),
     [keyDateSites]
   );
+
+  // Build a map of siteId -> calculated progress from observed item data
+  const siteProgressMap = useMemo(() => {
+    const progressMap = new Map<string, number>();
+    for (const entry of siteProgressData) {
+      progressMap.set(entry.siteId, entry.calculatedProgress);
+    }
+    return progressMap;
+  }, [siteProgressData]);
 
   // Get site by id
   const getSiteById = useCallback(
@@ -296,41 +311,6 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
     }
   }, []);
 
-  const handleUpdateProgress = useCallback(async (id: string, progressValue: string) => {
-    const progressNum = parseFloat(progressValue);
-    if (isNaN(progressNum) || progressNum < 0 || progressNum > 100) {
-      setSnackbarMessage('Progress must be between 0 and 100');
-      return;
-    }
-
-    try {
-      const association = await database.collections
-        .get<KeyDateSiteModel>('key_date_sites')
-        .find(id);
-      await database.write(async () => {
-        await association.update((record: any) => {
-          record.progressPercentage = progressNum;
-          // Auto-update status based on progress
-          if (progressNum === 0) {
-            record.status = 'not_started';
-          } else if (progressNum >= 100) {
-            record.status = 'completed';
-          } else {
-            record.status = 'in_progress';
-          }
-          record.updatedAt = Date.now();
-        });
-      });
-      setSnackbarMessage('Progress updated');
-    } catch (error) {
-      logger.error('Error updating progress', error as Error, {
-        component: 'KeyDateSiteManager',
-        action: 'handleUpdateProgress',
-      });
-      setSnackbarMessage('Failed to update progress');
-    }
-  }, []);
-
   const handleRemoveSite = useCallback(async (id: string) => {
     try {
       const association = await database.collections
@@ -356,12 +336,12 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
       <SiteAssociationItem
         association={item}
         site={getSiteById(item.siteId)}
+        calculatedProgress={siteProgressMap.get(item.siteId) ?? 0}
         onUpdateContribution={handleUpdateContribution}
-        onUpdateProgress={handleUpdateProgress}
         onRemove={handleRemoveSite}
       />
     ),
-    [getSiteById, handleUpdateContribution, handleUpdateProgress, handleRemoveSite]
+    [getSiteById, siteProgressMap, handleUpdateContribution, handleRemoveSite]
   );
 
   return (
@@ -508,16 +488,41 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
 
 const enhance = withObservables(
   ['keyDate', 'projectId'],
-  ({ keyDate, projectId }: KeyDateSiteManagerInputProps) => ({
-    keyDateSites: database.collections
+  ({ keyDate, projectId }: KeyDateSiteManagerInputProps) => {
+    const keyDateSites$ = database.collections
       .get<KeyDateSiteModel>('key_date_sites')
       .query(Q.where('key_date_id', keyDate.id))
-      .observe(),
-    allSites: database.collections
-      .get<SiteModel>('sites')
-      .query(Q.where('project_id', projectId))
-      .observe(),
-  })
+      .observe();
+
+    const siteProgressData$ = keyDateSites$.pipe(
+      switchMap((sites) => {
+        if (sites.length === 0) return of([]);
+        return combineLatest(
+          sites.map((site) =>
+            database.collections
+              .get<ItemModel>('items')
+              .query(Q.where('site_id', site.siteId))
+              .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage'])
+              .pipe(
+                map((items) => ({
+                  siteId: site.siteId,
+                  calculatedProgress: calculateSiteProgressFromItems(items),
+                }))
+              )
+          )
+        );
+      })
+    );
+
+    return {
+      keyDateSites: keyDateSites$,
+      allSites: database.collections
+        .get<SiteModel>('sites')
+        .query(Q.where('project_id', projectId))
+        .observe(),
+      siteProgressData: siteProgressData$,
+    };
+  }
 );
 
 export const KeyDateSiteManager = enhance(

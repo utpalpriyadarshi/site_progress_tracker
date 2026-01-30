@@ -11,7 +11,6 @@ export {
   selectIsEditing,
   selectHasActiveFilters,
   validateKeyDateForm,
-  validateProgressForm,
 } from './keyDateReducer';
 
 export type {
