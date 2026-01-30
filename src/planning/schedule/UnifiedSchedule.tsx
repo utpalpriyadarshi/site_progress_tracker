@@ -1,7 +1,7 @@
 /**
  * UnifiedSchedule Screen
  *
- * Unified schedule view with Timeline, Calendar, and List tabs.
+ * Unified schedule view with Timeline, Calendar, and List tabs (3 views).
  * Provides multiple ways to view and manage project schedule items.
  *
  * @version 1.0.0
@@ -26,8 +26,6 @@ import { usePlanningContext } from '../context';
 import { TimelineView } from './views/TimelineView';
 import { CalendarView } from './views/CalendarView';
 import { ListView } from './views/ListView';
-import { KeyDateView } from './views/KeyDateView';
-
 // ==================== Types ====================
 
 export interface ScheduleItem {
@@ -57,7 +55,7 @@ export interface ScheduleFilters {
 
 // ==================== Tab Types ====================
 
-type TabName = 'Timeline' | 'Calendar' | 'List' | 'Key Dates';
+type TabName = 'Timeline' | 'Calendar' | 'List';
 
 interface TabButtonProps {
   name: TabName;
@@ -317,8 +315,6 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
         return <CalendarView {...viewProps} />;
       case 'List':
         return <ListView {...viewProps} />;
-      case 'Key Dates':
-        return <KeyDateView />;
       default:
         return <TimelineView {...viewProps} />;
     }
@@ -349,12 +345,6 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
           name="List"
           isActive={activeTab === 'List'}
           onPress={() => handleTabChange('List')}
-          theme={theme}
-        />
-        <TabButton
-          name="Key Dates"
-          isActive={activeTab === 'Key Dates'}
-          onPress={() => handleTabChange('Key Dates')}
           theme={theme}
         />
       </View>
