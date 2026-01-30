@@ -13,7 +13,6 @@ import {
   View,
   StyleSheet,
   FlatList,
-  Platform,
   ScrollView,
 } from 'react-native';
 import {
@@ -30,7 +29,6 @@ import {
   Divider,
   FAB,
 } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
@@ -47,12 +45,10 @@ import {
   selectIsEditing,
   selectHasActiveFilters,
   validateKeyDateForm,
-  validateProgressForm,
 } from './state';
 import {
   KEY_DATE_CATEGORY_COLORS,
   getCategoryOptions,
-  getStatusOptions,
 } from './utils/keyDateConstants';
 import { logger } from '../../services/LoggingService';
 
@@ -151,10 +147,6 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     dispatch({ type: 'OPEN_EDIT_DIALOG', payload: { keyDate } });
   }, []);
 
-  const handleUpdateProgress = useCallback((keyDate: KeyDateModel) => {
-    dispatch({ type: 'OPEN_PROGRESS_DIALOG', payload: { keyDate } });
-  }, []);
-
   const handleManageSites = useCallback((keyDate: KeyDateModel) => {
     setSiteManagerKeyDate(keyDate);
     setSiteManagerVisible(true);
@@ -167,10 +159,6 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
 
   const handleCloseEditDialog = useCallback(() => {
     dispatch({ type: 'CLOSE_EDIT_DIALOG' });
-  }, []);
-
-  const handleCloseProgressDialog = useCallback(() => {
-    dispatch({ type: 'CLOSE_PROGRESS_DIALOG' });
   }, []);
 
   // Handler for delete action (prepared for future card swipe-to-delete or context menu)
@@ -260,46 +248,6 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     }
   }, [state.form, state.dialog.editingKeyDate, projectId, handleCloseEditDialog]);
 
-  // Save Progress Update
-  const handleSaveProgress = useCallback(async () => {
-    const { isValid, errors } = validateProgressForm(state.progressForm);
-    if (!isValid) {
-      const errorMessage = Object.values(errors).join('\n');
-      dispatch({
-        type: 'SHOW_SNACKBAR',
-        payload: { message: errorMessage, type: 'error' },
-      });
-      return;
-    }
-
-    if (!state.dialog.editingKeyDate) return;
-
-    try {
-      await database.write(async () => {
-        await state.dialog.editingKeyDate!.update((record: any) => {
-          record.progressPercentage = parseFloat(state.progressForm.progressPercentage);
-          record.status = state.progressForm.status;
-          record.actualDate = state.progressForm.actualDate?.getTime() || null;
-          record.updatedAt = Date.now();
-        });
-      });
-      dispatch({
-        type: 'SHOW_SNACKBAR',
-        payload: { message: 'Progress updated successfully', type: 'success' },
-      });
-      handleCloseProgressDialog();
-    } catch (error) {
-      logger.error('Error updating progress', error as Error, {
-        component: 'KeyDateManagementScreen',
-        action: 'handleSaveProgress',
-      });
-      dispatch({
-        type: 'SHOW_SNACKBAR',
-        payload: { message: 'Failed to update progress', type: 'error' },
-      });
-    }
-  }, [state.progressForm, state.dialog.editingKeyDate, handleCloseProgressDialog]);
-
   // Confirm Delete
   const handleConfirmDelete = useCallback(async () => {
     if (!state.dialog.keyDateToDelete) return;
@@ -332,15 +280,13 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
       <KeyDateCard
         keyDate={item}
         onEdit={handleEdit}
-        onUpdateProgress={handleUpdateProgress}
         onManageSites={handleManageSites}
       />
     ),
-    [handleEdit, handleUpdateProgress, handleManageSites]
+    [handleEdit, handleManageSites]
   );
 
   const categoryOptions = getCategoryOptions();
-  const statusOptions = getStatusOptions();
 
   return (
     <View style={styles.container}>
@@ -594,84 +540,6 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           </Dialog.Actions>
         </Dialog>
 
-        {/* Progress Update Dialog */}
-        <Dialog
-          visible={state.ui.progressDialogVisible}
-          onDismiss={handleCloseProgressDialog}
-        >
-          <Dialog.Title>Update Progress</Dialog.Title>
-          <Dialog.Content>
-            <Text style={styles.progressDialogSubtitle}>
-              {state.dialog.editingKeyDate?.code}: {state.dialog.editingKeyDate?.description}
-            </Text>
-
-            <TextInput
-              label="Progress (%)"
-              value={state.progressForm.progressPercentage}
-              onChangeText={(text) => dispatch({ type: 'SET_PROGRESS_PERCENTAGE', payload: text })}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.fieldLabel}>Status:</Text>
-            <View style={styles.statusChips}>
-              {statusOptions.map((opt) => (
-                <Chip
-                  key={opt.value}
-                  mode={state.progressForm.status === opt.value ? 'flat' : 'outlined'}
-                  selected={state.progressForm.status === opt.value}
-                  onPress={() => dispatch({ type: 'SET_PROGRESS_STATUS', payload: opt.value })}
-                  style={styles.statusChip}
-                  compact
-                >
-                  {opt.label}
-                </Chip>
-              ))}
-            </View>
-
-            {/* Actual Completion Date */}
-            <Text style={[styles.fieldLabel, styles.fieldLabelMargin]}>Actual Completion Date:</Text>
-            <Button
-              mode="outlined"
-              onPress={() => dispatch({ type: 'TOGGLE_PROGRESS_DATE_PICKER' })}
-              icon="calendar"
-              style={styles.dateButton}
-            >
-              {state.progressForm.actualDate?.toLocaleDateString() || 'Select Date'}
-            </Button>
-
-            {state.ui.showProgressDatePicker && (
-              <DateTimePicker
-                value={state.progressForm.actualDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => {
-                  dispatch({ type: 'TOGGLE_PROGRESS_DATE_PICKER' });
-                  if (date) dispatch({ type: 'SET_PROGRESS_ACTUAL_DATE', payload: date });
-                }}
-              />
-            )}
-
-            {/* Notes */}
-            <TextInput
-              label="Notes"
-              value={state.progressForm.notes}
-              onChangeText={(text) => dispatch({ type: 'SET_PROGRESS_NOTES', payload: text })}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
-              style={styles.notesInput}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={handleCloseProgressDialog}>Cancel</Button>
-            <Button onPress={handleSaveProgress} mode="contained">
-              Save
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
         {/* Delete Confirmation Dialog */}
         <Dialog
           visible={state.ui.deleteDialogVisible}
@@ -852,29 +720,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
     color: '#333',
-  },
-  progressDialogSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  statusChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  statusChip: {
-    marginTop: 4,
-  },
-  fieldLabelMargin: {
-    marginTop: 16,
-  },
-  dateButton: {
-    marginBottom: 12,
-    alignSelf: 'flex-start',
-  },
-  notesInput: {
-    marginTop: 8,
   },
   targetDateDisplay: {
     backgroundColor: '#E8F5E9',

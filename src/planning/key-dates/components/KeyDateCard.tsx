@@ -14,9 +14,11 @@ import { Card, Text, Button, IconButton, Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
+import { switchMap, combineLatest, of, map } from 'rxjs';
 import { database } from '../../../../models/database';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
+import ItemModel from '../../../../models/ItemModel';
 import { KeyDateStatusBadge } from './KeyDateStatusBadge';
 import { KeyDateProgressBar } from './KeyDateProgressBar';
 import {
@@ -26,22 +28,33 @@ import {
   formatDaysRemaining,
 } from '../utils/keyDateConstants';
 
+interface SiteItemProgress {
+  siteId: string;
+  contributionPercentage: number;
+  calculatedProgress: number;
+}
+
 interface KeyDateCardProps {
   keyDate: KeyDateModel;
   keyDateSites?: KeyDateSiteModel[];
+  siteItemProgress?: SiteItemProgress[];
   onEdit: (keyDate: KeyDateModel) => void;
-  onUpdateProgress: (keyDate: KeyDateModel) => void;
   onManageSites?: (keyDate: KeyDateModel) => void;
   onViewDetails?: (keyDate: KeyDateModel) => void;
 }
 
 /**
- * Calculate aggregated progress from associated sites
- * Progress = sum of (contribution% × progress%) for all sites
+ * Calculate weighted progress from item data for a set of items at a site
+ * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
  */
-const calculateAggregatedProgress = (sites: KeyDateSiteModel[]): number => {
-  if (!sites || sites.length === 0) return 0;
-  return sites.reduce((total, site) => total + site.getWeightedProgress(), 0);
+const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
+  if (!items || items.length === 0) return 0;
+  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
+  if (totalWeightage === 0) return 0;
+  return items.reduce(
+    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
+    0
+  ) / totalWeightage;
 };
 
 /**
@@ -65,8 +78,8 @@ const deriveStatusFromProgress = (
 const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
   keyDate,
   keyDateSites = [],
+  siteItemProgress = [],
   onEdit,
-  onUpdateProgress,
   onManageSites,
   onViewDetails,
 }) => {
@@ -77,13 +90,17 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
   const estimatedDamages = keyDate.getEstimatedDelayDamages();
   const isCritical = keyDate.isCritical();
 
-  // Calculate progress from associated sites (if sites exist, use calculated; otherwise use stored value)
+  // Calculate overall progress from auto-calculated site item progress
+  // Formula: Σ(site.contributionPercentage / 100 × siteProgress) for all associated sites
   const calculatedProgress = useMemo(() => {
-    if (keyDateSites.length > 0) {
-      return calculateAggregatedProgress(keyDateSites);
+    if (siteItemProgress.length > 0) {
+      return siteItemProgress.reduce(
+        (total, sp) => total + (sp.contributionPercentage / 100) * sp.calculatedProgress,
+        0
+      );
     }
     return keyDate.progressPercentage;
-  }, [keyDateSites, keyDate.progressPercentage]);
+  }, [siteItemProgress, keyDate.progressPercentage]);
 
   // Derive the display status from calculated progress to ensure consistency
   const derivedStatus = useMemo(() => {
@@ -213,16 +230,6 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
           )}
 
           <Button
-            mode="outlined"
-            onPress={() => onUpdateProgress(keyDate)}
-            style={styles.actionButton}
-            compact
-            accessibilityLabel="Update progress"
-          >
-            Update Progress
-          </Button>
-
-          <Button
             mode="contained"
             onPress={() => onEdit(keyDate)}
             style={styles.actionButton}
@@ -340,14 +347,40 @@ const styles = StyleSheet.create({
   },
 });
 
-// WatermelonDB observable enhancement - fetches associated sites for progress calculation
-const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => ({
-  keyDate,
-  keyDateSites: database.collections
+// WatermelonDB observable enhancement - fetches associated sites and computes progress from items
+const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => {
+  const keyDateSites$ = database.collections
     .get<KeyDateSiteModel>('key_date_sites')
     .query(Q.where('key_date_id', keyDate.id))
-    .observe(),
-}));
+    .observe();
+
+  const siteItemProgress$ = keyDateSites$.pipe(
+    switchMap((sites) => {
+      if (sites.length === 0) return of([]);
+      return combineLatest(
+        sites.map((site) =>
+          database.collections
+            .get<ItemModel>('items')
+            .query(Q.where('site_id', site.siteId))
+            .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage'])
+            .pipe(
+              map((items) => ({
+                siteId: site.siteId,
+                contributionPercentage: site.contributionPercentage,
+                calculatedProgress: calculateSiteProgressFromItems(items),
+              }))
+            )
+        )
+      );
+    })
+  );
+
+  return {
+    keyDate,
+    keyDateSites: keyDateSites$,
+    siteItemProgress: siteItemProgress$,
+  };
+});
 
 // Enhanced component with reactive data
 export const KeyDateCard = enhance(KeyDateCardInner);
