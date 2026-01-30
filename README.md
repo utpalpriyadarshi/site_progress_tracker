@@ -24,42 +24,23 @@ The Construction Site Progress Tracker is a mobile application that helps constr
   - Project management with cascade deletion
   - Role switching to test different user experiences
   - Active/inactive user account management
-- **Planning Module** (v1.3-v2.20 - COMPLETE): Advanced project planning with 6 specialized tabs (v2.20 Phase 1: All screens refactored with 68.9% avg reduction):
-  - **Tab 1: WBS Management** (v1.4-v1.6): Hierarchical Work Breakdown Structure
-    - Auto-generated WBS codes (1.0.0.0, 1.1.0.0, 1.1.1.0, 1.1.1.1)
-    - 4-level hierarchy support with visual indentation
-    - Context menu (long-press) with Add Child, Edit, Delete options
-    - Child item creation with automatic code generation
-    - Phase filtering (11 construction phases)
-    - Site selection with persistent state
-    - Baseline locking to prevent edits after approval
-    - Max level enforcement (Level 4 cannot have children)
-  - **Tab 2: Gantt Chart** (v2.20 - REFACTORED): Project timeline visualization with zoom controls and task bars (648 → 164 lines, 74.7% reduction)
-  - **Tab 3: Schedule Management**: Schedule revisions and updates (stub - Phase 2.6 planned)
-  - **Tab 4: Resource Planning**: Manpower, equipment, materials (stub - Phase 4 planned)
-  - **Tab 5: Milestone Tracking** (v2.20 - REFACTORED): Track key deliverables with progress tracking (747 → 181 lines, 75.8% reduction)
-  - **Tab 6: Baseline Planning** (v1.3 - COMPLETE): Critical path and dependency management
-    - Critical path calculation using Kahn's algorithm
-    - Dependency management with circular dependency detection
-    - Baseline locking workflow
-    - Visual critical path indicators (red borders)
-    - Progress metrics and forecasting
-    - Schedule variance tracking
-  - **Item Creation Screen** (v1.4-v2.20 - REFACTORED):
-    - Category selector with database integration (6 categories)
-    - Phase selector with 11 project phases (color-coded with emojis)
-    - Complete form validation with real-time error messages
-    - Snackbar notifications (non-blocking)
-    - Risk management fields (dependency risk, risk notes)
-    - Milestone and critical path toggles
-    - Database persistence with WatermelonDB
-    - v2.20: Refactored to modular architecture (632 → 217 lines, 65.7% reduction)
-  - **Item Edit Screen** (v1.5-v2.20 - REFACTORED):
-    - Full item editing with WBS code display (read-only)
-    - Date and duration auto-calculations
-    - Status calculation based on progress
-    - Lock state indicator for baseline-locked items
-    - v2.20: Refactored to modular architecture (737 → 297 lines, 59.6% reduction)
+- **Planning Module** (v1.3-v2.21 - COMPLETE): Comprehensive project planning with 4 bottom tabs + 6 drawer screens + 2 stack screens. Follows offline-first architecture with WatermelonDB.
+  - **Workflow**: Sites -> Items (WBS) -> Key Dates -> Schedule Review -> Dependencies -> Critical Path -> Lock Baseline -> Track Milestones
+  - **Bottom Tabs**:
+    - **Dashboard**: Overview widgets (milestones, critical path, schedule health, WBS progress, resource utilization, recent activities) with tap-to-navigate
+    - **Key Dates**: Contract-level key date management with CMRL categories (G/A/B/C/D/E/F), delay damages tracking, per-site assignments
+    - **Schedule**: Three-view visualization (Timeline, Calendar, List) with site/critical-path filtering
+    - **Gantt Chart** (v2.20 - REFACTORED): Interactive timeline with zoom controls (day/week/month), critical path highlighting, key date milestones (648 -> 164 lines, 74.7% reduction)
+  - **Drawer Screens**:
+    - **Site Management**: Create sites, assign supervisors, set planned/actual dates
+    - **WBS Management** (v1.4-v1.6): Hierarchical Work Breakdown Structure with 4-level codes, search, filter, sort, baseline lock enforcement
+    - **Item Creation** (v2.20 - REFACTORED): Full item form with auto-generated WBS codes, 11 phases, key date linking, risk assessment (632 -> 217 lines, 65.7% reduction)
+    - **Resource Planning**: Planned for future implementation (stub)
+    - **Milestone Tracking** (v2.20 - REFACTORED): Per-site milestone progress recording with achievement marking (747 -> 181 lines, 75.8% reduction)
+    - **Baseline Planning** (v1.3): Critical path calculation (Kahn's algorithm), dependency management, irreversible baseline locking
+  - **Stack Screens**:
+    - **Item Edit** (v2.20 - REFACTORED): Full item editing with baseline lock enforcement (737 -> 297 lines, 59.6% reduction)
+  - See `docs/implementation/planning-module/PLANNING_WORKFLOW.md` for complete action flow documentation
 - **Progress Tracking**: Detailed logging of work progress with photo documentation
 - **Daily Reports**: Submit daily progress reports with automatic aggregation and history viewing
 - **Hindrance Management**: Report and track construction issues/obstacles with photo capture (camera/gallery)

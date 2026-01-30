@@ -491,19 +491,15 @@ Screens are organized by user role for clear separation of concerns:
   - Project overview, team management
   - Financial reports, resource allocation
 
-- **Planning** (`src/planning/`): 9 screens for scheduling (v1.3-v2.21, Phase 1 COMPLETE ✅)
-  - Baseline planning with critical path calculation (v1.3)
-  - Dependency management with circular detection (v1.3)
-  - WBS Management with hierarchical item structure (v1.4)
-  - **v2.20 Phase 1 Refactoring:**
-    - MilestoneTrackingScreen: 747 → 181 lines (75.8% reduction)
-    - ItemEditScreen: 737 → 297 lines (59.6% reduction)
-    - GanttChartScreen: 648 → 164 lines (74.7% reduction)
-    - ItemCreationScreen: 632 → 217 lines (65.7% reduction)
-    - Total: 56 new files created (components, hooks, utils)
-  - Item Creation/Editing with auto-generated WBS codes (v1.4 - NEW)
-  - Gantt charts, schedule management
-  - Resource planning, milestone tracking
+- **Planning** (`src/planning/`): 12 screens for project planning (v1.3-v2.21, Phase 1 COMPLETE)
+  - **Navigation**: Stack + Drawer + Bottom Tabs (3-tier hybrid)
+  - **Workflow**: Sites -> Items (WBS) -> Key Dates -> Schedule Review -> Critical Path -> Lock Baseline -> Track Milestones
+  - **Bottom Tabs**: Dashboard, Key Dates, Schedule (Timeline/Calendar/List), Gantt Chart
+  - **Drawer**: Site Management, WBS Management, Item Creation, Resources (stub), Milestone Tracking, Baseline Planning
+  - **Stack**: Item Creation (params: siteId, parentWbsCode?), Item Edit (params: itemId)
+  - **Key Services**: PlanningService (critical path, forecasting, baseline locking), WBSCodeGenerator (4-level hierarchy)
+  - **v2.20 Phase 1 Refactoring**: 4 screens refactored (56 new modular files, 68.9% avg reduction)
+  - See `docs/implementation/planning-module/PLANNING_WORKFLOW.md` for complete action flow
 
 - **Logistics** (`src/logistics/`): 14 screens for materials/equipment (v2.20: Modular Architecture)
   - Material tracking with BOM integration (v2.4)
@@ -752,18 +748,24 @@ MainNavigator (Stack)
     │   ├── FinancialReportsScreen (💰 Finance)
     │   ├── ResourceRequestsScreen (📤 Resources)
     │   └── BomManagementScreen (📦 BOM - v2.20 REFACTORED ⬇️86%)
-    ├── PlanningNavigator (Stack + Bottom Tabs - v2.21 Phase 1 COMPLETE ✅)
-    │   ├── Bottom Tabs (7 tabs - LOGICAL WORKFLOW ORDER)
-    │   │   ├── SiteManagementScreen (🏗️ Sites - WHERE work happens) [v1.7]
-    │   │   ├── WBSManagementScreen (🗂️ WBS - WHAT work to do) [v1.4]
-    │   │   ├── ResourcePlanningScreen (👷 Resources - WHO does work) [stub]
-    │   │   ├── ScheduleManagementScreen (📅 Schedule - WHEN work happens) [stub]
-    │   │   ├── GanttChartScreen (📊 Gantt - VISUALIZE timeline) [v2.20 - REFACTORED ⬇️74.7%]
-    │   │   ├── BaselineScreen (📋 Baseline - LOCK the plan) [v1.3]
-    │   │   └── MilestoneTrackingScreen (🏁 Milestones - TRACK progress) [v2.20 - REFACTORED ⬇️75.8%]
-    │   └── Stack Screens (Modal/Detail screens)
-    │       ├── ItemCreation (Create new WBS items) [v2.20 - REFACTORED ⬇️65.7%]
-    │       └── ItemEdit (Edit existing WBS items) [v2.20 - REFACTORED ⬇️59.6%]
+    ├── PlanningNavigator (Stack + Drawer + Bottom Tabs - v2.21 Phase 1 COMPLETE)
+    │   ├── Stack Navigator (outer)
+    │   │   ├── SiteManagement -> Drawer Navigator (main container)
+    │   │   ├── ItemCreation (params: siteId, parentWbsCode?) [v2.20 - REFACTORED 65.7%]
+    │   │   └── ItemEdit (params: itemId) [v2.20 - REFACTORED 59.6%]
+    │   ├── Drawer Navigator (middle - 7 entries)
+    │   │   ├── MainTabs -> Bottom Tab Navigator
+    │   │   ├── Resources -> ResourcePlanningScreen [stub]
+    │   │   ├── Sites -> SiteManagementScreen (WHERE work happens) [v1.7]
+    │   │   ├── WBS -> WBSManagementScreen (WHAT work to do) [v1.4]
+    │   │   ├── CreateItem -> ItemCreationScreen
+    │   │   ├── MilestoneTracking -> MilestoneTrackingScreen (TRACK progress) [v2.20 - REFACTORED 75.8%]
+    │   │   └── Baseline -> BaselineScreen (LOCK the plan) [v1.3]
+    │   └── Bottom Tab Navigator (inner - 4 tabs)
+    │       ├── Dashboard -> PlanningDashboard (OVERVIEW)
+    │       ├── KeyDates -> KeyDateManagementScreen (CONTRACT dates)
+    │       ├── Schedule -> UnifiedSchedule (WHEN work happens - Timeline/Calendar/List)
+    │       └── Gantt -> GanttChartScreen (VISUALIZE timeline) [v2.20 - REFACTORED 74.7%]
     ├── LogisticsNavigator (4 tabs - v2.20 Phase 1 COMPLETE ✅)
     │   ├── MaterialTrackingScreen (📦 Materials - v2.20 REFACTORED ⬇️77.3%)
     │   ├── EquipmentManagementScreen (🚜 Equipment)
@@ -1560,109 +1562,165 @@ AutoSyncManager.addListener(callback)     // Subscribe to state changes
 - API Reference: `docs/api/API_DOCUMENTATION.md`
 - Troubleshooting: `docs/sync/SYNC_TROUBLESHOOTING.md`
 
-### 3. Planning Module Features (v1.3-v1.5)
+### 3. Planning Module Features (v1.3-v2.21)
 
-#### Baseline Planning Screen
-- Project selection with dropdown
-- Item planning cards with visual indicators
-- Date pickers for planned start/end dates
-- Critical path calculation and visualization
-- Baseline locking workflow
+#### Planning Workflow Overview
 
-#### Critical Path Calculation
-- **Algorithm**: Kahn's topological sort with forward/backward pass
-- **Features**:
-  - Identifies critical path items (zero slack)
-  - Calculates project duration
-  - Updates database flags automatically
-  - Visual indicators (red borders) for critical items
+The Planning module follows a structured end-to-end workflow:
 
-#### Dependency Management
-- **Modal Interface**: Search and multi-select dependencies
-- **Validation**: Circular dependency detection
-- **Visual Feedback**: Dependency count display
-- **Safety**: Prevents invalid dependency graphs
+```
+Sites -> Items (WBS) -> Key Dates -> Schedule Review -> Dependencies -> Critical Path -> Lock Baseline -> Track Milestones
+```
 
-#### Progress Metrics & Forecasting
-- **Metrics**: Overall progress, schedule variance, on-track/delayed counts
-- **Forecasting**: Linear regression for completion estimation
-- **Confidence Levels**: High/medium/low based on data quality
+**Setup Phase**: Create sites (Site Management), build WBS hierarchy (WBS Management), define work items (Item Creation/Edit)
+**Key Dates Phase**: Define contractual key dates, assign sites with contribution percentages, link items to key dates
+**Analysis Phase**: Review schedule (Timeline/Calendar/List views), visualize Gantt chart with zoom controls
+**Baseline Phase**: Define dependencies, calculate critical path, lock baseline (IRREVERSIBLE)
+**Tracking Phase**: Record milestone progress per site, monitor dashboard widgets
 
-#### Baseline Locking
-- **Purpose**: Lock project schedule for baseline comparison
-- **Effects**:
-  - Copies planned dates to baseline fields
-  - Disables date editing
-  - Enables variance tracking
-- **Visual Indicators**: Lock chips, warning cards, disabled inputs
+See `docs/implementation/planning-module/PLANNING_WORKFLOW.md` for complete action flow documentation.
+
+#### Role Responsibility Boundaries
+
+| Responsibility | Owner | Notes |
+|---------------|-------|-------|
+| Create projects | Admin | Planner is assigned to a project |
+| Create sites | Planner | Sites belong to the assigned project |
+| Assign supervisors to sites | Planner | Sets `supervisor_id` on sites |
+| Create WBS items | Planner | Items belong to a site |
+| Define key dates | Planner | Key dates belong to a project |
+| Define item dependencies | Planner | JSON array of item IDs |
+| Calculate critical path | Planner | PlanningService algorithm |
+| Lock baseline | Planner | Irreversible operation |
+| Create milestones | Admin/Manager | Planner cannot create milestones |
+| Record milestone progress | Planner | Creates `milestone_progress` records |
+| Record daily progress | Supervisor | Creates `progress_logs` against items |
+
+#### Data Ownership
+
+| Table | Created By | Updated By | Read By |
+|-------|-----------|------------|---------|
+| `sites` | Planner | Planner | All roles |
+| `items` | Planner | Planner (plan), Supervisor (progress) | All roles |
+| `key_dates` | Planner | Planner | All roles |
+| `key_date_sites` | Planner | Planner | All roles |
+| `milestones` | Admin/Manager | Admin/Manager | Planner (read-only) |
+| `milestone_progress` | Planner | Planner | All roles |
+| `schedule_revisions` | PlanningService | PlanningService | Planner |
+
+#### Architectural Invariants
+
+1. **Baseline lock is irreversible**: Once `isBaselineLocked = true`, no unlock mechanism exists
+2. **WBS codes are unique per site**: `WBSCodeGenerator` enforces uniqueness within site scope
+3. **WBS hierarchy is limited to 4 levels**: Codes follow `X.Y.Z.W` format
+4. **Items require a site**: Every item belongs to exactly one site via `site_id`
+5. **Key dates belong to a project**: Every key date requires a `project_id`
+6. **Planner is assigned to one project**: PlanningContext resolves from user's `projectId` field
+7. **Status is derived from progress**: WBS Management auto-corrects (0% = not_started, 100% = completed, else in_progress)
+8. **Baseline dates are snapshot copies**: Copies of planned dates at lock time, never independently editable
+
+#### Planning Services
+
+**PlanningService** (`services/planning/PlanningService.ts`): Singleton service providing:
+- `calculateCriticalPath(projectId)` -- Kahn's algorithm with forward/backward pass, updates `criticalPathFlag`
+- `calculateProgressMetrics(projectId)` -- Overall progress, schedule variance, on-track/delayed counts
+- `calculateScheduleVariance(itemId)` -- Per-item variance data
+- `generateForecast(projectId)` -- Linear regression on last 30 days of `progress_logs`
+- `validateDependencies(items)` -- Circular dependency detection via DFS
+- `lockBaseline(projectId)` -- Copies planned dates to baseline fields, sets `isBaselineLocked = true`
+- `createRevision(itemId, ...)` -- Creates `schedule_revisions` record, updates item dates
+- `getItemSuccessors(itemId)` -- Finds items that depend on given item
+- `calculateScheduleImpact(itemId, ...)` -- Recursive cascade impact analysis
+
+**WBSCodeGenerator** (`services/planning/WBSCodeGenerator.ts`): Static utility for hierarchical WBS codes:
+- `generateRootCode(siteId)` -- Next root code (1.0.0.0, 2.0.0.0)
+- `generateChildCode(siteId, parentWbsCode)` -- Next child code (1.1.0.0, 1.2.0.0)
+- `generateSiblingCode(siteId, siblingWbsCode)` -- Next sibling code
+- `isCodeUnique(siteId, wbsCode, excludeItemId?)` -- Uniqueness validation
+- `calculateLevel(wbsCode)` -- Level 1-4 from code string
+
+#### PlanningContext
+
+**File**: `src/planning/context/PlanningContext.tsx`
+
+Wraps entire navigator. Provides:
+- `projectId` / `projectName` -- from logged-in user's assigned project
+- `selectedSiteId` / `selectedSite` -- current site selection
+- `sites` -- all sites for the project
+- `selectSite()` / `refreshSites()` / `refreshProject()` -- mutations
+- Persists to `AsyncStorage` for offline session continuity
+
+#### Offline-First Guarantees
+
+1. All reads hit local WatermelonDB (SQLite) -- no network dependency
+2. All writes are local-first with immediate persistence
+3. New `key_dates` and `milestone_progress` records set `appSyncStatus = 'pending'`, `version = 1`
+4. PlanningContext persists selections to AsyncStorage across restarts
+5. Screens using `withObservables` automatically reflect local changes
+6. Critical path calculation, baseline locking, and all CRUD execute entirely against local data
+
+#### Screen Details
+
+**Dashboard** (`src/planning/dashboard/PlanningDashboard.tsx`):
+- 6 interactive widgets: Upcoming Milestones, Critical Path, Schedule Overview, Recent Activities, Resource Utilization, WBS Progress
+- Widget taps navigate to corresponding detail screens
+- Read-only aggregation of `items` and `progress_logs` tables
+
+**Key Date Management** (`src/planning/key-dates/KeyDateManagementScreen.tsx`):
+- CMRL contract key dates with 7 categories (G/A/B/C/D/E/F)
+- Delay damages tracking (initial rate days 1-28, extended from day 29)
+- Per-site assignments via KeyDateSiteManager with contribution percentages
+- Target date auto-calculated from project start date + target days
+
+**Schedule** (`src/planning/schedule/UnifiedSchedule.tsx`):
+- Three views: Timeline, Calendar, List
+- Filters: site, search (debounced 300ms), critical path toggle
+- Read-only visualization of `items` data
+
+**Gantt Chart** (`src/planning/GanttChartScreen.tsx`):
+- Zoom levels: day, week, month
+- Critical path highlighting, today-marker, key date milestone markers
+- Task bars positioned by planned dates with progress fill
+
+**Site Management** (`src/planning/SiteManagementScreen.tsx`):
+- CRUD for sites with supervisor assignment picker
+- 4 date fields: planned start/end, actual start/end
+- Foundation step -- required before items can be created
+
+**WBS Management** (`src/planning/WBSManagementScreen.tsx`):
+- Search by name/WBS code, filter by phase (11 phases)/status/critical path
+- Sort by WBS code/name/duration/progress
+- Actions: Add Item (FAB), Edit, Add Child, Delete -- all blocked if baseline locked
+- Auto-corrects item status on load based on progress percentage
+
+**Baseline Planning** (`src/planning/BaselineScreen.tsx`):
+- Calculate Critical Path button -- runs Kahn's algorithm, shows result count and duration
+- Lock Baseline button -- IRREVERSIBLE, copies planned dates to baseline fields
+- Dependency management per item via DependencyModal
+
+**Milestone Tracking** (`src/planning/MilestoneTrackingScreen.tsx`):
+- Per-site progress recording with percentage slider and status picker
+- Mark as Achieved one-tap action
+- Milestones seeded by Admin/Manager (not created by planner)
+
+**Item Creation** (`src/planning/ItemCreationScreen.tsx`):
+- Auto-generated WBS codes (root or child based on route params)
+- 11 construction phases, key date linking, risk assessment
+- Date auto-calculation between start/end/duration
+
+**Item Edit** (`src/planning/ItemEditScreen.tsx`):
+- Full editing with baseline lock enforcement (LockedBanner when locked)
+- Status auto-calculated from progress percentage
 
 #### ItemModel Helper Methods
-**v1.3 Methods (7 methods)**:
-- `getDependencies()`: Parse JSON dependencies
-- `setDependencies()`: Set dependencies as JSON
-- `getScheduleVariance()`: Calculate variance in days
-- `getPlannedDuration()`: Calculate planned duration
-- `getActualDuration()`: Calculate actual duration
-- `getBaselineVariance()`: Calculate baseline variance
-- `getProgressPercentage()`: Calculate completion percentage
 
-**v1.4 Methods (8 NEW methods)**:
-- `getFormattedWbsCode()`: Format WBS code for display
-- `getIndentLevel()`: Calculate indent level from WBS hierarchy
-- `getPhaseLabel()`: Get human-readable phase name
-- `getPhaseColor()`: Get color code for phase
-- `getRiskBadgeColor()`: Get color for risk level
-- `isOnCriticalPath()`: Check if item is on critical path
-- `hasChildren()`: Check if item has child items
-- `getChildItems()`: Fetch child items by parent WBS code
+**v1.3 (7 methods)**: `getDependencies()`, `getScheduleVariance()`, `getPlannedDuration()`, `getActualDuration()`, `getBaselineVariance()`, `getProgressPercentage()`
 
-#### WBS Management Screen (v1.4 - NEW)
-- **Site Selection**: SimpleSiteSelector component with dropdown
-- **Phase Filtering**: 11 project phases with chip filters
-- **WBS Item List**: Hierarchical display with WBSItemCard components
-- **Item Actions**: Create root items, add child items (up to 4 levels)
-- **Context Menu** (v1.5): Long-press menu with Edit/Delete/Add Child options
-- **Auto-refresh**: Navigation focus listener for automatic list refresh
-- **Visual Indicators**: Badges for critical path, risk level, baseline locked status
-- **Max Level Enforcement**: Prevents creation beyond level 4
+**v1.4 (8 methods)**: `getFormattedWbsCode()`, `getIndentLevel()`, `getPhaseLabel()`, `getPhaseColor()`, `getRiskBadgeColor()`, `isOnCriticalPath()`, `hasChildren()`, `getChildItems()`
 
-#### Item Creation Screen (v1.4 - NEW)
-- **WBS Code Auto-generation**: Root codes (1.0.0.0, 2.0.0.0) and child codes (1.1.0.0, 1.1.1.0)
-- **Form Sections**:
-  - Item Details: Name, description
-  - Category Selection: Database-driven dropdown
-  - Phase Selection: 11 phases with emojis and colors
-  - Schedule & Quantity: Duration, quantity, unit of measurement
-  - Critical Path & Risk: Milestone, critical path, float days
-  - Dependency Risk: Low/medium/high with risk notes
-- **Validation**: Required fields, numeric validation
-- **Snackbar Notifications**: Success/error feedback
-- **Database Save**: Full WatermelonDB persistence
-- **Navigation**: Auto-navigate back after save
-
-#### Category & Phase Selectors (v1.4 - NEW)
+#### Category & Phase Selectors
 - **CategorySelector**: Live database integration, description display
-- **PhaseSelector**: 11 phases with visual indicators
-  - Design & Engineering (Blue)
-  - Statutory Approvals (Purple)
-  - Mobilization (Deep Orange)
-  - Procurement (Orange)
-  - Interface Coordination (Cyan)
-  - Site Preparation (Brown)
-  - Construction (Green)
-  - Testing & Pre-commissioning (Red)
-  - Commissioning (Indigo)
-  - Site Acceptance Test (Teal)
-  - Handover & Documentation (Blue Grey)
-
-#### WBS Code Generation Service (v1.4 - NEW)
-- **Algorithm**: Hierarchical code generation with database queries
-- **Static Methods**:
-  - `generateRootCode(siteId)`: Generates next root code (1.0.0.0, 2.0.0.0, etc.)
-  - `generateChildCode(siteId, parentWbsCode)`: Generates child code (1.1.0.0, 1.2.0.0, etc.)
-  - `calculateLevel(wbsCode)`: Extracts hierarchy level from code
-- **Constraints**: Maximum 4 levels, numeric sorting
-- **Database Queries**: Finds existing codes to prevent duplicates
+- **PhaseSelector**: 11 phases -- Design (Blue), Approvals (Purple), Mobilization (Deep Orange), Procurement (Orange), Interface (Cyan), Site Prep (Brown), Construction (Green), Testing (Red), Commissioning (Indigo), SAT (Teal), Handover (Blue Grey)
 
 ### 4. Admin Role Features (v1.2)
 
