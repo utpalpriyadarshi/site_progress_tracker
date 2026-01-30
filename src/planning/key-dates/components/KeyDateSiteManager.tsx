@@ -623,10 +623,10 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   contributionChip: {
-    height: 28,
+    minHeight: 28,
   },
   progressChip: {
-    height: 28,
+    minHeight: 28,
     backgroundColor: '#E3F2FD',
   },
   progressRow: {
