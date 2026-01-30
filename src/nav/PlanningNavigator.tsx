@@ -6,18 +6,19 @@
  *
  * Bottom Tabs (4 main workflows):
  * - Dashboard: At-a-glance overview with widgets
+ * - Key Dates: Key date management and site association
  * - Schedule: Unified schedule with Timeline/Calendar/List views
  * - Gantt: Visual timeline representation
- * - Resources: Resource planning and allocation
  *
- * Drawer Items (5 detailed screens):
+ * Drawer Items (6 detailed screens):
+ * - Resources: Resource planning and allocation
  * - Sites: Site management
  * - WBS: Work breakdown structure
  * - Create Item: Item creation form
  * - Milestones: Milestone tracking
  * - Baseline: Baseline planning
  *
- * @version 2.0.0
+ * @version 3.0.0
  * @since Planning Phase 3
  */
 
@@ -63,14 +64,14 @@ export type RootStackParamList = {
 
 export type PlanningTabParamList = {
   Dashboard: undefined;
+  KeyDates: undefined;
   Schedule: undefined;
   Gantt: undefined;
-  Resources: undefined;
 };
 
 export type PlanningDrawerParamList = {
   MainTabs: undefined;
-  KeyDates: undefined;
+  Resources: undefined;
   Sites: undefined;
   WBS: undefined;
   CreateItem: undefined;
@@ -123,14 +124,14 @@ const PlanningTabs: React.FC = memo(() => {
       case 'Dashboard':
         iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
         break;
+      case 'KeyDates':
+        iconName = focused ? 'calendar-check' : 'calendar-check-outline';
+        break;
       case 'Schedule':
         iconName = focused ? 'calendar-clock' : 'calendar-clock-outline';
         break;
       case 'Gantt':
         iconName = focused ? 'chart-gantt' : 'chart-gantt';
-        break;
-      case 'Resources':
-        iconName = focused ? 'account-group' : 'account-group-outline';
         break;
     }
 
@@ -167,6 +168,14 @@ const PlanningTabs: React.FC = memo(() => {
         }}
       />
       <Tab.Screen
+        name="KeyDates"
+        component={KeyDateManagementScreen}
+        options={{
+          title: 'Key Dates',
+          tabBarAccessibilityLabel: 'Key Dates tab, manage key dates and site associations',
+        }}
+      />
+      <Tab.Screen
         name="Schedule"
         component={UnifiedSchedule}
         options={{
@@ -180,14 +189,6 @@ const PlanningTabs: React.FC = memo(() => {
         options={{
           title: 'Gantt',
           tabBarAccessibilityLabel: 'Gantt chart tab, visual timeline',
-        }}
-      />
-      <Tab.Screen
-        name="Resources"
-        component={ResourcePlanningScreen}
-        options={{
-          title: 'Resources',
-          tabBarAccessibilityLabel: 'Resources tab, manage resource allocation',
         }}
       />
     </Tab.Navigator>
@@ -226,8 +227,8 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
       case 'MainTabs':
         iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
         break;
-      case 'KeyDates':
-        iconName = focused ? 'calendar-check' : 'calendar-check-outline';
+      case 'Resources':
+        iconName = focused ? 'account-group' : 'account-group-outline';
         break;
       case 'Sites':
         iconName = focused ? 'office-building' : 'office-building-outline';
@@ -290,12 +291,12 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
         }}
       />
       <Drawer.Screen
-        name="KeyDates"
-        component={KeyDateManagementScreen}
+        name="Resources"
+        component={ResourcePlanningScreen}
         options={{
-          title: 'Key Dates',
-          drawerLabel: 'Key Dates',
-          headerTitle: 'KD Management',
+          title: 'Resources',
+          drawerLabel: 'Resources',
+          headerTitle: 'Resource Planning',
         }}
       />
       <Drawer.Screen
