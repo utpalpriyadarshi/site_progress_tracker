@@ -592,8 +592,21 @@ const DesignDocumentManagementScreen = () => {
   if (!projectId) {
     return (
       <ErrorBoundary>
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>No project assigned</Text>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <View>
+                <Text style={styles.projectName}>Design Documents</Text>
+                <Text style={styles.screenLabel}>No project assigned</Text>
+              </View>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                <Text style={styles.logoutText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.centerContainer}>
+            <Text style={styles.errorText}>No project assigned to this user</Text>
+          </View>
         </View>
       </ErrorBoundary>
     );
