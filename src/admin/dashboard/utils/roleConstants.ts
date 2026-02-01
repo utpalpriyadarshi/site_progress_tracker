@@ -62,4 +62,6 @@ export const DATABASE_COLLECTIONS = [
   'budgets', 'costs', 'invoices',
   // Key Dates (Phase 5a)
   'key_dates', 'key_date_sites',
+  // Design Documents (v36)
+  'design_document_categories', 'design_documents',
 ];

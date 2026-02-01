@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import DesignEngineerDashboardScreen from '../design_engineer/DesignEngineerDashboardScreen';
 import DoorsPackageManagementScreen from '../design_engineer/DoorsPackageManagementScreen';
 import DesignRfqManagementScreen from '../design_engineer/DesignRfqManagementScreen';
+import DesignDocumentManagementScreen from '../design_engineer/DesignDocumentManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import { DesignEngineerProvider } from '../design_engineer/context/DesignEngineerContext';
 
@@ -23,6 +24,7 @@ export type RootStackParamList = {
 
 export type DesignEngineerTabParamList = {
   Dashboard: undefined;
+  DesignDocuments: undefined;
   DoorsPackages: undefined;
   DesignRfqs: undefined;
 };
@@ -55,6 +57,8 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
 
             if (route.name === 'Dashboard') {
               iconSymbol = '📊';
+            } else if (route.name === 'DesignDocuments') {
+              iconSymbol = '📄';
             } else if (route.name === 'DoorsPackages') {
               iconSymbol = '📦';
             } else if (route.name === 'DesignRfqs') {
@@ -72,6 +76,14 @@ const DesignEngineerNavigator: React.FC<DesignEngineerNavigatorProps> = ({ navig
           component={DesignEngineerDashboardScreen}
           options={{
             title: 'Dashboard',
+            headerShown: false,
+          }}
+        />
+        <Tab.Screen
+          name="DesignDocuments"
+          component={DesignDocumentManagementScreen}
+          options={{
+            title: 'Design Docs',
             headerShown: false,
           }}
         />
