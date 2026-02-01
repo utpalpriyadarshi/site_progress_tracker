@@ -5,9 +5,9 @@
 A React Native mobile application designed for construction site management with offline-first capabilities using WatermelonDB. The application features role-based navigation for different construction team members (Supervisors, Managers, Planners, Logistics, Design Engineers, Commercial Managers, Admin) with comprehensive progress tracking, reporting, material management, financial management, and advanced planning capabilities.
 
 **Current Version**: v2.21 (ALL 6 ROLES Phase 1 COMPLETE ✅🎉)
-**Database Schema Version**: 29 (Manager Milestones & Progress Tracking)
+**Database Schema Version**: 36 (Design Documents Management)
 **Platform**: React Native (Android & iOS)
-**Last Updated**: January 2, 2026
+**Last Updated**: February 1, 2026
 
 The application has achieved a historic milestone with ALL 6 user roles (Manager, Logistics, Commercial, Planning, Admin, Design Engineer) completing Phase 1 of the improvement roadmap, representing a comprehensive architectural transformation with over 15,000 lines of code eliminated and a 68.2% average reduction across all roles.
 
@@ -363,7 +363,7 @@ site_progress_tracker/
 │   │   ├── ManagerNavigator.tsx   # Manager bottom tabs (5 tabs - v2.10)
 │   │   ├── PlanningNavigator.tsx  # Planning bottom tabs (7 tabs - v1.7 workflow order)
 │   │   ├── LogisticsNavigator.tsx # Logistics bottom tabs (4 tabs)
-│   │   ├── DesignEngineerNavigator.tsx # Design Engineer bottom tabs (3 tabs - v2.10)
+│   │   ├── DesignEngineerNavigator.tsx # Design Engineer bottom tabs (4 tabs - v2.10, v36)
 │   │   ├── CommercialNavigator.tsx # Commercial Manager bottom tabs (5 tabs - v2.11)
 │   │   └── types.ts              # Navigation type definitions
 │   └── utils/                    # Utility screens and helpers (v2.10)
@@ -546,10 +546,17 @@ Screens are organized by user role for clear separation of concerns:
     - FinancialReportsScreen: 785 → 195 lines (75.4% reduction!)
     - Total: 4 critical files refactored, 20 new modular files created
 
-- **Design Engineer** (`src/design-engineer/`): 3 screens for engineering management (v2.10-v2.21: Phase 1 COMPLETE ✅)
+- **Design Engineer** (`src/design_engineer/`): 4 screens for engineering management (v2.10-v2.21: Phase 1 COMPLETE ✅)
   - Design Engineer Dashboard with project overview and metrics
+  - **Design Document Management** (v36) - 4 document types with approval workflow (2nd tab)
   - DOORS Package Management for equipment specifications
   - Design RFQ Management for procurement workflows
+  - **v36 Design Documents Feature**:
+    - DesignDocumentManagementScreen with full CRUD, filtering, FAB.Group
+    - 4 document types: Simulation/Study, Installation, Product/Equipment, As-Built
+    - Status workflow: Draft → Submitted → Approved / Approved with Comment / Rejected
+    - User-defined sub-categories with default Installation categories
+    - Components: DesignDocumentCard, CreateDesignDocumentDialog, ManageCategoriesDialog, ApprovalDialog
   - **v2.21 Phase 1 Refactoring**:
     - DesignRfqManagementScreen: 662 → 222 lines (66.5% reduction!)
     - DoorsPackageManagementScreen: 616 → 237 lines (61.5% reduction!)
@@ -567,7 +574,7 @@ Screens are organized by user role for clear separation of concerns:
 
 #### WatermelonDB Models
 - **Location**: `/models/` (root level, NOT in src/)
-- **Schema Version**: 11 (defined in `models/schema/index.ts`)
+- **Schema Version**: 36 (defined in `models/schema/index.ts`)
 - **Pattern**: Model classes extend `Model` with decorators for fields
 - **Migrations**: Tracked in `models/migrations/` for schema evolution
 
@@ -583,7 +590,26 @@ Screens are organized by user role for clear separation of concerns:
 9. **SiteInspectionModel**: Safety inspection checklists (v1.0)
 10. **UserModel**: User accounts with authentication (v1.2)
 11. **RoleModel**: User roles and permissions (v1.2)
-12. **ScheduleRevisionModel**: Schedule revision tracking (v1.3 - NEW)
+12. **ScheduleRevisionModel**: Schedule revision tracking (v1.3)
+13. **InterfacePointModel**: Interface coordination between contractors (v1.4)
+14. **TemplateModuleModel**: Reusable WBS templates (v1.4)
+15. **BomModel**: Bill of Materials management (v22)
+16. **BomItemModel**: BOM line items with cost calculations (v22)
+17. **DoorsPackageModel**: DOORS equipment specification packages (v26)
+18. **DoorsRequirementModel**: Individual DOORS requirements (v26)
+19. **VendorModel**: Vendor/supplier management (v28)
+20. **RfqModel**: Request for Quotation management (v28)
+21. **RfqVendorQuoteModel**: Vendor quote responses (v28)
+22. **MilestoneModel**: Project milestones with weighted progress (v30)
+23. **MilestoneProgressModel**: Site-level milestone progress (v30)
+24. **PurchaseOrderModel**: Purchase order lifecycle tracking (v30)
+25. **BudgetModel**: Budget allocation by category (v31)
+26. **CostModel**: Actual cost tracking (v31)
+27. **InvoiceModel**: Invoice and payment tracking (v31)
+28. **KeyDateModel**: Contract key dates with delay damages (v35)
+29. **KeyDateSiteModel**: Key date to site junction table (v35)
+30. **DesignDocumentCategoryModel**: Document sub-categories per type (v36)
+31. **DesignDocumentModel**: Design documents with approval workflow (v36)
 
 #### Field Naming Convention (CRITICAL)
 - **Schema columns**: `snake_case` (e.g., `supervisor_id`, `start_date`)
@@ -771,8 +797,9 @@ MainNavigator (Stack)
     │   ├── EquipmentManagementScreen (🚜 Equipment)
     │   ├── DeliverySchedulingScreen (🚚 Delivery - v2.20 REFACTORED ⬇️84.7%)
     │   └── InventoryManagementScreen (📋 Inventory - v2.20 REFACTORED ⬇️85.6%)
-    ├── DesignEngineerNavigator (3 tabs - v2.10, v2.21 Phase 1 COMPLETE ✅)
+    ├── DesignEngineerNavigator (4 tabs - v2.10, v36)
     │   ├── DesignEngineerDashboardScreen (📊 Dashboard - v2.21 REFACTORED ⬇️30.5%)
+    │   ├── DesignDocumentManagementScreen (📄 Design Docs - v36 NEW)
     │   ├── DoorsPackageManagementScreen (📦 DOORS Packages - v2.21 REFACTORED ⬇️61.5%)
     │   └── DesignRfqManagementScreen (📝 RFQs - v2.21 REFACTORED ⬇️66.5%)
     └── CommercialNavigator (5 tabs - v2.11, v2.20 Phase 1 COMPLETE ✅)
@@ -817,7 +844,18 @@ MainNavigator (Stack)
 - **v22**: Added `bom_items` table for BOM line items (Activity 4, Phase 1, Day 1)
 - **v23**: Added `quantity` and `unit` fields to boms table (Activity 4, Phase 1, Day 2)
 - **v24**: Added `site_category` field to boms table (Activity 4, Phase 1, Day 3)
-- **v25**: Current version - Added `baseline_bom_id` to boms table for execution tracking (Activity 4, Phase 2)
+- **v25**: Added `baseline_bom_id` to boms table for execution tracking (Activity 4, Phase 2)
+- **v26**: Added DOORS system - `doors_packages`, `doors_requirements` tables + `doors_id` to bom_items (Activity 4, Phase 2)
+- **v27**: Added edit audit trail to DOORS tables + linking metadata to bom_items (Activity 4, Phase 3)
+- **v28**: Added RFQ Management - `vendors`, `rfqs`, `rfq_vendor_quotes` tables (Activity 4, Phase 3)
+- **v29**: Added `project_id` to users table for supervisor project assignment (v2.9)
+- **v30**: Added Manager role tables - `milestones`, `milestone_progress`, `purchase_orders` (v2.10)
+- **v31**: Added multi-role tables - `budgets`, `costs`, `invoices` + enhancements (v2.11)
+- **v32**: Added `vendor_name` to invoices table (v2.11 fix)
+- **v33**: Added PDF error tracking fields to daily_reports (Phase A: Share Button fix)
+- **v34**: Added PDF generation status fields to daily_reports (Phase B: Async PDF)
+- **v35**: Added Key Dates tables - `key_dates`, `key_date_sites` + `key_date_id` to items (Phase 5a)
+- **v36**: Current version - Added Design Documents tables - `design_document_categories`, `design_documents` (Design Engineer)
 
 ### Core Collections
 
@@ -963,6 +1001,95 @@ MainNavigator (Stack)
 - **Actions**: create, update, delete
 - **Retry Logic**: Exponential backoff for failed sync attempts
 - **Cleanup**: Successfully synced items are marked with synced_at timestamp
+
+#### doors_packages (v26 - DOORS System)
+- Equipment/material specification packages with measurable requirements
+- Fields: doors_id, equipment_name, category, equipment_type, project_id, specification_ref, drawing_ref, quantity, unit, compliance fields, status, priority, RFQ/PO/delivery fields, ownership/audit fields
+- **Relationships**: belongs_to project, has_many doors_requirements
+- **Purpose**: Track engineering requirements compliance for equipment/materials (100 requirements per package)
+
+#### doors_requirements (v26 - DOORS System)
+- Individual requirements within a DOORS package
+- Fields: requirement_id, doors_package_id, category, requirement_code, requirement_text, compliance fields, review fields, attachment refs
+- **Relationships**: belongs_to doors_package
+- **Purpose**: Track individual requirement compliance status and vendor responses
+
+#### vendors (v28 - RFQ Management)
+- Vendor/supplier management
+- Fields: vendor_code, vendor_name, category, contact details, rating, is_approved, performance_score, total_orders
+- **Purpose**: Maintain approved vendor list for RFQ and procurement processes
+
+#### rfqs (v28 - RFQ Management)
+- Request for Quotation management
+- Fields: rfq_number, doors_id, doors_package_id, project_id, title, status, dates, vendor counts, winning vendor/quote, rfq_type
+- **Relationships**: belongs_to doors_package, has_many rfq_vendor_quotes
+- **Purpose**: Manage engineering and procurement RFQ lifecycle
+
+#### rfq_vendor_quotes (v28 - RFQ Management)
+- Vendor quote responses to RFQs
+- Fields: rfq_id, vendor_id, quoted_price, currency, lead_time_days, compliance scores, evaluation scores, rank, status
+- **Relationships**: belongs_to rfq, belongs_to vendor
+- **Purpose**: Track and evaluate vendor quotations for technical and commercial scoring
+
+#### milestones (v30 - Manager Role)
+- Project milestones for progress tracking
+- Fields: project_id, milestone_code, milestone_name, description, sequence_order, weightage, is_active, is_custom
+- **Relationships**: belongs_to project, has_many milestone_progress
+- **Purpose**: Define and track project milestones with weighted progress calculation
+
+#### milestone_progress (v30 - Manager Role)
+- Site-level progress for milestones
+- Fields: milestone_id, site_id, project_id, progress_percentage, status, dates, notes
+- **Relationships**: belongs_to milestone, belongs_to site
+- **Purpose**: Track milestone progress at individual site level
+
+#### purchase_orders (v30 - Manager Role)
+- Purchase order management
+- Fields: po_number, rfq_id, vendor_id, project_id, po_value, currency, payment/delivery terms, status, items_details (JSON)
+- **Relationships**: belongs_to rfq, belongs_to vendor
+- **Purpose**: Track purchase orders from creation through delivery and closure
+
+#### budgets (v31 - Commercial Manager)
+- Project budget allocation by category
+- Fields: project_id, category, allocated_amount, description
+- **Purpose**: Define budget allocations for material, labor, equipment, other
+
+#### costs (v31 - Commercial Manager)
+- Actual cost tracking
+- Fields: project_id, po_id, category, amount, description, cost_date
+- **Purpose**: Track actual costs against budget allocations
+
+#### invoices (v31 - Commercial Manager)
+- Invoice tracking for purchase orders
+- Fields: project_id, po_id, invoice_number, invoice_date, amount, payment_status, vendor_id, vendor_name
+- **Purpose**: Track invoices and payment status for purchase orders
+
+#### key_dates (v35 - Planning Key Dates)
+- Contract key dates / milestones with delay damages
+- Fields: code, category, category_name, description, target_days, target_date, actual_date, status, progress_percentage, delay_damages fields, project_id, sequence_order, dependencies
+- **Relationships**: belongs_to project, has_many key_date_sites
+- **Purpose**: Track contract key dates based on CMRL contract structure with tiered delay damage calculations
+
+#### key_date_sites (v35 - Planning Key Dates)
+- Junction table for key date to site mapping
+- Fields: key_date_id, site_id, contribution_percentage, progress_percentage, status, schedule dates, notes
+- **Relationships**: belongs_to key_date, belongs_to site
+- **Purpose**: Track site-level contributions and progress for each key date
+
+#### design_document_categories (v36 - Design Documents)
+- User-defined sub-categories for design documents
+- Fields: name, document_type (simulation_study | installation | product_equipment | as_built), project_id, is_default, sequence_order
+- **Relationships**: belongs_to project, has_many design_documents
+- **Default Installation categories**: Layout Plan & Section, Cable Tray Layout, Cable Schedule
+- **Purpose**: Organize design documents into sub-categories per document type
+
+#### design_documents (v36 - Design Documents)
+- Design documents with approval workflow
+- Fields: document_number, title, description, document_type, category_id, project_id, site_id (optional), revision_number, status (draft | submitted | approved | approved_with_comment | rejected), approval_comment, submitted_date, approved_date
+- **Relationships**: belongs_to project, belongs_to design_document_category, belongs_to site (optional)
+- **Document Types**: simulation_study (project-wide), installation (site-specific), product_equipment (project-wide), as_built (site-specific)
+- **Status Workflow**: Draft → Submitted → Approved / Approved with Comment / Rejected
+- **Purpose**: Manage design documents across 4 types with approval workflow for Design Engineer role
 
 ### Entity Relationship Diagram
 

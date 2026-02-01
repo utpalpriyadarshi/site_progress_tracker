@@ -156,6 +156,19 @@ Comprehensive improvements for Supervisor screens code quality, maintainability,
 
 ## Recent Updates
 
+### v36 (February 2026) - Design Documents Management
+**New feature: Design Document Management for Design Engineer role**
+
+- **Design Documents Tab**: Added as 2nd tab in Design Engineer navigator (after Dashboard, before DOORS Packages)
+- **4 Document Types**: Simulation/Study (project-wide), Installation (site-specific), Product/Equipment (project-wide), As-Built (site-specific)
+- **Approval Workflow**: Draft → Submitted → Approved / Approved with Comment / Rejected
+- **User-defined Sub-categories**: Per document type with default Installation categories (Layout Plan & Section, Cable Tray Layout, Cable Schedule)
+- **Database Migration v36**: Added `design_document_categories` and `design_documents` tables
+- **New Models**: DesignDocumentCategoryModel, DesignDocumentModel
+- **New Components**: DesignDocumentCard, CreateDesignDocumentDialog, ManageCategoriesDialog, ApprovalDialog
+- **Full CRUD**: Create, read, update, delete documents with search and multi-filter support
+- **Files Added**: 11 new files, 6 modified files (2,275 lines added)
+
 ### v2.20 (December 2025) - Manager & Logistics Refactoring 🏗️ ✅ **COMPLETE**
 **Major code quality improvements for Manager & Logistics roles - modular architecture and maintainability**
 
@@ -2392,7 +2405,7 @@ This is one way to run your app — you can also build it directly from Android 
 
 ## Database Architecture
 
-The app uses WatermelonDB (Schema v29, updated November 2025 - v2.10) for robust offline-first data management with bidirectional sync capabilities.
+The app uses WatermelonDB (Schema v36, updated February 2026) for robust offline-first data management with bidirectional sync capabilities.
 
 ### Core Entities (with Sync Support - v2.2)
 - **Projects**: Top-level project containers with client, dates, and budgets *(syncable)*
@@ -2413,7 +2426,7 @@ The app uses WatermelonDB (Schema v29, updated November 2025 - v2.10) for robust
 
 ### Admin & User Management (v1.2, v2.2 Week 8)
 - **Users**: User accounts with authentication credentials
-- **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics)
+- **Roles**: System roles (Admin, Supervisor, Manager, Planner, Logistics, Design Engineer, Commercial Manager)
 - **Sessions** (v2.2): JWT session tracking with device info
 - **PasswordHistory** (v2.2): Password history for reuse prevention
 
@@ -2472,8 +2485,26 @@ Items now include advanced planning and WBS management capabilities:
   - **dependency_risk**: Low, Medium, High
   - **risk_notes**: Risk description and mitigation plan
 
+### Key Dates (v35 - Phase 5a, January 2026)
+- **Key Dates** (Schema v35): Contract key dates / milestones with delay damages
+  - Based on CMRL contract key dates structure
+  - **Fields**: code, category, description, target_days, target_date, actual_date, status, progress_percentage, delay_damages (tiered rates), dependencies
+  - **Categories**: G (General), A (Design), B-F (Works at specific sites)
+  - **Status**: not_started, in_progress, completed, delayed
+- **Key Date Sites** (Schema v35): Junction table for key date to site mapping
+  - **Fields**: key_date_id, site_id, contribution_percentage, progress_percentage, status, schedule dates
+
+### Design Documents (v36 - Design Engineer, February 2026)
+- **Design Document Categories** (Schema v36): User-defined sub-categories per document type
+  - **Fields**: name, document_type, project_id, is_default, sequence_order
+  - **Default Installation categories**: Layout Plan & Section, Cable Tray Layout, Cable Schedule
+- **Design Documents** (Schema v36): Design documents with approval workflow
+  - **Fields**: document_number, title, description, document_type, category_id, project_id, site_id (optional), revision_number, status, approval_comment, submitted_date, approved_date
+  - **Document Types**: simulation_study (project-wide), installation (site-specific), product_equipment (project-wide), as_built (site-specific)
+  - **Status Workflow**: Draft → Submitted → Approved / Approved with Comment / Rejected
+
 ### Key Database Features
-- **Schema Version 29**: Latest schema with Manager Milestones (v2.10 - Phase 1, November 2025)
+- **Schema Version 36**: Latest schema with Design Documents (February 2026)
 - **Offline-First**: All operations work without internet
 - **Bidirectional Sync** (v2.2 - Week 6): Automatic push/pull synchronization with server
 - **Conflict Resolution** (v2.2 - Week 7): Version-based Last-Write-Wins strategy
@@ -2627,6 +2658,11 @@ MainNavigator
     │   ├── ScheduleManagementScreen
     │   ├── ResourcePlanningScreen
     │   └── MilestoneTrackingScreen
+    ├── DesignEngineerNavigator (Bottom Tabs - 4 tabs, v36)
+    │   ├── DesignEngineerDashboardScreen (📊 Dashboard)
+    │   ├── DesignDocumentManagementScreen (📄 Design Docs - v36 NEW)
+    │   ├── DoorsPackageManagementScreen (📦 DOORS Packages)
+    │   └── DesignRfqManagementScreen (📝 Design RFQs)
     └── LogisticsNavigator (Bottom Tabs)
         ├── MaterialTrackingScreen
         ├── EquipmentManagementScreen
@@ -2686,16 +2722,32 @@ The supervisor role has the most complete implementation with 7 screens:
 - Focused workflow without role switching (supervisors stay in their context)
 - Streamlined header with logout button only
 
+### Design Engineer Features (v2.10, v36)
+The Design Engineer role manages engineering specifications and design documents with 4 screens:
+
+1. **Dashboard**: Project overview with engineering metrics
+2. **Design Documents** (v36 - NEW): Manage design documents across 4 types with approval workflow
+   - **Document Types**: Simulation/Study, Installation, Product/Equipment, As-Built
+   - **Status Workflow**: Draft → Submitted → Approved / Approved with Comment / Rejected
+   - **Sub-categories**: User-defined per document type with defaults for Installation
+   - **Site-specific**: Installation and As-Built types require site selection
+   - **Full CRUD**: Create, edit, delete with search and multi-filter (type + status chips)
+   - **FAB.Group**: Quick access to "New Document" and "Manage Categories"
+3. **DOORS Packages**: Track equipment/material specification packages (100 requirements per package)
+4. **Design RFQs**: Create and manage design-phase Request for Quotations
+
 ## Test Credentials
 
-The app comes with 5 pre-configured test accounts (seeded on first launch):
+The app comes with 7 pre-configured test accounts (seeded on first launch):
 
 ```
-Admin:      admin      / Admin@2025
-Supervisor: supervisor / Supervisor@2025
-Manager:    manager    / Manager@2025
-Planner:    planner    / Planner@2025
-Logistics:  logistics  / Logistics@2025
+Admin:              admin      / Admin@2025
+Supervisor:         supervisor / Supervisor@2025
+Manager:            manager    / Manager@2025
+Planner:            planner    / Planner@2025
+Logistics:          logistics  / Logistics@2025
+Design Engineer:    designer   / Designer@2025
+Commercial Manager: commercial / Commercial@2025
 ```
 
 All passwords are securely hashed with bcrypt (salt rounds: 8) for mobile-optimized performance.
