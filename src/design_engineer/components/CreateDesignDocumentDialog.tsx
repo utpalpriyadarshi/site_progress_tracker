@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
 import {
+  DesignDocument,
   DesignDocumentCategory,
   Site,
   DOCUMENT_TYPES,
@@ -9,6 +10,13 @@ import {
   DocumentType,
 } from '../types/DesignDocumentTypes';
 import { DocumentFormData } from '../state/design-document-management';
+
+const DOCUMENT_TYPE_PREFIXES: Record<DocumentType, string> = {
+  simulation_study: 'SIM',
+  installation: 'INS',
+  product_equipment: 'PRD',
+  as_built: 'ABD',
+};
 
 interface CreateDesignDocumentDialogProps {
   visible: boolean;
@@ -19,6 +27,7 @@ interface CreateDesignDocumentDialogProps {
   onUpdateField: (field: keyof DocumentFormData, value: string) => void;
   categories: DesignDocumentCategory[];
   sites: Site[];
+  documents: DesignDocument[];
 }
 
 const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
@@ -30,10 +39,12 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   onUpdateField,
   categories,
   sites,
+  documents,
 }) => {
   const [typeMenuVisible, setTypeMenuVisible] = useState(false);
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
+  const [docNumberManuallyEdited, setDocNumberManuallyEdited] = useState(false);
 
   const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
   const filteredCategories = categories.filter((c) => c.documentType === form.documentType);
@@ -41,37 +52,48 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
   const selectedSite = sites.find((s) => s.id === form.siteId);
 
+  // Reset manual edit flag when dialog opens for a new document
+  useEffect(() => {
+    if (visible && !isEditing) {
+      setDocNumberManuallyEdited(false);
+    }
+    if (visible && isEditing) {
+      setDocNumberManuallyEdited(true);
+    }
+  }, [visible, isEditing]);
+
+  const generateDocumentNumber = (docType: DocumentType): string => {
+    const prefix = DOCUMENT_TYPE_PREFIXES[docType];
+    const docsOfType = documents.filter((d) => d.documentType === docType);
+    const nextNumber = docsOfType.length + 1;
+    return `DD-${prefix}-${String(nextNumber).padStart(3, '0')}`;
+  };
+
+  const handleTypeSelect = (typeValue: DocumentType) => {
+    onUpdateField('documentType', typeValue);
+    onUpdateField('categoryId', '');
+    if (!SITE_REQUIRED_TYPES.includes(typeValue)) {
+      onUpdateField('siteId', '');
+    }
+    // Auto-generate document number unless manually edited
+    if (!docNumberManuallyEdited) {
+      onUpdateField('documentNumber', generateDocumentNumber(typeValue));
+    }
+    setTypeMenuVisible(false);
+  };
+
+  const handleDocNumberChange = (value: string) => {
+    setDocNumberManuallyEdited(true);
+    onUpdateField('documentNumber', value);
+  };
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Title>{isEditing ? 'Edit Document' : 'Create Design Document'}</Dialog.Title>
         <Dialog.ScrollArea style={styles.scrollArea}>
           <ScrollView>
-            <TextInput
-              label="Document Number *"
-              value={form.documentNumber}
-              onChangeText={(v) => onUpdateField('documentNumber', v)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <TextInput
-              label="Title *"
-              value={form.title}
-              onChangeText={(v) => onUpdateField('title', v)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <TextInput
-              label="Description"
-              value={form.description}
-              onChangeText={(v) => onUpdateField('description', v)}
-              style={styles.input}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
-            />
-
-            {/* Document Type Dropdown */}
+            {/* Document Type Dropdown - FIRST */}
             <Menu
               visible={typeMenuVisible}
               onDismiss={() => setTypeMenuVisible(false)}
@@ -90,20 +112,13 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               {DOCUMENT_TYPES.map((type) => (
                 <Menu.Item
                   key={type.value}
-                  onPress={() => {
-                    onUpdateField('documentType', type.value);
-                    onUpdateField('categoryId', '');
-                    if (!SITE_REQUIRED_TYPES.includes(type.value)) {
-                      onUpdateField('siteId', '');
-                    }
-                    setTypeMenuVisible(false);
-                  }}
+                  onPress={() => handleTypeSelect(type.value)}
                   title={type.label}
                 />
               ))}
             </Menu>
 
-            {/* Category Dropdown (filtered by type) */}
+            {/* Category Dropdown - SECOND (filtered by type) */}
             {form.documentType !== '' && (
               <Menu
                 visible={categoryMenuVisible}
@@ -140,6 +155,32 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
                 )}
               </Menu>
             )}
+
+            {/* Document Number - auto-generated but editable */}
+            <TextInput
+              label="Document Number *"
+              value={form.documentNumber}
+              onChangeText={handleDocNumberChange}
+              style={styles.input}
+              mode="outlined"
+            />
+
+            <TextInput
+              label="Title *"
+              value={form.title}
+              onChangeText={(v) => onUpdateField('title', v)}
+              style={styles.input}
+              mode="outlined"
+            />
+            <TextInput
+              label="Description"
+              value={form.description}
+              onChangeText={(v) => onUpdateField('description', v)}
+              style={styles.input}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+            />
 
             {/* Site Dropdown (only for Installation/As-Built) */}
             {requiresSite && (

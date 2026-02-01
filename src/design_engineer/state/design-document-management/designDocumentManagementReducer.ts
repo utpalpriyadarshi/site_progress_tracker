@@ -134,7 +134,11 @@ const applyFilters = (
   }
 
   if (status) {
-    filtered = filtered.filter((doc) => doc.status === status);
+    filtered = filtered.filter((doc) =>
+      status === 'approved'
+        ? doc.status === 'approved' || doc.status === 'approved_with_comment'
+        : doc.status === status,
+    );
   }
 
   if (categoryId) {

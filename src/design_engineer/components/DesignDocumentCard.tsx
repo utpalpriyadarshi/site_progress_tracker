@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card, Chip, IconButton } from 'react-native-paper';
+import { Card, Chip, Button } from 'react-native-paper';
 import {
   DesignDocument,
   getStatusColor,
@@ -28,99 +28,148 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
   onApproveWithComment,
   onReject,
 }) => {
+  const statusColor = getStatusColor(doc.status);
+  const hasDraftActions = doc.status === 'draft' && (onEdit || onDelete || onSubmit);
+  const hasSubmittedActions = doc.status === 'submitted' && (onApprove || onApproveWithComment || onReject);
+
   return (
-    <Card style={styles.card}>
-      <Card.Content>
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.documentNumber}>{doc.documentNumber}</Text>
-            <Text style={styles.title} numberOfLines={2}>{doc.title}</Text>
-          </View>
-          <View style={styles.badges}>
-            <Chip
-              mode="flat"
-              style={{ backgroundColor: getDocumentTypeColor(doc.documentType) }}
-              textStyle={styles.chipText}
-            >
-              {getDocumentTypeLabel(doc.documentType)}
-            </Chip>
-            <Chip
-              mode="flat"
-              style={{ backgroundColor: getStatusColor(doc.status) }}
-              textStyle={styles.chipText}
-            >
-              {getStatusLabel(doc.status)}
-            </Chip>
-          </View>
+    <Card style={[styles.card, { borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
+      <Card.Content style={styles.cardContent}>
+        <View style={styles.topRow}>
+          <Text style={styles.documentNumber}>{doc.documentNumber}</Text>
+          <Chip
+            mode="flat"
+            style={{ backgroundColor: statusColor }}
+            textStyle={styles.statusChipText}
+            compact
+          >
+            {getStatusLabel(doc.status)}
+          </Chip>
         </View>
 
-        {doc.categoryName && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Category:</Text>
-            <Text style={styles.value}>{doc.categoryName}</Text>
-          </View>
-        )}
+        <Text style={styles.title} numberOfLines={2}>{doc.title}</Text>
 
-        {doc.siteName && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Site:</Text>
-            <Text style={styles.value}>{doc.siteName}</Text>
-          </View>
-        )}
-
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Revision:</Text>
-          <Text style={styles.value}>{doc.revisionNumber}</Text>
+        <View style={styles.metaRow}>
+          <Chip
+            mode="flat"
+            style={{ backgroundColor: getDocumentTypeColor(doc.documentType) }}
+            textStyle={styles.typeChipText}
+            compact
+          >
+            {getDocumentTypeLabel(doc.documentType)}
+          </Chip>
+          {doc.categoryName && (
+            <Text style={styles.metaText}>{doc.categoryName}</Text>
+          )}
+          {doc.siteName && (
+            <Text style={styles.metaText}>{doc.siteName}</Text>
+          )}
+          <Text style={styles.metaText}>{doc.revisionNumber}</Text>
         </View>
 
         {doc.description ? (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Description:</Text>
-            <Text style={styles.value} numberOfLines={2}>{doc.description}</Text>
-          </View>
+          <Text style={styles.description} numberOfLines={2}>{doc.description}</Text>
         ) : null}
 
-        {doc.submittedDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Submitted:</Text>
-            <Text style={styles.value}>{new Date(doc.submittedDate).toLocaleDateString()}</Text>
+        {(doc.submittedDate || doc.approvedDate || doc.approvalComment) && (
+          <View style={styles.detailsSection}>
+            {doc.submittedDate && (
+              <Text style={styles.detailText}>
+                Submitted: {new Date(doc.submittedDate).toLocaleDateString()}
+              </Text>
+            )}
+            {doc.approvedDate && (
+              <Text style={styles.detailText}>
+                Approved: {new Date(doc.approvedDate).toLocaleDateString()}
+              </Text>
+            )}
+            {doc.approvalComment && (
+              <Text style={styles.detailText}>
+                Comment: {doc.approvalComment}
+              </Text>
+            )}
           </View>
         )}
 
-        {doc.approvedDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Approved:</Text>
-            <Text style={styles.value}>{new Date(doc.approvedDate).toLocaleDateString()}</Text>
+        {(hasDraftActions || hasSubmittedActions) && (
+          <View style={styles.actionButtons}>
+            {doc.status === 'draft' && onSubmit && (
+              <Button
+                mode="contained"
+                icon="send"
+                onPress={() => onSubmit(doc.id)}
+                compact
+                style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+                labelStyle={styles.actionButtonLabel}
+              >
+                Submit
+              </Button>
+            )}
+            {doc.status === 'draft' && onEdit && (
+              <Button
+                mode="outlined"
+                icon="pencil"
+                onPress={() => onEdit(doc)}
+                compact
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+              >
+                Edit
+              </Button>
+            )}
+            {doc.status === 'draft' && onDelete && (
+              <Button
+                mode="outlined"
+                icon="delete"
+                onPress={() => onDelete(doc.id)}
+                compact
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+                textColor="#F44336"
+              >
+                Delete
+              </Button>
+            )}
+            {doc.status === 'submitted' && onApprove && (
+              <Button
+                mode="contained"
+                icon="check"
+                onPress={() => onApprove(doc.id)}
+                compact
+                style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+                labelStyle={styles.actionButtonLabel}
+              >
+                Approve
+              </Button>
+            )}
+            {doc.status === 'submitted' && onApproveWithComment && (
+              <Button
+                mode="outlined"
+                icon="comment-check"
+                onPress={() => onApproveWithComment(doc.id)}
+                compact
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+                textColor="#FF9800"
+              >
+                Approve w/ Comment
+              </Button>
+            )}
+            {doc.status === 'submitted' && onReject && (
+              <Button
+                mode="outlined"
+                icon="close"
+                onPress={() => onReject(doc.id)}
+                compact
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+                textColor="#F44336"
+              >
+                Reject
+              </Button>
+            )}
           </View>
         )}
-
-        {doc.approvalComment && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Comment:</Text>
-            <Text style={styles.value}>{doc.approvalComment}</Text>
-          </View>
-        )}
-
-        <View style={styles.actionButtons}>
-          {doc.status === 'draft' && onEdit && (
-            <IconButton icon="pencil" size={20} onPress={() => onEdit(doc)} />
-          )}
-          {doc.status === 'draft' && onDelete && (
-            <IconButton icon="delete" size={20} onPress={() => onDelete(doc.id)} />
-          )}
-          {doc.status === 'draft' && onSubmit && (
-            <IconButton icon="send" size={20} onPress={() => onSubmit(doc.id)} />
-          )}
-          {doc.status === 'submitted' && onApprove && (
-            <IconButton icon="check" size={20} onPress={() => onApprove(doc.id)} />
-          )}
-          {doc.status === 'submitted' && onApproveWithComment && (
-            <IconButton icon="comment-check" size={20} onPress={() => onApproveWithComment(doc.id)} />
-          )}
-          {doc.status === 'submitted' && onReject && (
-            <IconButton icon="close" size={20} onPress={() => onReject(doc.id)} />
-          )}
-        </View>
       </Card.Content>
     </Card>
   );
@@ -128,60 +177,86 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 16,
+    marginBottom: 12,
     elevation: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  cardHeader: {
+  cardContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    minWidth: 0,
+    alignItems: 'center',
+    marginBottom: 4,
   },
   documentNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#007AFF',
+    letterSpacing: 0.5,
   },
-  title: {
-    fontSize: 14,
-    color: '#333',
-    marginTop: 4,
-  },
-  badges: {
-    flexDirection: 'column',
-    gap: 4,
-    alignItems: 'flex-end',
-  },
-  chipText: {
+  statusChipText: {
     color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
   },
-  detailRow: {
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  metaRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 8,
   },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    width: 100,
-    fontWeight: '600',
+  typeChipText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  value: {
-    fontSize: 14,
-    color: '#000',
-    flex: 1,
+  metaText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  description: {
+    fontSize: 13,
+    color: '#555',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  detailsSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 8,
+    marginBottom: 4,
+  },
+  detailText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  actionButton: {
+    borderRadius: 6,
+  },
+  actionButtonLabel: {
+    fontSize: 12,
   },
 });
 

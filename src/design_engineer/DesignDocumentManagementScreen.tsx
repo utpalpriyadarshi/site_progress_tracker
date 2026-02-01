@@ -767,6 +767,7 @@ const DesignDocumentManagementScreen = () => {
           }
           categories={state.data.categories}
           sites={state.data.sites}
+          documents={state.data.documents}
         />
 
         <ManageCategoriesDialog
