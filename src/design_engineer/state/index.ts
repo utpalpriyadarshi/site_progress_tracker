@@ -20,6 +20,15 @@ export {
   type PackageFormData,
 } from './doors-package-management';
 
+// Design Document Management
+export {
+  designDocumentManagementReducer,
+  createInitialState as createDesignDocumentInitialState,
+  type DesignDocumentManagementState,
+  type DesignDocumentManagementAction,
+  type DocumentFormData,
+} from './design-document-management';
+
 // Design Engineer Dashboard
 export {
   designEngineerDashboardReducer,

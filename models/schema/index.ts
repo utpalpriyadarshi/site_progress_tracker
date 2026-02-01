@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 35, // Added Key Dates tables for Phase 5a (Planning Key Dates Architecture)
+  version: 36, // Added Design Documents tables for Design Engineer role
   tables: [
     tableSchema({
       name: 'projects',
@@ -724,6 +724,44 @@ export default appSchema({
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         // Sync
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v36: Design Document tables (Design Engineer - Document Management)
+    tableSchema({
+      name: 'design_document_categories',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'document_type', type: 'string', isIndexed: true },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'is_default', type: 'boolean' },
+        { name: 'sequence_order', type: 'number' },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'design_documents',
+      columns: [
+        { name: 'document_number', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'document_type', type: 'string', isIndexed: true },
+        { name: 'category_id', type: 'string', isIndexed: true },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'site_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'revision_number', type: 'string' },
+        { name: 'status', type: 'string', isIndexed: true },
+        { name: 'approval_comment', type: 'string', isOptional: true },
+        { name: 'submitted_date', type: 'number', isOptional: true },
+        { name: 'approved_date', type: 'number', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
       ],

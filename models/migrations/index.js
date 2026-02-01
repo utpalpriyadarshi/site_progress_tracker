@@ -5,6 +5,7 @@ import { v32Migration } from './v32_add_vendor_name_to_invoices';
 import { v33Migration } from './v33_add_pdf_error_tracking';
 import { v34Migration } from './v34_add_pdf_generation_status';
 import { v35Migration } from './v35_add_key_dates_tables';
+import { v36Migration } from './v36_add_design_documents_tables';
 
 export default schemaMigrations({
   migrations: [
@@ -574,5 +575,7 @@ export default schemaMigrations({
     v34Migration,
     // v35: Add Key Dates tables (Phase 5a - Planning Key Dates Architecture)
     v35Migration,
+    // v36: Add Design Documents tables (Design Engineer - Document Management)
+    v36Migration,
   ],
 });
