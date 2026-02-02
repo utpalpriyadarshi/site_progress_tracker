@@ -30,7 +30,7 @@ export interface DesignDocument {
 export interface DesignDocumentCategory {
   id: string;
   name: string;
-  documentType: DocumentType;
+  documentType: DocumentType | '_category';
   projectId: string;
   isDefault: boolean;
   sequenceOrder: number;
@@ -61,6 +61,13 @@ export const DEFAULT_INSTALLATION_CATEGORIES = [
   'Cable Tray Layout',
   'Cable Schedule',
 ];
+
+/**
+ * Sentinel document_type value for top-level categories managed via the
+ * Manage Categories dialog. Stored in the same design_document_categories
+ * table — no schema migration needed.
+ */
+export const TOP_LEVEL_CATEGORY_TYPE = '_category';
 
 /**
  * Document types that require site selection

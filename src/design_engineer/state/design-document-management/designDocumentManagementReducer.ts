@@ -54,6 +54,7 @@ export type DesignDocumentManagementAction =
   | { type: 'UPDATE_DOCUMENT'; payload: { document: DesignDocument } }
   | { type: 'DELETE_DOCUMENT'; payload: { documentId: string } }
   | { type: 'ADD_CATEGORY'; payload: { category: DesignDocumentCategory } }
+  | { type: 'UPDATE_CATEGORY'; payload: { categoryId: string; name: string } }
   | { type: 'DELETE_CATEGORY'; payload: { categoryId: string } }
   // Dialog management
   | { type: 'OPEN_DIALOG'; payload?: { editingDocumentId?: string } }
@@ -232,6 +233,17 @@ export const designDocumentManagementReducer = (
       return {
         ...state,
         data: { ...state.data, categories: [...state.data.categories, action.payload.category] },
+      };
+
+    case 'UPDATE_CATEGORY':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          categories: state.data.categories.map((c) =>
+            c.id === action.payload.categoryId ? { ...c, name: action.payload.name } : c,
+          ),
+        },
       };
 
     case 'DELETE_CATEGORY':

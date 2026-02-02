@@ -19,6 +19,7 @@ import {
   STATUS_VALUES,
   DEFAULT_INSTALLATION_CATEGORIES,
   SITE_REQUIRED_TYPES,
+  TOP_LEVEL_CATEGORY_TYPE,
 } from './types/DesignDocumentTypes';
 import {
   designDocumentManagementReducer,
@@ -67,7 +68,7 @@ const DesignDocumentManagementScreen = () => {
     loadDocuments();
   }, [projectId, refreshTrigger]);
 
-  // Seed default installation categories on first load
+  // Seed default top-level categories on first load
   const seedDefaultCategories = useCallback(async () => {
     if (!projectId || !engineerId) return;
 
@@ -76,17 +77,18 @@ const DesignDocumentManagementScreen = () => {
       const existingDefaults = await categoriesCollection
         .query(
           Q.where('project_id', projectId),
-          Q.where('document_type', 'installation'),
+          Q.where('document_type', TOP_LEVEL_CATEGORY_TYPE),
           Q.where('is_default', true),
         )
         .fetch();
 
       if (existingDefaults.length === 0) {
+        const defaultCategoryLabels = DOCUMENT_TYPES.map((t) => t.label);
         await database.write(async () => {
-          for (let i = 0; i < DEFAULT_INSTALLATION_CATEGORIES.length; i++) {
+          for (let i = 0; i < defaultCategoryLabels.length; i++) {
             await categoriesCollection.create((rec: any) => {
-              rec.name = DEFAULT_INSTALLATION_CATEGORIES[i];
-              rec.documentType = 'installation';
+              rec.name = defaultCategoryLabels[i];
+              rec.documentType = TOP_LEVEL_CATEGORY_TYPE;
               rec.projectId = projectId;
               rec.isDefault = true;
               rec.sequenceOrder = i + 1;
@@ -99,7 +101,7 @@ const DesignDocumentManagementScreen = () => {
           }
         });
 
-        logger.info('[DesignDocument] Seeded default installation categories');
+        logger.info('[DesignDocument] Seeded default top-level categories');
         await loadCategories();
       }
     } catch (error: any) {
@@ -464,7 +466,7 @@ const DesignDocumentManagementScreen = () => {
     }
   };
 
-  const handleAddCategory = async (name: string, documentType: DocumentType) => {
+  const handleAddCategory = async (name: string) => {
     if (!projectId || !engineerId) return;
 
     try {
@@ -473,7 +475,7 @@ const DesignDocumentManagementScreen = () => {
       const existingCategories = await categoriesCollection
         .query(
           Q.where('project_id', projectId),
-          Q.where('document_type', documentType),
+          Q.where('document_type', TOP_LEVEL_CATEGORY_TYPE),
         )
         .fetch();
 
@@ -482,7 +484,7 @@ const DesignDocumentManagementScreen = () => {
       await database.write(async () => {
         const record = await categoriesCollection.create((rec: any) => {
           rec.name = name;
-          rec.documentType = documentType;
+          rec.documentType = TOP_LEVEL_CATEGORY_TYPE;
           rec.projectId = projectId;
           rec.isDefault = false;
           rec.sequenceOrder = existingCategories.length + 1;
@@ -496,7 +498,7 @@ const DesignDocumentManagementScreen = () => {
         newCategory = {
           id: record.id,
           name,
-          documentType,
+          documentType: TOP_LEVEL_CATEGORY_TYPE,
           projectId,
           isDefault: false,
           sequenceOrder: existingCategories.length + 1,
@@ -512,9 +514,34 @@ const DesignDocumentManagementScreen = () => {
     }
   };
 
+  const handleUpdateCategory = async (categoryId: string, newName: string) => {
+    if (!projectId) return;
+
+    try {
+      const categoriesCollection = database.collections.get('design_document_categories');
+      const record = await categoriesCollection.find(categoryId);
+
+      await database.write(async () => {
+        await record.update((rec: any) => {
+          rec.name = newName;
+          rec.updatedAt = Date.now();
+        });
+      });
+
+      dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, name: newName } });
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error updating category:', error);
+      Alert.alert('Error', 'Failed to update category');
+    }
+  };
+
   const handleDeleteCategory = async (categoryId: string) => {
     try {
-      // Check if any documents use this category
+      const categoriesCollection = database.collections.get('design_document_categories');
+      const record = await categoriesCollection.find(categoryId);
+      const categoryName = (record as any).name;
+
+      // Check if any documents use this category by category_id
       const docsCollection = database.collections.get('design_documents');
       const docsUsingCategory = await docsCollection
         .query(Q.where('category_id', categoryId))
@@ -525,8 +552,20 @@ const DesignDocumentManagementScreen = () => {
         return;
       }
 
-      const categoriesCollection = database.collections.get('design_document_categories');
-      const record = await categoriesCollection.find(categoryId);
+      // For top-level categories, also check if documents reference the category
+      // name as their document_type (slug form)
+      const categoryRecord = record as any;
+      if (categoryRecord.documentType === TOP_LEVEL_CATEGORY_TYPE) {
+        const slug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+        const docsWithType = await docsCollection
+          .query(Q.where('document_type', slug))
+          .fetchCount();
+
+        if (docsWithType > 0) {
+          Alert.alert('Cannot Delete', `This category has ${docsWithType} document(s) of type "${categoryName}". Remove them first.`);
+          return;
+        }
+      }
 
       await database.write(async () => {
         await record.markAsDeleted();
@@ -809,8 +848,9 @@ const DesignDocumentManagementScreen = () => {
         <ManageCategoriesDialog
           visible={state.ui.categoriesDialogVisible}
           onDismiss={() => dispatch({ type: 'CLOSE_CATEGORIES_DIALOG' })}
-          categories={state.data.categories}
+          categories={state.data.categories.filter((c) => c.documentType === TOP_LEVEL_CATEGORY_TYPE)}
           onAddCategory={handleAddCategory}
+          onUpdateCategory={handleUpdateCategory}
           onDeleteCategory={handleDeleteCategory}
         />
 

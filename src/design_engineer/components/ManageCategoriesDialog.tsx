@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { Portal, Dialog, Button, TextInput, Menu, IconButton, Chip } from 'react-native-paper';
-import {
-  DesignDocumentCategory,
-  DOCUMENT_TYPES,
-  DocumentType,
-  getDocumentTypeLabel,
-  getDocumentTypeColor,
-} from '../types/DesignDocumentTypes';
+import { Portal, Dialog, Button, TextInput, IconButton } from 'react-native-paper';
+import { DesignDocumentCategory } from '../types/DesignDocumentTypes';
 
 interface ManageCategoriesDialogProps {
   visible: boolean;
   onDismiss: () => void;
   categories: DesignDocumentCategory[];
-  onAddCategory: (name: string, documentType: DocumentType) => void;
+  onAddCategory: (name: string) => void;
+  onUpdateCategory: (categoryId: string, newName: string) => void;
   onDeleteCategory: (categoryId: string) => void;
 }
 
@@ -22,20 +17,34 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
   onDismiss,
   categories,
   onAddCategory,
+  onUpdateCategory,
   onDeleteCategory,
 }) => {
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedType, setSelectedType] = useState<DocumentType | ''>('');
-  const [typeMenuVisible, setTypeMenuVisible] = useState(false);
-
-  const filteredCategories = selectedType
-    ? categories.filter((c) => c.documentType === selectedType)
-    : categories;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const handleAdd = () => {
-    if (!newCategoryName.trim() || !selectedType) return;
-    onAddCategory(newCategoryName.trim(), selectedType);
+    if (!newCategoryName.trim()) return;
+    onAddCategory(newCategoryName.trim());
     setNewCategoryName('');
+  };
+
+  const startEditing = (item: DesignDocumentCategory) => {
+    setEditingId(item.id);
+    setEditingName(item.name);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const saveEditing = () => {
+    if (!editingId || !editingName.trim()) return;
+    onUpdateCategory(editingId, editingName.trim());
+    setEditingId(null);
+    setEditingName('');
   };
 
   return (
@@ -43,89 +52,80 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Title>Manage Categories</Dialog.Title>
         <Dialog.Content>
-          {/* Type filter for viewing */}
-          <Menu
-            visible={typeMenuVisible}
-            onDismiss={() => setTypeMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setTypeMenuVisible(true)}
-                style={styles.typeButton}
-              >
-                {selectedType ? getDocumentTypeLabel(selectedType) : 'Select Document Type'}
-              </Button>
-            }
-          >
-            {DOCUMENT_TYPES.map((type) => (
-              <Menu.Item
-                key={type.value}
-                onPress={() => {
-                  setSelectedType(type.value);
-                  setTypeMenuVisible(false);
-                }}
-                title={type.label}
-              />
-            ))}
-          </Menu>
-
           {/* Category list */}
           <FlatList
-            data={filteredCategories}
+            data={categories}
             keyExtractor={(item) => item.id}
             style={styles.categoryList}
             renderItem={({ item }) => (
               <View style={styles.categoryRow}>
-                <View style={styles.categoryInfo}>
-                  <Text style={styles.categoryName}>{item.name}</Text>
-                  <Chip
-                    mode="flat"
-                    style={{ backgroundColor: getDocumentTypeColor(item.documentType) }}
-                    textStyle={styles.chipText}
-                  >
-                    {getDocumentTypeLabel(item.documentType)}
-                  </Chip>
-                </View>
-                {!item.isDefault && (
-                  <IconButton
-                    icon="delete"
-                    size={20}
-                    onPress={() => onDeleteCategory(item.id)}
-                  />
-                )}
-                {item.isDefault && (
-                  <Text style={styles.defaultBadge}>Default</Text>
+                {editingId === item.id ? (
+                  <View style={styles.editRow}>
+                    <TextInput
+                      value={editingName}
+                      onChangeText={setEditingName}
+                      style={styles.editInput}
+                      mode="outlined"
+                      dense
+                      autoFocus
+                    />
+                    <IconButton
+                      icon="check"
+                      size={20}
+                      iconColor="#4CAF50"
+                      onPress={saveEditing}
+                      disabled={!editingName.trim()}
+                    />
+                    <IconButton
+                      icon="close"
+                      size={20}
+                      iconColor="#999"
+                      onPress={cancelEditing}
+                    />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.categoryName}>{item.name}</Text>
+                    <View style={styles.actionButtons}>
+                      <IconButton
+                        icon="pencil"
+                        size={20}
+                        onPress={() => startEditing(item)}
+                      />
+                      <IconButton
+                        icon="delete"
+                        size={20}
+                        onPress={() => onDeleteCategory(item.id)}
+                      />
+                    </View>
+                  </>
                 )}
               </View>
             )}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                {selectedType ? 'No categories for this type' : 'Select a type to view categories'}
-              </Text>
+              <Text style={styles.emptyText}>No categories yet</Text>
             }
           />
 
           {/* Add new category */}
-          {selectedType !== '' && (
-            <View style={styles.addRow}>
-              <TextInput
-                label="New Category Name"
-                value={newCategoryName}
-                onChangeText={setNewCategoryName}
-                style={styles.addInput}
-                mode="outlined"
-                dense
-              />
-              <Button
-                mode="contained"
-                onPress={handleAdd}
-                disabled={!newCategoryName.trim()}
-                style={styles.addButton}
-              >
-                Add
-              </Button>
-            </View>
-          )}
+          <View style={styles.addRow}>
+            <TextInput
+              label="New Category Name"
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              style={styles.addInput}
+              mode="outlined"
+              dense
+            />
+            <Button
+              mode="contained"
+              onPress={handleAdd}
+              disabled={!newCategoryName.trim()}
+              style={styles.addButton}
+            >
+              Add
+            </Button>
+          </View>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Close</Button>
@@ -137,43 +137,35 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
 
 const styles = StyleSheet.create({
   dialog: {
-    maxHeight: '80%',
-  },
-  typeButton: {
-    marginBottom: 12,
+    maxHeight: '90%',
   },
   categoryList: {
-    maxHeight: 250,
+    maxHeight: 400,
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
-  },
-  categoryInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   categoryName: {
     fontSize: 14,
     color: '#333',
     flex: 1,
   },
-  chipText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold',
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  defaultBadge: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
-    marginRight: 12,
+  editRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editInput: {
+    flex: 1,
   },
   emptyText: {
     fontSize: 14,
