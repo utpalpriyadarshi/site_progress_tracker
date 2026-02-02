@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip } from 'react-native-paper';
+import { FAB, Searchbar, Menu } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignDocumentCard from './components/DesignDocumentCard';
@@ -540,6 +540,8 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const [fabOpen, setFabOpen] = React.useState(false);
+  const [typeMenuVisible, setTypeMenuVisible] = React.useState(false);
+  const [statusMenuVisible, setStatusMenuVisible] = React.useState(false);
 
   const renderEmptyState = () => {
     const hasSearchQuery = state.filters.searchQuery.length > 0;
@@ -642,55 +644,89 @@ const DesignDocumentManagementScreen = () => {
             accessibilityRole="search"
           />
 
-          {/* Document Type Filter Chips */}
+          {/* Filter Dropdowns */}
           <View style={styles.filterRow}>
-            <Chip
-              mode={state.filters.documentType === null ? 'flat' : 'outlined'}
-              selected={state.filters.documentType === null}
-              onPress={() => dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } })}
-              style={[styles.filterChip, state.filters.documentType === null && styles.activeChip]}
-              textStyle={state.filters.documentType === null ? styles.activeChipText : undefined}
+            <Menu
+              visible={typeMenuVisible}
+              onDismiss={() => setTypeMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setTypeMenuVisible(true)}
+                  accessibilityLabel="Filter by document type"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {state.filters.documentType
+                      ? DOCUMENT_TYPES.find((t) => t.value === state.filters.documentType)?.label
+                      : 'All Types'}{' '}
+                    ▼
+                  </Text>
+                </TouchableOpacity>
+              }
             >
-              All
-            </Chip>
-            {DOCUMENT_TYPES.map((type) => (
-              <Chip
-                key={type.value}
-                mode={state.filters.documentType === type.value ? 'flat' : 'outlined'}
-                selected={state.filters.documentType === type.value}
-                onPress={() =>
-                  dispatch({
-                    type: 'SET_FILTER_DOCUMENT_TYPE',
-                    payload: { documentType: state.filters.documentType === type.value ? null : type.value },
-                  })
-                }
-                style={[styles.filterChip, state.filters.documentType === type.value && styles.activeChip]}
-                textStyle={state.filters.documentType === type.value ? styles.activeChipText : undefined}
-              >
-                {type.label}
-              </Chip>
-            ))}
-          </View>
+              <Menu.Item
+                onPress={() => {
+                  dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } });
+                  setTypeMenuVisible(false);
+                }}
+                title="All Types"
+              />
+              {DOCUMENT_TYPES.map((type) => (
+                <Menu.Item
+                  key={type.value}
+                  onPress={() => {
+                    dispatch({
+                      type: 'SET_FILTER_DOCUMENT_TYPE',
+                      payload: { documentType: state.filters.documentType === type.value ? null : type.value },
+                    });
+                    setTypeMenuVisible(false);
+                  }}
+                  title={type.label}
+                />
+              ))}
+            </Menu>
 
-          {/* Status Filter Chips */}
-          <View style={styles.filterRow}>
-            {STATUS_VALUES.filter((s) => ['draft', 'submitted', 'approved', 'rejected'].includes(s.value)).map((status) => (
-              <Chip
-                key={status.value}
-                mode={state.filters.status === status.value ? 'flat' : 'outlined'}
-                selected={state.filters.status === status.value}
-                onPress={() =>
-                  dispatch({
-                    type: 'SET_FILTER_STATUS',
-                    payload: { status: state.filters.status === status.value ? null : status.value as DocumentStatus },
-                  })
-                }
-                style={[styles.filterChip, state.filters.status === status.value && styles.activeChip]}
-                textStyle={state.filters.status === status.value ? styles.activeChipText : undefined}
-              >
-                {status.label}
-              </Chip>
-            ))}
+            <Menu
+              visible={statusMenuVisible}
+              onDismiss={() => setStatusMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setStatusMenuVisible(true)}
+                  accessibilityLabel="Filter by status"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {state.filters.status
+                      ? STATUS_VALUES.find((s) => s.value === state.filters.status)?.label
+                      : 'All Status'}{' '}
+                    ▼
+                  </Text>
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item
+                onPress={() => {
+                  dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } });
+                  setStatusMenuVisible(false);
+                }}
+                title="All Status"
+              />
+              {STATUS_VALUES.filter((s) => ['draft', 'submitted', 'approved', 'rejected'].includes(s.value)).map((status) => (
+                <Menu.Item
+                  key={status.value}
+                  onPress={() => {
+                    dispatch({
+                      type: 'SET_FILTER_STATUS',
+                      payload: { status: state.filters.status === status.value ? null : status.value as DocumentStatus },
+                    });
+                    setStatusMenuVisible(false);
+                  }}
+                  title={status.label}
+                />
+              ))}
+            </Menu>
           </View>
         </View>
 
@@ -844,19 +880,21 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  filterChip: {
-    marginBottom: 4,
+  dropdownButton: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    height: 40,
+    justifyContent: 'center',
   },
-  activeChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  activeChipText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+  dropdownButtonText: {
+    color: '#333',
+    fontSize: 12,
+    fontWeight: '600',
   },
   listContainer: {
     padding: 16,
