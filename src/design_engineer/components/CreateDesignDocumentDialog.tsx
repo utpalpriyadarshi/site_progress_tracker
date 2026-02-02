@@ -5,13 +5,14 @@ import {
   DesignDocument,
   DesignDocumentCategory,
   Site,
-  DOCUMENT_TYPES,
   SITE_REQUIRED_TYPES,
   DocumentType,
+  TOP_LEVEL_CATEGORY_TYPE,
+  getCategorySlug,
 } from '../types/DesignDocumentTypes';
 import { DocumentFormData } from '../state/design-document-management';
 
-const DOCUMENT_TYPE_PREFIXES: Record<DocumentType, string> = {
+const DOCUMENT_TYPE_PREFIXES: Record<string, string> = {
   simulation_study: 'SIM',
   installation: 'INS',
   product_equipment: 'PRD',
@@ -41,18 +42,30 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   sites,
   documents,
 }) => {
-  const [typeMenuVisible, setTypeMenuVisible] = useState(false);
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [docTypeMenuVisible, setDocTypeMenuVisible] = useState(false);
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
   const [docNumberManuallyEdited, setDocNumberManuallyEdited] = useState(false);
 
-  const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
-  const filteredCategories = categories.filter((c) => c.documentType === form.documentType);
-  const selectedType = DOCUMENT_TYPES.find((t) => t.value === form.documentType);
-  const selectedCategory = categories.find((c) => c.id === form.categoryId);
-  const selectedSite = sites.find((s) => s.id === form.siteId);
+  // Top-level categories (documentType === '_category')
+  const topLevelCategories = categories.filter((c) => c.documentType === TOP_LEVEL_CATEGORY_TYPE);
 
-  // Reset manual edit flag when dialog opens for a new document
+  // Derive the slug for the currently selected top-level category
+  const selectedTopLevel = topLevelCategories.find((c) => {
+    const slug = getCategorySlug(c.name);
+    return slug === form.documentType;
+  });
+
+  // Sub-categories (document types) filtered by the selected category's slug
+  const subCategories = form.documentType
+    ? categories.filter((c) => c.documentType === form.documentType)
+    : [];
+
+  const selectedSubCategory = categories.find((c) => c.id === form.categoryId);
+  const selectedSite = sites.find((s) => s.id === form.siteId);
+  const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
+
+  // Reset manual edit flag when dialog opens
   useEffect(() => {
     if (visible && !isEditing) {
       setDocNumberManuallyEdited(false);
@@ -62,24 +75,29 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
     }
   }, [visible, isEditing]);
 
-  const generateDocumentNumber = (docType: DocumentType): string => {
-    const prefix = DOCUMENT_TYPE_PREFIXES[docType];
-    const docsOfType = documents.filter((d) => d.documentType === docType);
+  const generateDocumentNumber = (slug: string): string => {
+    const prefix = DOCUMENT_TYPE_PREFIXES[slug] || slug.substring(0, 3).toUpperCase();
+    const docsOfType = documents.filter((d) => d.documentType === slug);
     const nextNumber = docsOfType.length + 1;
     return `DD-${prefix}-${String(nextNumber).padStart(3, '0')}`;
   };
 
-  const handleTypeSelect = (typeValue: DocumentType) => {
-    onUpdateField('documentType', typeValue);
+  const handleCategorySelect = (category: DesignDocumentCategory) => {
+    const slug = getCategorySlug(category.name);
+    onUpdateField('documentType', slug as string);
     onUpdateField('categoryId', '');
-    if (!SITE_REQUIRED_TYPES.includes(typeValue)) {
+    if (!SITE_REQUIRED_TYPES.includes(slug as DocumentType)) {
       onUpdateField('siteId', '');
     }
-    // Auto-generate document number unless manually edited
     if (!docNumberManuallyEdited) {
-      onUpdateField('documentNumber', generateDocumentNumber(typeValue));
+      onUpdateField('documentNumber', generateDocumentNumber(slug as string));
     }
-    setTypeMenuVisible(false);
+    setCategoryMenuVisible(false);
+  };
+
+  const handleDocTypeSelect = (subCategory: DesignDocumentCategory) => {
+    onUpdateField('categoryId', subCategory.id);
+    setDocTypeMenuVisible(false);
   };
 
   const handleDocNumberChange = (value: string) => {
@@ -93,66 +111,65 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
         <Dialog.Title>{isEditing ? 'Edit Document' : 'Create Design Document'}</Dialog.Title>
         <Dialog.ScrollArea style={styles.scrollArea}>
           <ScrollView>
-            {/* Document Type Dropdown - FIRST */}
+            {/* Category Dropdown - FIRST (top-level categories) */}
             <Menu
-              visible={typeMenuVisible}
-              onDismiss={() => setTypeMenuVisible(false)}
+              visible={categoryMenuVisible}
+              onDismiss={() => setCategoryMenuVisible(false)}
               anchor={
                 <TouchableOpacity
-                  onPress={() => setTypeMenuVisible(true)}
+                  onPress={() => setCategoryMenuVisible(true)}
                   style={styles.pickerButton}
                 >
-                  <Text style={styles.pickerLabel}>Document Type *</Text>
+                  <Text style={styles.pickerLabel}>Category *</Text>
                   <Text style={styles.pickerValue}>
-                    {selectedType?.label || 'Select Type'}
+                    {selectedTopLevel?.name || 'Select Category'}
                   </Text>
                 </TouchableOpacity>
               }
             >
-              {DOCUMENT_TYPES.map((type) => (
+              {topLevelCategories.length === 0 ? (
                 <Menu.Item
-                  key={type.value}
-                  onPress={() => handleTypeSelect(type.value)}
-                  title={type.label}
+                  title="No categories available"
+                  disabled
+                  onPress={() => {}}
                 />
-              ))}
+              ) : (
+                topLevelCategories.map((cat) => (
+                  <Menu.Item
+                    key={cat.id}
+                    onPress={() => handleCategorySelect(cat)}
+                    title={cat.name}
+                  />
+                ))
+              )}
             </Menu>
 
-            {/* Category Dropdown - SECOND (filtered by type) */}
+            {/* Document Type Dropdown - SECOND (sub-categories, optional) */}
             {form.documentType !== '' && (
               <Menu
-                visible={categoryMenuVisible}
-                onDismiss={() => setCategoryMenuVisible(false)}
+                visible={docTypeMenuVisible}
+                onDismiss={() => setDocTypeMenuVisible(false)}
                 anchor={
                   <TouchableOpacity
-                    onPress={() => setCategoryMenuVisible(true)}
+                    onPress={() => subCategories.length > 0 && setDocTypeMenuVisible(true)}
                     style={styles.pickerButton}
                   >
-                    <Text style={styles.pickerLabel}>Category *</Text>
-                    <Text style={styles.pickerValue}>
-                      {selectedCategory?.name || 'Select Category'}
+                    <Text style={styles.pickerLabel}>Document Type</Text>
+                    <Text style={[styles.pickerValue, subCategories.length === 0 && styles.disabledText]}>
+                      {subCategories.length === 0
+                        ? 'None available'
+                        : selectedSubCategory?.name || 'Select Document Type'}
                     </Text>
                   </TouchableOpacity>
                 }
               >
-                {filteredCategories.length === 0 ? (
+                {subCategories.map((cat) => (
                   <Menu.Item
-                    title="No categories - add via Manage Categories"
-                    disabled
-                    onPress={() => {}}
+                    key={cat.id}
+                    onPress={() => handleDocTypeSelect(cat)}
+                    title={cat.name}
                   />
-                ) : (
-                  filteredCategories.map((cat) => (
-                    <Menu.Item
-                      key={cat.id}
-                      onPress={() => {
-                        onUpdateField('categoryId', cat.id);
-                        setCategoryMenuVisible(false);
-                      }}
-                      title={cat.name}
-                    />
-                  ))
-                )}
+                ))}
               </Menu>
             )}
 
@@ -257,6 +274,10 @@ const styles = StyleSheet.create({
   pickerValue: {
     fontSize: 16,
     color: '#000',
+  },
+  disabledText: {
+    color: '#999',
+    fontStyle: 'italic',
   },
 });
 

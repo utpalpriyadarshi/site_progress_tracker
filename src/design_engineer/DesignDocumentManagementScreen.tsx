@@ -85,6 +85,7 @@ const DesignDocumentManagementScreen = () => {
       if (existingDefaults.length === 0) {
         const defaultCategoryLabels = DOCUMENT_TYPES.map((t) => t.label);
         await database.write(async () => {
+          // Seed top-level categories
           for (let i = 0; i < defaultCategoryLabels.length; i++) {
             await categoriesCollection.create((rec: any) => {
               rec.name = defaultCategoryLabels[i];
@@ -99,9 +100,24 @@ const DesignDocumentManagementScreen = () => {
               rec.version = 1;
             });
           }
+          // Seed default Installation sub-categories
+          for (let i = 0; i < DEFAULT_INSTALLATION_CATEGORIES.length; i++) {
+            await categoriesCollection.create((rec: any) => {
+              rec.name = DEFAULT_INSTALLATION_CATEGORIES[i];
+              rec.documentType = 'installation';
+              rec.projectId = projectId;
+              rec.isDefault = true;
+              rec.sequenceOrder = i + 1;
+              rec.createdBy = engineerId;
+              rec.createdAt = Date.now();
+              rec.updatedAt = Date.now();
+              rec.appSyncStatus = 'pending';
+              rec.version = 1;
+            });
+          }
         });
 
-        logger.info('[DesignDocument] Seeded default top-level categories');
+        logger.info('[DesignDocument] Seeded default top-level and installation sub-categories');
         await loadCategories();
       }
     } catch (error: any) {
@@ -223,7 +239,7 @@ const DesignDocumentManagementScreen = () => {
   const handleCreateOrUpdateDocument = async () => {
     const { documentNumber, title, documentType, categoryId, siteId, revisionNumber } = state.form;
 
-    if (!documentNumber || !title || !documentType || !categoryId) {
+    if (!documentNumber || !title || !documentType) {
       Alert.alert('Validation Error', 'Please fill in all required fields');
       return;
     }
@@ -250,10 +266,12 @@ const DesignDocumentManagementScreen = () => {
             siteName = (site as any).name;
           } catch (e) { /* ignored */ }
         }
-        try {
-          const cat = await database.collections.get('design_document_categories').find(categoryId);
-          categoryName = (cat as any).name;
-        } catch (e) { /* ignored */ }
+        if (categoryId) {
+          try {
+            const cat = await database.collections.get('design_document_categories').find(categoryId);
+            categoryName = (cat as any).name;
+          } catch (e) { /* ignored */ }
+        }
 
         await database.write(async () => {
           await record.update((rec: any) => {
@@ -261,7 +279,7 @@ const DesignDocumentManagementScreen = () => {
             rec.title = title;
             rec.description = state.form.description || null;
             rec.documentType = documentType;
-            rec.categoryId = categoryId;
+            rec.categoryId = categoryId || null;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.updatedAt = Date.now();
@@ -301,7 +319,7 @@ const DesignDocumentManagementScreen = () => {
             rec.title = title;
             rec.description = state.form.description || null;
             rec.documentType = documentType;
-            rec.categoryId = categoryId;
+            rec.categoryId = categoryId || null;
             rec.projectId = projectId;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
@@ -322,10 +340,12 @@ const DesignDocumentManagementScreen = () => {
               siteName = (site as any).name;
             } catch (e) { /* ignored */ }
           }
-          try {
-            const cat = await database.collections.get('design_document_categories').find(categoryId);
-            categoryName = (cat as any).name;
-          } catch (e) { /* ignored */ }
+          if (categoryId) {
+            try {
+              const cat = await database.collections.get('design_document_categories').find(categoryId);
+              categoryName = (cat as any).name;
+            } catch (e) { /* ignored */ }
+          }
 
           newDoc = {
             id: record.id,
@@ -511,6 +531,54 @@ const DesignDocumentManagementScreen = () => {
     } catch (error: any) {
       logger.error('[DesignDocument] Error adding category:', error);
       Alert.alert('Error', 'Failed to add category');
+    }
+  };
+
+  const handleAddSubCategory = async (name: string, parentSlug: string) => {
+    if (!projectId || !engineerId) return;
+
+    try {
+      const categoriesCollection = database.collections.get('design_document_categories');
+
+      const existingSubs = await categoriesCollection
+        .query(
+          Q.where('project_id', projectId),
+          Q.where('document_type', parentSlug),
+        )
+        .fetch();
+
+      let newCategory: DesignDocumentCategory | null = null;
+
+      await database.write(async () => {
+        const record = await categoriesCollection.create((rec: any) => {
+          rec.name = name;
+          rec.documentType = parentSlug;
+          rec.projectId = projectId;
+          rec.isDefault = false;
+          rec.sequenceOrder = existingSubs.length + 1;
+          rec.createdBy = engineerId;
+          rec.createdAt = Date.now();
+          rec.updatedAt = Date.now();
+          rec.appSyncStatus = 'pending';
+          rec.version = 1;
+        });
+
+        newCategory = {
+          id: record.id,
+          name,
+          documentType: parentSlug as any,
+          projectId,
+          isDefault: false,
+          sequenceOrder: existingSubs.length + 1,
+        };
+      });
+
+      if (newCategory) {
+        dispatch({ type: 'ADD_CATEGORY', payload: { category: newCategory } });
+      }
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error adding sub-category:', error);
+      Alert.alert('Error', 'Failed to add document type');
     }
   };
 
@@ -848,8 +916,9 @@ const DesignDocumentManagementScreen = () => {
         <ManageCategoriesDialog
           visible={state.ui.categoriesDialogVisible}
           onDismiss={() => dispatch({ type: 'CLOSE_CATEGORIES_DIALOG' })}
-          categories={state.data.categories.filter((c) => c.documentType === TOP_LEVEL_CATEGORY_TYPE)}
+          allCategories={state.data.categories}
           onAddCategory={handleAddCategory}
+          onAddSubCategory={handleAddSubCategory}
           onUpdateCategory={handleUpdateCategory}
           onDeleteCategory={handleDeleteCategory}
         />
