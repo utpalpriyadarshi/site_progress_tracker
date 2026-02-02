@@ -47,9 +47,17 @@ export interface ProcessingTimeData {
   history: Array<{ date: string; value: number }>;
 }
 
+export interface DesignDocStatusData {
+  draft: number;
+  submitted: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}
+
 export interface RecentActivity {
   id: string;
-  type: 'package' | 'rfq';
+  type: 'package' | 'rfq' | 'document';
   title: string;
   status: string;
   timestamp: number;

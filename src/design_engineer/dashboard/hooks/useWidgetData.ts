@@ -5,6 +5,7 @@ import { logger } from '../../../services/LoggingService';
 import type {
   DoorsPackageStatus,
   RfqStatusData,
+  DesignDocStatusData,
   ComplianceData,
   ProcessingTimeData,
   RecentActivity,
@@ -107,6 +108,63 @@ export const useRfqStatusData = (projectId: string | null) => {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch RFQ status');
       logger.error('[useRfqStatusData] Error:', error);
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+};
+
+/**
+ * Fetches Design Document status data
+ */
+export const useDesignDocStatusData = (projectId: string | null) => {
+  const [data, setData] = useState<DesignDocStatusData>({
+    draft: 0,
+    submitted: 0,
+    approved: 0,
+    rejected: 0,
+    total: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const docsCollection = database.collections.get('design_documents');
+      const docs = await docsCollection.query(Q.where('project_id', projectId)).fetch();
+
+      const draft = docs.filter((d: any) => d.status === 'draft').length;
+      const submitted = docs.filter((d: any) => d.status === 'submitted').length;
+      const approved = docs.filter((d: any) =>
+        d.status === 'approved' || d.status === 'approved_with_comment'
+      ).length;
+      const rejected = docs.filter((d: any) => d.status === 'rejected').length;
+
+      setData({
+        draft,
+        submitted,
+        approved,
+        rejected,
+        total: docs.length,
+      });
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch design doc status');
+      logger.error('[useDesignDocStatusData] Error:', error);
       setError(error);
     } finally {
       setLoading(false);
@@ -289,6 +347,23 @@ export const useRecentActivityData = (projectId: string | null, limit: number = 
           status: rfq.status || 'draft',
           timestamp: rfq.createdAt || Date.now(),
           action: `RFQ ${rfq.status || 'created'}`,
+        });
+      });
+
+      // Fetch recent Design Documents
+      const docsCollection = database.collections.get('design_documents');
+      const docs = await docsCollection
+        .query(Q.where('project_id', projectId), Q.sortBy('created_at', Q.desc), Q.take(5))
+        .fetch();
+
+      docs.forEach((doc: any) => {
+        activities.push({
+          id: doc.id,
+          type: 'document',
+          title: doc.documentNumber || doc.title || 'Unknown Document',
+          status: doc.status || 'draft',
+          timestamp: doc.updatedAt || doc.createdAt || Date.now(),
+          action: `Document ${doc.status || 'created'}`,
         });
       });
 

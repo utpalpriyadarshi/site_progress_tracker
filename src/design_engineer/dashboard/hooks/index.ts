@@ -5,6 +5,7 @@
 export {
   useDoorsStatusData,
   useRfqStatusData,
+  useDesignDocStatusData,
   useComplianceData,
   useProcessingTimeData,
   useRecentActivityData,

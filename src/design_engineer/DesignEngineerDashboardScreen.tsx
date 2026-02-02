@@ -4,6 +4,7 @@ import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { DashboardLayout } from './dashboard/DashboardLayout';
 import {
+  DesignDocStatusWidget,
   DoorsPackageStatusWidget,
   RfqStatusWidget,
   ComplianceMetricWidget,
@@ -11,6 +12,7 @@ import {
   RecentActivityWidget,
 } from './dashboard/widgets';
 import {
+  useDesignDocStatusData,
   useDoorsStatusData,
   useRfqStatusData,
   useComplianceData,
@@ -56,6 +58,7 @@ const DesignEngineerDashboardScreen = () => {
   const { logout } = useAuth();
 
   // Fetch widget data using custom hooks
+  const designDocStatus = useDesignDocStatusData(projectId);
   const doorsStatus = useDoorsStatusData(projectId);
   const rfqStatus = useRfqStatusData(projectId);
   const compliance = useComplianceData(projectId);
@@ -87,8 +90,10 @@ const DesignEngineerDashboardScreen = () => {
 
   // Check if we should show welcome empty state
   const hasNoData =
+    !designDocStatus.loading &&
     !doorsStatus.loading &&
     !rfqStatus.loading &&
+    designDocStatus.data.total === 0 &&
     doorsStatus.data.total === 0 &&
     rfqStatus.data.total === 0;
 
@@ -126,6 +131,14 @@ const DesignEngineerDashboardScreen = () => {
           />
         ) : (
           <DashboardLayout spacing={16}>
+            <DesignDocStatusWidget
+              data={designDocStatus.data}
+              loading={designDocStatus.loading}
+              error={designDocStatus.error}
+              onRefresh={designDocStatus.refetch}
+              onPress={() => navigation.navigate('DesignDocuments' as never)}
+            />
+
             <DoorsPackageStatusWidget
               data={doorsStatus.data}
               loading={doorsStatus.loading}

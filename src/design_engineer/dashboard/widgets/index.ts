@@ -5,6 +5,9 @@
 export { BaseWidget } from './BaseWidget';
 export type { BaseWidgetProps } from './BaseWidget';
 
+export { DesignDocStatusWidget } from './DesignDocStatusWidget';
+export type { DesignDocStatusWidgetProps } from './DesignDocStatusWidget';
+
 export { DoorsPackageStatusWidget } from './DoorsPackageStatusWidget';
 export type { DoorsPackageStatusWidgetProps } from './DoorsPackageStatusWidget';
 

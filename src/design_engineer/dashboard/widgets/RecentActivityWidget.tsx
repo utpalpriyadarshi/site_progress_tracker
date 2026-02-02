@@ -31,8 +31,10 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
   onItemPress,
   testID,
 }) => {
-  const getTypeIcon = (type: 'package' | 'rfq') => {
-    return type === 'package' ? '📦' : '📝';
+  const getTypeIcon = (type: 'package' | 'rfq' | 'document') => {
+    if (type === 'package') return '📦';
+    if (type === 'document') return '📄';
+    return '📝';
   };
 
   const getStatusColor = (status: string) => {
@@ -41,6 +43,10 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
       received: '#2196F3',
       reviewed: '#4CAF50',
       draft: '#9E9E9E',
+      submitted: '#2196F3',
+      approved: '#4CAF50',
+      approved_with_comment: '#FF9800',
+      rejected: '#F44336',
       issued: '#2196F3',
       awarded: '#4CAF50',
     };
@@ -69,7 +75,7 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
       disabled={!onItemPress}
       accessible
       accessibilityRole="button"
-      accessibilityLabel={`${item.type === 'package' ? 'DOORS Package' : 'Design RFQ'} ${item.title}, ${item.action}, Status: ${item.status}, ${formatTimestamp(item.timestamp)}`}
+      accessibilityLabel={`${item.type === 'package' ? 'DOORS Package' : item.type === 'document' ? 'Design Document' : 'Design RFQ'} ${item.title}, ${item.action}, Status: ${item.status}, ${formatTimestamp(item.timestamp)}`}
       accessibilityHint={onItemPress ? 'Double tap to view details' : undefined}
       activeOpacity={onItemPress ? 0.7 : 1}
     >
