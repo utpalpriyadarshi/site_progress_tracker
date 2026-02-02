@@ -30,7 +30,7 @@ export interface DesignDocument {
 export interface DesignDocumentCategory {
   id: string;
   name: string;
-  documentType: DocumentType;
+  documentType: DocumentType | '_category';
   projectId: string;
   isDefault: boolean;
   sequenceOrder: number;
@@ -63,6 +63,13 @@ export const DEFAULT_INSTALLATION_CATEGORIES = [
 ];
 
 /**
+ * Sentinel document_type value for top-level categories managed via the
+ * Manage Categories dialog. Stored in the same design_document_categories
+ * table — no schema migration needed.
+ */
+export const TOP_LEVEL_CATEGORY_TYPE = '_category';
+
+/**
  * Document types that require site selection
  */
 export const SITE_REQUIRED_TYPES: DocumentType[] = ['installation', 'as_built'];
@@ -84,6 +91,19 @@ export const getStatusColor = (status: DocumentStatus): string => {
     rejected: '#F44336',
   };
   return colors[status] || '#9E9E9E';
+};
+
+/**
+ * Given a top-level category name (e.g. "Installation"), return the matching
+ * DocumentType slug. Falls back to generating a slug from the name.
+ */
+export const getCategorySlug = (categoryName: string): DocumentType | string => {
+  const match = DOCUMENT_TYPES.find(
+    (t) => t.label.toLowerCase() === categoryName.toLowerCase(),
+  );
+  if (match) return match.value;
+  // Fallback: generate slug from name
+  return categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
 };
 
 export const getDocumentTypeColor = (type: DocumentType): string => {

@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip } from 'react-native-paper';
+import { FAB, Searchbar, Menu } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignDocumentCard from './components/DesignDocumentCard';
@@ -19,6 +19,7 @@ import {
   STATUS_VALUES,
   DEFAULT_INSTALLATION_CATEGORIES,
   SITE_REQUIRED_TYPES,
+  TOP_LEVEL_CATEGORY_TYPE,
 } from './types/DesignDocumentTypes';
 import {
   designDocumentManagementReducer,
@@ -67,7 +68,7 @@ const DesignDocumentManagementScreen = () => {
     loadDocuments();
   }, [projectId, refreshTrigger]);
 
-  // Seed default installation categories on first load
+  // Seed default top-level categories on first load
   const seedDefaultCategories = useCallback(async () => {
     if (!projectId || !engineerId) return;
 
@@ -76,13 +77,30 @@ const DesignDocumentManagementScreen = () => {
       const existingDefaults = await categoriesCollection
         .query(
           Q.where('project_id', projectId),
-          Q.where('document_type', 'installation'),
+          Q.where('document_type', TOP_LEVEL_CATEGORY_TYPE),
           Q.where('is_default', true),
         )
         .fetch();
 
       if (existingDefaults.length === 0) {
+        const defaultCategoryLabels = DOCUMENT_TYPES.map((t) => t.label);
         await database.write(async () => {
+          // Seed top-level categories
+          for (let i = 0; i < defaultCategoryLabels.length; i++) {
+            await categoriesCollection.create((rec: any) => {
+              rec.name = defaultCategoryLabels[i];
+              rec.documentType = TOP_LEVEL_CATEGORY_TYPE;
+              rec.projectId = projectId;
+              rec.isDefault = true;
+              rec.sequenceOrder = i + 1;
+              rec.createdBy = engineerId;
+              rec.createdAt = Date.now();
+              rec.updatedAt = Date.now();
+              rec.appSyncStatus = 'pending';
+              rec.version = 1;
+            });
+          }
+          // Seed default Installation sub-categories
           for (let i = 0; i < DEFAULT_INSTALLATION_CATEGORIES.length; i++) {
             await categoriesCollection.create((rec: any) => {
               rec.name = DEFAULT_INSTALLATION_CATEGORIES[i];
@@ -99,7 +117,7 @@ const DesignDocumentManagementScreen = () => {
           }
         });
 
-        logger.info('[DesignDocument] Seeded default installation categories');
+        logger.info('[DesignDocument] Seeded default top-level and installation sub-categories');
         await loadCategories();
       }
     } catch (error: any) {
@@ -221,7 +239,7 @@ const DesignDocumentManagementScreen = () => {
   const handleCreateOrUpdateDocument = async () => {
     const { documentNumber, title, documentType, categoryId, siteId, revisionNumber } = state.form;
 
-    if (!documentNumber || !title || !documentType || !categoryId) {
+    if (!documentNumber || !title || !documentType) {
       Alert.alert('Validation Error', 'Please fill in all required fields');
       return;
     }
@@ -248,10 +266,12 @@ const DesignDocumentManagementScreen = () => {
             siteName = (site as any).name;
           } catch (e) { /* ignored */ }
         }
-        try {
-          const cat = await database.collections.get('design_document_categories').find(categoryId);
-          categoryName = (cat as any).name;
-        } catch (e) { /* ignored */ }
+        if (categoryId) {
+          try {
+            const cat = await database.collections.get('design_document_categories').find(categoryId);
+            categoryName = (cat as any).name;
+          } catch (e) { /* ignored */ }
+        }
 
         await database.write(async () => {
           await record.update((rec: any) => {
@@ -259,7 +279,7 @@ const DesignDocumentManagementScreen = () => {
             rec.title = title;
             rec.description = state.form.description || null;
             rec.documentType = documentType;
-            rec.categoryId = categoryId;
+            rec.categoryId = categoryId || null;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.updatedAt = Date.now();
@@ -299,7 +319,7 @@ const DesignDocumentManagementScreen = () => {
             rec.title = title;
             rec.description = state.form.description || null;
             rec.documentType = documentType;
-            rec.categoryId = categoryId;
+            rec.categoryId = categoryId || null;
             rec.projectId = projectId;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
@@ -320,10 +340,12 @@ const DesignDocumentManagementScreen = () => {
               siteName = (site as any).name;
             } catch (e) { /* ignored */ }
           }
-          try {
-            const cat = await database.collections.get('design_document_categories').find(categoryId);
-            categoryName = (cat as any).name;
-          } catch (e) { /* ignored */ }
+          if (categoryId) {
+            try {
+              const cat = await database.collections.get('design_document_categories').find(categoryId);
+              categoryName = (cat as any).name;
+            } catch (e) { /* ignored */ }
+          }
 
           newDoc = {
             id: record.id,
@@ -464,7 +486,7 @@ const DesignDocumentManagementScreen = () => {
     }
   };
 
-  const handleAddCategory = async (name: string, documentType: DocumentType) => {
+  const handleAddCategory = async (name: string) => {
     if (!projectId || !engineerId) return;
 
     try {
@@ -473,7 +495,7 @@ const DesignDocumentManagementScreen = () => {
       const existingCategories = await categoriesCollection
         .query(
           Q.where('project_id', projectId),
-          Q.where('document_type', documentType),
+          Q.where('document_type', TOP_LEVEL_CATEGORY_TYPE),
         )
         .fetch();
 
@@ -482,7 +504,7 @@ const DesignDocumentManagementScreen = () => {
       await database.write(async () => {
         const record = await categoriesCollection.create((rec: any) => {
           rec.name = name;
-          rec.documentType = documentType;
+          rec.documentType = TOP_LEVEL_CATEGORY_TYPE;
           rec.projectId = projectId;
           rec.isDefault = false;
           rec.sequenceOrder = existingCategories.length + 1;
@@ -496,7 +518,7 @@ const DesignDocumentManagementScreen = () => {
         newCategory = {
           id: record.id,
           name,
-          documentType,
+          documentType: TOP_LEVEL_CATEGORY_TYPE,
           projectId,
           isDefault: false,
           sequenceOrder: existingCategories.length + 1,
@@ -512,9 +534,82 @@ const DesignDocumentManagementScreen = () => {
     }
   };
 
+  const handleAddSubCategory = async (name: string, parentSlug: string) => {
+    if (!projectId || !engineerId) return;
+
+    try {
+      const categoriesCollection = database.collections.get('design_document_categories');
+
+      const existingSubs = await categoriesCollection
+        .query(
+          Q.where('project_id', projectId),
+          Q.where('document_type', parentSlug),
+        )
+        .fetch();
+
+      let newCategory: DesignDocumentCategory | null = null;
+
+      await database.write(async () => {
+        const record = await categoriesCollection.create((rec: any) => {
+          rec.name = name;
+          rec.documentType = parentSlug;
+          rec.projectId = projectId;
+          rec.isDefault = false;
+          rec.sequenceOrder = existingSubs.length + 1;
+          rec.createdBy = engineerId;
+          rec.createdAt = Date.now();
+          rec.updatedAt = Date.now();
+          rec.appSyncStatus = 'pending';
+          rec.version = 1;
+        });
+
+        newCategory = {
+          id: record.id,
+          name,
+          documentType: parentSlug as any,
+          projectId,
+          isDefault: false,
+          sequenceOrder: existingSubs.length + 1,
+        };
+      });
+
+      if (newCategory) {
+        dispatch({ type: 'ADD_CATEGORY', payload: { category: newCategory } });
+      }
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error adding sub-category:', error);
+      Alert.alert('Error', 'Failed to add document type');
+    }
+  };
+
+  const handleUpdateCategory = async (categoryId: string, newName: string) => {
+    if (!projectId) return;
+
+    try {
+      const categoriesCollection = database.collections.get('design_document_categories');
+      const record = await categoriesCollection.find(categoryId);
+
+      await database.write(async () => {
+        await record.update((rec: any) => {
+          rec.name = newName;
+          rec.updatedAt = Date.now();
+        });
+      });
+
+      dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, name: newName } });
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error updating category:', error);
+      Alert.alert('Error', 'Failed to update category');
+    }
+  };
+
   const handleDeleteCategory = async (categoryId: string) => {
     try {
-      // Check if any documents use this category
+      const categoriesCollection = database.collections.get('design_document_categories');
+      const record = await categoriesCollection.find(categoryId);
+      const categoryName = (record as any).name;
+
+      // Check if any documents use this category by category_id
       const docsCollection = database.collections.get('design_documents');
       const docsUsingCategory = await docsCollection
         .query(Q.where('category_id', categoryId))
@@ -525,8 +620,20 @@ const DesignDocumentManagementScreen = () => {
         return;
       }
 
-      const categoriesCollection = database.collections.get('design_document_categories');
-      const record = await categoriesCollection.find(categoryId);
+      // For top-level categories, also check if documents reference the category
+      // name as their document_type (slug form)
+      const categoryRecord = record as any;
+      if (categoryRecord.documentType === TOP_LEVEL_CATEGORY_TYPE) {
+        const slug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+        const docsWithType = await docsCollection
+          .query(Q.where('document_type', slug))
+          .fetchCount();
+
+        if (docsWithType > 0) {
+          Alert.alert('Cannot Delete', `This category has ${docsWithType} document(s) of type "${categoryName}". Remove them first.`);
+          return;
+        }
+      }
 
       await database.write(async () => {
         await record.markAsDeleted();
@@ -540,6 +647,8 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const [fabOpen, setFabOpen] = React.useState(false);
+  const [typeMenuVisible, setTypeMenuVisible] = React.useState(false);
+  const [statusMenuVisible, setStatusMenuVisible] = React.useState(false);
 
   const renderEmptyState = () => {
     const hasSearchQuery = state.filters.searchQuery.length > 0;
@@ -642,55 +751,89 @@ const DesignDocumentManagementScreen = () => {
             accessibilityRole="search"
           />
 
-          {/* Document Type Filter Chips */}
+          {/* Filter Dropdowns */}
           <View style={styles.filterRow}>
-            <Chip
-              mode={state.filters.documentType === null ? 'flat' : 'outlined'}
-              selected={state.filters.documentType === null}
-              onPress={() => dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } })}
-              style={[styles.filterChip, state.filters.documentType === null && styles.activeChip]}
-              textStyle={state.filters.documentType === null ? styles.activeChipText : undefined}
+            <Menu
+              visible={typeMenuVisible}
+              onDismiss={() => setTypeMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setTypeMenuVisible(true)}
+                  accessibilityLabel="Filter by document type"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {state.filters.documentType
+                      ? DOCUMENT_TYPES.find((t) => t.value === state.filters.documentType)?.label
+                      : 'All Types'}{' '}
+                    ▼
+                  </Text>
+                </TouchableOpacity>
+              }
             >
-              All
-            </Chip>
-            {DOCUMENT_TYPES.map((type) => (
-              <Chip
-                key={type.value}
-                mode={state.filters.documentType === type.value ? 'flat' : 'outlined'}
-                selected={state.filters.documentType === type.value}
-                onPress={() =>
-                  dispatch({
-                    type: 'SET_FILTER_DOCUMENT_TYPE',
-                    payload: { documentType: state.filters.documentType === type.value ? null : type.value },
-                  })
-                }
-                style={[styles.filterChip, state.filters.documentType === type.value && styles.activeChip]}
-                textStyle={state.filters.documentType === type.value ? styles.activeChipText : undefined}
-              >
-                {type.label}
-              </Chip>
-            ))}
-          </View>
+              <Menu.Item
+                onPress={() => {
+                  dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } });
+                  setTypeMenuVisible(false);
+                }}
+                title="All Types"
+              />
+              {DOCUMENT_TYPES.map((type) => (
+                <Menu.Item
+                  key={type.value}
+                  onPress={() => {
+                    dispatch({
+                      type: 'SET_FILTER_DOCUMENT_TYPE',
+                      payload: { documentType: state.filters.documentType === type.value ? null : type.value },
+                    });
+                    setTypeMenuVisible(false);
+                  }}
+                  title={type.label}
+                />
+              ))}
+            </Menu>
 
-          {/* Status Filter Chips */}
-          <View style={styles.filterRow}>
-            {STATUS_VALUES.filter((s) => ['draft', 'submitted', 'approved', 'rejected'].includes(s.value)).map((status) => (
-              <Chip
-                key={status.value}
-                mode={state.filters.status === status.value ? 'flat' : 'outlined'}
-                selected={state.filters.status === status.value}
-                onPress={() =>
-                  dispatch({
-                    type: 'SET_FILTER_STATUS',
-                    payload: { status: state.filters.status === status.value ? null : status.value as DocumentStatus },
-                  })
-                }
-                style={[styles.filterChip, state.filters.status === status.value && styles.activeChip]}
-                textStyle={state.filters.status === status.value ? styles.activeChipText : undefined}
-              >
-                {status.label}
-              </Chip>
-            ))}
+            <Menu
+              visible={statusMenuVisible}
+              onDismiss={() => setStatusMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setStatusMenuVisible(true)}
+                  accessibilityLabel="Filter by status"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {state.filters.status
+                      ? STATUS_VALUES.find((s) => s.value === state.filters.status)?.label
+                      : 'All Status'}{' '}
+                    ▼
+                  </Text>
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item
+                onPress={() => {
+                  dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } });
+                  setStatusMenuVisible(false);
+                }}
+                title="All Status"
+              />
+              {STATUS_VALUES.filter((s) => ['draft', 'submitted', 'approved', 'rejected'].includes(s.value)).map((status) => (
+                <Menu.Item
+                  key={status.value}
+                  onPress={() => {
+                    dispatch({
+                      type: 'SET_FILTER_STATUS',
+                      payload: { status: state.filters.status === status.value ? null : status.value as DocumentStatus },
+                    });
+                    setStatusMenuVisible(false);
+                  }}
+                  title={status.label}
+                />
+              ))}
+            </Menu>
           </View>
         </View>
 
@@ -767,13 +910,16 @@ const DesignDocumentManagementScreen = () => {
           }
           categories={state.data.categories}
           sites={state.data.sites}
+          documents={state.data.documents}
         />
 
         <ManageCategoriesDialog
           visible={state.ui.categoriesDialogVisible}
           onDismiss={() => dispatch({ type: 'CLOSE_CATEGORIES_DIALOG' })}
-          categories={state.data.categories}
+          allCategories={state.data.categories}
           onAddCategory={handleAddCategory}
+          onAddSubCategory={handleAddSubCategory}
+          onUpdateCategory={handleUpdateCategory}
           onDeleteCategory={handleDeleteCategory}
         />
 
@@ -843,19 +989,21 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  filterChip: {
-    marginBottom: 4,
+  dropdownButton: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    height: 40,
+    justifyContent: 'center',
   },
-  activeChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  activeChipText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+  dropdownButtonText: {
+    color: '#333',
+    fontSize: 12,
+    fontWeight: '600',
   },
   listContainer: {
     padding: 16,
