@@ -212,3 +212,6 @@ import { logger } from '../services/LoggingService';
 - Do not create files unless specified
 - Run `npx tsc --noEmit` before commits
 - Always update README.md & ARCHITECTURE_UNIFIED.md when adding features
+- Read `ARCHITECTURE_UNIFIED.md` before writing code; if something conflicts, stop and ask
+- Cross-reference existing patterns before creating new ones
+- Every function must be fully typed — no implicit `any`
