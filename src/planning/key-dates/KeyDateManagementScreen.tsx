@@ -273,6 +273,50 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     }
   }, [state.dialog.keyDateToDelete, handleCloseDeleteDialog]);
 
+  // ==================== Duplicate Handler ====================
+
+  const handleDuplicate = useCallback(async (keyDate: KeyDateModel) => {
+    try {
+      const nextSeq = getNextSequenceOrder();
+      await database.write(async () => {
+        await database.collections.get('key_dates').create((record: any) => {
+          record.code = keyDate.code + '-copy';
+          record.category = keyDate.category;
+          record.categoryName = keyDate.categoryName;
+          record.description = keyDate.description;
+          record.targetDays = keyDate.targetDays;
+          record.targetDate = keyDate.targetDate || null;
+          record.delayDamagesInitial = keyDate.delayDamagesInitial;
+          record.delayDamagesExtended = keyDate.delayDamagesExtended;
+          record.delayDamagesSpecial = keyDate.delayDamagesSpecial || null;
+          record.sequenceOrder = nextSeq;
+          record.dependencies = keyDate.dependencies || null;
+          record.projectId = projectId;
+          record.status = 'not_started';
+          record.progressPercentage = 0;
+          record.actualDate = null;
+          record.createdBy = 'planner';
+          record.updatedAt = Date.now();
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: `Duplicated "${keyDate.code}" successfully`, type: 'success' },
+      });
+    } catch (error) {
+      logger.error('Error duplicating key date', error as Error, {
+        component: 'KeyDateManagementScreen',
+        action: 'handleDuplicate',
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Failed to duplicate key date', type: 'error' },
+      });
+    }
+  }, [projectId, getNextSequenceOrder]);
+
   // ==================== Render ====================
 
   const renderKeyDateItem = useCallback(
@@ -281,9 +325,10 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         keyDate={item}
         onEdit={handleEdit}
         onManageSites={handleManageSites}
+        onDuplicate={handleDuplicate}
       />
     ),
-    [handleEdit, handleManageSites]
+    [handleEdit, handleManageSites, handleDuplicate]
   );
 
   const categoryOptions = getCategoryOptions();
@@ -586,6 +631,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           {state.ui.snackbarMessage}
         </Snackbar>
       </Portal>
+
     </View>
   );
 };
