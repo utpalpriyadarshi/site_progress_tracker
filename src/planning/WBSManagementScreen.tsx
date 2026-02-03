@@ -7,7 +7,8 @@ import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
 import WBSItemCard from './components/WBSItemCard';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
@@ -25,7 +26,7 @@ import {
   type SortBy,
 } from './state/wbs-management';
 
-type Props = NativeStackScreenProps<PlanningStackParamList, 'WBSManagement'>;
+type NavigationProp = NativeStackNavigationProp<PlanningStackParamList>;
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -43,7 +44,8 @@ const SORT_OPTIONS: SortOption[] = [
   { id: 'progress', label: 'Progress', icon: 'chart-line' },
 ];
 
-const WBSManagementScreen: React.FC<Props> = ({ navigation }) => {
+const WBSManagementScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const { showSnackbar } = useSnackbar();
   const { announce } = useAccessibility();
 
