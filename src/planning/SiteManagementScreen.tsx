@@ -34,6 +34,8 @@ import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../models/SiteModel';
 import UserModel from '../../models/UserModel';
 import ProjectModel from '../../models/ProjectModel';
+import KeyDateSiteModel from '../../models/KeyDateSiteModel';
+import KeyDateModel from '../../models/KeyDateModel';
 import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -92,6 +94,43 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
         supervisorName = supervisor.fullName;
       } catch (error) {
         supervisorName = 'Unassigned';
+      }
+    }
+
+    // Auto-populate plannedEndDate from associated Key Date if not set
+    if (!site.plannedEndDate) {
+      try {
+        const kdSites = await database.collections
+          .get<KeyDateSiteModel>('key_date_sites')
+          .query(Q.where('site_id', site.id))
+          .fetch();
+
+        if (kdSites.length > 0) {
+          // Find the latest target date from all associated KDs
+          let latestTargetDate: number | null = null;
+          for (const kdSite of kdSites) {
+            const kd = await database.collections
+              .get<KeyDateModel>('key_dates')
+              .find(kdSite.keyDateId);
+            if (kd.targetDate && (!latestTargetDate || kd.targetDate > latestTargetDate)) {
+              latestTargetDate = kd.targetDate;
+            }
+          }
+
+          // Persist to DB and update the site reference for the dialog
+          if (latestTargetDate) {
+            await database.write(async () => {
+              await site.update((s: any) => {
+                s.plannedEndDate = latestTargetDate;
+              });
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('Error auto-populating site date from KD', error as Error, {
+          component: 'SiteManagementScreen',
+          action: 'openEditDialog',
+        });
       }
     }
 
@@ -377,151 +416,153 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
 
       {/* Add/Edit Site Dialog */}
       <Portal>
-        <Dialog visible={ui.dialogVisible} onDismiss={closeDialog}>
+        <Dialog visible={ui.dialogVisible} onDismiss={closeDialog} style={styles.editDialog}>
           <Dialog.Title>
             {isEditing ? 'Edit Site' : 'Add New Site'}
           </Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="Site Name *"
-              value={form.siteName}
-              onChangeText={(text) => dispatch({ type: 'SET_SITE_NAME', payload: text })}
-              mode="outlined"
-              style={styles.input}
-            />
-            <TextInput
-              label="Location *"
-              value={form.siteLocation}
-              onChangeText={(text) => dispatch({ type: 'SET_SITE_LOCATION', payload: text })}
-              mode="outlined"
-              style={styles.input}
-              multiline
-              numberOfLines={2}
-            />
-
-            {projects.length > 0 && (
-              <View style={styles.projectSelector}>
-                <Text style={styles.label}>Select Project:</Text>
-                <ScrollView style={styles.projectList}>
-                  {projects.map((project) => (
-                    <List.Item
-                      key={project.id}
-                      title={project.name}
-                      left={(props) => (
-                        <List.Icon
-                          {...props}
-                          icon={
-                            form.selectedProjectId === project.id
-                              ? 'radiobox-marked'
-                              : 'radiobox-blank'
-                          }
-                        />
-                      )}
-                      onPress={() => dispatch({ type: 'SET_SELECTED_PROJECT_ID', payload: project.id })}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Supervisor Assignment */}
-            <View style={styles.supervisorSection}>
-              <Text style={styles.label}>Assign Supervisor:</Text>
-              <Button
+          <Dialog.ScrollArea style={styles.scrollArea}>
+            <ScrollView>
+              <TextInput
+                label="Site Name *"
+                value={form.siteName}
+                onChangeText={(text) => dispatch({ type: 'SET_SITE_NAME', payload: text })}
                 mode="outlined"
-                icon="account"
-                onPress={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: true })}
-                style={styles.supervisorButton}
-              >
-                {form.supervisorName}
-              </Button>
-            </View>
+                style={styles.input}
+              />
+              <TextInput
+                label="Location *"
+                value={form.siteLocation}
+                onChangeText={(text) => dispatch({ type: 'SET_SITE_LOCATION', payload: text })}
+                mode="outlined"
+                style={styles.input}
+                multiline
+                numberOfLines={2}
+              />
 
-            {/* Date Fields */}
-            <View style={styles.dateSection}>
-              <Text style={styles.sectionTitle}>Schedule Dates</Text>
+              {projects.length > 0 && (
+                <View style={styles.projectSelector}>
+                  <Text style={styles.label}>Select Project:</Text>
+                  <ScrollView style={styles.projectList} nestedScrollEnabled>
+                    {projects.map((project) => (
+                      <List.Item
+                        key={project.id}
+                        title={project.name}
+                        left={(props) => (
+                          <List.Icon
+                            {...props}
+                            icon={
+                              form.selectedProjectId === project.id
+                                ? 'radiobox-marked'
+                                : 'radiobox-blank'
+                            }
+                          />
+                        )}
+                        onPress={() => dispatch({ type: 'SET_SELECTED_PROJECT_ID', payload: project.id })}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
-              {/* Planned Start Date */}
-              <View style={styles.dateRow}>
-                <Text style={styles.dateLabel}>Planned Start:</Text>
+              {/* Supervisor Assignment */}
+              <View style={styles.supervisorSection}>
+                <Text style={styles.label}>Assign Supervisor:</Text>
                 <Button
                   mode="outlined"
-                  icon="calendar"
-                  onPress={() => dispatch({ type: 'SHOW_PLANNED_START_PICKER', payload: true })}
-                  style={styles.dateButton}
+                  icon="account"
+                  onPress={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: true })}
+                  style={styles.supervisorButton}
                 >
-                  {form.plannedStartDate ? form.plannedStartDate.toLocaleDateString() : 'Not Set'}
+                  {form.supervisorName}
                 </Button>
-                {form.plannedStartDate && (
-                  <IconButton
-                    icon="close"
-                    size={16}
-                    onPress={() => dispatch({ type: 'SET_PLANNED_START_DATE', payload: undefined })}
-                  />
-                )}
               </View>
 
-              {/* Planned End Date */}
-              <View style={styles.dateRow}>
-                <Text style={styles.dateLabel}>Planned End:</Text>
-                <Button
-                  mode="outlined"
-                  icon="calendar"
-                  onPress={() => dispatch({ type: 'SHOW_PLANNED_END_PICKER', payload: true })}
-                  style={styles.dateButton}
-                >
-                  {form.plannedEndDate ? form.plannedEndDate.toLocaleDateString() : 'Not Set'}
-                </Button>
-                {form.plannedEndDate && (
-                  <IconButton
-                    icon="close"
-                    size={16}
-                    onPress={() => dispatch({ type: 'SET_PLANNED_END_DATE', payload: undefined })}
-                  />
-                )}
-              </View>
+              {/* Date Fields */}
+              <View style={styles.dateSection}>
+                <Text style={styles.sectionTitle}>Schedule Dates</Text>
 
-              {/* Actual Start Date */}
-              <View style={styles.dateRow}>
-                <Text style={styles.dateLabel}>Actual Start:</Text>
-                <Button
-                  mode="outlined"
-                  icon="calendar"
-                  onPress={() => dispatch({ type: 'SHOW_ACTUAL_START_PICKER', payload: true })}
-                  style={styles.dateButton}
-                >
-                  {form.actualStartDate ? form.actualStartDate.toLocaleDateString() : 'Not Set'}
-                </Button>
-                {form.actualStartDate && (
-                  <IconButton
-                    icon="close"
-                    size={16}
-                    onPress={() => dispatch({ type: 'SET_ACTUAL_START_DATE', payload: undefined })}
-                  />
-                )}
-              </View>
+                {/* Planned Start Date */}
+                <View style={styles.dateRow}>
+                  <Text style={styles.dateLabel}>Planned Start:</Text>
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => dispatch({ type: 'SHOW_PLANNED_START_PICKER', payload: true })}
+                    style={styles.dateButton}
+                  >
+                    {form.plannedStartDate ? form.plannedStartDate.toLocaleDateString() : 'Not Set'}
+                  </Button>
+                  {form.plannedStartDate && (
+                    <IconButton
+                      icon="close"
+                      size={16}
+                      onPress={() => dispatch({ type: 'SET_PLANNED_START_DATE', payload: undefined })}
+                    />
+                  )}
+                </View>
 
-              {/* Actual End Date */}
-              <View style={styles.dateRow}>
-                <Text style={styles.dateLabel}>Actual End:</Text>
-                <Button
-                  mode="outlined"
-                  icon="calendar"
-                  onPress={() => dispatch({ type: 'SHOW_ACTUAL_END_PICKER', payload: true })}
-                  style={styles.dateButton}
-                >
-                  {form.actualEndDate ? form.actualEndDate.toLocaleDateString() : 'Not Set'}
-                </Button>
-                {form.actualEndDate && (
-                  <IconButton
-                    icon="close"
-                    size={16}
-                    onPress={() => dispatch({ type: 'SET_ACTUAL_END_DATE', payload: undefined })}
-                  />
-                )}
+                {/* Planned End Date */}
+                <View style={styles.dateRow}>
+                  <Text style={styles.dateLabel}>Planned End:</Text>
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => dispatch({ type: 'SHOW_PLANNED_END_PICKER', payload: true })}
+                    style={styles.dateButton}
+                  >
+                    {form.plannedEndDate ? form.plannedEndDate.toLocaleDateString() : 'Not Set'}
+                  </Button>
+                  {form.plannedEndDate && (
+                    <IconButton
+                      icon="close"
+                      size={16}
+                      onPress={() => dispatch({ type: 'SET_PLANNED_END_DATE', payload: undefined })}
+                    />
+                  )}
+                </View>
+
+                {/* Actual Start Date */}
+                <View style={styles.dateRow}>
+                  <Text style={styles.dateLabel}>Actual Start:</Text>
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => dispatch({ type: 'SHOW_ACTUAL_START_PICKER', payload: true })}
+                    style={styles.dateButton}
+                  >
+                    {form.actualStartDate ? form.actualStartDate.toLocaleDateString() : 'Not Set'}
+                  </Button>
+                  {form.actualStartDate && (
+                    <IconButton
+                      icon="close"
+                      size={16}
+                      onPress={() => dispatch({ type: 'SET_ACTUAL_START_DATE', payload: undefined })}
+                    />
+                  )}
+                </View>
+
+                {/* Actual End Date */}
+                <View style={styles.dateRow}>
+                  <Text style={styles.dateLabel}>Actual End:</Text>
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => dispatch({ type: 'SHOW_ACTUAL_END_PICKER', payload: true })}
+                    style={styles.dateButton}
+                  >
+                    {form.actualEndDate ? form.actualEndDate.toLocaleDateString() : 'Not Set'}
+                  </Button>
+                  {form.actualEndDate && (
+                    <IconButton
+                      icon="close"
+                      size={16}
+                      onPress={() => dispatch({ type: 'SET_ACTUAL_END_DATE', payload: undefined })}
+                    />
+                  )}
+                </View>
               </View>
-            </View>
-          </Dialog.Content>
+            </ScrollView>
+          </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={closeDialog}>Cancel</Button>
             <Button onPress={handleSave}>
@@ -616,7 +657,7 @@ const enhance = withObservables(
     sites: database.collections
       .get<SiteModel>('sites')
       .query(Q.where('project_id', projectId)), // Only show sites for assigned project
-    projects: database.collections.get<ProjectModel>('projects').query(),
+    projects: database.collections.get<ProjectModel>('projects').query(Q.where('id', projectId)),
   })
 );
 
@@ -755,6 +796,12 @@ const styles = StyleSheet.create({
   dateButton: {
     flex: 1,
     marginRight: 4,
+  },
+  editDialog: {
+    maxHeight: '80%',
+  },
+  scrollArea: {
+    paddingHorizontal: 24,
   },
   errorSnackbar: {
     backgroundColor: '#D32F2F',
