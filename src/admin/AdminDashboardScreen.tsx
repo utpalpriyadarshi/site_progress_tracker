@@ -10,6 +10,7 @@ import {
   CategoryMigrationCard,
   DatabaseResetCard,
   DatabaseBackupCard,
+  DemoDataCard,
 } from './dashboard/components';
 import {
   SystemHealthWidget,
@@ -153,6 +154,8 @@ const AdminDashboardScreen = () => {
       />
 
       <DatabaseBackupCard />
+
+      <DemoDataCard />
 
       <DatabaseResetCard onReset={handleDatabaseReset} />
 
