@@ -200,6 +200,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.delayDamagesExtended = parseFloat(state.form.delayDamagesExtended);
             record.delayDamagesSpecial = state.form.delayDamagesSpecial || null;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10);
+            record.weightage = parseFloat(state.form.weightage) || 0;
             record.dependencies = state.form.dependencies || null;
             record.updatedAt = Date.now();
           });
@@ -223,6 +224,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.delayDamagesSpecial = state.form.delayDamagesSpecial || null;
             record.projectId = projectId;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10) || 1;
+            record.weightage = parseFloat(state.form.weightage) || 0;
             record.dependencies = state.form.dependencies || null;
             record.createdBy = 'planner';
             record.updatedAt = Date.now();
@@ -273,6 +275,51 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     }
   }, [state.dialog.keyDateToDelete, handleCloseDeleteDialog]);
 
+  // ==================== Duplicate Handler ====================
+
+  const handleDuplicate = useCallback(async (keyDate: KeyDateModel) => {
+    try {
+      const nextSeq = getNextSequenceOrder();
+      await database.write(async () => {
+        await database.collections.get('key_dates').create((record: any) => {
+          record.code = keyDate.code + '-copy';
+          record.category = keyDate.category;
+          record.categoryName = keyDate.categoryName;
+          record.description = keyDate.description;
+          record.targetDays = keyDate.targetDays;
+          record.targetDate = keyDate.targetDate || null;
+          record.delayDamagesInitial = keyDate.delayDamagesInitial;
+          record.delayDamagesExtended = keyDate.delayDamagesExtended;
+          record.delayDamagesSpecial = keyDate.delayDamagesSpecial || null;
+          record.sequenceOrder = nextSeq;
+          record.weightage = keyDate.weightage || 0;
+          record.dependencies = keyDate.dependencies || null;
+          record.projectId = projectId;
+          record.status = 'not_started';
+          record.progressPercentage = 0;
+          record.actualDate = null;
+          record.createdBy = 'planner';
+          record.updatedAt = Date.now();
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: `Duplicated "${keyDate.code}" successfully`, type: 'success' },
+      });
+    } catch (error) {
+      logger.error('Error duplicating key date', error as Error, {
+        component: 'KeyDateManagementScreen',
+        action: 'handleDuplicate',
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Failed to duplicate key date', type: 'error' },
+      });
+    }
+  }, [projectId, getNextSequenceOrder]);
+
   // ==================== Render ====================
 
   const renderKeyDateItem = useCallback(
@@ -281,9 +328,10 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         keyDate={item}
         onEdit={handleEdit}
         onManageSites={handleManageSites}
+        onDuplicate={handleDuplicate}
       />
     ),
-    [handleEdit, handleManageSites]
+    [handleEdit, handleManageSites, handleDuplicate]
   );
 
   const categoryOptions = getCategoryOptions();
@@ -500,6 +548,16 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
                 keyboardType="numeric"
               />
 
+              <TextInput
+                label="Weightage %"
+                value={state.form.weightage}
+                onChangeText={(text) => dispatch({ type: 'SET_FORM_WEIGHTAGE', payload: text })}
+                mode="outlined"
+                style={styles.input}
+                keyboardType="numeric"
+                placeholder="e.g., 10 (used for project progress rollup)"
+              />
+
               <Divider style={styles.divider} />
               <Text style={styles.sectionTitle}>Delay Damages</Text>
 
@@ -586,6 +644,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           {state.ui.snackbarMessage}
         </Snackbar>
       </Portal>
+
     </View>
   );
 };

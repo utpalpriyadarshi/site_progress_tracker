@@ -10,11 +10,10 @@
  * - Schedule: Unified schedule with Timeline/Calendar/List views
  * - Gantt: Visual timeline representation
  *
- * Drawer Items (6 detailed screens):
+ * Drawer Items (5 detailed screens):
  * - Resources: Resource planning and allocation
  * - Sites: Site management
  * - WBS: Work breakdown structure
- * - Create Item: Item creation form
  * - Milestones: Milestone tracking
  * - Baseline: Baseline planning
  *
@@ -74,7 +73,6 @@ export type PlanningDrawerParamList = {
   Resources: undefined;
   Sites: undefined;
   WBS: undefined;
-  CreateItem: undefined;
   MilestoneTracking: undefined;
   Baseline: undefined;
 };
@@ -236,9 +234,6 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
       case 'WBS':
         iconName = focused ? 'sitemap' : 'sitemap-outline';
         break;
-      case 'CreateItem':
-        iconName = focused ? 'plus-circle' : 'plus-circle-outline';
-        break;
       case 'MilestoneTracking':
         iconName = focused ? 'flag' : 'flag-outline';
         break;
@@ -315,15 +310,6 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
           title: 'WBS',
           drawerLabel: 'Work Breakdown',
           headerTitle: 'WBS',
-        }}
-      />
-      <Drawer.Screen
-        name="CreateItem"
-        component={ItemCreationScreen}
-        options={{
-          title: 'Create Item',
-          drawerLabel: 'Create Item',
-          headerTitle: 'Create Planning Item',
         }}
       />
       <Drawer.Screen

@@ -14,4 +14,5 @@ export {
   useRecentActivitiesData,
   useResourceUtilizationData,
   useWBSProgressData,
+  useProjectProgressData,
 } from './useWidgetData';

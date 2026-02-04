@@ -63,6 +63,7 @@ type SiteManagementScreenProps = SiteManagementInputProps & SiteManagementObserv
 const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
   sites,
   projects,
+  projectId,
 }) => {
   // Single useReducer replaces 21 useState calls
   const [state, dispatch] = useReducer(siteManagementReducer, undefined, createInitialState);
@@ -253,6 +254,40 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
     }
   }, []);
 
+  // ==================== Duplicate Handler ====================
+
+  const handleDuplicate = useCallback(async (site: SiteModel) => {
+    try {
+      await database.write(async () => {
+        await database.collections.get('sites').create((record: any) => {
+          record.name = site.name + ' (Copy)';
+          record.location = site.location;
+          record.projectId = projectId;
+          record.supervisorId = null;
+          record.plannedStartDate = null;
+          record.plannedEndDate = null;
+          record.actualStartDate = null;
+          record.actualEndDate = null;
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: `Duplicated "${site.name}" successfully`, type: 'success' },
+      });
+    } catch (error) {
+      logger.error('Error duplicating site', error as Error, {
+        component: 'SiteManagementScreen',
+        action: 'handleDuplicate',
+      });
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: { message: 'Failed to duplicate site', type: 'error' },
+      });
+    }
+  }, [projectId]);
+
   // ==================== Render ====================
 
   return (
@@ -314,6 +349,12 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
                       </View>
                     </View>
                     <View style={styles.actions}>
+                      <IconButton
+                        icon="content-copy"
+                        size={20}
+                        onPress={() => handleDuplicate(site)}
+                        accessibilityLabel="Duplicate site"
+                      />
                       <IconButton
                         icon="pencil"
                         size={20}
@@ -563,6 +604,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
           {ui.snackbarMessage}
         </Snackbar>
       </Portal>
+
     </View>
   );
 };

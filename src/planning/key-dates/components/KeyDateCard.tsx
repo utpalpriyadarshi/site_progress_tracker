@@ -40,6 +40,7 @@ interface KeyDateCardProps {
   siteItemProgress?: SiteItemProgress[];
   onEdit: (keyDate: KeyDateModel) => void;
   onManageSites?: (keyDate: KeyDateModel) => void;
+  onDuplicate?: (keyDate: KeyDateModel) => void;
   onViewDetails?: (keyDate: KeyDateModel) => void;
 }
 
@@ -81,6 +82,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
   siteItemProgress = [],
   onEdit,
   onManageSites,
+  onDuplicate,
   onViewDetails,
 }) => {
   const categoryColor = KEY_DATE_CATEGORY_COLORS[keyDate.category] || '#666666';
@@ -226,6 +228,19 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
               accessibilityLabel="Manage sites"
             >
               Sites
+            </Button>
+          )}
+
+          {onDuplicate && (
+            <Button
+              mode="text"
+              onPress={() => onDuplicate(keyDate)}
+              style={styles.actionButton}
+              compact
+              icon="content-copy"
+              accessibilityLabel="Duplicate key date"
+            >
+              Duplicate
             </Button>
           )}
 

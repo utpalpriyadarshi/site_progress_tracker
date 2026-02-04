@@ -48,7 +48,7 @@ import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
 import { usePlanningContext } from './context';
 
-type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation' | 'ItemEdit'>;
+type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation'>;
 
 const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showSnackbar } = useSnackbar();

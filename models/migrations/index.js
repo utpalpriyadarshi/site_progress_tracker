@@ -6,6 +6,7 @@ import { v33Migration } from './v33_add_pdf_error_tracking';
 import { v34Migration } from './v34_add_pdf_generation_status';
 import { v35Migration } from './v35_add_key_dates_tables';
 import { v36Migration } from './v36_add_design_documents_tables';
+import { v37Migration } from './v37_add_key_date_weightage';
 
 export default schemaMigrations({
   migrations: [
@@ -577,5 +578,7 @@ export default schemaMigrations({
     v35Migration,
     // v36: Add Design Documents tables (Design Engineer - Document Management)
     v36Migration,
+    // v37: Add weightage to key_dates for project progress rollup
+    v37Migration,
   ],
 });

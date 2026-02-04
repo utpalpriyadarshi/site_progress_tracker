@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 36, // Added Design Documents tables for Design Engineer role
+  version: 37, // Added weightage to key_dates for project progress rollup
   tables: [
     tableSchema({
       name: 'projects',
@@ -690,6 +690,8 @@ export default appSchema({
         { name: 'project_id', type: 'string', isIndexed: true },
         // Sequence for ordering
         { name: 'sequence_order', type: 'number' },
+        // Weightage for project progress rollup (percentage)
+        { name: 'weightage', type: 'number', isOptional: true },
         // Dependencies (JSON array of key_date IDs)
         { name: 'dependencies', type: 'string', isOptional: true },
         // Audit

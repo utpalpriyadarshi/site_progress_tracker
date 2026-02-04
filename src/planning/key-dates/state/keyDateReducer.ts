@@ -43,6 +43,7 @@ export interface KeyDateManagementState {
     delayDamagesExtended: string;
     delayDamagesSpecial: string;
     sequenceOrder: string;
+    weightage: string;
     dependencies: string;
   };
 }
@@ -77,6 +78,7 @@ export type KeyDateManagementAction =
   | { type: 'SET_FORM_DAMAGES_EXTENDED'; payload: string }
   | { type: 'SET_FORM_DAMAGES_SPECIAL'; payload: string }
   | { type: 'SET_FORM_SEQUENCE'; payload: string }
+  | { type: 'SET_FORM_WEIGHTAGE'; payload: string }
   | { type: 'SET_FORM_DEPENDENCIES'; payload: string }
 
   // Snackbar Actions
@@ -98,6 +100,7 @@ const getDefaultFormState = (): KeyDateManagementState['form'] => ({
   delayDamagesExtended: '10',
   delayDamagesSpecial: '',
   sequenceOrder: '1',
+  weightage: '',
   dependencies: '',
 });
 
@@ -137,6 +140,7 @@ const populateFormFromKeyDate = (keyDate: KeyDateModel): KeyDateManagementState[
   delayDamagesExtended: keyDate.delayDamagesExtended.toString(),
   delayDamagesSpecial: keyDate.delayDamagesSpecial || '',
   sequenceOrder: keyDate.sequenceOrder.toString(),
+  weightage: keyDate.weightage?.toString() || '',
   dependencies: keyDate.dependencies || '',
 });
 
@@ -257,6 +261,9 @@ export const keyDateReducer = (
     case 'SET_FORM_SEQUENCE':
       return { ...state, form: { ...state.form, sequenceOrder: action.payload } };
 
+    case 'SET_FORM_WEIGHTAGE':
+      return { ...state, form: { ...state.form, weightage: action.payload } };
+
     case 'SET_FORM_DEPENDENCIES':
       return { ...state, form: { ...state.form, dependencies: action.payload } };
 
@@ -328,6 +335,14 @@ export const validateKeyDateForm = (form: KeyDateManagementState['form']): {
   const damagesExtended = parseFloat(form.delayDamagesExtended);
   if (isNaN(damagesExtended) || damagesExtended < 0 || damagesExtended > 500) {
     errors.delayDamagesExtended = 'Extended rate must be 0-500 INR Lakhs';
+  }
+
+  // Weightage validation (optional, but if provided must be 0-100)
+  if (form.weightage.trim() !== '') {
+    const weightage = parseFloat(form.weightage);
+    if (isNaN(weightage) || weightage < 0 || weightage > 100) {
+      errors.weightage = 'Weightage must be between 0 and 100';
+    }
   }
 
   return {

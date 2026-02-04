@@ -29,6 +29,7 @@ export interface ScheduleOverview {
 
 export interface ScheduleOverviewWidgetProps {
   overview: ScheduleOverview | null;
+  projectProgress?: number | null;
   loading?: boolean;
   error?: string | null;
   onPress?: () => void;
@@ -40,6 +41,7 @@ export interface ScheduleOverviewWidgetProps {
 
 export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
   overview,
+  projectProgress = null,
   loading = false,
   error = null,
   onPress,
@@ -77,8 +79,13 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
       );
     }
 
+    // Use KD-weighted project progress when available, otherwise fall back to item average
+    const displayProgress = projectProgress != null && projectProgress > 0
+      ? Math.round(projectProgress)
+      : overview.overallProgress;
+
     const progressColor = getProgressColor(
-      overview.overallProgress,
+      displayProgress,
       overview.delayedItems,
       overview.totalItems
     );
@@ -89,14 +96,16 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
             <Text variant="headlineMedium" style={[styles.progressValue, { color: progressColor }]}>
-              {overview.overallProgress}%
+              {displayProgress}%
             </Text>
             <Text variant="bodySmall" style={styles.progressLabel}>
-              Overall Progress
+              {projectProgress != null && projectProgress > 0
+                ? 'Project Progress (KD Weighted)'
+                : 'Overall Progress'}
             </Text>
           </View>
           <ProgressBar
-            progress={overview.overallProgress / 100}
+            progress={displayProgress / 100}
             color={progressColor}
             style={styles.progressBar}
           />
@@ -183,7 +192,7 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
       onRefresh={onRefresh}
       accessibilityLabel={
         overview
-          ? `Schedule Overview widget, ${overview.overallProgress}% complete, ${overview.delayedItems} delayed items`
+          ? `Schedule Overview widget, ${projectProgress != null && projectProgress > 0 ? Math.round(projectProgress) : overview.overallProgress}% complete, ${overview.delayedItems} delayed items`
           : 'Schedule Overview widget, no data'
       }
     >
