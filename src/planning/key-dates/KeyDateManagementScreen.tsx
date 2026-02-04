@@ -200,6 +200,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.delayDamagesExtended = parseFloat(state.form.delayDamagesExtended);
             record.delayDamagesSpecial = state.form.delayDamagesSpecial || null;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10);
+            record.weightage = parseFloat(state.form.weightage) || 0;
             record.dependencies = state.form.dependencies || null;
             record.updatedAt = Date.now();
           });
@@ -223,6 +224,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.delayDamagesSpecial = state.form.delayDamagesSpecial || null;
             record.projectId = projectId;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10) || 1;
+            record.weightage = parseFloat(state.form.weightage) || 0;
             record.dependencies = state.form.dependencies || null;
             record.createdBy = 'planner';
             record.updatedAt = Date.now();
@@ -290,6 +292,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           record.delayDamagesExtended = keyDate.delayDamagesExtended;
           record.delayDamagesSpecial = keyDate.delayDamagesSpecial || null;
           record.sequenceOrder = nextSeq;
+          record.weightage = keyDate.weightage || 0;
           record.dependencies = keyDate.dependencies || null;
           record.projectId = projectId;
           record.status = 'not_started';
@@ -543,6 +546,16 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
                 mode="outlined"
                 style={styles.input}
                 keyboardType="numeric"
+              />
+
+              <TextInput
+                label="Weightage %"
+                value={state.form.weightage}
+                onChangeText={(text) => dispatch({ type: 'SET_FORM_WEIGHTAGE', payload: text })}
+                mode="outlined"
+                style={styles.input}
+                keyboardType="numeric"
+                placeholder="e.g., 10 (used for project progress rollup)"
               />
 
               <Divider style={styles.divider} />

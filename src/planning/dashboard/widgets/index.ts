@@ -27,3 +27,6 @@ export type { Resource, ResourceSummary, ResourceUtilizationWidgetProps } from '
 
 export { WBSProgressWidget } from './WBSProgressWidget';
 export type { WBSPhase, WBSSummary, WBSProgressWidgetProps } from './WBSProgressWidget';
+
+export { ProjectProgressWidget } from './ProjectProgressWidget';
+export type { ProjectProgressWidgetProps } from './ProjectProgressWidget';

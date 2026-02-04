@@ -32,6 +32,7 @@ import {
   RecentActivitiesWidget,
   ResourceUtilizationWidget,
   WBSProgressWidget,
+  ProjectProgressWidget,
 } from './widgets';
 
 // Hooks
@@ -42,6 +43,7 @@ import {
   useRecentActivitiesData,
   useResourceUtilizationData,
   useWBSProgressData,
+  useProjectProgressData,
 } from './hooks';
 
 // ==================== Component ====================
@@ -69,6 +71,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const recentActivities = useRecentActivitiesData();
   const resourceUtilization = useResourceUtilizationData();
   const wbsProgress = useWBSProgressData();
+  const projectProgressData = useProjectProgressData();
 
   // Calculate layout: 2 columns on tablets, 1 column on phones
   const isTablet = width >= 768;
@@ -81,14 +84,15 @@ const PlanningDashboardScreen: React.FC = () => {
     !scheduleOverview.loading &&
     !recentActivities.loading &&
     !resourceUtilization.loading &&
-    !wbsProgress.loading;
+    !wbsProgress.loading &&
+    !projectProgressData.loading;
 
   // Announce when dashboard is loaded
   useEffect(() => {
     if (allWidgetsLoaded && state.loading) {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'SET_LAST_UPDATED', payload: new Date() });
-      announce('Planning Dashboard loaded with 6 widgets');
+      announce('Planning Dashboard loaded with 7 widgets');
     }
   }, [allWidgetsLoaded, state.loading, announce]);
 
@@ -105,6 +109,7 @@ const PlanningDashboardScreen: React.FC = () => {
       recentActivities.refresh(),
       resourceUtilization.refresh(),
       wbsProgress.refresh(),
+      projectProgressData.refresh(),
     ]);
 
     dispatch({ type: 'SET_REFRESHING', payload: false });
@@ -117,6 +122,7 @@ const PlanningDashboardScreen: React.FC = () => {
     recentActivities,
     resourceUtilization,
     wbsProgress,
+    projectProgressData,
     announce,
   ]);
 
@@ -147,10 +153,20 @@ const PlanningDashboardScreen: React.FC = () => {
       <ScheduleOverviewWidget
         key="schedule"
         overview={scheduleOverview.overview}
-        loading={scheduleOverview.loading}
+        projectProgress={projectProgressData.projectProgress}
+        loading={scheduleOverview.loading || projectProgressData.loading}
         error={scheduleOverview.error}
         onPress={navigateToSchedule}
         onRefresh={scheduleOverview.refresh}
+      />,
+      <ProjectProgressWidget
+        key="projectProgress"
+        projectProgress={projectProgressData.projectProgress}
+        kdBreakdown={projectProgressData.kdBreakdown}
+        loading={projectProgressData.loading}
+        error={projectProgressData.error}
+        onPress={navigateToSchedule}
+        onRefresh={projectProgressData.refresh}
       />,
       <UpcomingMilestonesWidget
         key="milestones"

@@ -14,6 +14,8 @@ import { database } from '../../../../models/database';
 import ItemModel from '../../../../models/ItemModel';
 import ProgressLogModel from '../../../../models/ProgressLogModel';
 import CategoryModel from '../../../../models/CategoryModel';
+import KeyDateModel from '../../../../models/KeyDateModel';
+import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
 import type { Milestone } from '../widgets/UpcomingMilestonesWidget';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
@@ -618,4 +620,133 @@ export function useWBSProgressData(): UseWBSProgressResult {
   }, [fetchData]);
 
   return { phases, summary, loading, error, refresh: fetchData };
+}
+
+// ==================== Project Progress Hook (KD-weighted rollup) ====================
+
+export interface KDBreakdownItem {
+  id: string;
+  code: string;
+  description: string;
+  weightage: number;
+  progress: number;
+  status: string;
+}
+
+interface UseProjectProgressResult {
+  projectProgress: number;
+  kdBreakdown: KDBreakdownItem[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+}
+
+/**
+ * Calculate weighted progress from item data for a set of items at a site.
+ * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
+ */
+const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
+  if (!items || items.length === 0) return 0;
+  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
+  if (totalWeightage === 0) return 0;
+  return items.reduce(
+    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
+    0
+  ) / totalWeightage;
+};
+
+export function useProjectProgressData(): UseProjectProgressResult {
+  const { projectId } = usePlanningContext();
+  const [projectProgress, setProjectProgress] = useState(0);
+  const [kdBreakdown, setKdBreakdown] = useState<KDBreakdownItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setProjectProgress(0);
+      setKdBreakdown([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 1. Fetch all key dates for this project
+      const keyDatesCollection = database.collections.get<KeyDateModel>('key_dates');
+      const keyDates = await keyDatesCollection
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      if (keyDates.length === 0) {
+        setProjectProgress(0);
+        setKdBreakdown([]);
+        setLoading(false);
+        return;
+      }
+
+      const sitesCollection = database.collections.get<KeyDateSiteModel>('key_date_sites');
+      const itemsCollection = database.collections.get<ItemModel>('items');
+
+      const breakdown: KDBreakdownItem[] = [];
+      let totalWeightedProgress = 0;
+      let totalWeightage = 0;
+
+      for (const kd of keyDates) {
+        // 2. Fetch sites for this KD
+        const kdSites = await sitesCollection
+          .query(Q.where('key_date_id', kd.id))
+          .fetch();
+
+        let kdProgress = kd.progressPercentage; // fallback
+
+        if (kdSites.length > 0) {
+          // 3. For each site, compute progress from its items
+          let siteWeightedSum = 0;
+          for (const site of kdSites) {
+            const siteItems = await itemsCollection
+              .query(Q.where('site_id', site.siteId))
+              .fetch();
+            const siteProgress = calculateSiteProgressFromItems(siteItems);
+            siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
+          }
+          kdProgress = siteWeightedSum;
+        }
+
+        const weightage = kd.weightage || 0;
+        breakdown.push({
+          id: kd.id,
+          code: kd.code,
+          description: kd.description,
+          weightage,
+          progress: Math.round(kdProgress * 100) / 100,
+          status: kd.status,
+        });
+
+        totalWeightedProgress += weightage * kdProgress;
+        totalWeightage += weightage;
+      }
+
+      // 4. Roll up: projectProgress = Σ(kd.weightage × kdProgress) / Σ(kd.weightage)
+      const progress = totalWeightage > 0
+        ? Math.round((totalWeightedProgress / totalWeightage) * 100) / 100
+        : 0;
+
+      setProjectProgress(progress);
+      setKdBreakdown(breakdown.sort((a, b) => b.weightage - a.weightage));
+    } catch (err) {
+      console.error('Error loading project progress:', err);
+      setError('Failed to load project progress');
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { projectProgress, kdBreakdown, loading, error, refresh: fetchData };
 }

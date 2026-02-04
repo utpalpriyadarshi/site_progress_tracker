@@ -68,6 +68,9 @@ export default class KeyDateModel extends Model {
   // Sequence for ordering
   @field('sequence_order') sequenceOrder!: number;
 
+  // Weightage for project progress rollup (percentage)
+  @field('weightage') weightage?: number;
+
   // Dependencies (JSON array of key_date IDs)
   @field('dependencies') dependencies?: string;
 
