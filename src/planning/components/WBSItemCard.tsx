@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text as RNText } from 'react-native';
 import { Card, Text, Chip, IconButton, Menu } from 'react-native-paper';
 import ItemModel from '../../../models/ItemModel';
 
@@ -42,34 +42,25 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               {item.getFormattedWbsCode()}
             </Text>
             {isOnCriticalPath && (
-              <Chip
-                compact
-                style={[styles.badge, styles.criticalBadge]}
-                textStyle={styles.criticalBadgeText}
-              >
-                🔴 Critical
-              </Chip>
+              <View style={[styles.badgeBase, styles.criticalBadge]}>
+                <RNText style={styles.criticalBadgeText} numberOfLines={1}>
+                  CRITICAL
+                </RNText>
+              </View>
             )}
             {riskBadgeColor && (
-              <Chip
-                compact
-                style={[
-                  styles.badge,
-                  { backgroundColor: riskBadgeColor + '20' },
-                ]}
-                textStyle={{ color: riskBadgeColor }}
-              >
-                {item.dependencyRisk === 'high' ? '⚠️ High Risk' : '⚡ Med Risk'}
-              </Chip>
+              <View style={[styles.badgeBase, { backgroundColor: riskBadgeColor }]}>
+                <RNText style={styles.riskBadgeText} numberOfLines={1}>
+                  {item.dependencyRisk === 'high' ? 'HIGH RISK' : 'MED RISK'}
+                </RNText>
+              </View>
             )}
             {item.isBaselineLocked && (
-              <Chip
-                compact
-                style={[styles.badge, styles.lockedBadge]}
-                textStyle={styles.lockedBadgeText}
-              >
-                🔒 Locked
-              </Chip>
+              <View style={[styles.badgeBase, styles.lockedBadge]}>
+                <RNText style={styles.lockedBadgeText} numberOfLines={1}>
+                  LOCKED
+                </RNText>
+              </View>
             )}
           </View>
           {(onEdit || onDelete || onAddChild) && (
@@ -144,7 +135,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
           {item.getPhaseLabel()}
         </Chip>
 
-        {/* Details Row */}
+        {/* Details Row — includes duration, float, dates, and status */}
         <View style={styles.detailsRow}>
           <Text variant="bodySmall" style={styles.detailText}>
             Duration: {item.getPlannedDuration()} days
@@ -154,23 +145,29 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               Float: {item.floatDays} days
             </Text>
           )}
-          <Chip
-            compact
+          <Text variant="bodySmall" style={styles.dateText}>
+            Start: {new Date(item.plannedStartDate).toLocaleDateString()}
+          </Text>
+          <Text variant="bodySmall" style={styles.dateText}>
+            End: {new Date(item.plannedEndDate).toLocaleDateString()}
+          </Text>
+          <View
             style={[
-              styles.statusChip,
+              styles.statusBadge,
               {
                 backgroundColor:
                   item.status === 'completed' ? '#4CAF50' :
                   item.status === 'in_progress' ? '#FF9800' :
-                  '#9E9E9E'
-              }
+                  '#9E9E9E',
+              },
             ]}
-            textStyle={styles.statusChipText}
           >
-            {item.status === 'completed' ? '✓ COMPLETED' :
-             item.status === 'in_progress' ? '⚡ IN PROGRESS' :
-             '○ NOT STARTED'}
-          </Chip>
+            <RNText style={styles.statusBadgeText} numberOfLines={1}>
+              {item.status === 'completed' ? 'COMPLETED' :
+               item.status === 'in_progress' ? 'IN PROGRESS' :
+               'NOT STARTED'}
+            </RNText>
+          </View>
         </View>
 
         {/* Progress Bar */}
@@ -197,16 +194,6 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
             ⚠️ {item.riskNotes}
           </Text>
         )}
-
-        {/* Dates */}
-        <View style={styles.datesRow}>
-          <Text variant="bodySmall" style={styles.dateText}>
-            Start: {new Date(item.plannedStartDate).toLocaleDateString()}
-          </Text>
-          <Text variant="bodySmall" style={styles.dateText}>
-            End: {new Date(item.plannedEndDate).toLocaleDateString()}
-          </Text>
-        </View>
       </Card.Content>
     </Card>
   );
@@ -221,16 +208,16 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', // Changed from 'center' to prevent clipping
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 4,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     flex: 1,
-    marginRight: 4, // Reduced margin to give more space for badges
-    gap: 6, // Modern gap property for consistent spacing
+    marginRight: 4,
+    gap: 6,
   },
   wbsCode: {
     fontFamily: 'monospace',
@@ -238,32 +225,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    marginBottom: 4, // Allow wrapping without overlap
+    marginBottom: 4,
   },
-  badge: {
-    height: 28, // Increased height to prevent emoji/text clipping
-    marginBottom: 4, // Vertical margin for wrapped badges
+  badgeBase: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 70,
+    marginBottom: 4,
   },
   criticalBadge: {
-    backgroundColor: '#ffebee',
+    backgroundColor: '#d32f2f',
   },
   criticalBadgeText: {
-    color: '#d32f2f',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 11,
+    textAlign: 'center',
+  },
+  riskBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
+    textAlign: 'center',
   },
   lockedBadge: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#757575',
   },
   lockedBadgeText: {
-    color: '#666',
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 11,
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
   },
   itemName: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   criticalItemName: {
     fontWeight: 'bold',
@@ -271,32 +273,41 @@ const styles = StyleSheet.create({
   },
   phaseChip: {
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    marginBottom: 12,
+    marginBottom: 4,
     gap: 8,
   },
   detailText: {
     color: '#666',
   },
-  statusChip: {
-    height: 28,
-    minWidth: 100,
+  dateText: {
+    color: '#999',
+    fontSize: 11,
   },
-  statusChipText: {
+  statusBadge: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 90,
+  },
+  statusBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 9,
+    fontSize: 11,
+    textAlign: 'center',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   progressBar: {
     flex: 1,
@@ -321,18 +332,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff3e0',
     borderWidth: 1,
     borderColor: '#ff9800',
-    borderLeftWidth: 3, // Thicker left border for emphasis
+    borderLeftWidth: 3,
     borderLeftColor: '#ff9800',
     borderRadius: 4,
     color: '#e65100',
-  },
-  datesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dateText: {
-    color: '#999',
-    fontSize: 11,
   },
 });
 

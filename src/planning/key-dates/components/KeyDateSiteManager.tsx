@@ -266,9 +266,19 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
           record.contributionPercentage = contribution;
           record.progressPercentage = 0;
           record.status = 'not_started';
+          record.plannedEndDate = keyDate.targetDate || null;
           record.updatedAt = Date.now();
           record.appSyncStatus = 'pending';
           record.version = 1;
+        });
+
+        // Update the site's plannedEndDate to match KD target date (if later or unset)
+        const siteRecord = await database.collections.get<SiteModel>('sites').find(selectedSiteId);
+        await siteRecord.update((s: any) => {
+          const kdTargetDate = keyDate.targetDate;
+          if (kdTargetDate && (!s.plannedEndDate || kdTargetDate > s.plannedEndDate)) {
+            s.plannedEndDate = kdTargetDate;
+          }
         });
       });
       setShowAddDialog(false);
