@@ -117,7 +117,7 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
           name="SnackbarTest"
           component={SnackbarTestScreen}
           options={{
-            title: 'Test',
+            title: 'Snackbar',
             headerShown: true,
             headerTitle: 'Snackbar & Dialog Tests',
           }}

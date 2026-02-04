@@ -4,3 +4,4 @@ export * from './ManagementCard';
 export * from './PasswordMigrationCard';
 export * from './CategoryMigrationCard';
 export * from './DatabaseResetCard';
+export * from './DatabaseBackupCard';
