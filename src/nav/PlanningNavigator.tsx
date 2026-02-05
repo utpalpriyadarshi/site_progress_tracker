@@ -47,6 +47,7 @@ import { KeyDateManagementScreen } from '../planning/key-dates';
 import { useAuth } from '../auth/AuthContext';
 import { PlanningStackParamList } from './types';
 import { PlanningProvider } from '../planning/context';
+import TutorialService from '../services/TutorialService';
 
 // ==================== Types ====================
 
@@ -69,7 +70,7 @@ export type PlanningTabParamList = {
 };
 
 export type PlanningDrawerParamList = {
-  MainTabs: undefined;
+  MainTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   Resources: undefined;
   Sites: undefined;
   WBS: undefined;
@@ -91,6 +92,17 @@ const Stack = createNativeStackNavigator<PlanningStackParamList>();
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) => {
   const theme = useTheme();
+  const { user } = useAuth();
+
+  const handleTutorialRestart = useCallback(async () => {
+    if (user) {
+      await TutorialService.resetTutorial(user.userId, 'planner');
+    }
+    props.navigation.navigate('MainTabs', {
+      screen: 'Dashboard',
+      params: { showTutorial: true },
+    });
+  }, [user, props.navigation]);
 
   return (
     <DrawerContentScrollView {...props}>
@@ -105,6 +117,20 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) 
 
       {/* Navigation Items */}
       <DrawerItemList {...props} />
+
+      <Divider style={styles.tutorialDivider} />
+
+      {/* Tutorial Restart */}
+      <TouchableOpacity
+        style={styles.tutorialButton}
+        onPress={handleTutorialRestart}
+        accessibilityLabel="Restart tutorial walkthrough"
+      >
+        <Icon name="school" size={22} color={theme.colors.primary} />
+        <Text style={[styles.tutorialButtonText, { color: theme.colors.primary }]}>
+          Tutorial
+        </Text>
+      </TouchableOpacity>
     </DrawerContentScrollView>
   );
 });
@@ -384,6 +410,21 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  tutorialDivider: {
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  tutorialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  tutorialButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 32,
   },
 });
 

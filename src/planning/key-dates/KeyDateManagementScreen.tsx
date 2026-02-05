@@ -161,9 +161,8 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
     dispatch({ type: 'CLOSE_EDIT_DIALOG' });
   }, []);
 
-  // Handler for delete action (prepared for future card swipe-to-delete or context menu)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleDelete = useCallback((keyDate: KeyDateModel) => {
+  // Handler for delete action
+  const handleDelete = useCallback((keyDate: KeyDateModel) => {
     dispatch({ type: 'OPEN_DELETE_DIALOG', payload: { keyDate } });
   }, []);
 
@@ -329,9 +328,10 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         onEdit={handleEdit}
         onManageSites={handleManageSites}
         onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
       />
     ),
-    [handleEdit, handleManageSites, handleDuplicate]
+    [handleEdit, handleManageSites, handleDuplicate, handleDelete]
   );
 
   const categoryOptions = getCategoryOptions();

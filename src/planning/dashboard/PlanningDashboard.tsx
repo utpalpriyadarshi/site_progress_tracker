@@ -9,7 +9,7 @@
  * @since Planning Phase 3
  */
 
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -18,11 +18,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useAuth } from '../../auth/AuthContext';
 import { dashboardReducer, initialState } from './dashboardReducer';
+import TutorialModal from '../../tutorial/TutorialModal';
+import plannerTutorialSteps from '../../tutorial/plannerTutorialSteps';
+import TutorialService from '../../services/TutorialService';
 
 // Widgets
 import {
@@ -55,6 +58,52 @@ const PlanningDashboardScreen: React.FC = () => {
   const { announce } = useAccessibility();
   const { user } = useAuth();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
+  const route = useRoute<any>();
+
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+
+  // Check if tutorial should be shown on mount or when triggered from drawer
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      // Triggered from drawer "Tutorial" item
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+      // First-login auto-show
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'planner');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'planner');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'planner', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'planner');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'planner', step);
+    }
+  }, [user]);
 
   // Format current date like Supervisor dashboard
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -262,6 +311,16 @@ const PlanningDashboardScreen: React.FC = () => {
 
         {renderWidgets()}
       </ScrollView>
+
+      {/* Tutorial Modal */}
+      <TutorialModal
+        visible={showTutorial}
+        steps={plannerTutorialSteps}
+        initialStep={tutorialInitialStep}
+        onDismiss={handleTutorialDismiss}
+        onComplete={handleTutorialComplete}
+        onStepChange={handleTutorialStepChange}
+      />
     </View>
   );
 };
