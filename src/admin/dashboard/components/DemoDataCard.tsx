@@ -54,7 +54,7 @@ export const DemoDataCard: React.FC = () => {
 
     Alert.alert(
       'Generate Demo Data',
-      `This will create Key Dates, Sites, and WBS Items in "${selectedProject.name}".\n\nExisting data will NOT be deleted. Continue?`,
+      `This will create Key Dates, Sites, Milestones, and WBS Items in "${selectedProject.name}".\n\nExisting data will NOT be deleted. Continue?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -66,7 +66,7 @@ export const DemoDataCard: React.FC = () => {
               setLastResult(result);
               Alert.alert(
                 'Demo Data Created',
-                `Successfully created:\n• ${result.keyDatesCreated} Key Dates\n• ${result.sitesCreated} Sites\n• ${result.categoriesCreated} Categories\n• ${result.itemsCreated} WBS Items\n\nSwitch to Planner role to view the data.`
+                `Successfully created:\n• ${result.keyDatesCreated} Key Dates\n• ${result.sitesCreated} Sites\n• ${result.categoriesCreated} Categories\n• ${result.milestonesCreated} Milestones\n• ${result.milestoneProgressCreated} Milestone Progress\n• ${result.itemsCreated} WBS Items\n\nSwitch to Planner role to view the data.`
               );
             } catch (error) {
               Alert.alert('Generation Failed', String(error));
@@ -85,7 +85,7 @@ export const DemoDataCard: React.FC = () => {
         <Title>Demo Data Generator</Title>
         <Paragraph style={styles.description}>
           Populate a project with realistic demo data for Planner role — Key Dates,
-          Sites, and WBS Items.
+          Sites, Milestones, and WBS Items with dependencies.
         </Paragraph>
 
         {/* Project Selector */}
@@ -134,7 +134,7 @@ export const DemoDataCard: React.FC = () => {
         {lastResult && (
           <Text style={styles.resultText}>
             Last: {lastResult.keyDatesCreated} KDs, {lastResult.sitesCreated} Sites,{' '}
-            {lastResult.itemsCreated} Items
+            {lastResult.milestonesCreated} Milestones, {lastResult.itemsCreated} Items
           </Text>
         )}
       </Card.Content>
