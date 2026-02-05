@@ -41,6 +41,7 @@ interface KeyDateCardProps {
   onEdit: (keyDate: KeyDateModel) => void;
   onManageSites?: (keyDate: KeyDateModel) => void;
   onDuplicate?: (keyDate: KeyDateModel) => void;
+  onDelete?: (keyDate: KeyDateModel) => void;
   onViewDetails?: (keyDate: KeyDateModel) => void;
 }
 
@@ -83,6 +84,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
   onEdit,
   onManageSites,
   onDuplicate,
+  onDelete,
   onViewDetails,
 }) => {
   const categoryColor = KEY_DATE_CATEGORY_COLORS[keyDate.category] || '#666666';
@@ -216,21 +218,8 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
           </View>
         )}
 
-        {/* Actions */}
+        {/* Actions - Row 1: Duplicate & Delete */}
         <View style={styles.actionsRow}>
-          {onManageSites && (
-            <Button
-              mode="text"
-              onPress={() => onManageSites(keyDate)}
-              style={styles.actionButton}
-              compact
-              icon="map-marker-multiple"
-              accessibilityLabel="Manage sites"
-            >
-              Sites
-            </Button>
-          )}
-
           {onDuplicate && (
             <Button
               mode="text"
@@ -244,15 +233,19 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
             </Button>
           )}
 
-          <Button
-            mode="contained"
-            onPress={() => onEdit(keyDate)}
-            style={styles.actionButton}
-            compact
-            accessibilityLabel="Edit key date"
-          >
-            Edit
-          </Button>
+          {onDelete && (
+            <Button
+              mode="text"
+              onPress={() => onDelete(keyDate)}
+              style={styles.actionButton}
+              compact
+              icon="delete-outline"
+              textColor="#F44336"
+              accessibilityLabel="Delete key date"
+            >
+              Delete
+            </Button>
+          )}
 
           {onViewDetails && (
             <IconButton
@@ -262,6 +255,32 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
               accessibilityLabel="View details"
             />
           )}
+        </View>
+
+        {/* Actions - Row 2: Sites & Edit */}
+        <View style={styles.actionsRow}>
+          {onManageSites && (
+            <Button
+              mode="outlined"
+              onPress={() => onManageSites(keyDate)}
+              style={styles.actionButton}
+              compact
+              icon="map-marker-multiple"
+              accessibilityLabel="Manage sites"
+            >
+              Sites
+            </Button>
+          )}
+
+          <Button
+            mode="contained"
+            onPress={() => onEdit(keyDate)}
+            style={styles.actionButton}
+            compact
+            accessibilityLabel="Edit key date"
+          >
+            Edit
+          </Button>
         </View>
       </Card.Content>
     </Card>
@@ -348,11 +367,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
     gap: 8,
   },
   actionButton: {
-    minWidth: 100,
+    flex: 1,
   },
   siteCountText: {
     fontSize: 11,
