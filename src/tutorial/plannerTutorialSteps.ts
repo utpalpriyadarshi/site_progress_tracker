@@ -1,11 +1,11 @@
 /**
  * Planner Tutorial Steps
  *
- * Defines the 9-step walkthrough for the Planning role.
+ * Defines the 11-step walkthrough for the Planning role.
  * Each step has a title, description, icon, and optional
  * screen/action hints for navigation context.
  *
- * @version 1.0.0
+ * @version 1.1.0
  * @since v2.13 - App Tutorial & Demo Data
  */
 
@@ -81,6 +81,24 @@ const plannerTutorialSteps: TutorialStep[] = [
   },
   {
     id: 8,
+    title: 'Baseline & Critical Path',
+    description:
+      'Go to Baseline screen. Set item dependencies, then tap "Calculate Critical Path" to identify the longest path. Items on the critical path are highlighted with red borders.',
+    icon: 'chart-timeline-variant',
+    screenHint: 'Baseline',
+    actionHint: 'Open drawer menu \u2192 Baseline',
+  },
+  {
+    id: 9,
+    title: 'Track Milestones',
+    description:
+      'Open Milestones screen. View project milestones (PM100-PM700) covering Requirements, Design, Procurement, Manufacturing, Testing, Commissioning, and Handover. Select a site to track progress.',
+    icon: 'flag-checkered',
+    screenHint: 'Milestones',
+    actionHint: 'Open drawer menu \u2192 Milestones',
+  },
+  {
+    id: 10,
     title: 'View Schedule & Gantt',
     description:
       'Check the Schedule and Gantt tabs to see your timeline. Items appear based on their planned dates.',
@@ -88,7 +106,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     screenHint: 'Schedule',
   },
   {
-    id: 9,
+    id: 11,
     title: 'Monitor Progress',
     description:
       "Return to Dashboard. The Project Progress widget shows weighted rollup from your Key Dates. You're all set!",
