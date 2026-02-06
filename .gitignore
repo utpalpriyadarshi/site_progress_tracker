@@ -91,3 +91,13 @@ SUPABASE_CREDENTIALS.txt
 # Claude Code temporary files
 tmpclaude-*
 nul
+
+# Reference/Session documentation (keep locally, don't commit)
+docs/ai-prompts/Planning_Flow.md
+docs/implementation/Design_documents.md
+docs/implementation/Forgot_Password_Link.md
+docs/implementation/KeyDates_Session_29_01_2026.md
+docs/implementation/Logistics_Phase1_Phase2_Complete.md
+docs/implementation/Prompt*.md
+docs/implementation/SessionSummary_*.md
+docs/implementation/Vibe_Coding.md
