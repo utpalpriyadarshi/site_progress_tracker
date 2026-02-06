@@ -66,6 +66,13 @@ export interface ManagerDemoDataResult {
   bomItemsCreated: number;
 }
 
+export interface LogisticsDemoDataResult {
+  materialsCreated: number;
+  inventoryItemsCreated: number;
+  deliveriesCreated: number;
+  equipmentCreated: number;
+}
+
 // ─── Key Date definitions ────────────────────────────────────────
 
 interface KeyDateDef {
@@ -1564,4 +1571,111 @@ export async function generateManagerDemoData(projectId: string): Promise<Manage
   };
 }
 
-export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData, generateManagerDemoData };
+// ─── Logistics Demo Data Function ───────────────────────────────────
+
+export async function generateLogisticsDemoData(projectId: string): Promise<LogisticsDemoDataResult> {
+  let materialsCount = 0;
+
+  await database.write(async () => {
+    const materialsCollection = database.collections.get<MaterialModel>('materials');
+
+    // Get existing items for this project (via sites)
+    const sites = await database.collections
+      .get('sites')
+      .query()
+      .fetch();
+
+    if (sites.length === 0) {
+      throw new Error('Please generate Planner or Supervisor demo data first to create sites and items.');
+    }
+
+    const siteIds = sites.map(s => s.id);
+
+    // Get items for these sites
+    const items = await database.collections
+      .get('items')
+      .query()
+      .fetch();
+
+    if (items.length === 0) {
+      throw new Error('Please generate Planner or Supervisor demo data first to create items.');
+    }
+
+    // Create Materials (18-20 materials linked to existing items)
+    const materialNames = [
+      'Copper Wire - 2.5mm',
+      'PVC Conduit Pipes',
+      'MCB Circuit Breakers',
+      'LED Panel Lights',
+      'Switch Boards',
+      'Cable Trays',
+      'Steel Reinforcement Bars',
+      'Cement - Grade 43',
+      'Fine Aggregate Sand',
+      'Ready Mix Concrete',
+      'Structural Steel Beams',
+      'Welding Electrodes',
+      'HVAC Ductwork',
+      'Centrifugal Pumps',
+      'Control Valves',
+      'GI Pipes - 4 inch',
+      'Pressure Gauges',
+      'Safety Valves',
+      'Instrumentation Cables',
+      'Temperature Sensors',
+    ];
+
+    const suppliers = [
+      'ABC Electricals Pvt Ltd',
+      'BuildTech Suppliers',
+      'Steel & Cement Co',
+      'Industrial Equipment Ltd',
+      'Mechanical Systems Inc',
+    ];
+
+    const materialStatuses = ['ordered', 'delivered', 'in_use', 'shortage'];
+    const units = ['pcs', 'kg', 'm', 'box', 'bundle', 'ton'];
+
+    const numMaterials = Math.min(20, items.length * 2); // Create 2 materials per item on average
+
+    for (let i = 0; i < numMaterials; i++) {
+      const item = items[i % items.length];
+      const materialName = materialNames[i % materialNames.length];
+      const status = materialStatuses[Math.floor(Math.random() * materialStatuses.length)];
+      const supplier = suppliers[Math.floor(Math.random() * suppliers.length)];
+      const unit = units[Math.floor(Math.random() * units.length)];
+
+      const quantityRequired = Math.floor(Math.random() * 500) + 100;
+      const quantityAvailable = status === 'shortage'
+        ? Math.floor(quantityRequired * 0.3)
+        : Math.floor(quantityRequired * (0.5 + Math.random() * 0.5));
+      const quantityUsed = status === 'in_use'
+        ? Math.floor(quantityAvailable * (0.2 + Math.random() * 0.3))
+        : 0;
+
+      await materialsCollection.create((record: any) => {
+        record.name = materialName;
+        record.itemId = item.id;
+        record.quantityRequired = quantityRequired;
+        record.quantityAvailable = quantityAvailable;
+        record.quantityUsed = quantityUsed;
+        record.unit = unit;
+        record.status = status;
+        record.supplier = supplier;
+        record.procurementManagerId = ''; // Can be linked later
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      materialsCount++;
+    }
+  });
+
+  return {
+    materialsCreated: materialsCount,
+    inventoryItemsCreated: 0, // Not supported yet - no inventory_items table
+    deliveriesCreated: 0, // Not supported yet - no deliveries table
+    equipmentCreated: 0, // Not supported yet - no equipment table
+  };
+}
+
+export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData, generateManagerDemoData, generateLogisticsDemoData };
