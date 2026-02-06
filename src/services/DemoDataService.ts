@@ -21,6 +21,11 @@ import DoorsPackageModel from '../../models/DoorsPackageModel';
 import RfqModel from '../../models/RfqModel';
 import DesignDocumentModel from '../../models/DesignDocumentModel';
 import DesignDocumentCategoryModel from '../../models/DesignDocumentCategoryModel';
+import HindranceModel from '../../models/HindranceModel';
+import SiteInspectionModel from '../../models/SiteInspectionModel';
+import MaterialModel from '../../models/MaterialModel';
+import ProgressLogModel from '../../models/ProgressLogModel';
+import DailyReportModel from '../../models/DailyReportModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -38,6 +43,16 @@ export interface DesignerDemoDataResult {
   designRfqsCreated: number;
   designDocumentsCreated: number;
   designDocCategoriesCreated: number;
+}
+
+export interface SupervisorDemoDataResult {
+  sitesCreated: number;
+  itemsCreated: number;
+  progressLogsCreated: number;
+  dailyReportsCreated: number;
+  hindrancesCreated: number;
+  materialsCreated: number;
+  inspectionsCreated: number;
 }
 
 // ─── Key Date definitions ────────────────────────────────────────
@@ -832,4 +847,339 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
   };
 }
 
-export default { generatePlannerDemoData, generateDesignerDemoData };
+// ─── Supervisor Demo Data Definitions ─────────────────────────────
+
+interface SupervisorSiteDef {
+  name: string;
+  location: string;
+}
+
+const SUPERVISOR_SITES: SupervisorSiteDef[] = [
+  { name: 'Site Alpha', location: 'Block A, North Sector' },
+  { name: 'Site Beta', location: 'Block B, South Sector' },
+  { name: 'Site Gamma', location: 'Block C, Central Area' },
+];
+
+interface SupervisorItemDef {
+  name: string;
+  phase: ProjectPhase;
+  quantity: number;
+  completedQuantity: number;
+  unit: string;
+  weightage: number;
+  status: string;
+  categoryIndex: number;
+}
+
+// Items per site
+const SUPERVISOR_ITEMS: SupervisorItemDef[][] = [
+  // Site Alpha items
+  [
+    { name: 'Earthwork Excavation', phase: 'site_prep', quantity: 500, completedQuantity: 350, unit: 'cum', weightage: 10, status: 'in_progress', categoryIndex: 0 },
+    { name: 'PCC for Foundation', phase: 'construction', quantity: 200, completedQuantity: 200, unit: 'cum', weightage: 15, status: 'completed', categoryIndex: 0 },
+    { name: 'RCC Foundation', phase: 'construction', quantity: 300, completedQuantity: 150, unit: 'cum', weightage: 20, status: 'in_progress', categoryIndex: 0 },
+    { name: 'Cable Trench Work', phase: 'construction', quantity: 100, completedQuantity: 0, unit: 'm', weightage: 8, status: 'not_started', categoryIndex: 1 },
+  ],
+  // Site Beta items
+  [
+    { name: 'Site Clearing', phase: 'site_prep', quantity: 1000, completedQuantity: 1000, unit: 'sqm', weightage: 5, status: 'completed', categoryIndex: 0 },
+    { name: 'Pile Foundation', phase: 'construction', quantity: 20, completedQuantity: 12, unit: 'nos', weightage: 25, status: 'in_progress', categoryIndex: 0 },
+    { name: 'Structural Steel', phase: 'construction', quantity: 50, completedQuantity: 0, unit: 'MT', weightage: 20, status: 'not_started', categoryIndex: 0 },
+    { name: 'Electrical Panel Installation', phase: 'commissioning', quantity: 4, completedQuantity: 0, unit: 'nos', weightage: 15, status: 'not_started', categoryIndex: 1 },
+  ],
+  // Site Gamma items
+  [
+    { name: 'Boundary Wall Construction', phase: 'construction', quantity: 150, completedQuantity: 100, unit: 'm', weightage: 12, status: 'in_progress', categoryIndex: 0 },
+    { name: 'Control Room Building', phase: 'construction', quantity: 1, completedQuantity: 0, unit: 'lot', weightage: 30, status: 'not_started', categoryIndex: 0 },
+    { name: 'Equipment Foundation', phase: 'construction', quantity: 80, completedQuantity: 40, unit: 'cum', weightage: 18, status: 'in_progress', categoryIndex: 0 },
+    { name: 'Pre-commissioning Tests', phase: 'testing', quantity: 1, completedQuantity: 0, unit: 'lot', weightage: 10, status: 'not_started', categoryIndex: 2 },
+  ],
+];
+
+interface HindranceDef {
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  siteIndex: number;
+  itemIndex: number | null;
+}
+
+const HINDRANCES: HindranceDef[] = [
+  { title: 'Material Delay - Cement', description: 'Cement supply delayed by 5 days due to transportation issues', priority: 'high', status: 'open', siteIndex: 0, itemIndex: 2 },
+  { title: 'Weather Disruption', description: 'Heavy rain causing waterlogging at excavation site', priority: 'medium', status: 'in_progress', siteIndex: 0, itemIndex: 0 },
+  { title: 'Manpower Shortage', description: 'Electricians not available for cable work', priority: 'high', status: 'open', siteIndex: 1, itemIndex: 3 },
+  { title: 'Drawing Approval Pending', description: 'Structural drawings awaiting client approval', priority: 'medium', status: 'resolved', siteIndex: 1, itemIndex: 2 },
+  { title: 'Equipment Breakdown', description: 'Crane maintenance required, affecting lifting operations', priority: 'high', status: 'in_progress', siteIndex: 2, itemIndex: 1 },
+];
+
+interface MaterialDef {
+  name: string;
+  quantityRequired: number;
+  quantityAvailable: number;
+  quantityUsed: number;
+  unit: string;
+  status: string;
+  supplier: string;
+  siteIndex: number;
+  itemIndex: number;
+}
+
+const MATERIALS: MaterialDef[] = [
+  { name: 'OPC Cement 53 Grade', quantityRequired: 500, quantityAvailable: 300, quantityUsed: 150, unit: 'bags', status: 'in_use', supplier: 'UltraTech Cement', siteIndex: 0, itemIndex: 2 },
+  { name: 'TMT Steel Bars 16mm', quantityRequired: 20, quantityAvailable: 20, quantityUsed: 8, unit: 'MT', status: 'delivered', supplier: 'SAIL', siteIndex: 0, itemIndex: 2 },
+  { name: 'River Sand', quantityRequired: 100, quantityAvailable: 50, quantityUsed: 30, unit: 'cum', status: 'shortage', supplier: 'Local Supplier', siteIndex: 0, itemIndex: 1 },
+  { name: 'Structural Steel Sections', quantityRequired: 50, quantityAvailable: 0, quantityUsed: 0, unit: 'MT', status: 'ordered', supplier: 'Tata Steel', siteIndex: 1, itemIndex: 2 },
+  { name: 'Pile Concrete M30', quantityRequired: 200, quantityAvailable: 100, quantityUsed: 60, unit: 'cum', status: 'in_use', supplier: 'RMC Plant', siteIndex: 1, itemIndex: 1 },
+  { name: 'Concrete Blocks', quantityRequired: 2000, quantityAvailable: 1500, quantityUsed: 800, unit: 'nos', status: 'in_use', supplier: 'Block Factory', siteIndex: 2, itemIndex: 0 },
+];
+
+interface InspectionDef {
+  inspectionType: string;
+  overallRating: string;
+  safetyFlagged: boolean;
+  notes: string;
+  siteIndex: number;
+  daysAgo: number;
+}
+
+const INSPECTIONS: InspectionDef[] = [
+  { inspectionType: 'daily', overallRating: 'good', safetyFlagged: false, notes: 'Work progressing as per schedule. Housekeeping satisfactory.', siteIndex: 0, daysAgo: 1 },
+  { inspectionType: 'safety', overallRating: 'fair', safetyFlagged: true, notes: 'PPE compliance needs improvement. Some workers without helmets.', siteIndex: 0, daysAgo: 3 },
+  { inspectionType: 'weekly', overallRating: 'good', safetyFlagged: false, notes: 'Pile work quality verified. Lab test reports satisfactory.', siteIndex: 1, daysAgo: 2 },
+  { inspectionType: 'quality', overallRating: 'excellent', safetyFlagged: false, notes: 'Concrete cube strength meets specifications. Good workmanship.', siteIndex: 2, daysAgo: 4 },
+];
+
+// Sample checklist data for inspections
+const SAMPLE_CHECKLIST = JSON.stringify({
+  'Safety': [
+    { item: 'PPE Compliance', status: 'pass' },
+    { item: 'Barricading', status: 'pass' },
+    { item: 'First Aid Kit', status: 'pass' },
+    { item: 'Fire Extinguisher', status: 'na' },
+  ],
+  'Quality': [
+    { item: 'Material Storage', status: 'pass' },
+    { item: 'Concrete Mixing', status: 'pass' },
+    { item: 'Reinforcement Placement', status: 'fail' },
+  ],
+  'Housekeeping': [
+    { item: 'Site Cleanliness', status: 'pass' },
+    { item: 'Waste Disposal', status: 'pass' },
+  ],
+});
+
+// ─── Supervisor Demo Data Generator ───────────────────────────────
+
+/**
+ * Generates realistic Supervisor demo data for a given project.
+ *
+ * Creates:
+ * - 3 Sites
+ * - 12 Items across sites (with progress)
+ * - 6 Progress Logs
+ * - 2 Daily Reports
+ * - 5 Hindrances
+ * - 6 Materials
+ * - 4 Site Inspections
+ *
+ * All records are created in a single atomic database.write() transaction.
+ */
+export async function generateSupervisorDemoData(projectId: string): Promise<SupervisorDemoDataResult> {
+  const createdSites: SiteModel[] = [];
+  const createdItems: ItemModel[][] = [[], [], []]; // Items per site
+  const createdCategories: CategoryModel[] = [];
+  let progressLogCount = 0;
+  let dailyReportCount = 0;
+  let hindranceCount = 0;
+  let materialCount = 0;
+  let inspectionCount = 0;
+
+  await database.write(async () => {
+    const sitesCollection = database.collections.get<SiteModel>('sites');
+    const itemsCollection = database.collections.get<ItemModel>('items');
+    const categoriesCollection = database.collections.get<CategoryModel>('categories');
+    const progressLogsCollection = database.collections.get<ProgressLogModel>('progress_logs');
+    const dailyReportsCollection = database.collections.get<DailyReportModel>('daily_reports');
+    const hindrancesCollection = database.collections.get<HindranceModel>('hindrances');
+    const materialsCollection = database.collections.get<MaterialModel>('materials');
+    const inspectionsCollection = database.collections.get<SiteInspectionModel>('site_inspections');
+
+    // 1. Create/Find Categories
+    const existingCategories = await categoriesCollection.query().fetch();
+    if (existingCategories.length >= 3) {
+      createdCategories.push(...existingCategories.slice(0, 3) as CategoryModel[]);
+    } else {
+      // Create categories if they don't exist
+      for (const catDef of CATEGORIES) {
+        const cat = await categoriesCollection.create((record: any) => {
+          record.name = catDef.name;
+          record.description = catDef.description;
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+        createdCategories.push(cat);
+      }
+    }
+
+    // 2. Create Sites
+    for (const siteDef of SUPERVISOR_SITES) {
+      const site = await sitesCollection.create((record: any) => {
+        record.name = siteDef.name;
+        record.location = siteDef.location;
+        record.projectId = projectId;
+        record.plannedStartDate = daysFromNow(-30);
+        record.plannedEndDate = daysFromNow(180);
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      createdSites.push(site);
+    }
+
+    // 3. Create Items per site
+    for (let siteIdx = 0; siteIdx < createdSites.length; siteIdx++) {
+      const site = createdSites[siteIdx];
+      const itemDefs = SUPERVISOR_ITEMS[siteIdx];
+
+      for (const itemDef of itemDefs) {
+        const item = await itemsCollection.create((record: any) => {
+          record.name = itemDef.name;
+          record.categoryId = createdCategories[itemDef.categoryIndex]?.id || '';
+          record.siteId = site.id;
+          record.projectPhase = itemDef.phase;
+          record.plannedQuantity = itemDef.quantity;
+          record.completedQuantity = itemDef.completedQuantity;
+          record.unitOfMeasurement = itemDef.unit;
+          record.weightage = itemDef.weightage;
+          record.status = itemDef.status;
+          record.plannedStartDate = daysFromNow(-15);
+          record.plannedEndDate = daysFromNow(60);
+          record.createdByRole = 'supervisor';
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+        createdItems[siteIdx].push(item);
+      }
+    }
+
+    // 4. Create Progress Logs for items with progress
+    for (let siteIdx = 0; siteIdx < createdSites.length; siteIdx++) {
+      const items = createdItems[siteIdx];
+      for (const item of items) {
+        if (item.completedQuantity > 0) {
+          // Create a progress log entry
+          await progressLogsCollection.create((record: any) => {
+            record.itemId = item.id;
+            record.date = daysFromNow(-Math.floor(Math.random() * 7));
+            record.completedQuantity = item.completedQuantity;
+            record.reportedBy = 'supervisor';
+            record.photos = '[]';
+            record.notes = `Progress update for ${item.name}. Work proceeding as planned.`;
+            record.appSyncStatus = 'pending';
+            record.version = 1;
+          });
+          progressLogCount++;
+        }
+      }
+    }
+
+    // 5. Create Daily Reports
+    for (let i = 0; i < 2; i++) {
+      const siteIdx = i % createdSites.length;
+      const site = createdSites[siteIdx];
+      const itemsUpdated = createdItems[siteIdx].filter(item => item.completedQuantity > 0).length;
+
+      await dailyReportsCollection.create((record: any) => {
+        record.siteId = site.id;
+        record.supervisorId = 'supervisor';
+        record.reportDate = daysFromNow(-i - 1);
+        record.submittedAt = daysFromNow(-i - 1);
+        record.totalItems = itemsUpdated;
+        record.totalProgress = Math.floor(Math.random() * 30) + 40;
+        record.pdfPath = '';
+        record.notes = `Daily progress report for ${site.name}. ${itemsUpdated} items updated.`;
+        record.pdfGenerationStatus = 'pending';
+        record.pdfGenerationAttempts = 0;
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      dailyReportCount++;
+    }
+
+    // 6. Create Hindrances
+    for (const hindranceDef of HINDRANCES) {
+      const site = createdSites[hindranceDef.siteIndex];
+      const item = hindranceDef.itemIndex !== null ? createdItems[hindranceDef.siteIndex][hindranceDef.itemIndex] : null;
+
+      await hindrancesCollection.create((record: any) => {
+        record.title = hindranceDef.title;
+        record.description = hindranceDef.description;
+        record.siteId = site.id;
+        record.itemId = item?.id || '';
+        record.priority = hindranceDef.priority;
+        record.status = hindranceDef.status;
+        record.assignedTo = '';
+        record.reportedBy = 'supervisor';
+        record.reportedAt = daysFromNow(-Math.floor(Math.random() * 5));
+        record.photos = '[]';
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      hindranceCount++;
+    }
+
+    // 7. Create Materials
+    for (const materialDef of MATERIALS) {
+      const item = createdItems[materialDef.siteIndex][materialDef.itemIndex];
+
+      await materialsCollection.create((record: any) => {
+        record.name = materialDef.name;
+        record.itemId = item.id;
+        record.quantityRequired = materialDef.quantityRequired;
+        record.quantityAvailable = materialDef.quantityAvailable;
+        record.quantityUsed = materialDef.quantityUsed;
+        record.unit = materialDef.unit;
+        record.status = materialDef.status;
+        record.supplier = materialDef.supplier;
+        record.procurementManagerId = '';
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      materialCount++;
+    }
+
+    // 8. Create Site Inspections
+    for (const inspectionDef of INSPECTIONS) {
+      const site = createdSites[inspectionDef.siteIndex];
+
+      await inspectionsCollection.create((record: any) => {
+        record.siteId = site.id;
+        record.inspectorId = 'supervisor';
+        record.inspectionDate = daysFromNow(-inspectionDef.daysAgo);
+        record.inspectionType = inspectionDef.inspectionType;
+        record.overallRating = inspectionDef.overallRating;
+        record.checklistData = SAMPLE_CHECKLIST;
+        record.photos = '[]';
+        record.safetyFlagged = inspectionDef.safetyFlagged;
+        record.followUpDate = inspectionDef.safetyFlagged ? daysFromNow(7) : 0;
+        record.followUpNotes = inspectionDef.safetyFlagged ? 'Follow up required for safety compliance' : '';
+        record.notes = inspectionDef.notes;
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      inspectionCount++;
+    }
+  });
+
+  return {
+    sitesCreated: createdSites.length,
+    itemsCreated: createdItems.flat().length,
+    progressLogsCreated: progressLogCount,
+    dailyReportsCreated: dailyReportCount,
+    hindrancesCreated: hindranceCount,
+    materialsCreated: materialCount,
+    inspectionsCreated: inspectionCount,
+  };
+}
+
+export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData };
