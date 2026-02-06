@@ -120,7 +120,7 @@ const CommercialTabNavigator: React.FC = memo(() => {
         component={CommercialDashboardScreen}
         options={{
           title: 'Dashboard',
-          headerTitle: 'Commercial Dashboard',
+          headerTitle: 'Dashboard',
         }}
       />
       <Tab.Screen
