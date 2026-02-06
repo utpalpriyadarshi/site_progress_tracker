@@ -51,8 +51,6 @@ import RfqListScreen from '../logistics/RfqListScreen';
 import RfqCreateScreen from '../logistics/RfqCreateScreen';
 import RfqDetailScreen from '../logistics/RfqDetailScreen';
 
-import { useAuth } from '../auth/AuthContext';
-
 // ==================== Type Definitions ====================
 
 export type RootStackParamList = {
