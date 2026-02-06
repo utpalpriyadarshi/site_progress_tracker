@@ -56,7 +56,7 @@ export const SupervisorHeader: React.FC<SupervisorHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#673AB7',
   },
   logoutButton: {
     marginRight: 12,
