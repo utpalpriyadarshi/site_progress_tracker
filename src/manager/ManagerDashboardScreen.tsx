@@ -30,9 +30,13 @@ import {
 import { database } from '../../models/database';
 import { useManagerContext } from './context/ManagerContext';
 import { Q } from '@nozbe/watermelondb';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import TutorialModal from '../tutorial/TutorialModal';
+import managerTutorialSteps from '../tutorial/managerTutorialSteps';
+import TutorialService from '../services/TutorialService';
 import {
   EngineeringSection,
   SiteProgressSection,
@@ -175,9 +179,15 @@ interface HandoverData {
 const ManagerDashboardScreen = () => {
   const { projectId } = useManagerContext();
   const navigation = useNavigation();
+  const route = useRoute<any>();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
   const [stats, setStats] = useState<ProjectStats>({
     overallCompletion: 0,
     sitesOnSchedule: 0,
@@ -308,6 +318,47 @@ const ManagerDashboardScreen = () => {
     await loadDashboardData();
     setRefreshing(false);
   };
+
+  // Check if tutorial should be shown on mount or when triggered from header menu
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      // Triggered from header menu "Tutorial" item
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+      // First-login auto-show
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'manager');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'manager');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'manager', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'manager');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'manager', step);
+    }
+  }, [user]);
 
   const loadProjectInfo = async () => {
     if (!projectId) return;
@@ -1349,6 +1400,7 @@ const ManagerDashboardScreen = () => {
   const health = getHealthStatus();
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -1683,6 +1735,16 @@ const ManagerDashboardScreen = () => {
         <HandoverSection data={handoverData} />
       </View>
     </ScrollView>
+
+    <TutorialModal
+      visible={showTutorial}
+      steps={managerTutorialSteps}
+      initialStep={tutorialInitialStep}
+      onDismiss={handleTutorialDismiss}
+      onComplete={handleTutorialComplete}
+      onStepChange={handleTutorialStepChange}
+    />
+    </>
   );
 };
 

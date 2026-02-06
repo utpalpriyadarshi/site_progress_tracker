@@ -8,7 +8,7 @@ import { AuthProvider } from '../auth/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import AdminNavigator from './AdminNavigator';
 import SupervisorDrawerNavigator from './SupervisorDrawerNavigator';
-import ManagerNavigator from './ManagerNavigator';
+import ManagerDrawerNavigator from './ManagerDrawerNavigator';
 import PlanningNavigator from './PlanningNavigator';
 import LogisticsNavigator from './LogisticsNavigator';
 import DesignEngineerNavigator from './DesignEngineerNavigator';
@@ -113,7 +113,7 @@ const MainNavigator = () => {
           />
           <Stack.Screen
             name="Manager"
-            component={ManagerNavigator}
+            component={ManagerDrawerNavigator}
             options={{ headerShown: false }}
           />
           <Stack.Screen

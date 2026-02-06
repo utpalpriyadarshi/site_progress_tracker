@@ -26,6 +26,10 @@ import SiteInspectionModel from '../../models/SiteInspectionModel';
 import MaterialModel from '../../models/MaterialModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
 import DailyReportModel from '../../models/DailyReportModel';
+import PurchaseOrderModel from '../../models/PurchaseOrderModel';
+import BomModel from '../../models/BomModel';
+import BomItemModel from '../../models/BomItemModel';
+import VendorModel from '../../models/VendorModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -53,6 +57,13 @@ export interface SupervisorDemoDataResult {
   hindrancesCreated: number;
   materialsCreated: number;
   inspectionsCreated: number;
+}
+
+export interface ManagerDemoDataResult {
+  purchaseOrdersCreated: number;
+  vendorsCreated: number;
+  bomsCreated: number;
+  bomItemsCreated: number;
 }
 
 // ─── Key Date definitions ────────────────────────────────────────
@@ -1196,4 +1207,361 @@ export async function generateSupervisorDemoData(projectId: string, supervisorId
   };
 }
 
-export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData };
+// ─── Manager Demo Data Definitions ──────────────────────────────
+
+interface VendorDef {
+  vendorCode: string;
+  vendorName: string;
+  category: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  isApproved: boolean;
+  performanceScore: number;
+  totalOrders: number;
+}
+
+const MANAGER_VENDORS: VendorDef[] = [
+  {
+    vendorCode: 'VND-PT-001',
+    vendorName: 'PowerTech Industries',
+    category: 'Electrical Equipment',
+    contactPerson: 'Rajesh Kumar',
+    email: 'rajesh@powertech.com',
+    phone: '+91-9876543210',
+    isApproved: true,
+    performanceScore: 88,
+    totalOrders: 12,
+  },
+  {
+    vendorCode: 'VND-SG-002',
+    vendorName: 'SwitchGear Solutions',
+    category: 'Switchgear & Panels',
+    contactPerson: 'Priya Sharma',
+    email: 'priya@switchgear.com',
+    phone: '+91-9876543211',
+    isApproved: true,
+    performanceScore: 92,
+    totalOrders: 8,
+  },
+  {
+    vendorCode: 'VND-CC-003',
+    vendorName: 'CableCo International',
+    category: 'Cables & Wiring',
+    contactPerson: 'Amit Patel',
+    email: 'amit@cableco.com',
+    phone: '+91-9876543212',
+    isApproved: true,
+    performanceScore: 75,
+    totalOrders: 15,
+  },
+];
+
+interface PurchaseOrderDef {
+  poNumber: string;
+  vendorIndex: number;
+  poValue: number;
+  currency: string;
+  status: string;
+  expectedDeliveryDayOffset: number;
+  actualDeliveryDayOffset: number | null;
+  itemsDetails: string;
+  notes: string;
+}
+
+const MANAGER_POS: PurchaseOrderDef[] = [
+  {
+    poNumber: 'PO-MGR-2026-001',
+    vendorIndex: 0,
+    poValue: 2500000,
+    currency: 'INR',
+    status: 'delivered',
+    expectedDeliveryDayOffset: -10,
+    actualDeliveryDayOffset: -8,
+    itemsDetails: JSON.stringify([
+      { description: 'Auxiliary Transformer 1000kVA', quantity: 2, unitPrice: 1250000 },
+    ]),
+    notes: 'Delivered on schedule. Quality inspection passed.',
+  },
+  {
+    poNumber: 'PO-MGR-2026-002',
+    vendorIndex: 1,
+    poValue: 1800000,
+    currency: 'INR',
+    status: 'in_progress',
+    expectedDeliveryDayOffset: 30,
+    actualDeliveryDayOffset: null,
+    itemsDetails: JSON.stringify([
+      { description: '33kV GIS Switchgear Panel', quantity: 3, unitPrice: 600000 },
+    ]),
+    notes: 'Manufacturing in progress. FAT scheduled.',
+  },
+  {
+    poNumber: 'PO-MGR-2026-003',
+    vendorIndex: 2,
+    poValue: 950000,
+    currency: 'INR',
+    status: 'issued',
+    expectedDeliveryDayOffset: 60,
+    actualDeliveryDayOffset: null,
+    itemsDetails: JSON.stringify([
+      { description: 'Cu-Mg Contact Wire 107mm²', quantity: 5000, unitPrice: 190 },
+    ]),
+    notes: 'PO issued. Vendor confirmed receipt.',
+  },
+  {
+    poNumber: 'PO-MGR-2026-004',
+    vendorIndex: 0,
+    poValue: 350000,
+    currency: 'INR',
+    status: 'draft',
+    expectedDeliveryDayOffset: 90,
+    actualDeliveryDayOffset: null,
+    itemsDetails: JSON.stringify([
+      { description: 'Control Panel Components', quantity: 4, unitPrice: 87500 },
+    ]),
+    notes: 'Draft PO pending approval.',
+  },
+  {
+    poNumber: 'PO-MGR-2026-005',
+    vendorIndex: 1,
+    poValue: 1200000,
+    currency: 'INR',
+    status: 'in_progress',
+    expectedDeliveryDayOffset: -5,
+    actualDeliveryDayOffset: null,
+    itemsDetails: JSON.stringify([
+      { description: 'Protection Relay Panels', quantity: 6, unitPrice: 200000 },
+    ]),
+    notes: 'OVERDUE - Vendor notified. Expediting delivery.',
+  },
+];
+
+interface BomDef {
+  name: string;
+  type: string;
+  status: string;
+  version: string;
+  siteCategory: string;
+  totalEstimatedCost: number;
+  totalActualCost: number;
+  quantity: number;
+  unit: string;
+  contingency: number;
+  profitMargin: number;
+}
+
+const MANAGER_BOMS: BomDef[] = [
+  {
+    name: 'TSS Main Equipment BOM v2.0',
+    type: 'execution',
+    status: 'active',
+    version: 'v2.0',
+    siteCategory: 'TSS',
+    totalEstimatedCost: 4500000,
+    totalActualCost: 2800000,
+    quantity: 1,
+    unit: 'lot',
+    contingency: 5,
+    profitMargin: 12,
+  },
+  {
+    name: 'OHE Cable & Mast BOM v1.0',
+    type: 'execution',
+    status: 'active',
+    version: 'v1.0',
+    siteCategory: 'OHE',
+    totalEstimatedCost: 3200000,
+    totalActualCost: 1500000,
+    quantity: 1,
+    unit: 'lot',
+    contingency: 8,
+    profitMargin: 10,
+  },
+  {
+    name: 'SCADA System Estimate v1.0',
+    type: 'estimating',
+    status: 'draft',
+    version: 'v1.0',
+    siteCategory: 'SCADA',
+    totalEstimatedCost: 2000000,
+    totalActualCost: 0,
+    quantity: 1,
+    unit: 'lot',
+    contingency: 10,
+    profitMargin: 15,
+  },
+];
+
+interface BomItemDef {
+  bomIndex: number;
+  itemCode: string;
+  description: string;
+  category: string;
+  subCategory: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  actualQuantity: number;
+  actualCost: number;
+}
+
+const MANAGER_BOM_ITEMS: BomItemDef[] = [
+  // TSS BOM items
+  { bomIndex: 0, itemCode: 'MAT-TSS-001', description: 'Auxiliary Transformer 1000kVA', category: 'material', subCategory: 'electrical', quantity: 4, unit: 'nos', unitCost: 1250000, actualQuantity: 2, actualCost: 2500000 },
+  { bomIndex: 0, itemCode: 'LAB-TSS-001', description: 'Transformer Installation Labour', category: 'labor', subCategory: 'electrical', quantity: 200, unit: 'hrs', unitCost: 850, actualQuantity: 100, actualCost: 85000 },
+  { bomIndex: 0, itemCode: 'EQP-TSS-001', description: 'Crane Hire for Erection', category: 'equipment', subCategory: 'heavy', quantity: 10, unit: 'days', unitCost: 25000, actualQuantity: 5, actualCost: 125000 },
+  { bomIndex: 0, itemCode: 'SUB-TSS-001', description: 'Civil Foundation Subcontract', category: 'subcontractor', subCategory: 'civil', quantity: 1, unit: 'lot', unitCost: 450000, actualQuantity: 1, actualCost: 450000 },
+  // OHE BOM items
+  { bomIndex: 1, itemCode: 'MAT-OHE-001', description: 'Contact Wire Cu-Mg 107mm²', category: 'material', subCategory: 'cables', quantity: 25000, unit: 'meters', unitCost: 190, actualQuantity: 12000, actualCost: 2280000 },
+  { bomIndex: 1, itemCode: 'MAT-OHE-002', description: 'OHE Mast 9m', category: 'material', subCategory: 'structural', quantity: 120, unit: 'nos', unitCost: 18000, actualQuantity: 50, actualCost: 900000 },
+  { bomIndex: 1, itemCode: 'LAB-OHE-001', description: 'Mast Erection Labour', category: 'labor', subCategory: 'structural', quantity: 600, unit: 'hrs', unitCost: 750, actualQuantity: 250, actualCost: 187500 },
+  // SCADA BOM items
+  { bomIndex: 2, itemCode: 'MAT-SCADA-001', description: 'Remote Terminal Unit', category: 'material', subCategory: 'electronics', quantity: 8, unit: 'nos', unitCost: 150000, actualQuantity: 0, actualCost: 0 },
+  { bomIndex: 2, itemCode: 'MAT-SCADA-002', description: 'SCADA Server & Software', category: 'material', subCategory: 'IT', quantity: 2, unit: 'nos', unitCost: 350000, actualQuantity: 0, actualCost: 0 },
+  { bomIndex: 2, itemCode: 'SUB-SCADA-001', description: 'SCADA Integration & Commissioning', category: 'subcontractor', subCategory: 'IT', quantity: 1, unit: 'lot', unitCost: 500000, actualQuantity: 0, actualCost: 0 },
+];
+
+// ─── Manager Demo Data Generator ──────────────────────────────
+
+/**
+ * Generates realistic Manager demo data for a given project.
+ *
+ * Creates:
+ * - 3 Vendors (PowerTech Industries, SwitchGear Solutions, CableCo International)
+ * - 5 Purchase Orders with mixed statuses (draft, issued, in_progress, delivered) + 1 overdue
+ * - 3 BOMs (2 execution/active, 1 estimating/draft)
+ * - 10 BOM Items across the 3 BOMs (materials, labor, equipment, subcontractor categories)
+ *
+ * Links POs to existing RFQs if Designer demo data was run first (graceful fallback).
+ *
+ * All records are created in a single atomic database.write() transaction.
+ */
+export async function generateManagerDemoData(projectId: string): Promise<ManagerDemoDataResult> {
+  const createdVendors: VendorModel[] = [];
+  const createdBoms: BomModel[] = [];
+  let poCount = 0;
+  let bomItemCount = 0;
+
+  await database.write(async () => {
+    const vendorsCollection = database.collections.get<VendorModel>('vendors');
+    const posCollection = database.collections.get<PurchaseOrderModel>('purchase_orders');
+    const bomsCollection = database.collections.get<BomModel>('boms');
+    const bomItemsCollection = database.collections.get<BomItemModel>('bom_items');
+
+    // 1. Create Vendors
+    for (const vendorDef of MANAGER_VENDORS) {
+      const vendor = await vendorsCollection.create((record: any) => {
+        record.vendorCode = vendorDef.vendorCode;
+        record.vendorName = vendorDef.vendorName;
+        record.category = vendorDef.category;
+        record.contactPerson = vendorDef.contactPerson;
+        record.email = vendorDef.email;
+        record.phone = vendorDef.phone;
+        record.isApproved = vendorDef.isApproved;
+        record.performanceScore = vendorDef.performanceScore;
+        record.totalOrders = vendorDef.totalOrders;
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      createdVendors.push(vendor);
+    }
+
+    // 2. Try to find existing RFQs from Designer demo data (graceful fallback)
+    let existingRfqIds: string[] = [];
+    try {
+      const rfqs = await database.collections.get('rfqs').query().fetch();
+      existingRfqIds = rfqs.map(r => r.id);
+    } catch {
+      // No RFQs available - that's fine
+    }
+
+    // 3. Create Purchase Orders
+    for (let i = 0; i < MANAGER_POS.length; i++) {
+      const poDef = MANAGER_POS[i];
+      const vendor = createdVendors[poDef.vendorIndex];
+
+      await posCollection.create((record: any) => {
+        record.poNumber = poDef.poNumber;
+        record.rfqId = existingRfqIds.length > i ? existingRfqIds[i] : '';
+        record.vendorId = vendor.id;
+        record.projectId = projectId;
+        record.poDate = daysFromNow(-30);
+        record.poValue = poDef.poValue;
+        record.currency = poDef.currency;
+        record.paymentTerms = '30 days net';
+        record.deliveryTerms = 'Ex-works';
+        record.expectedDeliveryDate = daysFromNow(poDef.expectedDeliveryDayOffset);
+        if (poDef.actualDeliveryDayOffset !== null) {
+          record.actualDeliveryDate = daysFromNow(poDef.actualDeliveryDayOffset);
+        }
+        record.status = poDef.status;
+        record.itemsDetails = poDef.itemsDetails;
+        record.notes = poDef.notes;
+        record.createdById = 'manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      poCount++;
+    }
+
+    // 4. Create BOMs
+    for (const bomDef of MANAGER_BOMS) {
+      const bom = await bomsCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.name = bomDef.name;
+        record.type = bomDef.type;
+        record.status = bomDef.status;
+        record.version = bomDef.version;
+        record.siteCategory = bomDef.siteCategory;
+        record.quantity = bomDef.quantity;
+        record.unit = bomDef.unit;
+        record.contingency = bomDef.contingency;
+        record.profitMargin = bomDef.profitMargin;
+        record.totalEstimatedCost = bomDef.totalEstimatedCost;
+        record.totalActualCost = bomDef.totalActualCost;
+        record.createdBy = 'manager';
+        record.createdDate = Date.now();
+        record.updatedDate = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      createdBoms.push(bom);
+    }
+
+    // 5. Create BOM Items
+    for (const itemDef of MANAGER_BOM_ITEMS) {
+      const bom = createdBoms[itemDef.bomIndex];
+      const totalCost = itemDef.quantity * itemDef.unitCost;
+
+      await bomItemsCollection.create((record: any) => {
+        record.bomId = bom.id;
+        record.itemCode = itemDef.itemCode;
+        record.description = itemDef.description;
+        record.category = itemDef.category;
+        record.subCategory = itemDef.subCategory;
+        record.quantity = itemDef.quantity;
+        record.unit = itemDef.unit;
+        record.unitCost = itemDef.unitCost;
+        record.totalCost = totalCost;
+        record.actualQuantity = itemDef.actualQuantity;
+        record.actualCost = itemDef.actualCost;
+        record.createdDate = Date.now();
+        record.updatedDate = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      bomItemCount++;
+    }
+  });
+
+  return {
+    purchaseOrdersCreated: poCount,
+    vendorsCreated: createdVendors.length,
+    bomsCreated: createdBoms.length,
+    bomItemsCreated: bomItemCount,
+  };
+}
+
+export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData, generateManagerDemoData };
