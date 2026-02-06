@@ -29,11 +29,13 @@ import {
   generateSupervisorDemoData,
   generateManagerDemoData,
   generateLogisticsDemoData,
+  generateCommercialManagerDemoData,
   DemoDataResult,
   DesignerDemoDataResult,
   SupervisorDemoDataResult,
   ManagerDemoDataResult,
   LogisticsDemoDataResult,
+  CommercialManagerDemoDataResult,
 } from '../../../services/DemoDataService';
 
 interface ProjectOption {
@@ -46,7 +48,7 @@ interface SupervisorOption {
   name: string;
 }
 
-type RoleOption = 'planner' | 'design_engineer' | 'supervisor' | 'manager' | 'logistics';
+type RoleOption = 'planner' | 'design_engineer' | 'supervisor' | 'manager' | 'logistics' | 'commercial_manager';
 
 const ROLE_OPTIONS: { value: RoleOption; label: string }[] = [
   { value: 'planner', label: 'Planner' },
@@ -54,6 +56,7 @@ const ROLE_OPTIONS: { value: RoleOption; label: string }[] = [
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'manager', label: 'Manager' },
   { value: 'logistics', label: 'Logistics' },
+  { value: 'commercial_manager', label: 'Commercial Manager' },
 ];
 
 export const DemoDataCard: React.FC = () => {
@@ -129,6 +132,8 @@ export const DemoDataCard: React.FC = () => {
         return `This will create Vendors, Purchase Orders, BOMs, and BOM Items in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
       case 'logistics':
         return `This will create Materials (linked to existing items) in "${selectedProject?.name}".\n\nRequires: Sites and Items (run Planner or Supervisor demo data first).\n\nExisting data will NOT be deleted. Continue?`;
+      case 'commercial_manager':
+        return `This will create Budgets, Costs, and Invoices in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
       default:
         return '';
     }
@@ -152,6 +157,10 @@ export const DemoDataCard: React.FC = () => {
 
   const formatLogisticsResult = (result: LogisticsDemoDataResult): string => {
     return `Successfully created:\n• ${result.materialsCreated} Materials (linked to items)\n\nNote: Inventory, Deliveries, and Equipment features coming soon.\n\nSwitch to Logistics role to view material tracking.`;
+  };
+
+  const formatCommercialManagerResult = (result: CommercialManagerDemoDataResult): string => {
+    return `Successfully created:\n• ${result.budgetsCreated} Budget Categories\n• ${result.costsCreated} Cost Records\n• ${result.invoicesCreated} Invoices\n\nSwitch to Commercial Manager role to view financial data.`;
   };
 
   const handleGenerate = async () => {
@@ -207,6 +216,12 @@ export const DemoDataCard: React.FC = () => {
                   Alert.alert('Demo Data Created', formatLogisticsResult(result));
                   break;
                 }
+                case 'commercial_manager': {
+                  const result = await generateCommercialManagerDemoData(selectedProject.id);
+                  setLastResult(`Commercial: ${result.budgetsCreated} Budgets, ${result.costsCreated} Costs, ${result.invoicesCreated} Invoices`);
+                  Alert.alert('Demo Data Created', formatCommercialManagerResult(result));
+                  break;
+                }
               }
             } catch (error) {
               Alert.alert('Generation Failed', String(error));
@@ -236,6 +251,8 @@ export const DemoDataCard: React.FC = () => {
         return 'Populate a project with realistic Manager demo data — Vendors, Purchase Orders, BOMs, and BOM Items.';
       case 'logistics':
         return 'Populate a project with realistic Logistics demo data — Materials linked to existing items. Requires Planner or Supervisor demo data first.';
+      case 'commercial_manager':
+        return 'Populate a project with realistic Commercial Manager demo data — Budget categories, Cost records, and Invoices for financial tracking.';
       default:
         return '';
     }

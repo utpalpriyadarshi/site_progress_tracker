@@ -12,7 +12,7 @@ import ManagerDrawerNavigator from './ManagerDrawerNavigator';
 import PlanningNavigator from './PlanningNavigator';
 import LogisticsNavigator from './LogisticsNavigator';
 import DesignEngineerNavigator from './DesignEngineerNavigator';
-import CommercialNavigator from './CommercialNavigator';
+import CommercialDrawerNavigator from './CommercialDrawerNavigator';
 
 import { RootStackParamList } from './types';
 
@@ -133,7 +133,7 @@ const MainNavigator = () => {
           />
           <Stack.Screen
             name="CommercialManager"
-            component={CommercialNavigator}
+            component={CommercialDrawerNavigator}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
