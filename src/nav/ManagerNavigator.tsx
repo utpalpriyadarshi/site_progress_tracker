@@ -1,17 +1,16 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { CommonActions, DrawerActions, useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
 import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
-import BomManagementScreen from '../manager/BomManagementScreen';
 import { useAuth } from '../auth/AuthContext';
-import { ManagerProvider } from '../manager/context/ManagerContext';
-import { BomProvider } from '../manager/context/BomContext';
+import type { ManagerDrawerParamList } from './ManagerDrawerNavigator';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -25,70 +24,104 @@ export type RootStackParamList = {
 };
 
 export type ManagerTabParamList = {
-  Dashboard: undefined;
+  Dashboard: { showTutorial?: boolean } | undefined;
   TeamPerformance: undefined;
   FinancialReports: undefined;
   Milestones: undefined;
-  BomManagement: undefined;
-};
-
-type ManagerNavigatorProps = {
-  navigation: StackNavigationProp<RootStackParamList, 'Manager'>;
 };
 
 const Tab = createBottomTabNavigator<ManagerTabParamList>();
 
-const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentNavigation }) => {
+const ManagerTabNavigator: React.FC = () => {
   const { logout } = useAuth();
+  const navigation = useNavigation<DrawerNavigationProp<ManagerDrawerParamList>>();
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
-    parentNavigation.dispatch(
+    navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Auth' }],
+        routes: [{ name: 'Auth' as any }],
       })
     );
-  };
+  }, [logout, navigation]);
+
+  const handleDrawerToggle = useCallback(() => {
+    navigation.dispatch(DrawerActions.toggleDrawer());
+  }, [navigation]);
+
+  // Hamburger menu button
+  const HeaderLeft = useCallback(() => (
+    <TouchableOpacity onPress={handleDrawerToggle} style={styles.headerMenuButton}>
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  ), [handleDrawerToggle]);
+
+  // Logout button
+  const HeaderRight = useCallback(() => (
+    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+      <Text style={styles.headerLogoutText}>Logout</Text>
+    </TouchableOpacity>
+  ), [handleLogout]);
+
+  // Icon getter for tabs
+  const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
+    let iconName = 'help-circle';
+
+    switch (routeName) {
+      case 'Dashboard':
+        iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+        break;
+      case 'TeamPerformance':
+        iconName = focused ? 'account-group' : 'account-group-outline';
+        break;
+      case 'FinancialReports':
+        iconName = focused ? 'currency-usd' : 'currency-usd';
+        break;
+      case 'Milestones':
+        iconName = focused ? 'flag-checkered' : 'flag-outline';
+        break;
+    }
+
+    return <Icon name={iconName} size={size} color={color} />;
+  }, []);
+
+  // Screen options
+  const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
+    tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getTabBarIcon(route.name, focused, color, size),
+    tabBarActiveTintColor: '#673AB7',
+    tabBarInactiveTintColor: 'gray',
+    headerShown: true,
+    headerStyle: {
+      backgroundColor: '#673AB7',
+    },
+    headerTintColor: '#FFF',
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+      fontSize: 20,
+    },
+    headerLeft: HeaderLeft,
+    headerRight: HeaderRight,
+    tabBarStyle: {
+      paddingBottom: 4,
+      height: 56,
+    },
+    tabBarLabelStyle: {
+      fontSize: 11,
+      fontWeight: '500' as const,
+    },
+  }), [getTabBarIcon, HeaderLeft, HeaderRight]);
 
   return (
-    <ManagerProvider>
-      <BomProvider>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-          tabBarIcon: ({ color, size }) => {
-            let iconSymbol = '';
-
-            if (route.name === 'Dashboard') {
-              iconSymbol = '📊';
-            } else if (route.name === 'TeamPerformance') {
-              iconSymbol = '👥';
-            } else if (route.name === 'FinancialReports') {
-              iconSymbol = '💰';
-            } else if (route.name === 'Milestones') {
-              iconSymbol = '🎯';
-            } else if (route.name === 'BomManagement') {
-              iconSymbol = '📋';
-            }
-
-            return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
-          },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-        headerRight: () => (
-          <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
-            <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-          </TouchableOpacity>
-        ),
-      })}
-    >
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
         name="Dashboard"
         component={ManagerDashboardScreen}
         options={{
           title: 'Dashboard',
-          headerShown: true,
-          headerTitle: 'Manager Dashboard',
+          headerTitle: 'Manager',
+          tabBarAccessibilityLabel: 'Dashboard tab, overview of project management',
         }}
       />
       <Tab.Screen
@@ -96,41 +129,48 @@ const ManagerNavigator: React.FC<ManagerNavigatorProps> = ({ navigation: parentN
         component={TeamPerformanceScreen}
         options={{
           title: 'Team',
-          headerShown: true,
-          headerTitle: 'Team Performance',
+          headerTitle: 'Manager',
+          tabBarAccessibilityLabel: 'Team Performance tab',
         }}
       />
-      <Tab.Screen 
-        name="FinancialReports" 
-        component={FinancialReportsScreen} 
-        options={{ 
+      <Tab.Screen
+        name="FinancialReports"
+        component={FinancialReportsScreen}
+        options={{
           title: 'Finance',
-          headerShown: true,
-          headerTitle: 'Financial Reports',
-        }} 
+          headerTitle: 'Manager',
+          tabBarAccessibilityLabel: 'Financial Reports tab',
+        }}
       />
       <Tab.Screen
         name="Milestones"
         component={MilestoneManagementScreen}
         options={{
           title: 'Milestones',
-          headerShown: true,
-          headerTitle: 'Milestone Management',
+          headerTitle: 'Manager',
+          tabBarAccessibilityLabel: 'Milestone Management tab',
         }}
       />
-      <Tab.Screen
-        name="BomManagement"
-        component={BomManagementScreen}
-        options={{
-          title: 'BOM',
-          headerShown: true,
-          headerTitle: 'BOM Management',
-        }}
-      />
-        </Tab.Navigator>
-      </BomProvider>
-    </ManagerProvider>
+    </Tab.Navigator>
   );
 };
 
-export default ManagerNavigator;
+const styles = StyleSheet.create({
+  headerMenuButton: {
+    marginLeft: 15,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  headerLogoutButton: {
+    marginRight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerLogoutText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+});
+
+export default ManagerTabNavigator;
