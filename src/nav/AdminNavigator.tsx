@@ -75,12 +75,19 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
           },
-          tabBarActiveTintColor: '#007AFF',
+          headerStyle: {
+            backgroundColor: '#673AB7',
+          },
+          headerTintColor: '#FFF',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          tabBarActiveTintColor: '#673AB7',
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
               <TouchableOpacity onPress={handleLogout}>
-                <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
+                <Text style={{ color: '#FFF', fontSize: 16 }}>Logout</Text>
               </TouchableOpacity>
             </View>
           ),
