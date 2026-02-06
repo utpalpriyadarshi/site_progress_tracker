@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -6,7 +6,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Text, Appbar } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSiteContext } from '../context/SiteContext';
 import { useAuth } from '../../auth/AuthContext';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -14,6 +14,9 @@ import { MetricCard } from './components/MetricCard';
 import { QuickActionButton } from './components/QuickActionButton';
 import { AlertsSection } from './components/AlertsSection';
 import { EmptyState, SupervisorHeader } from '../../components/common';
+import TutorialModal from '../../tutorial/TutorialModal';
+import supervisorTutorialSteps from '../../tutorial/supervisorTutorialSteps';
+import TutorialService from '../../services/TutorialService';
 
 /**
  * DashboardScreen Component
@@ -25,7 +28,53 @@ const DashboardScreen: React.FC = () => {
   const { supervisorId } = useSiteContext();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { metrics, alerts, loading, error, refresh } = useDashboardData(supervisorId);
+
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+
+  // Check if tutorial should be shown on mount or when triggered from drawer
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      // Triggered from drawer "Tutorial" item
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+      // First-login auto-show
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'supervisor');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'supervisor');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'supervisor', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'supervisor');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'supervisor', step);
+    }
+  }, [user]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -207,6 +256,16 @@ const DashboardScreen: React.FC = () => {
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Tutorial Modal */}
+      <TutorialModal
+        visible={showTutorial}
+        steps={supervisorTutorialSteps}
+        initialStep={tutorialInitialStep}
+        onDismiss={handleTutorialDismiss}
+        onComplete={handleTutorialComplete}
+        onStepChange={handleTutorialStepChange}
+      />
     </View>
   );
 };
