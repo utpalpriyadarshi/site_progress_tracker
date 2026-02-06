@@ -2,14 +2,15 @@
  * ManagerDrawerNavigator
  *
  * Drawer navigation wrapping the Manager tab navigator.
- * Provides a Tutorial restart button in the drawer menu.
+ * Provides BOM Management screen and Tutorial in drawer menu.
  *
  * Structure:
- * - Main Content: ManagerTabNavigator (5 tabs + More)
- * - Drawer Items: Tutorial
+ * - Main Content: ManagerTabNavigator (4 tabs)
+ * - Drawer Items: BOM Management, Tutorial
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since v2.16 - Manager Tutorial & Demo Data
+ * @updated v2.17 - Moved BOM to Drawer, Planner-style Header
  */
 
 import React, { memo, useCallback } from 'react';
@@ -19,16 +20,19 @@ import {
   createDrawerNavigator,
   DrawerContentScrollView,
   DrawerContentComponentProps,
+  DrawerItemList,
 } from '@react-navigation/drawer';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../auth/AuthContext';
 import { ManagerProvider } from '../manager/context/ManagerContext';
 import { BomProvider } from '../manager/context/BomContext';
 import ManagerTabNavigator from './ManagerNavigator';
+import BomManagementScreen from '../manager/BomManagementScreen';
 import TutorialService from '../services/TutorialService';
 
 export type ManagerDrawerParamList = {
   ManagerTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
+  BomManagement: undefined;
 };
 
 const Drawer = createDrawerNavigator<ManagerDrawerParamList>();
@@ -60,6 +64,9 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) 
 
       <Divider />
 
+      {/* Navigation Items */}
+      <DrawerItemList {...props} />
+
       <Divider style={styles.tutorialDivider} />
 
       {/* Tutorial Restart */}
@@ -85,24 +92,49 @@ export const ManagerDrawerNavigator: React.FC = () => {
     []
   );
 
+  const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
+    let iconName = 'clipboard-list';
+    if (routeName === 'BomManagement') {
+      iconName = focused ? 'clipboard-list' : 'clipboard-list-outline';
+    }
+    return <Icon name={iconName} size={size} color={color} />;
+  }, []);
+
+  const screenOptions = useCallback(({ route }: { route: { name: string } }) => ({
+    drawerIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getDrawerIcon(route.name, focused, color, size),
+    drawerActiveTintColor: '#007AFF',
+    drawerInactiveTintColor: '#666',
+    headerShown: false,
+    drawerType: 'front' as const,
+  }), [getDrawerIcon]);
+
   return (
     <ManagerProvider>
       <BomProvider>
         <Drawer.Navigator
           drawerContent={renderDrawerContent}
-          screenOptions={{
-            headerShown: false,
-            drawerType: 'front',
-            drawerStyle: { width: 280 },
-            drawerActiveTintColor: '#007AFF',
-            drawerInactiveTintColor: '#666',
-          }}
+          screenOptions={screenOptions}
         >
           {/* Main content - Tab Navigator (hidden from drawer) */}
           <Drawer.Screen
             name="ManagerTabs"
             component={ManagerTabNavigator}
-            options={{ drawerItemStyle: { display: 'none' } }}
+            options={{
+              drawerItemStyle: { display: 'none' },
+              headerShown: false,
+            }}
+          />
+
+          {/* BOM Management in Drawer */}
+          <Drawer.Screen
+            name="BomManagement"
+            component={BomManagementScreen}
+            options={{
+              title: 'BOM Management',
+              drawerLabel: 'BOM Management',
+              headerShown: false,
+            }}
           />
         </Drawer.Navigator>
       </BomProvider>
