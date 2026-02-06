@@ -65,11 +65,9 @@ const CommercialTabNavigator: React.FC = memo(() => {
   ), [handleDrawerToggle]);
 
   const HeaderRight = useCallback(() => (
-    <View style={styles.headerRightContainer}>
-      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-        <Icon name="logout" size={24} color="#FFF" />
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+      <Text style={styles.headerLogoutText}>Logout</Text>
+    </TouchableOpacity>
   ), [handleLogout]);
 
   const screenOptions = useMemo(() => ({
@@ -122,7 +120,7 @@ const CommercialTabNavigator: React.FC = memo(() => {
         component={CommercialDashboardScreen}
         options={{
           title: 'Dashboard',
-          headerTitle: 'Commercial Dashboard',
+          headerTitle: 'Dashboard',
         }}
       />
       <Tab.Screen
@@ -160,14 +158,15 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     padding: 5,
   },
-  headerRightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 10,
-  },
   headerLogoutButton: {
-    padding: 5,
-    marginLeft: 10,
+    marginRight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerLogoutText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
