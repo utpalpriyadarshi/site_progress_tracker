@@ -86,7 +86,7 @@ const SupervisorTabNavigator: React.FC = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false, // All screens use custom SupervisorHeader
-        tabBarActiveTintColor: '#6200ee',
+        tabBarActiveTintColor: '#673AB7',
         tabBarInactiveTintColor: 'gray',
       }}
     >

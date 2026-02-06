@@ -166,7 +166,7 @@ const PlanningTabs: React.FC = memo(() => {
   const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
-    tabBarActiveTintColor: theme.colors.primary,
+    tabBarActiveTintColor: '#673AB7',
     tabBarInactiveTintColor: 'gray',
     headerShown: false,
     tabBarStyle: {
