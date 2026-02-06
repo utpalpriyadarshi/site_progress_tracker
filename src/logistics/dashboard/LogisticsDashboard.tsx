@@ -17,13 +17,18 @@
  * @since Logistics Phase 3
  */
 
-import React, { useCallback, useReducer, useState } from 'react';
+import React, { useCallback, useReducer, useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { useRoute } from '@react-navigation/native';
 import { useLogisticsContext } from '../context/LogisticsContext';
+import { useAuth } from '../../auth/AuthContext';
 import { EmptyState } from '../../components/common/EmptyState';
 import { OfflineIndicator } from '../../components/common/OfflineIndicator';
 import { dashboardReducer, initialDashboardState } from './dashboardReducer';
+import TutorialModal from '../../tutorial/TutorialModal';
+import logisticsTutorialSteps from '../../tutorial/logisticsTutorialSteps';
+import TutorialService from '../../services/TutorialService';
 import {
   InventoryStatusWidget,
   DeliveryStatusWidget,
@@ -56,6 +61,8 @@ export const LogisticsDashboard: React.FC<LogisticsDashboardProps> = ({
   onNavigateToRfq,
 }) => {
   const theme = useTheme();
+  const route = useRoute<any>();
+  const { user } = useAuth();
   const {
     selectedProjectId,
     selectedProject,
@@ -68,12 +75,57 @@ export const LogisticsDashboard: React.FC<LogisticsDashboardProps> = ({
   const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     dispatch({ type: 'REFRESH_ALL' });
     await refreshContext();
     setRefreshing(false);
   }, [refreshContext]);
+
+  // Check if tutorial should be shown on mount or when triggered from header menu
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      // Triggered from header menu "Tutorial" item
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+      // First-login auto-show
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'logistics');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'logistics');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'logistics', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'logistics');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'logistics', step);
+    }
+  }, [user]);
 
   // Get project name
   const projectName = selectedProject
@@ -159,6 +211,16 @@ export const LogisticsDashboard: React.FC<LogisticsDashboardProps> = ({
         {/* Footer spacing */}
         <View style={styles.footer} />
       </ScrollView>
+
+      {/* Tutorial Modal */}
+      <TutorialModal
+        visible={showTutorial}
+        steps={logisticsTutorialSteps}
+        initialStep={tutorialInitialStep}
+        onDismiss={handleTutorialDismiss}
+        onComplete={handleTutorialComplete}
+        onStepChange={handleTutorialStepChange}
+      />
     </View>
   );
 };
