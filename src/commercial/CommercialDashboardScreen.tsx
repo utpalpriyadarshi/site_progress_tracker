@@ -238,18 +238,24 @@ const CommercialDashboardScreen = () => {
   );
 
   // Tutorial handlers
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'commercial_manager', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
   const handleTutorialComplete = useCallback(async () => {
     if (user) {
-      await TutorialService.markTutorialComplete(user.userId, 'commercial_manager');
+      await TutorialService.markTutorialCompleted(user.userId, 'commercial_manager');
     }
     setShowTutorial(false);
   }, [user]);
 
-  const handleTutorialDismiss = useCallback(async (currentStep: number) => {
+  const handleTutorialStepChange = useCallback(async (step: number) => {
     if (user) {
-      await TutorialService.saveTutorialProgress(user.userId, 'commercial_manager', currentStep);
+      await TutorialService.markStepCompleted(user.userId, 'commercial_manager', step);
     }
-    setShowTutorial(false);
   }, [user]);
 
   // Transform data for widgets
@@ -400,6 +406,7 @@ const CommercialDashboardScreen = () => {
         initialStep={tutorialInitialStep}
         onComplete={handleTutorialComplete}
         onDismiss={handleTutorialDismiss}
+        onStepChange={handleTutorialStepChange}
       />
     </>
   );
