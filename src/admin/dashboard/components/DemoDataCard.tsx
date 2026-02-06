@@ -9,12 +9,14 @@
  * - Design Engineer: DOORS Packages, Design RFQs, Design Documents
  * - Supervisor: Sites, Items, Progress Logs, Hindrances, Materials, Inspections
  * - Manager: Vendors, Purchase Orders, BOMs, BOM Items
+ * - Logistics: Materials (linked to items)
  *
- * @version 4.0.0
+ * @version 5.0.0
  * @since v2.13 - App Tutorial & Demo Data
  * @updated v2.14 - Design Engineer Demo Data
  * @updated v2.15 - Supervisor Demo Data
  * @updated v2.16 - Manager Demo Data
+ * @updated v2.17 - Logistics Demo Data
  */
 
 import React, { useState, useEffect } from 'react';
@@ -26,10 +28,12 @@ import {
   generateDesignerDemoData,
   generateSupervisorDemoData,
   generateManagerDemoData,
+  generateLogisticsDemoData,
   DemoDataResult,
   DesignerDemoDataResult,
   SupervisorDemoDataResult,
   ManagerDemoDataResult,
+  LogisticsDemoDataResult,
 } from '../../../services/DemoDataService';
 
 interface ProjectOption {
@@ -42,13 +46,14 @@ interface SupervisorOption {
   name: string;
 }
 
-type RoleOption = 'planner' | 'design_engineer' | 'supervisor' | 'manager';
+type RoleOption = 'planner' | 'design_engineer' | 'supervisor' | 'manager' | 'logistics';
 
 const ROLE_OPTIONS: { value: RoleOption; label: string }[] = [
   { value: 'planner', label: 'Planner' },
   { value: 'design_engineer', label: 'Design Engineer' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'manager', label: 'Manager' },
+  { value: 'logistics', label: 'Logistics' },
 ];
 
 export const DemoDataCard: React.FC = () => {
@@ -122,6 +127,8 @@ export const DemoDataCard: React.FC = () => {
         return `This will create Sites (assigned to ${selectedSupervisor?.name || 'selected supervisor'}), Items, Progress Logs, Hindrances, Materials, and Inspections in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
       case 'manager':
         return `This will create Vendors, Purchase Orders, BOMs, and BOM Items in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
+      case 'logistics':
+        return `This will create Materials (linked to existing items) in "${selectedProject?.name}".\n\nRequires: Sites and Items (run Planner or Supervisor demo data first).\n\nExisting data will NOT be deleted. Continue?`;
       default:
         return '';
     }
@@ -141,6 +148,10 @@ export const DemoDataCard: React.FC = () => {
 
   const formatManagerResult = (result: ManagerDemoDataResult): string => {
     return `Successfully created:\n• ${result.vendorsCreated} Vendors\n• ${result.purchaseOrdersCreated} Purchase Orders\n• ${result.bomsCreated} BOMs\n• ${result.bomItemsCreated} BOM Items\n\nSwitch to Manager role to view the data.`;
+  };
+
+  const formatLogisticsResult = (result: LogisticsDemoDataResult): string => {
+    return `Successfully created:\n• ${result.materialsCreated} Materials (linked to items)\n\nNote: Inventory, Deliveries, and Equipment features coming soon.\n\nSwitch to Logistics role to view material tracking.`;
   };
 
   const handleGenerate = async () => {
@@ -190,6 +201,12 @@ export const DemoDataCard: React.FC = () => {
                   Alert.alert('Demo Data Created', formatManagerResult(result));
                   break;
                 }
+                case 'logistics': {
+                  const result = await generateLogisticsDemoData(selectedProject.id);
+                  setLastResult(`Logistics: ${result.materialsCreated} Materials created`);
+                  Alert.alert('Demo Data Created', formatLogisticsResult(result));
+                  break;
+                }
               }
             } catch (error) {
               Alert.alert('Generation Failed', String(error));
@@ -217,6 +234,8 @@ export const DemoDataCard: React.FC = () => {
         return 'Populate a project with realistic Supervisor demo data — Sites, Items, Progress Logs, Hindrances, Materials, and Inspections.';
       case 'manager':
         return 'Populate a project with realistic Manager demo data — Vendors, Purchase Orders, BOMs, and BOM Items.';
+      case 'logistics':
+        return 'Populate a project with realistic Logistics demo data — Materials linked to existing items. Requires Planner or Supervisor demo data first.';
       default:
         return '';
     }
