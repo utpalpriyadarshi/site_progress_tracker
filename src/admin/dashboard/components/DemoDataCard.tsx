@@ -33,6 +33,11 @@ interface ProjectOption {
   name: string;
 }
 
+interface SupervisorOption {
+  id: string;
+  name: string;
+}
+
 type RoleOption = 'planner' | 'design_engineer' | 'supervisor';
 
 const ROLE_OPTIONS: { value: RoleOption; label: string }[] = [
@@ -49,9 +54,14 @@ export const DemoDataCard: React.FC = () => {
   const [projectMenuVisible, setProjectMenuVisible] = useState(false);
   const [roleMenuVisible, setRoleMenuVisible] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  // Supervisor selection for Supervisor demo data
+  const [supervisors, setSupervisors] = useState<SupervisorOption[]>([]);
+  const [selectedSupervisor, setSelectedSupervisor] = useState<SupervisorOption | null>(null);
+  const [supervisorMenuVisible, setSupervisorMenuVisible] = useState(false);
 
   useEffect(() => {
     loadProjects();
+    loadSupervisors();
   }, []);
 
   const loadProjects = async () => {
@@ -70,6 +80,31 @@ export const DemoDataCard: React.FC = () => {
     }
   };
 
+  const loadSupervisors = async () => {
+    try {
+      // Find the supervisor role first
+      const roles = await database.collections.get('roles').query().fetch();
+      const supervisorRole = roles.find((r: any) => r.name === 'supervisor');
+      if (!supervisorRole) {
+        console.warn('Supervisor role not found');
+        return;
+      }
+      // Find all users with supervisor role
+      const allUsers = await database.collections.get('users').query().fetch();
+      const supervisorUsers = allUsers.filter((u: any) => u.roleId === supervisorRole.id);
+      const options: SupervisorOption[] = supervisorUsers.map((u: any) => ({
+        id: u.id,
+        name: u.fullName || u.username || u.id,
+      }));
+      setSupervisors(options);
+      if (options.length === 1) {
+        setSelectedSupervisor(options[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load supervisors:', error);
+    }
+  };
+
   const getConfirmationMessage = (): string => {
     switch (selectedRole) {
       case 'planner':
@@ -77,7 +112,7 @@ export const DemoDataCard: React.FC = () => {
       case 'design_engineer':
         return `This will create DOORS Packages, Design RFQs, and Design Documents in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
       case 'supervisor':
-        return `This will create Sites, Items, Progress Logs, Hindrances, Materials, and Inspections in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
+        return `This will create Sites (assigned to ${selectedSupervisor?.name || 'selected supervisor'}), Items, Progress Logs, Hindrances, Materials, and Inspections in "${selectedProject?.name}".\n\nExisting data will NOT be deleted. Continue?`;
       default:
         return '';
     }
@@ -98,6 +133,12 @@ export const DemoDataCard: React.FC = () => {
   const handleGenerate = async () => {
     if (!selectedProject) {
       Alert.alert('Select Project', 'Please select a project first.');
+      return;
+    }
+
+    // For supervisor role, require a supervisor to be selected
+    if (selectedRole === 'supervisor' && !selectedSupervisor) {
+      Alert.alert('Select Supervisor', 'Please select a supervisor user to assign the demo sites to.');
       return;
     }
 
@@ -125,7 +166,7 @@ export const DemoDataCard: React.FC = () => {
                   break;
                 }
                 case 'supervisor': {
-                  const result = await generateSupervisorDemoData(selectedProject.id);
+                  const result = await generateSupervisorDemoData(selectedProject.id, selectedSupervisor!.id);
                   setLastResult(`Supervisor: ${result.sitesCreated} Sites, ${result.itemsCreated} Items, ${result.hindrancesCreated} Issues`);
                   Alert.alert('Demo Data Created', formatSupervisorResult(result));
                   break;
@@ -225,6 +266,39 @@ export const DemoDataCard: React.FC = () => {
             <Menu.Item title="No projects found" disabled />
           )}
         </Menu>
+
+        {/* Supervisor Selector (only for Supervisor role) */}
+        {selectedRole === 'supervisor' && (
+          <Menu
+            visible={supervisorMenuVisible}
+            onDismiss={() => setSupervisorMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                icon="account-hard-hat"
+                onPress={() => setSupervisorMenuVisible(true)}
+                style={styles.selectorButton}
+              >
+                {selectedSupervisor ? selectedSupervisor.name : 'Select Supervisor User'}
+              </Button>
+            }
+          >
+            {supervisors.map((supervisor) => (
+              <Menu.Item
+                key={supervisor.id}
+                title={supervisor.name}
+                leadingIcon={selectedSupervisor?.id === supervisor.id ? 'check' : undefined}
+                onPress={() => {
+                  setSelectedSupervisor(supervisor);
+                  setSupervisorMenuVisible(false);
+                }}
+              />
+            ))}
+            {supervisors.length === 0 && (
+              <Menu.Item title="No supervisor users found" disabled />
+            )}
+          </Menu>
+        )}
 
         {/* Generate Button */}
         <Button

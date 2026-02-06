@@ -975,7 +975,7 @@ const SAMPLE_CHECKLIST = JSON.stringify({
  * Generates realistic Supervisor demo data for a given project.
  *
  * Creates:
- * - 3 Sites
+ * - 3 Sites (assigned to the given supervisorId)
  * - 12 Items across sites (with progress)
  * - 6 Progress Logs
  * - 2 Daily Reports
@@ -984,8 +984,11 @@ const SAMPLE_CHECKLIST = JSON.stringify({
  * - 4 Site Inspections
  *
  * All records are created in a single atomic database.write() transaction.
+ *
+ * @param projectId - The project to create demo data for
+ * @param supervisorId - The supervisor user ID to assign sites to (required for sites to be visible)
  */
-export async function generateSupervisorDemoData(projectId: string): Promise<SupervisorDemoDataResult> {
+export async function generateSupervisorDemoData(projectId: string, supervisorId: string): Promise<SupervisorDemoDataResult> {
   const createdSites: SiteModel[] = [];
   const createdItems: ItemModel[][] = [[], [], []]; // Items per site
   const createdCategories: CategoryModel[] = [];
@@ -1022,12 +1025,13 @@ export async function generateSupervisorDemoData(projectId: string): Promise<Sup
       }
     }
 
-    // 2. Create Sites
+    // 2. Create Sites (assigned to the supervisor)
     for (const siteDef of SUPERVISOR_SITES) {
       const site = await sitesCollection.create((record: any) => {
         record.name = siteDef.name;
         record.location = siteDef.location;
         record.projectId = projectId;
+        record.supervisorId = supervisorId; // Assign to the supervisor so they can see it
         record.plannedStartDate = daysFromNow(-30);
         record.plannedEndDate = daysFromNow(180);
         record.appSyncStatus = 'pending';
