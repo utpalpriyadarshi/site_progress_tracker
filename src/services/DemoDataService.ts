@@ -1041,7 +1041,8 @@ export async function generateSupervisorDemoData(projectId: string): Promise<Sup
       const site = createdSites[siteIdx];
       const itemDefs = SUPERVISOR_ITEMS[siteIdx];
 
-      for (const itemDef of itemDefs) {
+      for (let itemIdx = 0; itemIdx < itemDefs.length; itemIdx++) {
+        const itemDef = itemDefs[itemIdx];
         const item = await itemsCollection.create((record: any) => {
           record.name = itemDef.name;
           record.categoryId = createdCategories[itemDef.categoryIndex]?.id || '';
@@ -1055,6 +1056,12 @@ export async function generateSupervisorDemoData(projectId: string): Promise<Sup
           record.plannedStartDate = daysFromNow(-15);
           record.plannedEndDate = daysFromNow(60);
           record.createdByRole = 'supervisor';
+          // Required WBS fields
+          record.wbsCode = `${siteIdx + 1}.${itemIdx + 1}`;
+          record.wbsLevel = 2;
+          record.isBaselineLocked = false;
+          record.isMilestone = false;
+          record.isCriticalPath = false;
           record.appSyncStatus = 'pending';
           record.version = 1;
         });
@@ -1065,16 +1072,19 @@ export async function generateSupervisorDemoData(projectId: string): Promise<Sup
     // 4. Create Progress Logs for items with progress
     for (let siteIdx = 0; siteIdx < createdSites.length; siteIdx++) {
       const items = createdItems[siteIdx];
-      for (const item of items) {
-        if (item.completedQuantity > 0) {
+      const itemDefs = SUPERVISOR_ITEMS[siteIdx];
+      for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
+        const item = items[itemIdx];
+        const itemDef = itemDefs[itemIdx];
+        if (itemDef.completedQuantity > 0) {
           // Create a progress log entry
           await progressLogsCollection.create((record: any) => {
             record.itemId = item.id;
             record.date = daysFromNow(-Math.floor(Math.random() * 7));
-            record.completedQuantity = item.completedQuantity;
+            record.completedQuantity = itemDef.completedQuantity;
             record.reportedBy = 'supervisor';
             record.photos = '[]';
-            record.notes = `Progress update for ${item.name}. Work proceeding as planned.`;
+            record.notes = `Progress update for ${itemDef.name}. Work proceeding as planned.`;
             record.appSyncStatus = 'pending';
             record.version = 1;
           });
@@ -1087,7 +1097,7 @@ export async function generateSupervisorDemoData(projectId: string): Promise<Sup
     for (let i = 0; i < 2; i++) {
       const siteIdx = i % createdSites.length;
       const site = createdSites[siteIdx];
-      const itemsUpdated = createdItems[siteIdx].filter(item => item.completedQuantity > 0).length;
+      const itemsUpdated = SUPERVISOR_ITEMS[siteIdx].filter(itemDef => itemDef.completedQuantity > 0).length;
 
       await dailyReportsCollection.create((record: any) => {
         record.siteId = site.id;
