@@ -1766,7 +1766,6 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
         record.allocatedAmount = budgetDef.allocatedAmount;
         record.description = budgetDef.description;
         record.createdBy = 'commercial_manager';
-        record.createdAt = Date.now();
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
         record._version = 1;
@@ -1786,7 +1785,6 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
         record.description = costDef.description;
         record.costDate = costDate;
         record.createdBy = 'commercial_manager';
-        record.createdAt = Date.now();
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
         record._version = 1;
@@ -1815,7 +1813,6 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
         record.vendorId = vendors.length > 0 ? vendors[i % vendors.length].id : '';
         record.vendorName = invDef.vendorName;
         record.createdBy = 'commercial_manager';
-        record.createdAt = Date.now();
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
         record._version = 1;
