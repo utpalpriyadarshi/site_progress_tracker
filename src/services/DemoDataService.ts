@@ -30,6 +30,9 @@ import PurchaseOrderModel from '../../models/PurchaseOrderModel';
 import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
 import VendorModel from '../../models/VendorModel';
+import BudgetModel from '../../models/BudgetModel';
+import CostModel from '../../models/CostModel';
+import InvoiceModel from '../../models/InvoiceModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -71,6 +74,12 @@ export interface LogisticsDemoDataResult {
   inventoryItemsCreated: number;
   deliveriesCreated: number;
   equipmentCreated: number;
+}
+
+export interface CommercialManagerDemoDataResult {
+  budgetsCreated: number;
+  costsCreated: number;
+  invoicesCreated: number;
 }
 
 // ─── Key Date definitions ────────────────────────────────────────
@@ -1678,4 +1687,148 @@ export async function generateLogisticsDemoData(projectId: string): Promise<Logi
   };
 }
 
-export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData, generateManagerDemoData, generateLogisticsDemoData };
+// ─── Commercial Manager Demo Data Function ─────────────────────────
+
+const COMMERCIAL_BUDGET_CATEGORIES = [
+  { category: 'material', allocatedAmount: 5000000, description: 'Materials and supplies budget' },
+  { category: 'labor', allocatedAmount: 3000000, description: 'Labor costs budget' },
+  { category: 'equipment', allocatedAmount: 2000000, description: 'Equipment and machinery budget' },
+  { category: 'subcontractor', allocatedAmount: 4000000, description: 'Subcontractor services budget' },
+  { category: 'other', allocatedAmount: 1000000, description: 'Miscellaneous expenses budget' },
+];
+
+interface CommercialCostDef {
+  category: string;
+  amount: number;
+  description: string;
+  daysAgo: number;
+}
+
+const COMMERCIAL_COSTS: CommercialCostDef[] = [
+  { category: 'material', amount: 250000, description: 'Steel reinforcement bars - Batch 1', daysAgo: 2 },
+  { category: 'material', amount: 180000, description: 'Cement - Grade 43 (500 bags)', daysAgo: 5 },
+  { category: 'material', amount: 320000, description: 'Electrical cables and wiring', daysAgo: 7 },
+  { category: 'labor', amount: 150000, description: 'Site labor - Week 1', daysAgo: 10 },
+  { category: 'labor', amount: 175000, description: 'Site labor - Week 2', daysAgo: 3 },
+  { category: 'equipment', amount: 450000, description: 'Excavator rental - 2 weeks', daysAgo: 8 },
+  { category: 'equipment', amount: 280000, description: 'Crane rental - 1 week', daysAgo: 4 },
+  { category: 'subcontractor', amount: 650000, description: 'HVAC installation - Phase 1', daysAgo: 12 },
+  { category: 'subcontractor', amount: 480000, description: 'Plumbing work - Floor 1-2', daysAgo: 6 },
+  { category: 'other', amount: 85000, description: 'Safety equipment and PPE', daysAgo: 9 },
+  { category: 'material', amount: 195000, description: 'Paint and finishing materials', daysAgo: 1 },
+  { category: 'labor', amount: 160000, description: 'Skilled technicians - Week 3', daysAgo: 1 },
+];
+
+interface CommercialInvoiceDef {
+  invoiceNumber: string;
+  amount: number;
+  paymentStatus: string;
+  daysAgo: number;
+  vendorName: string;
+  paymentDaysAfter?: number;
+}
+
+const COMMERCIAL_INVOICES: CommercialInvoiceDef[] = [
+  { invoiceNumber: 'INV-2024-001', amount: 450000, paymentStatus: 'paid', daysAgo: 25, vendorName: 'Steel Suppliers Ltd', paymentDaysAfter: 15 },
+  { invoiceNumber: 'INV-2024-002', amount: 320000, paymentStatus: 'paid', daysAgo: 20, vendorName: 'Cement Traders', paymentDaysAfter: 10 },
+  { invoiceNumber: 'INV-2024-003', amount: 280000, paymentStatus: 'pending', daysAgo: 12, vendorName: 'Equipment Rentals Inc' },
+  { invoiceNumber: 'INV-2024-004', amount: 650000, paymentStatus: 'pending', daysAgo: 10, vendorName: 'HVAC Systems Co' },
+  { invoiceNumber: 'INV-2024-005', amount: 175000, paymentStatus: 'paid', daysAgo: 8, vendorName: 'Labor Contractors', paymentDaysAfter: 5 },
+  { invoiceNumber: 'INV-2024-006', amount: 480000, paymentStatus: 'overdue', daysAgo: 45, vendorName: 'Plumbing Services' },
+  { invoiceNumber: 'INV-2024-007', amount: 195000, paymentStatus: 'pending', daysAgo: 5, vendorName: 'Paint & Coatings' },
+  { invoiceNumber: 'INV-2024-008', amount: 380000, paymentStatus: 'overdue', daysAgo: 35, vendorName: 'Electrical Supplies' },
+];
+
+export async function generateCommercialManagerDemoData(projectId: string): Promise<CommercialManagerDemoDataResult> {
+  let budgetsCount = 0;
+  let costsCount = 0;
+  let invoicesCount = 0;
+
+  await database.write(async () => {
+    const budgetsCollection = database.collections.get<BudgetModel>('budgets');
+    const costsCollection = database.collections.get<CostModel>('costs');
+    const invoicesCollection = database.collections.get<InvoiceModel>('invoices');
+
+    // Get existing vendors (from Manager demo data if available)
+    const vendors = await database.collections.get('vendors').query().fetch();
+
+    // Get existing POs (for linking invoices)
+    const pos = await database.collections
+      .get('purchase_orders')
+      .query()
+      .fetch();
+
+    // 1. Create Budgets
+    for (const budgetDef of COMMERCIAL_BUDGET_CATEGORIES) {
+      await budgetsCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.category = budgetDef.category;
+        record.allocatedAmount = budgetDef.allocatedAmount;
+        record.description = budgetDef.description;
+        record.createdBy = 'commercial_manager';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      budgetsCount++;
+    }
+
+    // 2. Create Costs
+    for (const costDef of COMMERCIAL_COSTS) {
+      const costDate = Date.now() - (costDef.daysAgo * 24 * 60 * 60 * 1000);
+
+      await costsCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.poId = pos.length > 0 ? pos[costsCount % pos.length].id : '';
+        record.category = costDef.category;
+        record.amount = costDef.amount;
+        record.description = costDef.description;
+        record.costDate = costDate;
+        record.createdBy = 'commercial_manager';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      costsCount++;
+    }
+
+    // 3. Create Invoices
+    for (let i = 0; i < COMMERCIAL_INVOICES.length; i++) {
+      const invDef = COMMERCIAL_INVOICES[i];
+      const invoiceDate = Date.now() - (invDef.daysAgo * 24 * 60 * 60 * 1000);
+
+      let paymentDate: number | undefined;
+      if (invDef.paymentStatus === 'paid' && invDef.paymentDaysAfter !== undefined) {
+        paymentDate = invoiceDate + (invDef.paymentDaysAfter * 24 * 60 * 60 * 1000);
+      }
+
+      await invoicesCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.poId = pos.length > 0 ? pos[i % pos.length].id : 'manual';
+        record.invoiceNumber = invDef.invoiceNumber;
+        record.invoiceDate = invoiceDate;
+        record.amount = invDef.amount;
+        record.paymentStatus = invDef.paymentStatus;
+        record.paymentDate = paymentDate || null;
+        record.vendorId = vendors.length > 0 ? vendors[i % vendors.length].id : '';
+        record.vendorName = invDef.vendorName;
+        record.createdBy = 'commercial_manager';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+      invoicesCount++;
+    }
+  });
+
+  return {
+    budgetsCreated: budgetsCount,
+    costsCreated: costsCount,
+    invoicesCreated: invoicesCount,
+  };
+}
+
+export default { generatePlannerDemoData, generateDesignerDemoData, generateSupervisorDemoData, generateManagerDemoData, generateLogisticsDemoData, generateCommercialManagerDemoData };

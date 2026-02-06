@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
+import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-// Placeholder screens - will be created in subsequent sprints
+// Screens
 import CommercialDashboardScreen from '../commercial/CommercialDashboardScreen';
 import BudgetManagementScreen from '../commercial/BudgetManagementScreen';
 import CostTrackingScreen from '../commercial/CostTrackingScreen';
 import InvoiceManagementScreen from '../commercial/InvoiceManagementScreen';
-import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
 import { useAuth } from '../auth/AuthContext';
-import { CommercialProvider } from '../commercial/context/CommercialContext';
+import type { CommercialDrawerParamList } from './CommercialDrawerNavigator';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -25,11 +26,10 @@ export type RootStackParamList = {
 };
 
 export type CommercialTabParamList = {
-  Dashboard: undefined;
+  Dashboard: { showTutorial?: boolean } | undefined;
   BudgetManagement: undefined;
   CostTracking: undefined;
   InvoiceManagement: undefined;
-  FinancialReports: undefined;
 };
 
 type CommercialNavigatorProps = {
@@ -38,97 +38,137 @@ type CommercialNavigatorProps = {
 
 const Tab = createBottomTabNavigator<CommercialTabParamList>();
 
-const CommercialNavigator: React.FC<CommercialNavigatorProps> = ({ navigation: parentNavigation }) => {
+// ==================== Tab Navigator ====================
+
+const CommercialTabNavigator: React.FC = memo(() => {
+  const navigation = useNavigation<DrawerNavigationProp<CommercialDrawerParamList>>();
   const { logout } = useAuth();
 
-  const handleLogout = async () => {
+  const handleDrawerToggle = useCallback(() => {
+    navigation.toggleDrawer();
+  }, [navigation]);
+
+  const handleLogout = useCallback(async () => {
     await logout();
-    parentNavigation.dispatch(
+    navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Auth' }],
+        routes: [{ name: 'Auth' as any }],
       })
     );
-  };
+  }, [logout, navigation]);
+
+  const HeaderLeft = useCallback(() => (
+    <TouchableOpacity onPress={handleDrawerToggle} style={styles.headerMenuButton}>
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  ), [handleDrawerToggle]);
+
+  const HeaderRight = useCallback(() => (
+    <View style={styles.headerRightContainer}>
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Icon name="logout" size={24} color="#FFF" />
+      </TouchableOpacity>
+    </View>
+  ), [handleLogout]);
+
+  const screenOptions = useMemo(() => ({
+    headerStyle: {
+      backgroundColor: '#673AB7',
+    },
+    headerTintColor: '#FFF',
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+    },
+    headerLeft: HeaderLeft,
+    headerRight: HeaderRight,
+    tabBarActiveTintColor: '#673AB7',
+    tabBarInactiveTintColor: 'gray',
+  }), [HeaderLeft, HeaderRight]);
+
+  const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
+    let iconName = '';
+
+    switch (routeName) {
+      case 'Dashboard':
+        iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+        break;
+      case 'BudgetManagement':
+        iconName = focused ? 'currency-usd' : 'currency-usd';
+        break;
+      case 'CostTracking':
+        iconName = focused ? 'chart-line' : 'chart-line';
+        break;
+      case 'InvoiceManagement':
+        iconName = focused ? 'receipt' : 'receipt';
+        break;
+      default:
+        iconName = 'help';
+    }
+
+    return <Icon name={iconName} size={size} color={color} />;
+  }, []);
+
+  const tabScreenOptions = useCallback(({ route }: { route: { name: keyof CommercialTabParamList } }) => ({
+    ...screenOptions,
+    tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getTabBarIcon(route.name, focused, color, size),
+  }), [screenOptions, getTabBarIcon]);
 
   return (
-    <CommercialProvider>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ color, size }) => {
-            let iconSymbol = '';
-
-            if (route.name === 'Dashboard') {
-              iconSymbol = '📊';
-            } else if (route.name === 'BudgetManagement') {
-              iconSymbol = '💰';
-            } else if (route.name === 'CostTracking') {
-              iconSymbol = '📈';
-            } else if (route.name === 'InvoiceManagement') {
-              iconSymbol = '🧾';
-            } else if (route.name === 'FinancialReports') {
-              iconSymbol = '📑';
-            }
-
-            return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
-          },
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: 'gray',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
-              <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>
-            </TouchableOpacity>
-          ),
-        })}
-      >
-        <Tab.Screen
-          name="Dashboard"
-          component={CommercialDashboardScreen}
-          options={{
-            title: 'Dashboard',
-            headerShown: true,
-            headerTitle: 'Commercial Dashboard',
-          }}
-        />
-        <Tab.Screen
-          name="BudgetManagement"
-          component={BudgetManagementScreen}
-          options={{
-            title: 'Budgets',
-            headerShown: true,
-            headerTitle: 'Budget Management',
-          }}
-        />
-        <Tab.Screen
-          name="CostTracking"
-          component={CostTrackingScreen}
-          options={{
-            title: 'Costs',
-            headerShown: true,
-            headerTitle: 'Cost Tracking',
-          }}
-        />
-        <Tab.Screen
-          name="InvoiceManagement"
-          component={InvoiceManagementScreen}
-          options={{
-            title: 'Invoices',
-            headerShown: true,
-            headerTitle: 'Invoice Management',
-          }}
-        />
-        <Tab.Screen
-          name="FinancialReports"
-          component={FinancialReportsScreen}
-          options={{
-            title: 'Reports',
-            headerShown: true,
-            headerTitle: 'Financial Reports',
-          }}
-        />
-      </Tab.Navigator>
-    </CommercialProvider>
+    <Tab.Navigator screenOptions={tabScreenOptions}>
+      <Tab.Screen
+        name="Dashboard"
+        component={CommercialDashboardScreen}
+        options={{
+          title: 'Dashboard',
+          headerTitle: 'Commercial Dashboard',
+        }}
+      />
+      <Tab.Screen
+        name="BudgetManagement"
+        component={BudgetManagementScreen}
+        options={{
+          title: 'Budgets',
+          headerTitle: 'Budget Management',
+        }}
+      />
+      <Tab.Screen
+        name="CostTracking"
+        component={CostTrackingScreen}
+        options={{
+          title: 'Costs',
+          headerTitle: 'Cost Tracking',
+        }}
+      />
+      <Tab.Screen
+        name="InvoiceManagement"
+        component={InvoiceManagementScreen}
+        options={{
+          title: 'Invoices',
+          headerTitle: 'Invoice Management',
+        }}
+      />
+    </Tab.Navigator>
   );
-};
+});
 
-export default CommercialNavigator;
+// ==================== Styles ====================
+
+const styles = StyleSheet.create({
+  headerMenuButton: {
+    marginLeft: 15,
+    padding: 5,
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  headerLogoutButton: {
+    padding: 5,
+    marginLeft: 10,
+  },
+});
+
+export default CommercialTabNavigator;

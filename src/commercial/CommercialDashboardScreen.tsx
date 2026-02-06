@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
+import { useAuth } from '../auth/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -37,6 +38,10 @@ import {
   Transaction,
   CategorySpendingData,
 } from './dashboard/widgets';
+import TutorialModal from '../tutorial/TutorialModal';
+import TutorialService from '../services/TutorialService';
+import commercialManagerTutorialSteps from '../tutorial/commercialManagerTutorialSteps';
+import type { CommercialTabParamList } from '../nav/CommercialNavigator';
 
 /**
  * CommercialDashboardScreen (v3.0 Phase 3)
@@ -63,7 +68,11 @@ import {
 const CommercialDashboardScreen = () => {
   const { projectId, projectName, refreshTrigger } = useCommercial();
   const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<CommercialTabParamList, 'Dashboard'>>();
+  const { user } = useAuth();
   const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
 
   const loadDashboardData = useCallback(
     async (isRefresh = false) => {
@@ -152,6 +161,30 @@ const CommercialDashboardScreen = () => {
     loadDashboardData();
   }, [loadDashboardData, refreshTrigger]);
 
+  // Tutorial auto-show logic
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+
+      // If explicitly requested via params, show tutorial from beginning
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+
+      // Check if tutorial should auto-show (first time)
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'commercial_manager');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'commercial_manager');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
   // Reload dashboard when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -203,6 +236,21 @@ const CommercialDashboardScreen = () => {
     },
     [navigation]
   );
+
+  // Tutorial handlers
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialComplete(user.userId, 'commercial_manager');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialDismiss = useCallback(async (currentStep: number) => {
+    if (user) {
+      await TutorialService.saveTutorialProgress(user.userId, 'commercial_manager', currentStep);
+    }
+    setShowTutorial(false);
+  }, [user]);
 
   // Transform data for widgets
   const categorySpendingData: CategorySpendingData[] = useMemo(() => {
@@ -267,17 +315,18 @@ const CommercialDashboardScreen = () => {
   const previousPeriodData = state.data.previousPeriodData;
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={state.ui.refreshing}
-          onRefresh={handleRefresh}
-          colors={['#007AFF']}
-          tintColor="#007AFF"
-        />
-      }
-    >
+    <>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={state.ui.refreshing}
+            onRefresh={handleRefresh}
+            colors={['#673AB7']}
+            tintColor="#673AB7"
+          />
+        }
+      >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.projectName}>{projectName}</Text>
@@ -342,7 +391,17 @@ const CommercialDashboardScreen = () => {
       />
 
       <View style={styles.bottomPadding} />
-    </ScrollView>
+      </ScrollView>
+
+      {/* Tutorial Modal */}
+      <TutorialModal
+        visible={showTutorial}
+        steps={commercialManagerTutorialSteps}
+        initialStep={tutorialInitialStep}
+        onComplete={handleTutorialComplete}
+        onDismiss={handleTutorialDismiss}
+      />
+    </>
   );
 };
 
