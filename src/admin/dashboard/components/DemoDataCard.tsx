@@ -82,11 +82,13 @@ export const DemoDataCard: React.FC = () => {
 
   const loadSupervisors = async () => {
     try {
-      // Find the supervisor role first
+      // Find the supervisor role first (case-insensitive comparison)
       const roles = await database.collections.get('roles').query().fetch();
-      const supervisorRole = roles.find((r: any) => r.name === 'supervisor');
+      const supervisorRole = roles.find(
+        (r: any) => r.name?.toLowerCase() === 'supervisor'
+      );
       if (!supervisorRole) {
-        console.warn('Supervisor role not found');
+        console.warn('Supervisor role not found in roles:', roles.map((r: any) => r.name));
         return;
       }
       // Find all users with supervisor role
