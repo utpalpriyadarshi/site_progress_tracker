@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -20,9 +20,12 @@ import {
   useRecentActivityData,
 } from './dashboard/hooks';
 import { logger } from '../services/LoggingService';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
+import TutorialModal from '../tutorial/TutorialModal';
+import designerTutorialSteps from '../tutorial/designerTutorialSteps';
+import TutorialService from '../services/TutorialService';
 
 /**
  * DesignEngineerDashboardScreen (v4.0 - Phase 3 Widget System)
@@ -55,7 +58,53 @@ import { EmptyState } from '../components/common/EmptyState';
 const DesignEngineerDashboardScreen = () => {
   const { projectId, projectName } = useDesignEngineerContext();
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  const route = useRoute<any>();
+  const { logout, user } = useAuth();
+
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+
+  // Check if tutorial should be shown on mount or when triggered from drawer
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      // Triggered from drawer "Tutorial" item
+      if (route.params?.showTutorial) {
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+        return;
+      }
+      // First-login auto-show
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'design_engineer');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'design_engineer');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user, route.params?.showTutorial]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'design_engineer', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'design_engineer');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'design_engineer', step);
+    }
+  }, [user]);
 
   // Fetch widget data using custom hooks
   const designDocStatus = useDesignDocStatusData(projectId);
@@ -179,6 +228,16 @@ const DesignEngineerDashboardScreen = () => {
             />
           </DashboardLayout>
         )}
+
+        {/* Tutorial Modal */}
+        <TutorialModal
+          visible={showTutorial}
+          steps={designerTutorialSteps}
+          initialStep={tutorialInitialStep}
+          onDismiss={handleTutorialDismiss}
+          onComplete={handleTutorialComplete}
+          onStepChange={handleTutorialStepChange}
+        />
       </View>
     </ErrorBoundary>
   );

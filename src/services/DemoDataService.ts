@@ -17,6 +17,10 @@ import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import CategoryModel from '../../models/CategoryModel';
 import MilestoneModel from '../../models/MilestoneModel';
 import MilestoneProgressModel from '../../models/MilestoneProgressModel';
+import DoorsPackageModel from '../../models/DoorsPackageModel';
+import RfqModel from '../../models/RfqModel';
+import DesignDocumentModel from '../../models/DesignDocumentModel';
+import DesignDocumentCategoryModel from '../../models/DesignDocumentCategoryModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -27,6 +31,13 @@ export interface DemoDataResult {
   categoriesCreated: number;
   milestonesCreated: number;
   milestoneProgressCreated: number;
+}
+
+export interface DesignerDemoDataResult {
+  doorsPackagesCreated: number;
+  designRfqsCreated: number;
+  designDocumentsCreated: number;
+  designDocCategoriesCreated: number;
 }
 
 // ─── Key Date definitions ────────────────────────────────────────
@@ -464,4 +475,361 @@ export async function generatePlannerDemoData(projectId: string): Promise<DemoDa
   };
 }
 
-export default { generatePlannerDemoData };
+// ─── Designer Demo Data Definitions ──────────────────────────────
+
+interface DoorsPackageDef {
+  doorsId: string;
+  equipmentName: string;
+  category: string;
+  equipmentType: string;
+  specificationRef: string;
+  quantity: number;
+  unit: string;
+  totalRequirements: number;
+  compliantRequirements: number;
+  status: string;
+  priority: string;
+}
+
+const DOORS_PACKAGES: DoorsPackageDef[] = [
+  {
+    doorsId: 'DOORS-TSS-AUX-TRF-001',
+    equipmentName: 'Auxiliary Transformer 1000kVA',
+    category: 'TSS',
+    equipmentType: 'Transformer',
+    specificationRef: 'SPEC-TSS-TRF-001',
+    quantity: 4,
+    unit: 'nos',
+    totalRequirements: 100,
+    compliantRequirements: 85,
+    status: 'under_review',
+    priority: 'high',
+  },
+  {
+    doorsId: 'DOORS-TSS-SWG-002',
+    equipmentName: '33kV GIS Switchgear',
+    category: 'TSS',
+    equipmentType: 'Switchgear',
+    specificationRef: 'SPEC-TSS-SWG-001',
+    quantity: 6,
+    unit: 'sets',
+    totalRequirements: 80,
+    compliantRequirements: 72,
+    status: 'approved',
+    priority: 'high',
+  },
+  {
+    doorsId: 'DOORS-OHE-CBL-003',
+    equipmentName: 'Contact Wire Cu-Mg 107mm²',
+    category: 'OHE',
+    equipmentType: 'Cable',
+    specificationRef: 'SPEC-OHE-CBL-001',
+    quantity: 25000,
+    unit: 'meters',
+    totalRequirements: 60,
+    compliantRequirements: 48,
+    status: 'under_review',
+    priority: 'medium',
+  },
+  {
+    doorsId: 'DOORS-OHE-MST-004',
+    equipmentName: 'OHE Mast 9m',
+    category: 'OHE',
+    equipmentType: 'Mast',
+    specificationRef: 'SPEC-OHE-MST-001',
+    quantity: 120,
+    unit: 'nos',
+    totalRequirements: 50,
+    compliantRequirements: 50,
+    status: 'approved',
+    priority: 'medium',
+  },
+  {
+    doorsId: 'DOORS-SCADA-RTU-005',
+    equipmentName: 'Remote Terminal Unit',
+    category: 'SCADA',
+    equipmentType: 'Panel',
+    specificationRef: 'SPEC-SCADA-RTU-001',
+    quantity: 8,
+    unit: 'nos',
+    totalRequirements: 75,
+    compliantRequirements: 60,
+    status: 'draft',
+    priority: 'low',
+  },
+];
+
+interface DesignRfqDef {
+  rfqNumber: string;
+  title: string;
+  description: string;
+  status: string;
+  totalVendorsInvited: number;
+  totalQuotesReceived: number;
+  doorsPackageIndex: number; // index into DOORS_PACKAGES
+}
+
+const DESIGN_RFQS: DesignRfqDef[] = [
+  {
+    rfqNumber: 'RFQ-DE-2026-001',
+    title: 'Auxiliary Transformer Supply',
+    description: 'Supply of 1000kVA auxiliary transformers as per DOORS specifications',
+    status: 'issued',
+    totalVendorsInvited: 5,
+    totalQuotesReceived: 3,
+    doorsPackageIndex: 0,
+  },
+  {
+    rfqNumber: 'RFQ-DE-2026-002',
+    title: '33kV GIS Switchgear Supply',
+    description: 'Supply and installation of 33kV Gas Insulated Switchgear',
+    status: 'quotes_received',
+    totalVendorsInvited: 4,
+    totalQuotesReceived: 4,
+    doorsPackageIndex: 1,
+  },
+  {
+    rfqNumber: 'RFQ-DE-2026-003',
+    title: 'Contact Wire Supply',
+    description: 'Supply of Cu-Mg contact wire for OHE system',
+    status: 'awarded',
+    totalVendorsInvited: 6,
+    totalQuotesReceived: 5,
+    doorsPackageIndex: 2,
+  },
+  {
+    rfqNumber: 'RFQ-DE-2026-004',
+    title: 'OHE Mast Supply',
+    description: 'Supply of 9m OHE masts with foundation bolts',
+    status: 'draft',
+    totalVendorsInvited: 0,
+    totalQuotesReceived: 0,
+    doorsPackageIndex: 3,
+  },
+];
+
+interface DesignDocCategoryDef {
+  name: string;
+  documentType: string;
+  sequenceOrder: number;
+}
+
+const DESIGN_DOC_CATEGORIES: DesignDocCategoryDef[] = [
+  { name: 'System Studies', documentType: 'simulation_study', sequenceOrder: 1 },
+  { name: 'Load Flow Analysis', documentType: 'simulation_study', sequenceOrder: 2 },
+  { name: 'Short Circuit Studies', documentType: 'simulation_study', sequenceOrder: 3 },
+  { name: 'Layout Plan & Section', documentType: 'installation', sequenceOrder: 1 },
+  { name: 'Cable Tray Layout', documentType: 'installation', sequenceOrder: 2 },
+  { name: 'Cable Schedule', documentType: 'installation', sequenceOrder: 3 },
+  { name: 'Equipment Application', documentType: 'product_equipment', sequenceOrder: 1 },
+  { name: 'Control Panel Design', documentType: 'product_equipment', sequenceOrder: 2 },
+];
+
+interface DesignDocumentDef {
+  documentNumber: string;
+  title: string;
+  description: string;
+  documentType: string;
+  categoryIndex: number; // index into DESIGN_DOC_CATEGORIES
+  revisionNumber: string;
+  status: string;
+}
+
+const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
+  {
+    documentNumber: 'DD-SIM-001',
+    title: 'Power System Load Flow Analysis',
+    description: 'Load flow analysis for 33kV distribution network',
+    documentType: 'simulation_study',
+    categoryIndex: 1,
+    revisionNumber: 'R2',
+    status: 'approved',
+  },
+  {
+    documentNumber: 'DD-SIM-002',
+    title: 'Short Circuit Analysis Report',
+    description: 'Fault current analysis for protection coordination',
+    documentType: 'simulation_study',
+    categoryIndex: 2,
+    revisionNumber: 'R1',
+    status: 'submitted',
+  },
+  {
+    documentNumber: 'DD-INS-001',
+    title: 'TSS General Arrangement',
+    description: 'General arrangement drawing for Traction Substation',
+    documentType: 'installation',
+    categoryIndex: 3,
+    revisionNumber: 'R3',
+    status: 'approved',
+  },
+  {
+    documentNumber: 'DD-INS-002',
+    title: 'Cable Tray Routing Layout',
+    description: 'Cable tray routing for control building',
+    documentType: 'installation',
+    categoryIndex: 4,
+    revisionNumber: 'R1',
+    status: 'submitted',
+  },
+  {
+    documentNumber: 'DD-PRD-001',
+    title: 'Auxiliary Transformer Application',
+    description: 'Application design for 1000kVA auxiliary transformer',
+    documentType: 'product_equipment',
+    categoryIndex: 6,
+    revisionNumber: 'R2',
+    status: 'approved_with_comment',
+  },
+  {
+    documentNumber: 'DD-PRD-002',
+    title: 'SCADA RTU Panel Design',
+    description: 'Control panel design for RTU installation',
+    documentType: 'product_equipment',
+    categoryIndex: 7,
+    revisionNumber: 'R0',
+    status: 'draft',
+  },
+];
+
+// ─── Designer Demo Data Generator ─────────────────────────────────
+
+/**
+ * Generates realistic Design Engineer demo data for a given project.
+ *
+ * Creates:
+ * - 5 DOORS Packages (TSS, OHE, SCADA equipment)
+ * - 4 Design RFQs (various statuses)
+ * - 8 Design Document Categories
+ * - 6 Design Documents (simulation studies, installation, product/equipment)
+ *
+ * All records are created in a single atomic database.write() transaction.
+ */
+export async function generateDesignerDemoData(projectId: string): Promise<DesignerDemoDataResult> {
+  const createdDoorsPackages: DoorsPackageModel[] = [];
+  const createdCategories: DesignDocumentCategoryModel[] = [];
+  let rfqCount = 0;
+  let docCount = 0;
+
+  await database.write(async () => {
+    const doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
+    const rfqsCollection = database.collections.get<RfqModel>('rfqs');
+    const docCategoriesCollection = database.collections.get<DesignDocumentCategoryModel>('design_document_categories');
+    const documentsCollection = database.collections.get<DesignDocumentModel>('design_documents');
+
+    // 1. Create DOORS Packages
+    for (const pkgDef of DOORS_PACKAGES) {
+      const compliancePercentage = Math.round((pkgDef.compliantRequirements / pkgDef.totalRequirements) * 100);
+      const pkg = await doorsPackagesCollection.create((record: any) => {
+        record.doorsId = pkgDef.doorsId;
+        record.equipmentName = pkgDef.equipmentName;
+        record.category = pkgDef.category;
+        record.equipmentType = pkgDef.equipmentType;
+        record.projectId = projectId;
+        record.specificationRef = pkgDef.specificationRef;
+        record.quantity = pkgDef.quantity;
+        record.unit = pkgDef.unit;
+        record.totalRequirements = pkgDef.totalRequirements;
+        record.compliantRequirements = pkgDef.compliantRequirements;
+        record.compliancePercentage = compliancePercentage;
+        record.technicalReqCompliance = compliancePercentage + Math.floor(Math.random() * 5);
+        record.datasheetCompliance = compliancePercentage - Math.floor(Math.random() * 5);
+        record.typeTestCompliance = compliancePercentage + Math.floor(Math.random() * 3);
+        record.routineTestCompliance = compliancePercentage;
+        record.siteReqCompliance = compliancePercentage - Math.floor(Math.random() * 3);
+        record.status = pkgDef.status;
+        record.priority = pkgDef.priority;
+        record.createdBy = 'design_engineer';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      createdDoorsPackages.push(pkg);
+    }
+
+    // 2. Create Design RFQs
+    for (const rfqDef of DESIGN_RFQS) {
+      const doorsPackage = createdDoorsPackages[rfqDef.doorsPackageIndex];
+      await rfqsCollection.create((record: any) => {
+        record.rfqNumber = rfqDef.rfqNumber;
+        record.doorsId = doorsPackage.doorsId;
+        record.doorsPackageId = doorsPackage.id;
+        record.projectId = projectId;
+        record.title = rfqDef.title;
+        record.description = rfqDef.description;
+        record.status = rfqDef.status;
+        record.rfqType = 'design';
+        record.totalVendorsInvited = rfqDef.totalVendorsInvited;
+        record.totalQuotesReceived = rfqDef.totalQuotesReceived;
+        record.createdById = 'design_engineer';
+        if (rfqDef.status !== 'draft') {
+          record.issueDate = daysFromNow(-30);
+        }
+        if (rfqDef.status === 'awarded') {
+          record.awardDate = daysFromNow(-7);
+          record.awardedValue = 1500000 + Math.floor(Math.random() * 500000);
+        }
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      rfqCount++;
+    }
+
+    // 3. Create Design Document Categories
+    for (const catDef of DESIGN_DOC_CATEGORIES) {
+      const cat = await docCategoriesCollection.create((record: any) => {
+        record.name = catDef.name;
+        record.documentType = catDef.documentType;
+        record.projectId = projectId;
+        record.isDefault = false;
+        record.sequenceOrder = catDef.sequenceOrder;
+        record.createdBy = 'design_engineer';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      createdCategories.push(cat);
+    }
+
+    // 4. Create Design Documents
+    for (const docDef of DESIGN_DOCUMENTS) {
+      const category = createdCategories[docDef.categoryIndex];
+      await documentsCollection.create((record: any) => {
+        record.documentNumber = docDef.documentNumber;
+        record.title = docDef.title;
+        record.description = docDef.description;
+        record.documentType = docDef.documentType;
+        record.categoryId = category.id;
+        record.projectId = projectId;
+        record.revisionNumber = docDef.revisionNumber;
+        record.status = docDef.status;
+        if (docDef.status !== 'draft') {
+          record.submittedDate = daysFromNow(-14);
+        }
+        if (docDef.status === 'approved' || docDef.status === 'approved_with_comment') {
+          record.approvedDate = daysFromNow(-7);
+        }
+        if (docDef.status === 'approved_with_comment') {
+          record.approvalComment = 'Approved with minor corrections to be incorporated in next revision.';
+        }
+        record.createdBy = 'design_engineer';
+        record.createdAt = Date.now();
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record.version = 1;
+      });
+      docCount++;
+    }
+  });
+
+  return {
+    doorsPackagesCreated: createdDoorsPackages.length,
+    designRfqsCreated: rfqCount,
+    designDocumentsCreated: docCount,
+    designDocCategoriesCreated: createdCategories.length,
+  };
+}
+
+export default { generatePlannerDemoData, generateDesignerDemoData };
