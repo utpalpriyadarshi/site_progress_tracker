@@ -2,16 +2,17 @@
  * LogisticsNavigator
  *
  * Hybrid drawer + tabs navigation for the Logistics role.
- * Phase 3 implementation with:
- * - 5 bottom tabs: Dashboard, Materials, Inventory, Deliveries, Analytics
- * - Drawer items: Equipment, Purchase Orders, DOORS Register, RFQ List
+ * Matches Planner/Manager design pattern with purple header and hamburger menu.
+ * - 4 bottom tabs: Dashboard, Materials, Inventory, Deliveries
+ * - Drawer items: Analytics, Equipment, Purchase Orders, DOORS Register, RFQ List, Tutorial
  * - Stack screens for detail views
  *
- * @version 2.0.0
+ * @version 3.0.0
  * @since Logistics Phase 3
+ * @updated v2.17 - Purple header, hamburger menu, Tutorial integration
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   createDrawerNavigator,
@@ -21,11 +22,16 @@ import {
 } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, DrawerActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Divider } from 'react-native-paper';
 
 import { LogisticsProvider, useLogisticsContext } from '../logistics/context/LogisticsContext';
+import { useAuth } from '../auth/AuthContext';
+import TutorialService from '../services/TutorialService';
 
 // Import the new widget-based dashboard
 import { LogisticsDashboard } from '../logistics/dashboard';
@@ -61,15 +67,15 @@ export type RootStackParamList = {
 };
 
 export type LogisticsTabParamList = {
-  Dashboard: undefined;
+  Dashboard: { showTutorial?: boolean } | undefined;
   Materials: undefined;
   Inventory: undefined;
   Deliveries: undefined;
-  Analytics: undefined;
 };
 
 export type LogisticsDrawerParamList = {
-  MainTabs: undefined;
+  MainTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
+  Analytics: undefined;
   Equipment: undefined;
   PurchaseOrders: undefined;
   DoorsRegister: undefined;
@@ -97,47 +103,92 @@ const Stack = createNativeStackNavigator<LogisticsStackParamList>();
 
 // ==================== Tab Icons ====================
 
-const TAB_ICONS: Record<keyof LogisticsTabParamList, string> = {
+const TAB_ICONS = {
   Dashboard: 'view-dashboard',
   Materials: 'package-variant',
   Inventory: 'warehouse',
   Deliveries: 'truck-delivery',
-  Analytics: 'chart-line',
-};
+} as const;
 
-// ==================== Tab Navigator (5 main workflows) ====================
+// ==================== Tab Navigator (4 main workflows) ====================
 
 const LogisticsTabs = memo(() => {
   const { logout } = useAuth();
+  const navigation = useNavigation<DrawerNavigationProp<LogisticsDrawerParamList>>();
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as any }],
+      })
+    );
+  }, [logout, navigation]);
+
+  const handleDrawerToggle = useCallback(() => {
+    navigation.dispatch(DrawerActions.toggleDrawer());
+  }, [navigation]);
+
+  // Hamburger menu button
+  const HeaderLeft = useCallback(() => (
+    <TouchableOpacity onPress={handleDrawerToggle} style={styles.headerMenuButton}>
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  ), [handleDrawerToggle]);
+
+  // Logout button
+  const HeaderRight = useCallback(() => (
+    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+      <Text style={styles.headerLogoutText}>Logout</Text>
+    </TouchableOpacity>
+  ), [handleLogout]);
+
+  // Icon getter for tabs
+  const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
+    const iconName = TAB_ICONS[routeName as keyof typeof TAB_ICONS] || 'help-circle';
+    return <Icon name={iconName} size={size} color={color} />;
+  }, []);
+
+  // Screen options
+  const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
+    tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
+      getTabBarIcon(route.name, focused, color, size),
+    tabBarActiveTintColor: '#673AB7',
+    tabBarInactiveTintColor: '#8E8E93',
+    headerShown: true,
+    headerStyle: {
+      backgroundColor: '#673AB7',
+    },
+    headerTintColor: '#FFF',
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+      fontSize: 20,
+    },
+    headerLeft: HeaderLeft,
+    headerRight: HeaderRight,
+    tabBarStyle: styles.tabBar,
+    tabBarLabelStyle: styles.tabBarLabel,
+    lazy: true,
+  }), [getTabBarIcon, HeaderLeft, HeaderRight]);
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          const iconName = TAB_ICONS[route.name];
-          return <Icon name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-        headerShown: false,
-        lazy: true,
-      })}
-    >
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
         name="Dashboard"
         component={LogisticsDashboard}
         options={{
-          tabBarLabel: 'Dashboard',
-          tabBarAccessibilityLabel: 'Dashboard tab',
+          title: 'Dashboard',
+          headerTitle: 'Logistics',
+          tabBarAccessibilityLabel: 'Dashboard tab, overview of logistics',
         }}
       />
       <Tab.Screen
         name="Materials"
         component={MaterialTrackingScreen}
         options={{
-          tabBarLabel: 'Materials',
+          title: 'Materials',
+          headerTitle: 'Logistics',
           tabBarAccessibilityLabel: 'Materials tracking tab',
         }}
       />
@@ -145,7 +196,8 @@ const LogisticsTabs = memo(() => {
         name="Inventory"
         component={InventoryManagementScreen}
         options={{
-          tabBarLabel: 'Inventory',
+          title: 'Inventory',
+          headerTitle: 'Logistics',
           tabBarAccessibilityLabel: 'Inventory management tab',
         }}
       />
@@ -153,16 +205,9 @@ const LogisticsTabs = memo(() => {
         name="Deliveries"
         component={DeliverySchedulingScreen}
         options={{
-          tabBarLabel: 'Deliveries',
+          title: 'Deliveries',
+          headerTitle: 'Logistics',
           tabBarAccessibilityLabel: 'Delivery scheduling tab',
-        }}
-      />
-      <Tab.Screen
-        name="Analytics"
-        component={LogisticsAnalyticsScreen}
-        options={{
-          tabBarLabel: 'Analytics',
-          tabBarAccessibilityLabel: 'Logistics analytics tab',
         }}
       />
     </Tab.Navigator>
@@ -173,11 +218,22 @@ const LogisticsTabs = memo(() => {
 
 const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, state }) => {
   const { isOffline, selectedProject } = useLogisticsContext();
+  const { user } = useAuth();
   const projectName = selectedProject ? (selectedProject as any).name : 'No Project Selected';
 
   const handleNavigation = useCallback((routeName: string) => {
     navigation.navigate(routeName);
   }, [navigation]);
+
+  const handleTutorialRestart = useCallback(async () => {
+    if (user) {
+      await TutorialService.resetTutorial(user.userId, 'logistics');
+    }
+    navigation.navigate('MainTabs', {
+      screen: 'Dashboard',
+      params: { showTutorial: true },
+    });
+  }, [user, navigation]);
 
   return (
     <DrawerContentScrollView style={styles.drawerContent}>
@@ -198,7 +254,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
 
       {/* Project Header */}
       <View style={styles.drawerHeader}>
-        <Icon name="briefcase-outline" size={24} color="#007AFF" />
+        <Icon name="truck-fast" size={32} color="#673AB7" />
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>Logistics</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
@@ -215,7 +271,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="view-dashboard" color={color} size={size} />}
           onPress={() => handleNavigation('MainTabs')}
           focused={state.index === 0}
-          activeTintColor="#007AFF"
+          activeTintColor="#673AB7"
           accessibilityLabel="Navigate to Dashboard"
         />
       </View>
@@ -224,38 +280,59 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>MANAGEMENT</Text>
         <DrawerItem
+          label="Analytics"
+          icon={({ color, size }) => <Icon name="chart-line" color={color} size={size} />}
+          onPress={() => handleNavigation('Analytics')}
+          focused={state.index === 1}
+          activeTintColor="#673AB7"
+          accessibilityLabel="Navigate to Analytics Reports"
+        />
+        <DrawerItem
           label="Equipment"
           icon={({ color, size }) => <Icon name="hammer-wrench" color={color} size={size} />}
           onPress={() => handleNavigation('Equipment')}
-          focused={state.index === 1}
-          activeTintColor="#007AFF"
+          focused={state.index === 2}
+          activeTintColor="#673AB7"
           accessibilityLabel="Navigate to Equipment Management"
         />
         <DrawerItem
           label="Purchase Orders"
           icon={({ color, size }) => <Icon name="clipboard-list" color={color} size={size} />}
           onPress={() => handleNavigation('PurchaseOrders')}
-          focused={state.index === 2}
-          activeTintColor="#007AFF"
+          focused={state.index === 3}
+          activeTintColor="#673AB7"
           accessibilityLabel="Navigate to Purchase Orders"
         />
         <DrawerItem
           label="DOORS Register"
           icon={({ color, size }) => <Icon name="door" color={color} size={size} />}
           onPress={() => handleNavigation('DoorsRegister')}
-          focused={state.index === 3}
-          activeTintColor="#007AFF"
+          focused={state.index === 4}
+          activeTintColor="#673AB7"
           accessibilityLabel="Navigate to DOORS Register"
         />
         <DrawerItem
           label="RFQ Management"
           icon={({ color, size }) => <Icon name="file-document-outline" color={color} size={size} />}
           onPress={() => handleNavigation('RfqList')}
-          focused={state.index === 4}
-          activeTintColor="#007AFF"
+          focused={state.index === 5}
+          activeTintColor="#673AB7"
           accessibilityLabel="Navigate to RFQ Management"
         />
       </View>
+
+      {/* Tutorial Section */}
+      <Divider style={styles.tutorialDivider} />
+      <TouchableOpacity
+        style={styles.tutorialButton}
+        onPress={handleTutorialRestart}
+        accessibilityLabel="Restart tutorial walkthrough"
+      >
+        <Icon name="school" size={22} color="#673AB7" />
+        <Text style={[styles.tutorialButtonText, { color: '#673AB7' }]}>
+          Tutorial
+        </Text>
+      </TouchableOpacity>
     </DrawerContentScrollView>
   );
 });
@@ -267,37 +344,16 @@ interface LogisticsDrawerProps {
 }
 
 const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
-  const { logout } = useAuth();
-
-  const handleLogout = useCallback(async () => {
-    await logout();
-    parentNavigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Auth' }],
-      })
-    );
-  }, [logout, parentNavigation]);
-
-  // Logout button component for header
-  const LogoutButton = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
-  ), [handleLogout]);
-
   return (
     <Drawer.Navigator
       screenOptions={{
-        headerShown: true,
-        headerStyle: styles.header,
-        headerTintColor: '#FFF',
-        headerTitleStyle: styles.headerTitleStyle,
-        headerRight: LogoutButton,
+        headerShown: false,
         drawerType: 'front',
         swipeEdgeWidth: 50,
         lazy: true,
         drawerStyle: styles.drawer,
+        drawerActiveTintColor: '#673AB7',
+        drawerInactiveTintColor: '#8E8E93',
       }}
       drawerContent={(props) => (
         <CustomDrawerContent {...props} />
@@ -308,7 +364,15 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={LogisticsTabs}
         options={{
           drawerLabel: 'Dashboard',
-          title: 'Logistics',
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
+      <Drawer.Screen
+        name="Analytics"
+        component={LogisticsAnalyticsScreen}
+        options={{
+          title: 'Analytics Reports',
+          drawerItemStyle: { display: 'none' },
         }}
       />
       <Drawer.Screen
@@ -316,6 +380,7 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={EquipmentManagementScreen}
         options={{
           title: 'Equipment Management',
+          drawerItemStyle: { display: 'none' },
         }}
       />
       <Drawer.Screen
@@ -323,6 +388,7 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={PurchaseOrderManagementScreen}
         options={{
           title: 'Purchase Orders',
+          drawerItemStyle: { display: 'none' },
         }}
       />
       <Drawer.Screen
@@ -330,6 +396,7 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={DoorsRegisterScreen}
         options={{
           title: 'DOORS Register',
+          drawerItemStyle: { display: 'none' },
         }}
       />
       <Drawer.Screen
@@ -337,6 +404,7 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={RfqListScreen}
         options={{
           title: 'RFQ Management',
+          drawerItemStyle: { display: 'none' },
         }}
       />
     </Drawer.Navigator>
@@ -386,8 +454,8 @@ const LogisticsNavigator: React.FC<LogisticsNavigatorProps> = ({ navigation: par
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 60,
-    paddingBottom: 8,
+    height: 56,
+    paddingBottom: 4,
     paddingTop: 4,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
@@ -432,14 +500,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#1C1C1E',
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   section: {
     paddingTop: 8,
@@ -453,11 +521,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     letterSpacing: 0.5,
   },
-  header: {
-    backgroundColor: '#007AFF',
-  },
-  headerTitleStyle: {
-    fontWeight: '700',
+  headerMenuButton: {
+    marginLeft: 15,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   headerLogoutButton: {
     marginRight: 15,
@@ -468,6 +535,21 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  tutorialDivider: {
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  tutorialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  tutorialButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 32,
   },
 });
 
