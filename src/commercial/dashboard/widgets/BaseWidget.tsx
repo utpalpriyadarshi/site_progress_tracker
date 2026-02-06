@@ -129,7 +129,6 @@ export const BaseWidget: React.FC<BaseWidgetProps> = ({
         accessibilityHint: accessibilityHint || 'Tap to view details',
       }
     : {
-        accessibilityRole: 'region' as const,
         accessibilityLabel: accessibilityLabel || title,
       };
 
