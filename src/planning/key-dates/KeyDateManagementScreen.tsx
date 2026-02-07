@@ -86,6 +86,11 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
   const [siteManagerVisible, setSiteManagerVisible] = useState(false);
   const [siteManagerKeyDate, setSiteManagerKeyDate] = useState<KeyDateModel | null>(null);
 
+  // Calculate total weightage
+  const totalWeightage = useMemo(() => {
+    return keyDates.reduce((sum, kd) => sum + (kd.weightage || 0), 0);
+  }, [keyDates]);
+
   // Memoized filtered key dates
   const filteredKeyDates = useMemo(() => {
     let result = keyDates;
@@ -182,6 +187,29 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
       return;
     }
 
+    // Validate total weightage doesn't exceed 100%
+    const newWeightage = parseFloat(state.form.weightage) || 0;
+    let currentTotalWeightage = totalWeightage;
+
+    // If editing, subtract the old weightage from total
+    if (state.dialog.editingKeyDate) {
+      currentTotalWeightage -= (state.dialog.editingKeyDate.weightage || 0);
+    }
+
+    // Add the new weightage
+    const projectedTotal = currentTotalWeightage + newWeightage;
+
+    if (projectedTotal > 100) {
+      dispatch({
+        type: 'SHOW_SNACKBAR',
+        payload: {
+          message: `Total weightage cannot exceed 100%. Current total: ${currentTotalWeightage.toFixed(2)}%, Adding: ${newWeightage.toFixed(2)}%, Would be: ${projectedTotal.toFixed(2)}%`,
+          type: 'error'
+        },
+      });
+      return;
+    }
+
     try {
       await database.write(async () => {
         if (state.dialog.editingKeyDate) {
@@ -247,7 +275,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
         payload: { message: 'Failed to save key date', type: 'error' },
       });
     }
-  }, [state.form, state.dialog.editingKeyDate, projectId, handleCloseEditDialog]);
+  }, [state.form, state.dialog.editingKeyDate, projectId, handleCloseEditDialog, totalWeightage]);
 
   // Confirm Delete
   const handleConfirmDelete = useCallback(async () => {
@@ -413,6 +441,34 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           >
             Clear Filters
           </Button>
+        )}
+      </View>
+
+      {/* Total Weightage Display */}
+      <View style={[
+        styles.totalWeightageContainer,
+        totalWeightage > 100 && styles.totalWeightageError,
+        totalWeightage === 100 && styles.totalWeightageComplete
+      ]}>
+        <View style={styles.totalWeightageRow}>
+          <Text style={styles.totalWeightageLabel}>Total Weightage:</Text>
+          <Text style={[
+            styles.totalWeightageValue,
+            totalWeightage > 100 && styles.totalWeightageValueError,
+            totalWeightage === 100 && styles.totalWeightageValueComplete
+          ]}>
+            {totalWeightage.toFixed(2)}%
+          </Text>
+        </View>
+        {totalWeightage > 100 && (
+          <Text style={styles.totalWeightageWarning}>
+            ⚠️ Total exceeds 100%! Please adjust weightages.
+          </Text>
+        )}
+        {totalWeightage === 100 && (
+          <Text style={styles.totalWeightageSuccess}>
+            ✓ Total weightage is exactly 100%
+          </Text>
         )}
       </View>
 
@@ -804,6 +860,54 @@ const styles = StyleSheet.create({
   },
   successSnackbar: {
     backgroundColor: '#388E3C',
+  },
+  totalWeightageContainer: {
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#BBDEFB',
+  },
+  totalWeightageError: {
+    backgroundColor: '#FFEBEE',
+    borderBottomColor: '#FFCDD2',
+  },
+  totalWeightageComplete: {
+    backgroundColor: '#E8F5E9',
+    borderBottomColor: '#C8E6C9',
+  },
+  totalWeightageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  totalWeightageLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1976D2',
+  },
+  totalWeightageValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1565C0',
+  },
+  totalWeightageValueError: {
+    color: '#C62828',
+  },
+  totalWeightageValueComplete: {
+    color: '#2E7D32',
+  },
+  totalWeightageWarning: {
+    fontSize: 12,
+    color: '#C62828',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  totalWeightageSuccess: {
+    fontSize: 12,
+    color: '#2E7D32',
+    marginTop: 4,
+    fontWeight: '500',
   },
 });
 
