@@ -120,9 +120,18 @@ const ItemsManagementScreenComponent = ({
     { value: 'numbers', label: 'nos' },
   ];
 
-  // Sort categories by predefined order (memoized)
+  // Deduplicate and sort categories by predefined order (memoized)
   const sortedCategories = useMemo(() => {
-    return sortCategoriesByOrder(categories);
+    // Remove duplicates by name (keep first occurrence)
+    const uniqueCategories = categories.reduce((acc, category) => {
+      const exists = acc.find(c => c.name === category.name);
+      if (!exists) {
+        acc.push(category);
+      }
+      return acc;
+    }, [] as CategoryModel[]);
+
+    return sortCategoriesByOrder(uniqueCategories);
   }, [categories]);
 
   // Combined filtering and sorting logic (memoized for performance)

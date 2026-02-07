@@ -56,7 +56,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         description: cat.description,
       }));
 
-      setCategories(categoryData);
+      // Remove duplicates by name (keep first occurrence)
+      const uniqueCategories = categoryData.reduce((acc, category) => {
+        const exists = acc.find(c => c.name === category.name);
+        if (!exists) {
+          acc.push(category);
+        }
+        return acc;
+      }, [] as Category[]);
+
+      setCategories(uniqueCategories);
     } catch (error) {
       logger.error('[CategorySelector] Error fetching categories', error as Error);
     } finally {
