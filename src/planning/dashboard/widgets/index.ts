@@ -30,3 +30,6 @@ export type { WBSPhase, WBSSummary, WBSProgressWidgetProps } from './WBSProgress
 
 export { ProjectProgressWidget } from './ProjectProgressWidget';
 export type { ProjectProgressWidgetProps } from './ProjectProgressWidget';
+
+export { KeyDateProgressChartWidget } from './KeyDateProgressChartWidget';
+export type { KDProgressDataPoint, KeyDateProgressChartWidgetProps } from './KeyDateProgressChartWidget';

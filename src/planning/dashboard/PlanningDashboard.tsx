@@ -36,6 +36,7 @@ import {
   ResourceUtilizationWidget,
   WBSProgressWidget,
   ProjectProgressWidget,
+  KeyDateProgressChartWidget,
 } from './widgets';
 
 // Hooks
@@ -47,6 +48,7 @@ import {
   useResourceUtilizationData,
   useWBSProgressData,
   useProjectProgressData,
+  useKDProgressChartData,
 } from './hooks';
 
 // ==================== Component ====================
@@ -121,6 +123,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const resourceUtilization = useResourceUtilizationData();
   const wbsProgress = useWBSProgressData();
   const projectProgressData = useProjectProgressData();
+  const kdProgressChart = useKDProgressChartData();
 
   // Calculate layout: 2 columns on tablets, 1 column on phones
   const isTablet = width >= 768;
@@ -134,14 +137,15 @@ const PlanningDashboardScreen: React.FC = () => {
     !recentActivities.loading &&
     !resourceUtilization.loading &&
     !wbsProgress.loading &&
-    !projectProgressData.loading;
+    !projectProgressData.loading &&
+    !kdProgressChart.loading;
 
   // Announce when dashboard is loaded
   useEffect(() => {
     if (allWidgetsLoaded && state.loading) {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'SET_LAST_UPDATED', payload: new Date() });
-      announce('Planning Dashboard loaded with 7 widgets');
+      announce('Planning Dashboard loaded with 8 widgets');
     }
   }, [allWidgetsLoaded, state.loading, announce]);
 
@@ -159,6 +163,7 @@ const PlanningDashboardScreen: React.FC = () => {
       resourceUtilization.refresh(),
       wbsProgress.refresh(),
       projectProgressData.refresh(),
+      kdProgressChart.refresh(),
     ]);
 
     dispatch({ type: 'SET_REFRESHING', payload: false });
@@ -172,6 +177,7 @@ const PlanningDashboardScreen: React.FC = () => {
     resourceUtilization,
     wbsProgress,
     projectProgressData,
+    kdProgressChart,
     announce,
   ]);
 
@@ -216,6 +222,15 @@ const PlanningDashboardScreen: React.FC = () => {
         error={projectProgressData.error}
         onPress={navigateToSchedule}
         onRefresh={projectProgressData.refresh}
+      />,
+      <KeyDateProgressChartWidget
+        key="kdProgressChart"
+        keyDates={kdProgressChart.keyDates}
+        projectStartDate={kdProgressChart.projectStartDate}
+        loading={kdProgressChart.loading}
+        error={kdProgressChart.error}
+        onPress={navigateToSchedule}
+        onRefresh={kdProgressChart.refresh}
       />,
       <UpcomingMilestonesWidget
         key="milestones"
