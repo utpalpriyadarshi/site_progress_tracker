@@ -631,6 +631,7 @@ export interface KDBreakdownItem {
   weightage: number;
   progress: number;
   status: string;
+  sequenceOrder: number;
 }
 
 interface UseProjectProgressResult {
@@ -723,6 +724,7 @@ export function useProjectProgressData(): UseProjectProgressResult {
           weightage,
           progress: Math.round(kdProgress * 100) / 100,
           status: kd.status,
+          sequenceOrder: kd.sequenceOrder,
         });
 
         totalWeightedProgress += weightage * kdProgress;
@@ -735,7 +737,7 @@ export function useProjectProgressData(): UseProjectProgressResult {
         : 0;
 
       setProjectProgress(progress);
-      setKdBreakdown(breakdown.sort((a, b) => b.weightage - a.weightage));
+      setKdBreakdown(breakdown.sort((a, b) => a.sequenceOrder - b.sequenceOrder));
     } catch (err) {
       console.error('Error loading project progress:', err);
       setError('Failed to load project progress');
