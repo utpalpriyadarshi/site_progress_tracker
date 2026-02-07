@@ -752,3 +752,76 @@ export function useProjectProgressData(): UseProjectProgressResult {
 
   return { projectProgress, kdBreakdown, loading, error, refresh: fetchData };
 }
+
+// ==================== Key Date Progress Chart Hook ====================
+
+export interface KDProgressDataPoint {
+  id: string;
+  code: string;
+  targetDate: number | null;
+  progress: number;
+  sequenceOrder: number;
+}
+
+interface UseKDProgressChartResult {
+  keyDates: KDProgressDataPoint[];
+  projectStartDate: number | null;
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+}
+
+export function useKDProgressChartData(): UseKDProgressChartResult {
+  const { projectId } = usePlanningContext();
+  const [keyDates, setKeyDates] = useState<KDProgressDataPoint[]>([]);
+  const [projectStartDate, setProjectStartDate] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setKeyDates([]);
+      setProjectStartDate(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch project to get start date
+      const projectsCollection = database.collections.get('projects');
+      const project = await projectsCollection.find(projectId);
+      const startDate = project.startDate || null;
+
+      // Fetch key dates for this project
+      const keyDatesCollection = database.collections.get<KeyDateModel>('key_dates');
+      const kds = await keyDatesCollection
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      const kdData: KDProgressDataPoint[] = kds.map(kd => ({
+        id: kd.id,
+        code: kd.code,
+        targetDate: kd.targetDate,
+        progress: kd.progressPercentage,
+        sequenceOrder: kd.sequenceOrder,
+      }));
+
+      setKeyDates(kdData);
+      setProjectStartDate(startDate);
+    } catch (err) {
+      console.error('Error loading KD progress chart data:', err);
+      setError('Failed to load progress chart');
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { keyDates, projectStartDate, loading, error, refresh: fetchData };
+}

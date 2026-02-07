@@ -15,4 +15,5 @@ export {
   useResourceUtilizationData,
   useWBSProgressData,
   useProjectProgressData,
+  useKDProgressChartData,
 } from './useWidgetData';
