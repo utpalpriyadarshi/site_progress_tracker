@@ -883,7 +883,7 @@ const generateTimePoints = (startDate: number, endDate: number): { date: number;
   while (currentDate <= end) {
     points.push({
       date: currentDate.getTime(),
-      label: currentDate.toLocaleDateString('en-US', { month: 'short' }), // Just month name
+      label: currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), // Month + Year
     });
 
     // Move to next month
