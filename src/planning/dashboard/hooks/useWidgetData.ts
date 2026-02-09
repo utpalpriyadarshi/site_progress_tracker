@@ -17,11 +17,13 @@ import CategoryModel from '../../../../models/CategoryModel';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
+import { PHASE_ORDER, PHASE_LABELS, PHASE_RESOURCE_LABELS } from '../../utils/phaseConstants';
+import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
 import type { Milestone } from '../widgets/UpcomingMilestonesWidget';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
 import type { ScheduleOverview } from '../widgets/ScheduleOverviewWidget';
 import type { Activity } from '../widgets/RecentActivitiesWidget';
-import type { Resource, ResourceSummary } from '../widgets/ResourceUtilizationWidget';
+import type { Resource, ResourceSummary} from '../widgets/ResourceUtilizationWidget';
 import type { WBSPhase, WBSSummary } from '../widgets/WBSProgressWidget';
 
 // ==================== Upcoming Milestones Hook ====================
@@ -422,21 +424,6 @@ export function useResourceUtilizationData(): UseResourceUtilizationResult {
       });
 
       // Transform phases into resource utilization format
-      const phaseLabels: Record<string, string> = {
-        design: 'Design Team',
-        approvals: 'Approvals',
-        mobilization: 'Mobilization',
-        procurement: 'Procurement',
-        interface: 'Interface',
-        site_prep: 'Site Prep Crew',
-        construction: 'Construction Crew',
-        testing: 'Testing Team',
-        commissioning: 'Commissioning',
-        sat: 'SAT Team',
-        handover: 'Handover',
-        other: 'Other',
-      };
-
       const transformedResources: Resource[] = [];
       let overAllocated = 0;
       let optimallyAllocated = 0;
@@ -462,7 +449,7 @@ export function useResourceUtilizationData(): UseResourceUtilizationResult {
 
         transformedResources.push({
           id: phase,
-          name: phaseLabels[phase] || phase,
+          name: PHASE_RESOURCE_LABELS[phase] || phase,
           type: 'labor',
           allocated,
           available: 100,
@@ -546,35 +533,14 @@ export function useWBSProgressData(): UseWBSProgressResult {
         phaseGroups.get(phase)!.push(item);
       });
 
-      // Phase display order and labels
-      const phaseOrder = [
-        'design', 'approvals', 'mobilization', 'procurement', 'interface',
-        'site_prep', 'construction', 'testing', 'commissioning', 'sat', 'handover'
-      ];
-
-      const phaseLabels: Record<string, string> = {
-        design: 'Design & Engineering',
-        approvals: 'Statutory Approvals',
-        mobilization: 'Mobilization',
-        procurement: 'Procurement',
-        interface: 'Interface Coordination',
-        site_prep: 'Site Preparation',
-        construction: 'Construction',
-        testing: 'Testing',
-        commissioning: 'Commissioning',
-        sat: 'Site Acceptance Test',
-        handover: 'Handover',
-        other: 'Other',
-      };
-
       // Transform to WBSPhase type
-      const transformedPhases: WBSPhase[] = phaseOrder
+      const transformedPhases: WBSPhase[] = PHASE_ORDER
         .filter((phase) => phaseGroups.has(phase))
         .map((phase) => {
           const items = phaseGroups.get(phase)!;
           return {
             id: phase,
-            name: phaseLabels[phase] || phase,
+            name: PHASE_LABELS[phase] || phase,
             totalItems: items.length,
             completedItems: items.filter((i) => i.status === 'completed').length,
             inProgressItems: items.filter((i) => i.status === 'in_progress').length,
@@ -587,7 +553,7 @@ export function useWBSProgressData(): UseWBSProgressResult {
         const items = phaseGroups.get('other')!;
         transformedPhases.push({
           id: 'other',
-          name: phaseLabels['other'],
+          name: PHASE_LABELS['other'],
           totalItems: items.length,
           completedItems: items.filter((i) => i.status === 'completed').length,
           inProgressItems: items.filter((i) => i.status === 'in_progress').length,
@@ -641,20 +607,6 @@ interface UseProjectProgressResult {
   error: string | null;
   refresh: () => void;
 }
-
-/**
- * Calculate weighted progress from item data for a set of items at a site.
- * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
- */
-const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
-  if (!items || items.length === 0) return 0;
-  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
-  if (totalWeightage === 0) return 0;
-  return items.reduce(
-    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
-    0
-  ) / totalWeightage;
-};
 
 export function useProjectProgressData(): UseProjectProgressResult {
   const { projectId } = usePlanningContext();
@@ -916,9 +868,6 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
       const projectStartDate = project.startDate;
       const projectEndDate = project.endDate;
 
-      console.log('[KD Timeline] Project start date:', projectStartDate, '=', new Date(projectStartDate).toLocaleDateString());
-      console.log('[KD Timeline] Project end date:', projectEndDate, '=', new Date(projectEndDate).toLocaleDateString());
-
       if (!projectStartDate || !projectEndDate) {
         setTimelineData([]);
         setLoading(false);
@@ -950,10 +899,7 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
       // A valid date is a truthy number (timestamp)
       const kdWithoutDates = sortedKDs.filter(kd => !kd.targetDate || typeof kd.targetDate !== 'number' || kd.targetDate <= 0);
 
-      console.log(`[KD Timeline] Total KDs: ${sortedKDs.length}, KDs without dates: ${kdWithoutDates.length}`);
-
       if (kdWithoutDates.length > 0) {
-        console.warn(`[KD Timeline] ${kdWithoutDates.length} KDs missing target dates, estimating based on sequence`);
 
         // Distribute KDs evenly across the project timeline
         const totalKDs = sortedKDs.length;
@@ -965,9 +911,6 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
             // Estimate target date based on sequence order
             const estimatedDate = projectStartDate + (projectDuration * (index + 1) / totalKDs);
             estimatedDates.set(kd.id, estimatedDate);
-            console.log(`[KD Timeline] Estimated date for ${kd.code} (seq ${kd.sequenceOrder}):`, new Date(estimatedDate).toLocaleDateString());
-          } else {
-            console.log(`[KD Timeline] ${kd.code} has target date:`, new Date(kd.targetDate).toLocaleDateString());
           }
         });
       }
@@ -1027,7 +970,6 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
 
       // If no weightages are assigned, distribute evenly (100 / number of KDs)
       if (totalWeightage === 0) {
-        console.warn('[KD Timeline] No weightages assigned, distributing evenly among KDs');
         const evenWeightage = 100 / kdDataMap.size;
         kdDataMap.forEach(kd => {
           kd.weightage = evenWeightage;
@@ -1035,21 +977,6 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
         totalWeightage = 100;
       }
 
-      // Debug: Log KD data
-      console.log('[KD Timeline] Total KDs:', kds.length, 'Total Weightage:', totalWeightage);
-      console.log('[KD Timeline] Time points:', timePoints.length, 'from', new Date(timePoints[0]?.date).toLocaleDateString(), 'to', new Date(timePoints[timePoints.length - 1]?.date).toLocaleDateString());
-
-      const kdDebugData = Array.from(kdDataMap.values()).map(kd => ({
-        seq: kd.sequenceOrder,
-        date: kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'NULL',
-        weight: kd.weightage,
-        actualProg: Math.round(kd.actualProgress)
-      }));
-      console.log('[KD Timeline] KD Details:', kdDebugData);
-
-      if (totalWeightage === 0) {
-        console.error('[KD Timeline] ERROR: Total weightage is 0! All KDs have 0 weightage.');
-      }
 
       // Get current date for actual progress cutoff
       const currentDate = Date.now();
@@ -1071,26 +998,13 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
 
         // EXPECTED: Sum up weightages for KDs that should be complete by this date
         // This creates a complete line from start to end showing the planned trajectory
-        kdDataMap.forEach((kd, kdId) => {
-          const pointDate = new Date(point.date).toLocaleDateString();
-          const kdDate = kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'NULL';
-          const isBeforeOrEqual = kd.targetDate && kd.targetDate <= point.date;
-
-          if (index === 0 || index === timePoints.length - 1) {
-            // Log first and last time point for debugging
-            console.log(`[KD Timeline] Point ${index}: ${pointDate}, KD date: ${kdDate}, Include: ${isBeforeOrEqual}, Weight: ${kd.weightage}`);
-          }
-
-          if (isBeforeOrEqual) {
+        kdDataMap.forEach(kd => {
+          if (kd.targetDate && kd.targetDate <= point.date) {
             expectedCumulative += kd.weightage;
           }
         });
 
         const expectedPct = Math.round((expectedCumulative / totalWeightage) * 100);
-
-        if (index === 0 || index === timePoints.length - 1) {
-          console.log(`[KD Timeline] Point ${index} Expected: ${expectedPct}%`);
-        }
 
         // ACTUAL: Linear interpolation from 0% (start) to currentOverallProgress (current month)
         // For past/current months: show interpolated progress
@@ -1111,11 +1025,6 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
           label: point.label,
         };
       });
-
-      // Debug: Log sample data points
-      console.log('[KD Timeline] First point:', timeline[0]);
-      console.log('[KD Timeline] Last point:', timeline[timeline.length - 1]);
-      console.log('[KD Timeline] Current month data:', timeline.find(t => t.date <= currentDate && t.date > currentDate - 30 * 24 * 60 * 60 * 1000));
 
       setTimelineData(timeline);
     } catch (err) {
