@@ -940,8 +940,15 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
       // Sort KDs by sequence order for fallback estimation
       const sortedKDs = [...kds].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
 
-      // Check if KDs have target dates, if not, estimate based on sequence
-      const kdWithoutDates = sortedKDs.filter(kd => !kd.targetDate);
+      // Create a map to store estimated dates for KDs without target dates
+      const estimatedDates = new Map<string, number>();
+
+      // Check if KDs have valid target dates, if not, estimate based on sequence
+      // A valid date is a truthy number (timestamp)
+      const kdWithoutDates = sortedKDs.filter(kd => !kd.targetDate || typeof kd.targetDate !== 'number' || kd.targetDate <= 0);
+
+      console.log(`[KD Timeline] Total KDs: ${sortedKDs.length}, KDs without dates: ${kdWithoutDates.length}`);
+
       if (kdWithoutDates.length > 0) {
         console.warn(`[KD Timeline] ${kdWithoutDates.length} KDs missing target dates, estimating based on sequence`);
 
@@ -950,11 +957,14 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
         const projectDuration = projectEndDate - projectStartDate;
 
         sortedKDs.forEach((kd, index) => {
-          if (!kd.targetDate) {
+          const hasValidDate = kd.targetDate && typeof kd.targetDate === 'number' && kd.targetDate > 0;
+          if (!hasValidDate) {
             // Estimate target date based on sequence order
             const estimatedDate = projectStartDate + (projectDuration * (index + 1) / totalKDs);
-            kd.targetDate = estimatedDate;
-            console.log(`[KD Timeline] Estimated date for ${kd.code}:`, new Date(estimatedDate).toLocaleDateString());
+            estimatedDates.set(kd.id, estimatedDate);
+            console.log(`[KD Timeline] Estimated date for ${kd.code} (seq ${kd.sequenceOrder}):`, new Date(estimatedDate).toLocaleDateString());
+          } else {
+            console.log(`[KD Timeline] ${kd.code} has target date:`, new Date(kd.targetDate).toLocaleDateString());
           }
         });
       }
@@ -983,8 +993,12 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
           kdProgress = siteWeightedSum;
         }
 
+        // Use estimated date if target date is not valid
+        const hasValidDate = kd.targetDate && typeof kd.targetDate === 'number' && kd.targetDate > 0;
+        const targetDate = hasValidDate ? kd.targetDate : (estimatedDates.get(kd.id) || null);
+
         kdDataMap.set(kd.id, {
-          targetDate: kd.targetDate,
+          targetDate: targetDate,
           weightage: kd.weightage || 0,
           actualProgress: kdProgress,
           sequenceOrder: kd.sequenceOrder,
@@ -1006,23 +1020,33 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
       }
 
       // Calculate total weightage for normalization
-      const totalWeightage = Array.from(kdDataMap.values()).reduce((sum, kd) => sum + kd.weightage, 0);
+      let totalWeightage = Array.from(kdDataMap.values()).reduce((sum, kd) => sum + kd.weightage, 0);
 
+      // If no weightages are assigned, distribute evenly (100 / number of KDs)
       if (totalWeightage === 0) {
-        console.warn('[KD Timeline] No weightage assigned to Key Dates');
-        setTimelineData([]);
-        setLoading(false);
-        return;
+        console.warn('[KD Timeline] No weightages assigned, distributing evenly among KDs');
+        const evenWeightage = 100 / kdDataMap.size;
+        kdDataMap.forEach(kd => {
+          kd.weightage = evenWeightage;
+        });
+        totalWeightage = 100;
       }
 
       // Debug: Log KD data
       console.log('[KD Timeline] Total KDs:', kds.length, 'Total Weightage:', totalWeightage);
       console.log('[KD Timeline] Time points:', timePoints.length, 'from', new Date(timePoints[0]?.date).toLocaleDateString(), 'to', new Date(timePoints[timePoints.length - 1]?.date).toLocaleDateString());
-      console.log('[KD Timeline] KD Target Dates:', Array.from(kdDataMap.values()).map((kd, i) => ({
+
+      const kdDebugData = Array.from(kdDataMap.values()).map(kd => ({
         seq: kd.sequenceOrder,
-        date: kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'null',
-        weight: kd.weightage
-      })));
+        date: kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'NULL',
+        weight: kd.weightage,
+        actualProg: Math.round(kd.actualProgress)
+      }));
+      console.log('[KD Timeline] KD Details:', kdDebugData);
+
+      if (totalWeightage === 0) {
+        console.error('[KD Timeline] ERROR: Total weightage is 0! All KDs have 0 weightage.');
+      }
 
       // Get current date for actual progress cutoff
       const currentDate = Date.now();
