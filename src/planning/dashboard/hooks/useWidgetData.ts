@@ -801,13 +801,41 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
         .query(Q.where('project_id', projectId))
         .fetch();
 
-      const kdData: KDProgressDataPoint[] = kds.map(kd => ({
-        id: kd.id,
-        code: kd.code,
-        targetDate: kd.targetDate,
-        progress: kd.progressPercentage,
-        sequenceOrder: kd.sequenceOrder,
-      }));
+      const sitesCollection = database.collections.get<KeyDateSiteModel>('key_date_sites');
+      const itemsCollection = database.collections.get<ItemModel>('items');
+
+      const kdData: KDProgressDataPoint[] = [];
+
+      // Calculate actual progress for each KD from its items
+      for (const kd of kds) {
+        // Fetch sites for this KD
+        const kdSites = await sitesCollection
+          .query(Q.where('key_date_id', kd.id))
+          .fetch();
+
+        let kdProgress = kd.progressPercentage; // fallback
+
+        if (kdSites.length > 0) {
+          // For each site, compute progress from its items
+          let siteWeightedSum = 0;
+          for (const site of kdSites) {
+            const siteItems = await itemsCollection
+              .query(Q.where('site_id', site.siteId))
+              .fetch();
+            const siteProgress = calculateSiteProgressFromItems(siteItems);
+            siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
+          }
+          kdProgress = siteWeightedSum;
+        }
+
+        kdData.push({
+          id: kd.id,
+          code: kd.code,
+          targetDate: kd.targetDate,
+          progress: kdProgress,
+          sequenceOrder: kd.sequenceOrder,
+        });
+      }
 
       setKeyDates(kdData);
       setProjectStartDate(startDate);
@@ -824,4 +852,243 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
   }, [fetchData]);
 
   return { keyDates, projectStartDate, loading, error, refresh: fetchData };
+}
+
+// ==================== KD Timeline Progress Hook ====================
+
+export interface TimelineDataPoint {
+  date: number;
+  expectedProgress: number;
+  actualProgress: number;
+  label: string;
+}
+
+interface UseKDTimelineProgressResult {
+  timelineData: TimelineDataPoint[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+}
+
+/**
+ * Generate monthly time points from start to end date
+ */
+const generateTimePoints = (startDate: number, endDate: number): { date: number; label: string }[] => {
+  const points: { date: number; label: string }[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  let currentDate = new Date(start.getFullYear(), start.getMonth(), 1); // Start of month
+
+  while (currentDate <= end) {
+    points.push({
+      date: currentDate.getTime(),
+      label: currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), // Month + Year
+    });
+
+    // Move to next month
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+  }
+
+  return points;
+};
+
+export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
+  const { projectId } = usePlanningContext();
+  const [timelineData, setTimelineData] = useState<TimelineDataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!projectId) {
+      setTimelineData([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch project to get start and end dates
+      const projectsCollection = database.collections.get('projects');
+      const project = await projectsCollection.find(projectId);
+      const projectStartDate = project.startDate;
+      const projectEndDate = project.endDate;
+
+      if (!projectStartDate || !projectEndDate) {
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch key dates for this project
+      const keyDatesCollection = database.collections.get<KeyDateModel>('key_dates');
+      const kds = await keyDatesCollection
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      if (kds.length === 0) {
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
+
+      const sitesCollection = database.collections.get<KeyDateSiteModel>('key_date_sites');
+      const itemsCollection = database.collections.get<ItemModel>('items');
+
+      // Sort KDs by sequence order for fallback estimation
+      const sortedKDs = [...kds].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+
+      // Check if KDs have target dates, if not, estimate based on sequence
+      const kdWithoutDates = sortedKDs.filter(kd => !kd.targetDate);
+      if (kdWithoutDates.length > 0) {
+        console.warn(`[KD Timeline] ${kdWithoutDates.length} KDs missing target dates, estimating based on sequence`);
+
+        // Distribute KDs evenly across the project timeline
+        const totalKDs = sortedKDs.length;
+        const projectDuration = projectEndDate - projectStartDate;
+
+        sortedKDs.forEach((kd, index) => {
+          if (!kd.targetDate) {
+            // Estimate target date based on sequence order
+            const estimatedDate = projectStartDate + (projectDuration * (index + 1) / totalKDs);
+            kd.targetDate = estimatedDate;
+            console.log(`[KD Timeline] Estimated date for ${kd.code}:`, new Date(estimatedDate).toLocaleDateString());
+          }
+        });
+      }
+
+      // Calculate actual progress for each KD
+      const kdDataMap = new Map<string, { targetDate: number | null; weightage: number; actualProgress: number; sequenceOrder: number }>();
+
+      for (const kd of sortedKDs) {
+        // Fetch sites for this KD
+        const kdSites = await sitesCollection
+          .query(Q.where('key_date_id', kd.id))
+          .fetch();
+
+        let kdProgress = kd.progressPercentage; // fallback
+
+        if (kdSites.length > 0) {
+          // For each site, compute progress from its items
+          let siteWeightedSum = 0;
+          for (const site of kdSites) {
+            const siteItems = await itemsCollection
+              .query(Q.where('site_id', site.siteId))
+              .fetch();
+            const siteProgress = calculateSiteProgressFromItems(siteItems);
+            siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
+          }
+          kdProgress = siteWeightedSum;
+        }
+
+        kdDataMap.set(kd.id, {
+          targetDate: kd.targetDate,
+          weightage: kd.weightage || 0,
+          actualProgress: kdProgress,
+          sequenceOrder: kd.sequenceOrder,
+        });
+      }
+
+      // Generate time points (monthly intervals)
+      let timePoints = generateTimePoints(projectStartDate, projectEndDate);
+
+      // Find the latest KD target date to ensure our timeline covers all KDs
+      const latestKDDate = Math.max(...Array.from(kdDataMap.values())
+        .filter(kd => kd.targetDate)
+        .map(kd => kd.targetDate!));
+
+      // If latest KD is beyond project end, extend timeline to cover it
+      if (latestKDDate > projectEndDate) {
+        const extendedPoints = generateTimePoints(projectStartDate, latestKDDate);
+        timePoints = extendedPoints;
+      }
+
+      // Calculate total weightage for normalization
+      const totalWeightage = Array.from(kdDataMap.values()).reduce((sum, kd) => sum + kd.weightage, 0);
+
+      if (totalWeightage === 0) {
+        console.warn('[KD Timeline] No weightage assigned to Key Dates');
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
+
+      // Debug: Log KD data
+      console.log('[KD Timeline] Total KDs:', kds.length, 'Total Weightage:', totalWeightage);
+      console.log('[KD Timeline] Time points:', timePoints.length, 'from', new Date(timePoints[0]?.date).toLocaleDateString(), 'to', new Date(timePoints[timePoints.length - 1]?.date).toLocaleDateString());
+      console.log('[KD Timeline] KD Target Dates:', Array.from(kdDataMap.values()).map((kd, i) => ({
+        seq: kd.sequenceOrder,
+        date: kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'null',
+        weight: kd.weightage
+      })));
+
+      // Get current date for actual progress cutoff
+      const currentDate = Date.now();
+
+      // Calculate current overall actual progress (weighted sum of all KDs)
+      let totalActualProgress = 0;
+      kdDataMap.forEach(kd => {
+        totalActualProgress += kd.weightage * (kd.actualProgress / 100);
+      });
+      const currentOverallProgress = Math.round((totalActualProgress / totalWeightage) * 100);
+
+      // Find the index of the current month in the timeline
+      const currentMonthIndex = timePoints.findIndex(point => point.date > currentDate) - 1;
+      const validCurrentIndex = Math.max(0, currentMonthIndex);
+
+      // Calculate cumulative progress for all time points
+      const timeline: TimelineDataPoint[] = timePoints.map((point, index) => {
+        let expectedCumulative = 0;
+
+        // EXPECTED: Sum up weightages for KDs that should be complete by this date
+        // This creates a complete line from start to end showing the planned trajectory
+        kdDataMap.forEach(kd => {
+          if (kd.targetDate && kd.targetDate <= point.date) {
+            expectedCumulative += kd.weightage;
+          }
+        });
+
+        const expectedPct = Math.round((expectedCumulative / totalWeightage) * 100);
+
+        // ACTUAL: Linear interpolation from 0% (start) to currentOverallProgress (current month)
+        // For past/current months: show interpolated progress
+        // For future months: maintain current progress (flat line)
+        let actualPct: number;
+        if (index <= validCurrentIndex) {
+          // Linear progress from 0 to current progress over elapsed time
+          actualPct = Math.round((currentOverallProgress * index) / Math.max(1, validCurrentIndex));
+        } else {
+          // Future months: maintain current progress
+          actualPct = currentOverallProgress;
+        }
+
+        return {
+          date: point.date,
+          expectedProgress: expectedPct,
+          actualProgress: actualPct,
+          label: point.label,
+        };
+      });
+
+      // Debug: Log sample data points
+      console.log('[KD Timeline] First point:', timeline[0]);
+      console.log('[KD Timeline] Last point:', timeline[timeline.length - 1]);
+      console.log('[KD Timeline] Current month data:', timeline.find(t => t.date <= currentDate && t.date > currentDate - 30 * 24 * 60 * 60 * 1000));
+
+      setTimelineData(timeline);
+    } catch (err) {
+      console.error('Error loading KD timeline progress data:', err);
+      setError('Failed to load timeline progress');
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { timelineData, loading, error, refresh: fetchData };
 }
