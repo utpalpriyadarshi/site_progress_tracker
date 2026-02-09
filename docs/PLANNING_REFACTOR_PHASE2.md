@@ -116,10 +116,12 @@ src/planning/dashboard/hooks/
 
 ## 🔧 Improvement #2: Batch Loading for KD Progress
 
-**Status**: 🔲 Not Started
+**Status**: ✅ Completed
 **Priority**: P1 - Critical
-**Estimated Time**: 2 hours
+**Time Taken**: ~1 hour
 **Branch**: `refactor/planning-batch-loading`
+**PR**: #111
+**Commit**: `79455af`
 
 ### Problem
 - **Current**: Nested loops fetching items for each KD → each site
@@ -430,12 +432,12 @@ Use this checklist for each improvement:
 
 ## 📊 Progress Tracking
 
-### Phase 2 Overall Progress: 25% Complete (1/4)
+### Phase 2 Overall Progress: 50% Complete (2/4)
 
 | Improvement | Status | Branch | PR | Merged |
 |-------------|--------|--------|----|----|
-| 1. Split useWidgetData.ts | ✅ Completed | refactor/planning-split-widget-hooks | TBD | - |
-| 2. Batch Loading | 🔲 Not Started | - | - | - |
+| 1. Split useWidgetData.ts | ✅ Completed | refactor/planning-split-widget-hooks | #110 | ✅ |
+| 2. Batch Loading | ✅ Completed | refactor/planning-batch-loading | #111 | ✅ |
 | 3. Form State Consolidation | 🔲 Not Started | - | - | - |
 | 4. Progressive Loading | 🔲 Not Started | - | - | - |
 
