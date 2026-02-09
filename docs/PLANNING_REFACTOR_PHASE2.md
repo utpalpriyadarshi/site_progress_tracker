@@ -255,8 +255,8 @@ dispatch({ type: 'RESET_FORM' });
 **Priority**: P2 - High
 **Time Taken**: ~2 hours
 **Branch**: `refactor/planning-progressive-loading`
-**PR**: TBD
-**Commit**: TBD
+**PR**: #113
+**Commit**: `947eb26`
 
 ### Problem
 - **Current**: All 9 widgets load simultaneously on mount
@@ -443,7 +443,7 @@ Use this checklist for each improvement:
 | 1. Split useWidgetData.ts | ✅ Completed | refactor/planning-split-widget-hooks | #110 | ✅ |
 | 2. Batch Loading | ✅ Completed | refactor/planning-batch-loading | #111 | ✅ |
 | 3. Form State Consolidation | ✅ Completed | refactor/planning-form-state | #112 | ✅ |
-| 4. Progressive Loading | ✅ Completed | refactor/planning-progressive-loading | TBD | - |
+| 4. Progressive Loading | ✅ Completed | refactor/planning-progressive-loading | #113 | - |
 
 **Legend:**
 - 🔲 Not Started
