@@ -33,6 +33,7 @@ import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import SiteModel from '../../../../models/SiteModel';
 import ItemModel from '../../../../models/ItemModel';
+import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
 import { logger } from '../../../services/LoggingService';
 
 // ==================== Types ====================
@@ -179,16 +180,6 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
  * Calculate weighted progress from item data for a set of items at a site
  * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
  */
-const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
-  if (!items || items.length === 0) return 0;
-  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
-  if (totalWeightage === 0) return 0;
-  return items.reduce(
-    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
-    0
-  ) / totalWeightage;
-};
-
 const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   visible,
   keyDate,

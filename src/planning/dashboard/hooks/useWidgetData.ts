@@ -18,6 +18,7 @@ import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
 import { PHASE_ORDER, PHASE_LABELS, PHASE_RESOURCE_LABELS } from '../../utils/phaseConstants';
+import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
 import type { Milestone } from '../widgets/UpcomingMilestonesWidget';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
 import type { ScheduleOverview } from '../widgets/ScheduleOverviewWidget';
@@ -606,20 +607,6 @@ interface UseProjectProgressResult {
   error: string | null;
   refresh: () => void;
 }
-
-/**
- * Calculate weighted progress from item data for a set of items at a site.
- * Formula: Σ(item.weightage × item.getProgressPercentage()) / Σ(item.weightage)
- */
-const calculateSiteProgressFromItems = (items: ItemModel[]): number => {
-  if (!items || items.length === 0) return 0;
-  const totalWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
-  if (totalWeightage === 0) return 0;
-  return items.reduce(
-    (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
-    0
-  ) / totalWeightage;
-};
 
 export function useProjectProgressData(): UseProjectProgressResult {
   const { projectId } = usePlanningContext();
