@@ -1,8 +1,11 @@
 /**
  * Hook for managing milestone progress editing
+ *
+ * Refactored to use useReducer for consolidated state management
+ * @version 2.0.0
  */
 
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import MilestoneModel from '../../../../models/MilestoneModel';
@@ -10,6 +13,8 @@ import MilestoneProgressModel from '../../../../models/MilestoneProgressModel';
 import { useAuth } from '../../../auth/AuthContext';
 import { logger } from '../../../services/LoggingService';
 import { MILESTONE_STATUS } from '../utils/milestoneConstants';
+
+// ==================== Types ====================
 
 interface UseEditProgressProps {
   selectedProjectId: string;
@@ -19,6 +24,121 @@ interface UseEditProgressProps {
   onRefresh: () => void;
 }
 
+/**
+ * Form state consolidating all form fields and UI state
+ */
+interface FormState {
+  // Dialog state
+  editDialogVisible: boolean;
+  editingProgress: MilestoneProgressModel | null;
+  editingMilestone: MilestoneModel | null;
+
+  // Form data
+  progressPercentage: string;
+  status: string;
+  notes: string;
+  plannedStartDate: Date | undefined;
+  plannedEndDate: Date | undefined;
+  actualStartDate: Date | undefined;
+  actualEndDate: Date | undefined;
+
+  // Date picker visibility
+  showPlannedStartPicker: boolean;
+  showPlannedEndPicker: boolean;
+  showActualStartPicker: boolean;
+  showActualEndPicker: boolean;
+}
+
+/**
+ * Form actions for reducer
+ */
+type FormAction =
+  | { type: 'SET_FIELD'; field: keyof FormState; value: any }
+  | { type: 'LOAD_PROGRESS'; progress: MilestoneProgressModel; milestone: MilestoneModel }
+  | { type: 'RESET_FORM'; milestone: MilestoneModel }
+  | { type: 'TOGGLE_PICKER'; picker: 'plannedStart' | 'plannedEnd' | 'actualStart' | 'actualEnd' }
+  | { type: 'CLOSE_DIALOG' };
+
+// ==================== Initial State ====================
+
+const initialFormState: FormState = {
+  editDialogVisible: false,
+  editingProgress: null,
+  editingMilestone: null,
+  progressPercentage: '0',
+  status: MILESTONE_STATUS.NOT_STARTED,
+  notes: '',
+  plannedStartDate: undefined,
+  plannedEndDate: undefined,
+  actualStartDate: undefined,
+  actualEndDate: undefined,
+  showPlannedStartPicker: false,
+  showPlannedEndPicker: false,
+  showActualStartPicker: false,
+  showActualEndPicker: false,
+};
+
+// ==================== Reducer ====================
+
+/**
+ * Form state reducer
+ * Handles all state updates in a centralized, predictable way
+ */
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.value };
+
+    case 'LOAD_PROGRESS':
+      return {
+        ...state,
+        editDialogVisible: true,
+        editingProgress: action.progress,
+        editingMilestone: action.milestone,
+        progressPercentage: action.progress.progressPercentage.toString(),
+        status: action.progress.status,
+        notes: action.progress.notes || '',
+        plannedStartDate: action.progress.plannedStartDate
+          ? new Date(action.progress.plannedStartDate)
+          : undefined,
+        plannedEndDate: action.progress.plannedEndDate
+          ? new Date(action.progress.plannedEndDate)
+          : undefined,
+        actualStartDate: action.progress.actualStartDate
+          ? new Date(action.progress.actualStartDate)
+          : undefined,
+        actualEndDate: action.progress.actualEndDate
+          ? new Date(action.progress.actualEndDate)
+          : undefined,
+      };
+
+    case 'RESET_FORM':
+      return {
+        ...initialFormState,
+        editDialogVisible: true,
+        editingMilestone: action.milestone,
+      };
+
+    case 'TOGGLE_PICKER':
+      const pickerMap = {
+        plannedStart: 'showPlannedStartPicker',
+        plannedEnd: 'showPlannedEndPicker',
+        actualStart: 'showActualStartPicker',
+        actualEnd: 'showActualEndPicker',
+      } as const;
+      const pickerField = pickerMap[action.picker];
+      return { ...state, [pickerField]: !state[pickerField] };
+
+    case 'CLOSE_DIALOG':
+      return { ...state, editDialogVisible: false };
+
+    default:
+      return state;
+  }
+}
+
+// ==================== Hook ====================
+
 export const useEditProgress = ({
   selectedProjectId,
   selectedSiteId,
@@ -27,52 +147,42 @@ export const useEditProgress = ({
   onRefresh,
 }: UseEditProgressProps) => {
   const { user } = useAuth();
-  const [editDialogVisible, setEditDialogVisible] = useState(false);
-  const [editingProgress, setEditingProgress] = useState<MilestoneProgressModel | null>(null);
-  const [editingMilestone, setEditingMilestone] = useState<MilestoneModel | null>(null);
-  const [progressPercentage, setProgressPercentage] = useState('0');
-  const [status, setStatus] = useState<string>(MILESTONE_STATUS.NOT_STARTED);
-  const [notes, setNotes] = useState('');
-  const [plannedStartDate, setPlannedStartDate] = useState<Date | undefined>(undefined);
-  const [plannedEndDate, setPlannedEndDate] = useState<Date | undefined>(undefined);
-  const [actualStartDate, setActualStartDate] = useState<Date | undefined>(undefined);
-  const [actualEndDate, setActualEndDate] = useState<Date | undefined>(undefined);
 
-  // Date pickers
-  const [showPlannedStartPicker, setShowPlannedStartPicker] = useState(false);
-  const [showPlannedEndPicker, setShowPlannedEndPicker] = useState(false);
-  const [showActualStartPicker, setShowActualStartPicker] = useState(false);
-  const [showActualEndPicker, setShowActualEndPicker] = useState(false);
+  // Consolidated state management with useReducer
+  const [state, dispatch] = useReducer(formReducer, initialFormState);
+
+  // Destructure state for convenience
+  const {
+    editDialogVisible,
+    editingProgress,
+    editingMilestone,
+    progressPercentage,
+    status,
+    notes,
+    plannedStartDate,
+    plannedEndDate,
+    actualStartDate,
+    actualEndDate,
+    showPlannedStartPicker,
+    showPlannedEndPicker,
+    showActualStartPicker,
+    showActualEndPicker,
+  } = state;
 
   const openEditDialog = async (milestone: MilestoneModel) => {
-    setEditingMilestone(milestone);
     const progress = getProgressForMilestone(milestone.id);
 
     if (progress) {
-      setEditingProgress(progress);
-      setProgressPercentage(progress.progressPercentage.toString());
-      setStatus(progress.status as any);
-      setNotes(progress.notes || '');
-      setPlannedStartDate(progress.plannedStartDate ? new Date(progress.plannedStartDate) : undefined);
-      setPlannedEndDate(progress.plannedEndDate ? new Date(progress.plannedEndDate) : undefined);
-      setActualStartDate(progress.actualStartDate ? new Date(progress.actualStartDate) : undefined);
-      setActualEndDate(progress.actualEndDate ? new Date(progress.actualEndDate) : undefined);
+      // Load existing progress data
+      dispatch({ type: 'LOAD_PROGRESS', progress, milestone });
     } else {
-      setEditingProgress(null);
-      setProgressPercentage('0');
-      setStatus(MILESTONE_STATUS.NOT_STARTED);
-      setNotes('');
-      setPlannedStartDate(undefined);
-      setPlannedEndDate(undefined);
-      setActualStartDate(undefined);
-      setActualEndDate(undefined);
+      // Reset form for new progress entry
+      dispatch({ type: 'RESET_FORM', milestone });
     }
-
-    setEditDialogVisible(true);
   };
 
   const closeEditDialog = () => {
-    setEditDialogVisible(false);
+    dispatch({ type: 'CLOSE_DIALOG' });
   };
 
   const handleSave = async () => {
@@ -125,7 +235,7 @@ export const useEditProgress = ({
       });
 
       onSuccess('Milestone progress updated successfully');
-      setEditDialogVisible(false);
+      dispatch({ type: 'CLOSE_DIALOG' });
       onRefresh();
     } catch (error) {
       logger.error('[Milestone] Error saving', error as Error);
@@ -175,6 +285,31 @@ export const useEditProgress = ({
       Alert.alert('Error', 'Failed to mark milestone as achieved');
     }
   };
+
+  // Create setter functions that dispatch actions
+  const setProgressPercentage = (value: string) =>
+    dispatch({ type: 'SET_FIELD', field: 'progressPercentage', value });
+  const setStatus = (value: string) =>
+    dispatch({ type: 'SET_FIELD', field: 'status', value });
+  const setNotes = (value: string) =>
+    dispatch({ type: 'SET_FIELD', field: 'notes', value });
+  const setPlannedStartDate = (value: Date | undefined) =>
+    dispatch({ type: 'SET_FIELD', field: 'plannedStartDate', value });
+  const setPlannedEndDate = (value: Date | undefined) =>
+    dispatch({ type: 'SET_FIELD', field: 'plannedEndDate', value });
+  const setActualStartDate = (value: Date | undefined) =>
+    dispatch({ type: 'SET_FIELD', field: 'actualStartDate', value });
+  const setActualEndDate = (value: Date | undefined) =>
+    dispatch({ type: 'SET_FIELD', field: 'actualEndDate', value });
+
+  const setShowPlannedStartPicker = (value: boolean) =>
+    dispatch({ type: 'SET_FIELD', field: 'showPlannedStartPicker', value });
+  const setShowPlannedEndPicker = (value: boolean) =>
+    dispatch({ type: 'SET_FIELD', field: 'showPlannedEndPicker', value });
+  const setShowActualStartPicker = (value: boolean) =>
+    dispatch({ type: 'SET_FIELD', field: 'showActualStartPicker', value });
+  const setShowActualEndPicker = (value: boolean) =>
+    dispatch({ type: 'SET_FIELD', field: 'showActualEndPicker', value });
 
   return {
     // Dialog state
