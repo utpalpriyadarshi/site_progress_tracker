@@ -32,7 +32,7 @@ export { ProjectProgressWidget } from './ProjectProgressWidget';
 export type { ProjectProgressWidgetProps } from './ProjectProgressWidget';
 
 export { KeyDateProgressChartWidget } from './KeyDateProgressChartWidget';
-export type { KDProgressDataPoint, KeyDateProgressChartWidgetProps } from './KeyDateProgressChartWidget';
+export type { KeyDateProgressChartWidgetProps } from './KeyDateProgressChartWidget';
 
 export { KDTimelineProgressWidget } from './KDTimelineProgressWidget';
 export type { KDTimelineProgressWidgetProps } from './KDTimelineProgressWidget';

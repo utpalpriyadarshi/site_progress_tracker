@@ -14,7 +14,7 @@ import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
-import type { KDBreakdownItem } from '../hooks/useWidgetData';
+import type { KDBreakdownItem } from '../hooks';
 
 // ==================== Types ====================
 

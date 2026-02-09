@@ -14,7 +14,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { LineChart } from 'react-native-chart-kit';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
-import type { TimelineDataPoint } from '../hooks/useWidgetData';
+import type { TimelineDataPoint } from '../hooks';
 
 // ==================== Types ====================
 
