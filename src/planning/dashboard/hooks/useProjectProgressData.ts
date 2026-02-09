@@ -16,6 +16,7 @@ import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
+import { batchLoadItemsBySites } from '../../utils/dataLoading';
 
 // ==================== Types ====================
 
@@ -81,27 +82,41 @@ export function useProjectProgressData(): UseProjectProgressResult {
       }
 
       const sitesCollection = database.collections.get<KeyDateSiteModel>('key_date_sites');
-      const itemsCollection = database.collections.get<ItemModel>('items');
 
+      // 2. Fetch all KD sites upfront (single query for all KDs)
+      const allKdSites = await sitesCollection
+        .query(Q.where('key_date_id', Q.oneOf(keyDates.map(kd => kd.id))))
+        .fetch();
+
+      // Group sites by KD ID for quick lookup
+      const sitesByKdId: Record<string, KeyDateSiteModel[]> = {};
+      const allUniqueSiteIds = new Set<string>();
+
+      for (const kdSite of allKdSites) {
+        if (!sitesByKdId[kdSite.keyDateId]) {
+          sitesByKdId[kdSite.keyDateId] = [];
+        }
+        sitesByKdId[kdSite.keyDateId].push(kdSite);
+        allUniqueSiteIds.add(kdSite.siteId);
+      }
+
+      // 3. Batch load ALL items for ALL sites in ONE query (Performance optimization!)
+      const itemsBySite = await batchLoadItemsBySites([...allUniqueSiteIds]);
+
+      // 4. Calculate progress for each KD using pre-loaded data
       const breakdown: KDBreakdownItem[] = [];
       let totalWeightedProgress = 0;
       let totalWeightage = 0;
 
       for (const kd of keyDates) {
-        // 2. Fetch sites for this KD
-        const kdSites = await sitesCollection
-          .query(Q.where('key_date_id', kd.id))
-          .fetch();
-
+        const kdSites = sitesByKdId[kd.id] || [];
         let kdProgress = kd.progressPercentage; // fallback
 
         if (kdSites.length > 0) {
-          // 3. For each site, compute progress from its items
+          // Calculate progress using pre-loaded items (no additional queries!)
           let siteWeightedSum = 0;
           for (const site of kdSites) {
-            const siteItems = await itemsCollection
-              .query(Q.where('site_id', site.siteId))
-              .fetch();
+            const siteItems = itemsBySite[site.siteId] || [];
             const siteProgress = calculateSiteProgressFromItems(siteItems);
             siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
           }
