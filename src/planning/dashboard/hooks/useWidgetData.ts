@@ -801,13 +801,41 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
         .query(Q.where('project_id', projectId))
         .fetch();
 
-      const kdData: KDProgressDataPoint[] = kds.map(kd => ({
-        id: kd.id,
-        code: kd.code,
-        targetDate: kd.targetDate,
-        progress: kd.progressPercentage,
-        sequenceOrder: kd.sequenceOrder,
-      }));
+      const sitesCollection = database.collections.get<KeyDateSiteModel>('key_date_sites');
+      const itemsCollection = database.collections.get<ItemModel>('items');
+
+      const kdData: KDProgressDataPoint[] = [];
+
+      // Calculate actual progress for each KD from its items
+      for (const kd of kds) {
+        // Fetch sites for this KD
+        const kdSites = await sitesCollection
+          .query(Q.where('key_date_id', kd.id))
+          .fetch();
+
+        let kdProgress = kd.progressPercentage; // fallback
+
+        if (kdSites.length > 0) {
+          // For each site, compute progress from its items
+          let siteWeightedSum = 0;
+          for (const site of kdSites) {
+            const siteItems = await itemsCollection
+              .query(Q.where('site_id', site.siteId))
+              .fetch();
+            const siteProgress = calculateSiteProgressFromItems(siteItems);
+            siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
+          }
+          kdProgress = siteWeightedSum;
+        }
+
+        kdData.push({
+          id: kd.id,
+          code: kd.code,
+          targetDate: kd.targetDate,
+          progress: kdProgress,
+          sequenceOrder: kd.sequenceOrder,
+        });
+      }
 
       setKeyDates(kdData);
       setProjectStartDate(startDate);
