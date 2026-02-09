@@ -68,6 +68,10 @@ const PlanningDashboardScreen: React.FC = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
 
+  // Progressive loading state for staggered widget rendering
+  const [loadPriority2, setLoadPriority2] = useState(false);
+  const [loadPriority3, setLoadPriority3] = useState(false);
+
   // Check if tutorial should be shown on mount or when triggered from drawer
   useEffect(() => {
     const checkTutorial = async () => {
@@ -108,6 +112,20 @@ const PlanningDashboardScreen: React.FC = () => {
       await TutorialService.markStepCompleted(user.userId, 'planner', step);
     }
   }, [user]);
+
+  // Progressive widget loading: stagger widget rendering for better perceived performance
+  useEffect(() => {
+    // Priority 1 widgets load immediately (ScheduleOverview, ProjectProgress)
+    // Priority 2 widgets load after 500ms (KD Progress Chart, KD Timeline, Upcoming Milestones)
+    const timer1 = setTimeout(() => setLoadPriority2(true), 500);
+    // Priority 3 widgets load after 1000ms (Critical Path, WBS, Resources, Activities)
+    const timer2 = setTimeout(() => setLoadPriority3(true), 1000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, []);
 
   // Format current date like Supervisor dashboard
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -208,8 +226,9 @@ const PlanningDashboardScreen: React.FC = () => {
     navigation.navigate('Gantt');
   }, [navigation]);
 
-  // Render widgets in grid layout
+  // Render widgets in grid layout with progressive loading
   const renderWidgets = () => {
+    // Priority 1: Critical widgets - load immediately
     const widgets = [
       <ScheduleOverviewWidget
         key="schedule"
@@ -229,65 +248,77 @@ const PlanningDashboardScreen: React.FC = () => {
         onPress={navigateToSchedule}
         onRefresh={projectProgressData.refresh}
       />,
-      <KeyDateProgressChartWidget
-        key="kdProgressChart"
-        keyDates={kdProgressChart.keyDates}
-        projectStartDate={kdProgressChart.projectStartDate}
-        loading={kdProgressChart.loading}
-        error={kdProgressChart.error}
-        onPress={navigateToSchedule}
-        onRefresh={kdProgressChart.refresh}
-      />,
-      <KDTimelineProgressWidget
-        key="kdTimelineProgress"
-        timelineData={kdTimelineProgress.timelineData}
-        loading={kdTimelineProgress.loading}
-        error={kdTimelineProgress.error}
-        onPress={navigateToSchedule}
-        onRefresh={kdTimelineProgress.refresh}
-      />,
-      <UpcomingMilestonesWidget
-        key="milestones"
-        milestones={milestones.milestones}
-        loading={milestones.loading}
-        error={milestones.error}
-        onPress={navigateToMilestones}
-        onRefresh={milestones.refresh}
-      />,
-      <CriticalPathWidget
-        key="critical"
-        items={criticalPath.items}
-        loading={criticalPath.loading}
-        error={criticalPath.error}
-        onPress={navigateToGantt}
-        onRefresh={criticalPath.refresh}
-      />,
-      <WBSProgressWidget
-        key="wbs"
-        phases={wbsProgress.phases}
-        summary={wbsProgress.summary}
-        loading={wbsProgress.loading}
-        error={wbsProgress.error}
-        onPress={navigateToWBS}
-        onRefresh={wbsProgress.refresh}
-      />,
-      <ResourceUtilizationWidget
-        key="resources"
-        resources={resourceUtilization.resources}
-        summary={resourceUtilization.summary}
-        loading={resourceUtilization.loading}
-        error={resourceUtilization.error}
-        onPress={navigateToResources}
-        onRefresh={resourceUtilization.refresh}
-      />,
-      <RecentActivitiesWidget
-        key="activities"
-        activities={recentActivities.activities}
-        loading={recentActivities.loading}
-        error={recentActivities.error}
-        onRefresh={recentActivities.refresh}
-      />,
     ];
+
+    // Priority 2: High priority widgets - load after 500ms
+    if (loadPriority2) {
+      widgets.push(
+        <KeyDateProgressChartWidget
+          key="kdProgressChart"
+          keyDates={kdProgressChart.keyDates}
+          projectStartDate={kdProgressChart.projectStartDate}
+          loading={kdProgressChart.loading}
+          error={kdProgressChart.error}
+          onPress={navigateToSchedule}
+          onRefresh={kdProgressChart.refresh}
+        />,
+        <KDTimelineProgressWidget
+          key="kdTimelineProgress"
+          timelineData={kdTimelineProgress.timelineData}
+          loading={kdTimelineProgress.loading}
+          error={kdTimelineProgress.error}
+          onPress={navigateToSchedule}
+          onRefresh={kdTimelineProgress.refresh}
+        />,
+        <UpcomingMilestonesWidget
+          key="milestones"
+          milestones={milestones.milestones}
+          loading={milestones.loading}
+          error={milestones.error}
+          onPress={navigateToMilestones}
+          onRefresh={milestones.refresh}
+        />
+      );
+    }
+
+    // Priority 3: Normal priority widgets - load after 1000ms
+    if (loadPriority3) {
+      widgets.push(
+        <CriticalPathWidget
+          key="critical"
+          items={criticalPath.items}
+          loading={criticalPath.loading}
+          error={criticalPath.error}
+          onPress={navigateToGantt}
+          onRefresh={criticalPath.refresh}
+        />,
+        <WBSProgressWidget
+          key="wbs"
+          phases={wbsProgress.phases}
+          summary={wbsProgress.summary}
+          loading={wbsProgress.loading}
+          error={wbsProgress.error}
+          onPress={navigateToWBS}
+          onRefresh={wbsProgress.refresh}
+        />,
+        <ResourceUtilizationWidget
+          key="resources"
+          resources={resourceUtilization.resources}
+          summary={resourceUtilization.summary}
+          loading={resourceUtilization.loading}
+          error={resourceUtilization.error}
+          onPress={navigateToResources}
+          onRefresh={resourceUtilization.refresh}
+        />,
+        <RecentActivitiesWidget
+          key="activities"
+          activities={recentActivities.activities}
+          loading={recentActivities.loading}
+          error={recentActivities.error}
+          onRefresh={recentActivities.refresh}
+        />
+      );
+    }
 
     if (isTablet) {
       // Two-column grid layout for tablets
