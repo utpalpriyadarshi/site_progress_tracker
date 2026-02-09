@@ -916,6 +916,9 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
       const projectStartDate = project.startDate;
       const projectEndDate = project.endDate;
 
+      console.log('[KD Timeline] Project start date:', projectStartDate, '=', new Date(projectStartDate).toLocaleDateString());
+      console.log('[KD Timeline] Project end date:', projectEndDate, '=', new Date(projectEndDate).toLocaleDateString());
+
       if (!projectStartDate || !projectEndDate) {
         setTimelineData([]);
         setLoading(false);
@@ -1068,13 +1071,26 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
 
         // EXPECTED: Sum up weightages for KDs that should be complete by this date
         // This creates a complete line from start to end showing the planned trajectory
-        kdDataMap.forEach(kd => {
-          if (kd.targetDate && kd.targetDate <= point.date) {
+        kdDataMap.forEach((kd, kdId) => {
+          const pointDate = new Date(point.date).toLocaleDateString();
+          const kdDate = kd.targetDate ? new Date(kd.targetDate).toLocaleDateString() : 'NULL';
+          const isBeforeOrEqual = kd.targetDate && kd.targetDate <= point.date;
+
+          if (index === 0 || index === timePoints.length - 1) {
+            // Log first and last time point for debugging
+            console.log(`[KD Timeline] Point ${index}: ${pointDate}, KD date: ${kdDate}, Include: ${isBeforeOrEqual}, Weight: ${kd.weightage}`);
+          }
+
+          if (isBeforeOrEqual) {
             expectedCumulative += kd.weightage;
           }
         });
 
         const expectedPct = Math.round((expectedCumulative / totalWeightage) * 100);
+
+        if (index === 0 || index === timePoints.length - 1) {
+          console.log(`[KD Timeline] Point ${index} Expected: ${expectedPct}%`);
+        }
 
         // ACTUAL: Linear interpolation from 0% (start) to currentOverallProgress (current month)
         // For past/current months: show interpolated progress

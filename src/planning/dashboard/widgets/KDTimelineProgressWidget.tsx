@@ -9,7 +9,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { LineChart } from 'react-native-chart-kit';
 import { BaseWidget } from './BaseWidget';
@@ -46,16 +46,17 @@ export const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> =
       return null;
     }
 
-    // Limit to reasonable number of points for readability (e.g., 12 months)
-    const displayData = timelineData.slice(0, 12);
+    // Show all data points (full timeline)
+    const displayData = timelineData;
 
     const expectedData = displayData.map(point => point.expectedProgress);
     const actualData = displayData.map(point => point.actualProgress);
 
-    // Show every other label to prevent overlap
+    // Show every 2nd or 3rd label depending on timeline length to prevent overlap
+    const labelInterval = displayData.length > 18 ? 3 : 2;
     const labels = displayData.map((point, index) => {
-      // Show first, every 2nd month, and last label
-      if (index === 0 || index === displayData.length - 1 || index % 2 === 0) {
+      // Show first, every Nth month, and last label
+      if (index === 0 || index === displayData.length - 1 || index % labelInterval === 0) {
         return point.label;
       }
       return ''; // Empty string for hidden labels
@@ -93,6 +94,11 @@ export const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> =
       );
     }
 
+    // Calculate chart width based on number of data points (50px per month minimum)
+    const pointsCount = timelineData.length;
+    const minWidthPerPoint = 50;
+    const chartWidth = Math.max(screenWidth - 64, pointsCount * minWidthPerPoint);
+
     return (
       <View>
         <View style={styles.legendContainer}>
@@ -106,40 +112,46 @@ export const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> =
           </View>
         </View>
 
-        <LineChart
-          data={chartData}
-          width={screenWidth - 64} // Accounting for widget padding
-          height={220}
-          chartConfig={{
-            backgroundColor: '#ffffff',
-            backgroundGradientFrom: '#ffffff',
-            backgroundGradientTo: '#ffffff',
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity * 0.6})`,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: '4',
-              strokeWidth: '2',
-            },
-            propsForBackgroundLines: {
-              strokeDasharray: '', // solid background lines
-              stroke: '#e0e0e0',
-              strokeWidth: 1,
-            },
-          }}
-          bezier
-          style={styles.chart}
-          yAxisSuffix="%"
-          yAxisInterval={1}
-          fromZero
-          segments={4}
-        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          style={styles.chartScrollView}
+        >
+          <LineChart
+            data={chartData}
+            width={chartWidth}
+            height={220}
+            chartConfig={{
+              backgroundColor: '#ffffff',
+              backgroundGradientFrom: '#ffffff',
+              backgroundGradientTo: '#ffffff',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity * 0.6})`,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: '4',
+                strokeWidth: '2',
+              },
+              propsForBackgroundLines: {
+                strokeDasharray: '', // solid background lines
+                stroke: '#e0e0e0',
+                strokeWidth: 1,
+              },
+            }}
+            bezier
+            style={styles.chart}
+            yAxisSuffix="%"
+            yAxisInterval={1}
+            fromZero
+            segments={4}
+          />
+        </ScrollView>
 
         <Text variant="bodySmall" style={styles.helpText}>
-          Cumulative progress over time based on Key Date weightages
+          Cumulative progress over time based on Key Date weightages (scroll to see full timeline)
         </Text>
       </View>
     );
@@ -180,8 +192,10 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
-  chart: {
+  chartScrollView: {
     marginVertical: 8,
+  },
+  chart: {
     borderRadius: 16,
   },
   helpText: {
