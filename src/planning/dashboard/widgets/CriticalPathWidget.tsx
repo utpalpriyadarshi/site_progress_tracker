@@ -7,12 +7,24 @@
  * @since Planning Phase 3
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+
+// ==================== Constants ====================
+
+/**
+ * Risk level priority order for sorting
+ * Lower value = higher priority
+ */
+const RISK_ORDER = {
+  high: 0,
+  medium: 1,
+  low: 2,
+} as const;
 
 // ==================== Types ====================
 
@@ -72,10 +84,11 @@ export const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
     }
   };
 
-  const sortedItems = [...items].sort((a, b) => {
-    const riskOrder = { high: 0, medium: 1, low: 2 };
-    return riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
-  });
+  // Memoize sorted items to prevent unnecessary re-sorting
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => RISK_ORDER[a.riskLevel] - RISK_ORDER[b.riskLevel]),
+    [items]
+  );
 
   const renderItem = ({ item }: { item: CriticalPathItem }) => (
     <View
