@@ -17,11 +17,12 @@ import CategoryModel from '../../../../models/CategoryModel';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
+import { PHASE_ORDER, PHASE_LABELS, PHASE_RESOURCE_LABELS } from '../../utils/phaseConstants';
 import type { Milestone } from '../widgets/UpcomingMilestonesWidget';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
 import type { ScheduleOverview } from '../widgets/ScheduleOverviewWidget';
 import type { Activity } from '../widgets/RecentActivitiesWidget';
-import type { Resource, ResourceSummary } from '../widgets/ResourceUtilizationWidget';
+import type { Resource, ResourceSummary} from '../widgets/ResourceUtilizationWidget';
 import type { WBSPhase, WBSSummary } from '../widgets/WBSProgressWidget';
 
 // ==================== Upcoming Milestones Hook ====================
@@ -422,21 +423,6 @@ export function useResourceUtilizationData(): UseResourceUtilizationResult {
       });
 
       // Transform phases into resource utilization format
-      const phaseLabels: Record<string, string> = {
-        design: 'Design Team',
-        approvals: 'Approvals',
-        mobilization: 'Mobilization',
-        procurement: 'Procurement',
-        interface: 'Interface',
-        site_prep: 'Site Prep Crew',
-        construction: 'Construction Crew',
-        testing: 'Testing Team',
-        commissioning: 'Commissioning',
-        sat: 'SAT Team',
-        handover: 'Handover',
-        other: 'Other',
-      };
-
       const transformedResources: Resource[] = [];
       let overAllocated = 0;
       let optimallyAllocated = 0;
@@ -462,7 +448,7 @@ export function useResourceUtilizationData(): UseResourceUtilizationResult {
 
         transformedResources.push({
           id: phase,
-          name: phaseLabels[phase] || phase,
+          name: PHASE_RESOURCE_LABELS[phase] || phase,
           type: 'labor',
           allocated,
           available: 100,
@@ -546,35 +532,14 @@ export function useWBSProgressData(): UseWBSProgressResult {
         phaseGroups.get(phase)!.push(item);
       });
 
-      // Phase display order and labels
-      const phaseOrder = [
-        'design', 'approvals', 'mobilization', 'procurement', 'interface',
-        'site_prep', 'construction', 'testing', 'commissioning', 'sat', 'handover'
-      ];
-
-      const phaseLabels: Record<string, string> = {
-        design: 'Design & Engineering',
-        approvals: 'Statutory Approvals',
-        mobilization: 'Mobilization',
-        procurement: 'Procurement',
-        interface: 'Interface Coordination',
-        site_prep: 'Site Preparation',
-        construction: 'Construction',
-        testing: 'Testing',
-        commissioning: 'Commissioning',
-        sat: 'Site Acceptance Test',
-        handover: 'Handover',
-        other: 'Other',
-      };
-
       // Transform to WBSPhase type
-      const transformedPhases: WBSPhase[] = phaseOrder
+      const transformedPhases: WBSPhase[] = PHASE_ORDER
         .filter((phase) => phaseGroups.has(phase))
         .map((phase) => {
           const items = phaseGroups.get(phase)!;
           return {
             id: phase,
-            name: phaseLabels[phase] || phase,
+            name: PHASE_LABELS[phase] || phase,
             totalItems: items.length,
             completedItems: items.filter((i) => i.status === 'completed').length,
             inProgressItems: items.filter((i) => i.status === 'in_progress').length,
@@ -587,7 +552,7 @@ export function useWBSProgressData(): UseWBSProgressResult {
         const items = phaseGroups.get('other')!;
         transformedPhases.push({
           id: 'other',
-          name: phaseLabels['other'],
+          name: PHASE_LABELS['other'],
           totalItems: items.length,
           completedItems: items.filter((i) => i.status === 'completed').length,
           inProgressItems: items.filter((i) => i.status === 'in_progress').length,
