@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import MilestoneModel from '../../../../models/MilestoneModel';
 import MilestoneProgressModel from '../../../../models/MilestoneProgressModel';
+import { useAuth } from '../../../auth/AuthContext';
 import { logger } from '../../../services/LoggingService';
 import { MILESTONE_STATUS } from '../utils/milestoneConstants';
 
@@ -25,6 +26,7 @@ export const useEditProgress = ({
   onSuccess,
   onRefresh,
 }: UseEditProgressProps) => {
+  const { user } = useAuth();
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [editingProgress, setEditingProgress] = useState<MilestoneProgressModel | null>(null);
   const [editingMilestone, setEditingMilestone] = useState<MilestoneModel | null>(null);
@@ -97,7 +99,7 @@ export const useEditProgress = ({
             record.plannedEndDate = plannedEndDate?.getTime() || null;
             record.actualStartDate = actualStartDate?.getTime() || null;
             record.actualEndDate = actualEndDate?.getTime() || null;
-            record.updatedBy = 'planner'; // TODO: Get from auth context
+            record.updatedBy = user?.userId || user?.username || 'unknown';
             record.updatedAt = Date.now();
           });
         } else {
