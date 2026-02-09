@@ -14,16 +14,9 @@ import { Text, useTheme } from 'react-native-paper';
 import { LineChart } from 'react-native-chart-kit';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import type { KDProgressDataPoint } from '../hooks';
 
 // ==================== Types ====================
-
-export interface KDProgressDataPoint {
-  id: string;
-  code: string;
-  targetDate: number | null;
-  progress: number;
-  sequenceOrder: number;
-}
 
 export interface KeyDateProgressChartWidgetProps {
   keyDates: KDProgressDataPoint[];
