@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 37, // Added weightage to key_dates for project progress rollup
+  version: 38, // Added design_engineer_id to sites for designer assignment
   tables: [
     tableSchema({
       name: 'projects',

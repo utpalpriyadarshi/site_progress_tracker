@@ -7,6 +7,7 @@ import { v34Migration } from './v34_add_pdf_generation_status';
 import { v35Migration } from './v35_add_key_dates_tables';
 import { v36Migration } from './v36_add_design_documents_tables';
 import { v37Migration } from './v37_add_key_date_weightage';
+import { v38Migration } from './v38_add_designer_to_sites';
 
 export default schemaMigrations({
   migrations: [
@@ -580,5 +581,7 @@ export default schemaMigrations({
     v36Migration,
     // v37: Add weightage to key_dates for project progress rollup
     v37Migration,
+    // v38: Add design_engineer_id to sites for designer assignment
+    v38Migration,
   ],
 });
