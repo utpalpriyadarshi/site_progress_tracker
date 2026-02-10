@@ -7,6 +7,7 @@ import DesignDocumentCard from './components/DesignDocumentCard';
 import CreateDesignDocumentDialog from './components/CreateDesignDocumentDialog';
 import ManageCategoriesDialog from './components/ManageCategoriesDialog';
 import ApprovalDialog from './components/ApprovalDialog';
+import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -43,7 +44,7 @@ import { EmptyState } from '../components/common/EmptyState';
  */
 
 const DesignDocumentManagementScreen = () => {
-  const { projectId, projectName, engineerId, refreshTrigger } = useDesignEngineerContext();
+  const { projectId, projectName, engineerId, refreshTrigger, selectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designDocumentManagementReducer, createDesignDocumentInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
@@ -66,7 +67,7 @@ const DesignDocumentManagementScreen = () => {
     loadSites();
     loadCategories();
     loadDocuments();
-  }, [projectId, refreshTrigger]);
+  }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
   // Seed default top-level categories on first load
   const seedDefaultCategories = useCallback(async () => {
@@ -167,7 +168,7 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const loadDocuments = async () => {
-    if (!projectId) {
+    if (!projectId || !engineerId) {
       dispatch({ type: 'COMPLETE_LOADING' });
       return;
     }
@@ -175,10 +176,37 @@ const DesignDocumentManagementScreen = () => {
     try {
       dispatch({ type: 'START_LOADING' });
 
-      const docsCollection = database.collections.get('design_documents');
-      const docsData = await docsCollection
-        .query(Q.where('project_id', projectId))
+      // Get sites assigned to designer
+      const sitesCollection = database.collections.get('sites');
+      const assignedSites = await sitesCollection
+        .query(Q.where('design_engineer_id', engineerId))
         .fetch();
+      const assignedSiteIds = assignedSites.map((site: any) => site.id);
+
+      // Query documents based on site selection
+      const docsCollection = database.collections.get('design_documents');
+      let docsData;
+
+      if (assignedSiteIds.length === 0) {
+        // No sites assigned, show no documents
+        docsData = [];
+      } else if (selectedSiteId === 'all') {
+        // Show documents from all assigned sites
+        docsData = await docsCollection
+          .query(
+            Q.where('project_id', projectId),
+            Q.where('site_id', Q.oneOf(assignedSiteIds))
+          )
+          .fetch();
+      } else {
+        // Show documents from selected site only
+        docsData = await docsCollection
+          .query(
+            Q.where('project_id', projectId),
+            Q.where('site_id', selectedSiteId)
+          )
+          .fetch();
+      }
 
       const documentsWithDetails = await Promise.all(
         docsData.map(async (doc: any) => {
@@ -741,6 +769,7 @@ const DesignDocumentManagementScreen = () => {
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
+          <SiteSelector style={styles.siteSelector} />
           <Searchbar
             placeholder="Search documents..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
@@ -1016,6 +1045,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
+  },
+  siteSelector: {
+    marginTop: 8,
   },
 });
 

@@ -753,21 +753,56 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
   let rfqCount = 0;
   let docCount = 0;
 
+  // Get designer user ID
+  const rolesCollection = database.collections.get('roles');
+  const roles = await rolesCollection.query().fetch();
+  const designerRole = roles.find((r: any) => r.name === 'DesignEngineer');
+
+  let designerId = 'design_engineer'; // fallback
+  if (designerRole) {
+    const usersCollection = database.collections.get('users');
+    const designers = await usersCollection
+      .query(Q.where('role_id', designerRole.id), Q.where('project_id', projectId))
+      .fetch();
+    if (designers.length > 0) {
+      designerId = designers[0].id;
+    }
+  }
+
+  // Get sites for this project
+  const sitesCollection = database.collections.get('sites');
+  const projectSites = await sitesCollection
+    .query(Q.where('project_id', projectId))
+    .fetch();
+
+  const assignedSites = projectSites.slice(0, 2); // Assign designer to first 2 sites
+  const siteIds = assignedSites.map((s: any) => s.id);
+
   await database.write(async () => {
+    // Assign designer to sites
+    for (const site of assignedSites) {
+      await site.update((s: any) => {
+        s.designEngineerId = designerId;
+      });
+    }
+
     const doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
     const rfqsCollection = database.collections.get<RfqModel>('rfqs');
     const docCategoriesCollection = database.collections.get<DesignDocumentCategoryModel>('design_document_categories');
     const documentsCollection = database.collections.get<DesignDocumentModel>('design_documents');
 
     // 1. Create DOORS Packages
+    let pkgIndex = 0;
     for (const pkgDef of DOORS_PACKAGES) {
       const compliancePercentage = Math.round((pkgDef.compliantRequirements / pkgDef.totalRequirements) * 100);
+      const siteId = siteIds.length > 0 ? siteIds[pkgIndex % siteIds.length] : null;
       const pkg = await doorsPackagesCollection.create((record: any) => {
         record.doorsId = pkgDef.doorsId;
         record.equipmentName = pkgDef.equipmentName;
         record.category = pkgDef.category;
         record.equipmentType = pkgDef.equipmentType;
         record.projectId = projectId;
+        record.siteId = siteId;
         record.specificationRef = pkgDef.specificationRef;
         record.quantity = pkgDef.quantity;
         record.unit = pkgDef.unit;
@@ -781,13 +816,14 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.siteReqCompliance = compliancePercentage - Math.floor(Math.random() * 3);
         record.status = pkgDef.status;
         record.priority = pkgDef.priority;
-        record.createdBy = 'design_engineer';
+        record.createdBy = designerId;
         record.createdAt = Date.now();
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
         record.version = 1;
       });
       createdDoorsPackages.push(pkg);
+      pkgIndex++;
     }
 
     // 2. Create Design RFQs
@@ -836,8 +872,10 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     }
 
     // 4. Create Design Documents
+    let docIndex = 0;
     for (const docDef of DESIGN_DOCUMENTS) {
       const category = createdCategories[docDef.categoryIndex];
+      const siteId = siteIds.length > 0 ? siteIds[docIndex % siteIds.length] : null;
       await documentsCollection.create((record: any) => {
         record.documentNumber = docDef.documentNumber;
         record.title = docDef.title;
@@ -845,6 +883,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.documentType = docDef.documentType;
         record.categoryId = category.id;
         record.projectId = projectId;
+        record.siteId = siteId;
         record.revisionNumber = docDef.revisionNumber;
         record.status = docDef.status;
         if (docDef.status !== 'draft') {
@@ -856,13 +895,14 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         if (docDef.status === 'approved_with_comment') {
           record.approvalComment = 'Approved with minor corrections to be incorporated in next revision.';
         }
-        record.createdBy = 'design_engineer';
+        record.createdBy = designerId;
         record.createdAt = Date.now();
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
         record.version = 1;
       });
       docCount++;
+      docIndex++;
     }
   });
 

@@ -5,6 +5,7 @@ import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignRfqCard from './components/DesignRfqCard';
 import CreateDesignRfqDialog from './components/CreateDesignRfqDialog';
+import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -41,7 +42,7 @@ import { EmptyState } from '../components/common/EmptyState';
  */
 
 const DesignRfqManagementScreen = () => {
-  const { projectId, projectName, refreshTrigger } = useDesignEngineerContext();
+  const { projectId, projectName, refreshTrigger, engineerId, selectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
@@ -64,7 +65,7 @@ const DesignRfqManagementScreen = () => {
   useEffect(() => {
     loadDoorsPackages();
     loadRfqs();
-  }, [projectId, refreshTrigger]);
+  }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
   const loadDoorsPackages = async () => {
     if (!projectId) return;
@@ -85,7 +86,7 @@ const DesignRfqManagementScreen = () => {
   };
 
   const loadRfqs = async () => {
-    if (!projectId) {
+    if (!projectId || !engineerId) {
       dispatch({ type: 'COMPLETE_LOADING' });
       return;
     }
@@ -94,10 +95,32 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      const rfqCollection = database.collections.get('rfqs');
-      const rfqsData = await rfqCollection
-        .query(Q.where('project_id', projectId), Q.where('rfq_type', 'design'))
+      // Get sites assigned to this designer
+      const sitesCollection = database.collections.get('sites');
+      const assignedSites = await sitesCollection
+        .query(Q.where('design_engineer_id', engineerId))
         .fetch();
+
+      const assignedSiteIds = assignedSites.map((site: any) => site.id);
+
+      // Filter RFQs by assigned sites
+      const rfqCollection = database.collections.get('rfqs');
+      let rfqsQuery = rfqCollection.query(
+        Q.where('project_id', projectId),
+        Q.where('rfq_type', 'design'),
+        Q.where('site_id', Q.oneOf(assignedSiteIds))
+      );
+
+      // Further filter by selected site if not 'all'
+      if (selectedSiteId !== 'all') {
+        rfqsQuery = rfqCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('rfq_type', 'design'),
+          Q.where('site_id', selectedSiteId)
+        );
+      }
+
+      const rfqsData = await rfqsQuery.fetch();
 
       const rfqsList: DesignRfq[] = rfqsData.map((rfq: any) => ({
         id: rfq.id,
@@ -356,6 +379,7 @@ const DesignRfqManagementScreen = () => {
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
+          <SiteSelector style={styles.siteSelector} />
           <Searchbar
             placeholder="Search Design RFQs..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
@@ -589,6 +613,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#007AFF',
+  },
+  siteSelector: {
+    marginTop: 8,
   },
 });
 
