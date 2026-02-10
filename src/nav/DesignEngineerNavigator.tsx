@@ -26,6 +26,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Divider, useTheme } from 'react-native-paper';
 
 import DesignEngineerDashboardScreen from '../design_engineer/DesignEngineerDashboardScreen';
+import DesignerSitesScreen from '../design_engineer/DesignerSitesScreen';
 import DoorsPackageManagementScreen from '../design_engineer/DoorsPackageManagementScreen';
 import DesignRfqManagementScreen from '../design_engineer/DesignRfqManagementScreen';
 import DesignDocumentManagementScreen from '../design_engineer/DesignDocumentManagementScreen';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
 
 export type DesignEngineerTabParamList = {
   Dashboard: { showTutorial?: boolean } | undefined;
+  Sites: undefined;
   DesignDocuments: undefined;
   DoorsPackages: undefined;
   DesignRfqs: undefined;
@@ -125,6 +127,9 @@ const DesignEngineerTabs: React.FC = memo(() => {
       case 'Dashboard':
         iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
         break;
+      case 'Sites':
+        iconName = focused ? 'map-marker' : 'map-marker-outline';
+        break;
       case 'DesignDocuments':
         iconName = focused ? 'file-document' : 'file-document-outline';
         break;
@@ -164,6 +169,14 @@ const DesignEngineerTabs: React.FC = memo(() => {
         options={{
           title: 'Dashboard',
           tabBarAccessibilityLabel: 'Dashboard tab, overview of design engineering',
+        }}
+      />
+      <Tab.Screen
+        name="Sites"
+        component={DesignerSitesScreen}
+        options={{
+          title: 'Sites',
+          tabBarAccessibilityLabel: 'Sites tab, view and select assigned sites',
         }}
       />
       <Tab.Screen
