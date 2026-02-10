@@ -1,52 +1,111 @@
 /**
  * DesignerSitesScreen
  *
- * Dedicated screen for designers to view and select their assigned sites.
- * Follows the supervisor Sites screen pattern.
+ * Dedicated screen for designers to view their assigned sites.
+ * Follows the supervisor Sites screen pattern (read-only version).
  *
  * Features:
  * - Shows all sites assigned to the current designer
- * - Site selector for filtering design work
+ * - Search and filter sites
  * - Site cards showing site details
  * - Empty state when no sites assigned
+ * - Read-only (designers cannot add/edit sites)
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Card } from 'react-native-paper';
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Card, Title, Button } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import SiteModel from '../../models/SiteModel';
-import SiteSelector from './components/SiteSelector';
 import { EmptyState } from '../components/common/EmptyState';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { useAuth } from '../auth/AuthContext';
-import { CommonActions } from '@react-navigation/native';
+import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { useDebounce } from '../hooks';
+
+// Activity filter options
+const ACTIVITY_FILTERS: FilterOption[] = [
+  { id: 'all', label: 'All Sites' },
+  { id: 'active', label: 'Active', icon: 'check-circle' },
+  { id: 'inactive', label: 'Inactive', icon: 'circle-outline' },
+];
+
+// Sort options
+const SORT_OPTIONS: SortOption[] = [
+  { id: 'name', label: 'Name', icon: 'format-letter-case' },
+];
 
 interface DesignerSitesScreenProps {
   sites: SiteModel[];
+  projects: any[];
 }
 
-const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ sites }) => {
-  const { projectName, engineerId } = useDesignEngineerContext();
-  const { logout } = useAuth();
-  const navigation = useAuth().navigation;
+const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ sites, projects }) => {
+  const { projectName, projectId } = useDesignEngineerContext();
 
-  const handleLogout = async () => {
-    await logout();
-    if (navigation) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Auth' as any }],
-        })
+  // Search, filter, sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [selectedActivity, setSelectedActivity] = useState<string[]>(['all']);
+  const [sortBy, setSortBy] = useState<'name'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Combined filtering and sorting logic (memoized for performance)
+  const displayedSites = useMemo(() => {
+    let result = sites;
+
+    // 1. Search filter (using debounced value for better performance)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
+      result = result.filter(site =>
+        site.name.toLowerCase().includes(query) ||
+        site.location.toLowerCase().includes(query)
       );
     }
+
+    // 2. Activity filter (for now, all sites are considered active)
+    if (!selectedActivity.includes('all')) {
+      // Can be enhanced later with explicit active/inactive status
+    }
+
+    // 3. Sort by name
+    result = [...result].sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [sites, debouncedSearchQuery, selectedActivity, sortBy, sortDirection]);
+
+  // Filter toggle handler
+  const handleActivityToggle = (id: string) => {
+    if (id === 'all') {
+      setSelectedActivity(['all']);
+    } else {
+      const newFilters = selectedActivity.includes(id)
+        ? selectedActivity.filter(f => f !== id && f !== 'all')
+        : [...selectedActivity.filter(f => f !== 'all'), id];
+      setSelectedActivity(newFilters.length === 0 ? ['all'] : newFilters);
+    }
   };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedActivity(['all']);
+    setSortBy('name');
+    setSortDirection('asc');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return debouncedSearchQuery.trim() !== '' ||
+           !selectedActivity.includes('all');
+  }, [debouncedSearchQuery, selectedActivity]);
 
   return (
     <ErrorBoundary>
@@ -55,59 +114,120 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.projectName}>{projectName}</Text>
-              <Text style={styles.roleLabel}>My Sites</Text>
+              <Text style={styles.headerTitle}>My Sites</Text>
+              <Text style={styles.headerSubtitle}>Design Engineer</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Site Selector */}
-        <SiteSelector style={styles.siteSelector} />
+        {/* Project Header - Shows designer's assigned project */}
+        {projectName && (
+          <Card style={styles.projectCard}>
+            <Card.Content>
+              <View style={styles.projectHeader}>
+                <View>
+                  <Text style={styles.projectLabel}>📁 Your Assigned Project</Text>
+                  <Title style={styles.projectTitle}>{projectName}</Title>
+                  <Text style={styles.projectNote}>All sites belong to this project</Text>
+                </View>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Search Bar */}
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search sites by name or location..."
+        />
+
+        {/* Activity Filter Chips */}
+        <FilterChips
+          filters={ACTIVITY_FILTERS}
+          selectedFilters={selectedActivity}
+          onFilterToggle={handleActivityToggle}
+        />
+
+        {/* Results Row with Sort and Clear All */}
+        <View style={styles.resultsRow}>
+          <Text style={styles.resultCount}>
+            Showing {displayedSites.length} of {sites.length} sites
+          </Text>
+
+          {hasActiveFilters && (
+            <Button mode="text" onPress={clearAllFilters} compact>
+              Clear All
+            </Button>
+          )}
+
+          <SortMenu
+            sortOptions={SORT_OPTIONS}
+            currentSort={sortBy}
+            onSortChange={(id) => setSortBy(id as any)}
+            sortDirection={sortDirection}
+            onDirectionChange={setSortDirection}
+          />
+        </View>
 
         {/* Sites List */}
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-          {sites.length === 0 ? (
+        <ScrollView style={styles.scrollView}>
+          {displayedSites.length === 0 ? (
             <EmptyState
-              icon="map-marker-off"
-              title="No Sites Assigned"
-              message="You don't have any sites assigned yet. Contact your planner to get assigned to sites."
-              variant="large"
+              icon={hasActiveFilters ? 'filter-variant' : 'map-marker-off'}
+              title={hasActiveFilters ? 'No Sites Found' : 'No Sites Assigned'}
+              message={
+                hasActiveFilters
+                  ? 'No sites match your current search or filter criteria.'
+                  : "You don't have any sites assigned yet. Contact your planner to get assigned to sites."
+              }
+              helpText={
+                hasActiveFilters
+                  ? undefined
+                  : 'Sites are locations where you manage design documents, DOORS packages, and Design RFQs.'
+              }
+              tips={
+                hasActiveFilters
+                  ? undefined
+                  : [
+                      'Each site can have multiple design documents and DOORS packages',
+                      'Use the site selector to filter your work by site',
+                      'Track design compliance across all your sites',
+                    ]
+              }
+              variant={hasActiveFilters ? 'search' : 'default'}
+              secondaryActionText={hasActiveFilters ? 'Clear Filters' : undefined}
+              onSecondaryAction={
+                hasActiveFilters
+                  ? () => {
+                      setSearchQuery('');
+                      setSelectedActivity(['all']);
+                    }
+                  : undefined
+              }
             />
           ) : (
-            sites.map((site) => (
-              <Card key={site.id} style={styles.siteCard}>
-                <Card.Content>
-                  <View style={styles.siteHeader}>
-                    <Text style={styles.siteName}>{site.name}</Text>
-                  </View>
-                  <View style={styles.siteDetails}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.label}>Location:</Text>
-                      <Text style={styles.value}>{site.location}</Text>
+            displayedSites.map((site) => {
+              const project = projects.find((p) => p.id === site.projectId);
+
+              return (
+                <Card key={site.id} style={styles.siteCard}>
+                  <Card.Content>
+                    <View style={styles.siteHeader}>
+                      <View style={styles.siteInfo}>
+                        <Text style={styles.siteName}>{site.name}</Text>
+                        <Text style={styles.siteLocation}>📍 {site.location}</Text>
+                        {project && (
+                          <Text style={styles.projectName}>
+                            Project: {project.name}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    {site.plannedStartDate && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.label}>Planned Start:</Text>
-                        <Text style={styles.value}>
-                          {new Date(site.plannedStartDate).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    )}
-                    {site.plannedEndDate && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.label}>Planned End:</Text>
-                        <Text style={styles.value}>
-                          {new Date(site.plannedEndDate).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </Card.Content>
-              </Card>
-            ))
+                  </Card.Content>
+                </Card>
+              );
+            })
           )}
         </ScrollView>
       </View>
@@ -120,6 +240,7 @@ const enhance = withObservables(['engineerId'], ({ engineerId }: { engineerId: s
   sites: database.collections
     .get('sites')
     .query(Q.where('design_engineer_id', engineerId)),
+  projects: database.collections.get('projects').query(),
 }));
 
 const EnhancedDesignerSitesScreen = enhance(DesignerSitesScreenComponent as any);
@@ -146,73 +267,89 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  projectName: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFF',
     marginBottom: 4,
   },
-  roleLabel: {
+  headerSubtitle: {
     fontSize: 14,
     color: '#FFF',
     opacity: 0.9,
   },
-  logoutButton: {
+  projectCard: {
+    margin: 16,
+    marginBottom: 8,
+    elevation: 3,
+    backgroundColor: '#EDE7F6',
+  },
+  projectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  projectLabel: {
+    fontSize: 12,
+    color: '#673AB7',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  projectTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4527A0',
+    marginBottom: 4,
+  },
+  projectNote: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  resultsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
+    backgroundColor: 'white',
   },
-  logoutText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  siteSelector: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
+  resultCount: {
+    flex: 1,
+    fontSize: 12,
+    color: '#666',
   },
   scrollView: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 16,
-    paddingTop: 8,
-  },
   siteCard: {
-    marginBottom: 12,
+    margin: 16,
+    marginBottom: 8,
     elevation: 2,
     backgroundColor: '#FFFFFF',
   },
   siteHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+  },
+  siteInfo: {
+    flex: 1,
   },
   siteName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 4,
   },
-  siteDetails: {
-    gap: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  label: {
+  siteLocation: {
     fontSize: 14,
     color: '#666',
-    fontWeight: '600',
-    width: 110,
+    marginBottom: 4,
   },
-  value: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
+  projectName: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 
