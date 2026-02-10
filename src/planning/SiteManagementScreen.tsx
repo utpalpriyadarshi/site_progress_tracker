@@ -36,7 +36,7 @@ import UserModel from '../../models/UserModel';
 import ProjectModel from '../../models/ProjectModel';
 import KeyDateSiteModel from '../../models/KeyDateSiteModel';
 import KeyDateModel from '../../models/KeyDateModel';
-import SupervisorAssignmentPicker from './components/SupervisorAssignmentPicker';
+import TeamMemberPicker from './components/TeamMemberPicker';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
@@ -464,9 +464,9 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
                 </View>
               )}
 
-              {/* Supervisor Assignment */}
+              {/* Team Member Assignment */}
               <View style={styles.supervisorSection}>
-                <Text style={styles.label}>Assign Supervisor:</Text>
+                <Text style={styles.label}>Assign Team Member:</Text>
                 <Button
                   mode="outlined"
                   icon="account"
@@ -626,10 +626,11 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
         />
       )}
 
-      {/* Supervisor Assignment Picker */}
-      <SupervisorAssignmentPicker
+      {/* Team Member Assignment Picker */}
+      <TeamMemberPicker
         visible={ui.supervisorPickerVisible}
-        selectedSupervisorId={form.selectedSupervisorId}
+        selectedUserId={form.selectedSupervisorId}
+        projectId={projectId}
         onDismiss={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: false })}
         onSelect={handleSupervisorSelect}
       />
