@@ -76,11 +76,14 @@ const SiteSelector: React.FC<SiteSelectorProps> = ({ style }) => {
         onDismiss={closeMenu}
         anchor={
           <Button
-            mode="outlined"
+            mode="contained"
             onPress={openMenu}
             icon="map-marker"
             contentStyle={styles.buttonContent}
             style={styles.button}
+            buttonColor="rgba(255, 255, 255, 0.95)"
+            textColor="#333"
+            labelStyle={styles.buttonLabel}
           >
             {selectedSiteName}
           </Button>
@@ -129,10 +132,18 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   button: {
-    borderColor: '#673AB7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   buttonContent: {
     justifyContent: 'flex-start',
+  },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   menuContent: {
     backgroundColor: 'white',
@@ -149,7 +160,9 @@ const styles = StyleSheet.create({
   siteInfo: {
     marginTop: 4,
     marginLeft: 12,
-    color: '#666',
+    color: '#E0E0E0',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

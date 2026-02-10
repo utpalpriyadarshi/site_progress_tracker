@@ -168,7 +168,7 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const loadDocuments = async () => {
-    if (!projectId) {
+    if (!projectId || !engineerId) {
       dispatch({ type: 'COMPLETE_LOADING' });
       return;
     }
@@ -176,10 +176,37 @@ const DesignDocumentManagementScreen = () => {
     try {
       dispatch({ type: 'START_LOADING' });
 
-      const docsCollection = database.collections.get('design_documents');
-      const docsData = await docsCollection
-        .query(Q.where('project_id', projectId))
+      // Get sites assigned to designer
+      const sitesCollection = database.collections.get('sites');
+      const assignedSites = await sitesCollection
+        .query(Q.where('design_engineer_id', engineerId))
         .fetch();
+      const assignedSiteIds = assignedSites.map((site: any) => site.id);
+
+      // Query documents based on site selection
+      const docsCollection = database.collections.get('design_documents');
+      let docsData;
+
+      if (assignedSiteIds.length === 0) {
+        // No sites assigned, show no documents
+        docsData = [];
+      } else if (selectedSiteId === 'all') {
+        // Show documents from all assigned sites
+        docsData = await docsCollection
+          .query(
+            Q.where('project_id', projectId),
+            Q.where('site_id', Q.oneOf(assignedSiteIds))
+          )
+          .fetch();
+      } else {
+        // Show documents from selected site only
+        docsData = await docsCollection
+          .query(
+            Q.where('project_id', projectId),
+            Q.where('site_id', selectedSiteId)
+          )
+          .fetch();
+      }
 
       const documentsWithDetails = await Promise.all(
         docsData.map(async (doc: any) => {
