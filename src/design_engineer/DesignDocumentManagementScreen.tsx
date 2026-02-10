@@ -48,19 +48,8 @@ const DesignDocumentManagementScreen = () => {
   const [state, dispatch] = useReducer(designDocumentManagementReducer, createDesignDocumentInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
-  const { logout } = useAuth();
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
-
-  const handleLogout = async () => {
-    await logout();
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Auth' as any }],
-      }),
-    );
-  };
 
   // Load data on mount
   useEffect(() => {
@@ -736,9 +725,6 @@ const DesignDocumentManagementScreen = () => {
                 <Text style={styles.projectName}>Design Documents</Text>
                 <Text style={styles.screenLabel}>No project assigned</Text>
               </View>
-              <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                <Text style={styles.logoutText}>Logout</Text>
-              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.centerContainer}>
@@ -765,9 +751,6 @@ const DesignDocumentManagementScreen = () => {
               </Text>
               <Text style={styles.screenLabel}>Design Document Management</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
           <SiteSelector style={styles.siteSelector} />
           <Searchbar
@@ -1001,17 +984,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFF',
     opacity: 0.9,
-  },
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   searchbar: {
     marginBottom: 12,
