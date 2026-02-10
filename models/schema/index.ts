@@ -23,6 +23,7 @@ export default appSchema({
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
+        { name: 'design_engineer_id', type: 'string', isIndexed: true, isOptional: true }, // assigned design engineer (optional)
         // v2.11: Planning Engineer role - site schedule dates
         { name: 'planned_start_date', type: 'number', isOptional: true },
         { name: 'planned_end_date', type: 'number', isOptional: true },

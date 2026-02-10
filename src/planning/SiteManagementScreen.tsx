@@ -97,6 +97,19 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
       }
     }
 
+    // Load designer name
+    let designerName = 'Unassigned';
+    if (site.designEngineerId) {
+      try {
+        const designer = await database.collections
+          .get('users')
+          .find(site.designEngineerId) as UserModel;
+        designerName = designer.fullName;
+      } catch (error) {
+        designerName = 'Unassigned';
+      }
+    }
+
     // Auto-populate plannedEndDate from associated Key Date if not set
     if (!site.plannedEndDate) {
       try {
@@ -136,7 +149,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
 
     dispatch({
       type: 'OPEN_EDIT_DIALOG',
-      payload: { site, supervisorName },
+      payload: { site, supervisorName, designerName },
     });
   }, []);
 
@@ -174,6 +187,28 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
     });
   }, []);
 
+  // ==================== Designer Handler ====================
+
+  const handleDesignerSelect = useCallback(async (designerId?: string) => {
+    let designerName = 'Unassigned';
+
+    if (designerId) {
+      try {
+        const designer = await database.collections
+          .get('users')
+          .find(designerId) as UserModel;
+        designerName = designer.fullName;
+      } catch (error) {
+        designerName = 'Unassigned';
+      }
+    }
+
+    dispatch({
+      type: 'SET_DESIGNER',
+      payload: { id: designerId, name: designerName },
+    });
+  }, []);
+
   // ==================== Save Handler ====================
 
   const handleSave = useCallback(async () => {
@@ -194,6 +229,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
             site.location = form.siteLocation.trim();
             site.projectId = form.selectedProjectId;
             site.supervisorId = form.selectedSupervisorId || null;
+            site.designEngineerId = form.selectedDesignEngineerId || null;
             site.plannedStartDate = form.plannedStartDate?.getTime() || null;
             site.plannedEndDate = form.plannedEndDate?.getTime() || null;
             site.actualStartDate = form.actualStartDate?.getTime() || null;
@@ -210,6 +246,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
             site.location = form.siteLocation.trim();
             site.projectId = form.selectedProjectId;
             site.supervisorId = form.selectedSupervisorId || null;
+            site.designEngineerId = form.selectedDesignEngineerId || null;
             site.plannedStartDate = form.plannedStartDate?.getTime() || null;
             site.plannedEndDate = form.plannedEndDate?.getTime() || null;
             site.actualStartDate = form.actualStartDate?.getTime() || null;
@@ -466,7 +503,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
 
               {/* Team Member Assignment */}
               <View style={styles.supervisorSection}>
-                <Text style={styles.label}>Assign Team Member:</Text>
+                <Text style={styles.label}>Assign Supervisor:</Text>
                 <Button
                   mode="outlined"
                   icon="account"
@@ -474,6 +511,19 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
                   style={styles.supervisorButton}
                 >
                   {form.supervisorName}
+                </Button>
+              </View>
+
+              {/* Designer Assignment */}
+              <View style={styles.supervisorSection}>
+                <Text style={styles.label}>Assign Designer:</Text>
+                <Button
+                  mode="outlined"
+                  icon="account-hard-hat"
+                  onPress={() => dispatch({ type: 'SET_DESIGNER_PICKER_VISIBLE', payload: true })}
+                  style={styles.supervisorButton}
+                >
+                  {form.designerName}
                 </Button>
               </View>
 
@@ -631,8 +681,20 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
         visible={ui.supervisorPickerVisible}
         selectedUserId={form.selectedSupervisorId}
         projectId={projectId}
+        title="Assign Supervisor"
         onDismiss={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: false })}
         onSelect={handleSupervisorSelect}
+      />
+
+      {/* Designer Assignment Picker */}
+      <TeamMemberPicker
+        visible={ui.designerPickerVisible}
+        selectedUserId={form.selectedDesignEngineerId}
+        projectId={projectId}
+        roleFilter="DesignEngineer"
+        title="Assign Design Engineer"
+        onDismiss={() => dispatch({ type: 'SET_DESIGNER_PICKER_VISIBLE', payload: false })}
+        onSelect={handleDesignerSelect}
       />
 
       {/* Snackbar for notifications - wrapped in Portal to appear above dialogs */}

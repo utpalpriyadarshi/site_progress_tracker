@@ -7,6 +7,7 @@ import DesignDocumentCard from './components/DesignDocumentCard';
 import CreateDesignDocumentDialog from './components/CreateDesignDocumentDialog';
 import ManageCategoriesDialog from './components/ManageCategoriesDialog';
 import ApprovalDialog from './components/ApprovalDialog';
+import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -43,7 +44,7 @@ import { EmptyState } from '../components/common/EmptyState';
  */
 
 const DesignDocumentManagementScreen = () => {
-  const { projectId, projectName, engineerId, refreshTrigger } = useDesignEngineerContext();
+  const { projectId, projectName, engineerId, refreshTrigger, selectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designDocumentManagementReducer, createDesignDocumentInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
@@ -66,7 +67,7 @@ const DesignDocumentManagementScreen = () => {
     loadSites();
     loadCategories();
     loadDocuments();
-  }, [projectId, refreshTrigger]);
+  }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
   // Seed default top-level categories on first load
   const seedDefaultCategories = useCallback(async () => {
@@ -741,6 +742,7 @@ const DesignDocumentManagementScreen = () => {
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
+          <SiteSelector style={styles.siteSelector} />
           <Searchbar
             placeholder="Search documents..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
@@ -1016,6 +1018,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
+  },
+  siteSelector: {
+    marginTop: 8,
   },
 });
 

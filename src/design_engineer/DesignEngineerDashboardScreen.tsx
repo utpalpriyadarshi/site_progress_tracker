@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { DashboardLayout } from './dashboard/DashboardLayout';
+import SiteSelector from './components/SiteSelector';
 import {
   DesignDocStatusWidget,
   DoorsPackageStatusWidget,
@@ -161,6 +162,8 @@ const DesignEngineerDashboardScreen = () => {
           </View>
         </View>
 
+        <SiteSelector style={styles.siteSelector} />
+
         {hasNoData ? (
           <EmptyState
             icon="rocket-launch"
@@ -297,6 +300,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  siteSelector: {
+    marginHorizontal: 16,
+    marginTop: 8,
   },
 });
 

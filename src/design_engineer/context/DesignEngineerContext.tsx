@@ -30,6 +30,10 @@ interface DesignEngineerContextType {
   setProjectId: (id: string) => void;
   projectName: string;
   setProjectName: (name: string) => void;
+  selectedSiteId: string | 'all';
+  setSelectedSiteId: (siteId: string | 'all') => void;
+  selectedSite: any | null;
+  setSelectedSite: (site: any | null) => void;
   selectedDoorsId: string | null;
   setSelectedDoorsId: (id: string | null) => void;
   filterStatus: string | null;
@@ -45,12 +49,15 @@ const DesignEngineerContext = createContext<DesignEngineerContextType | undefine
 const ENGINEER_ID_KEY = '@design_engineer_id';
 const PROJECT_ID_KEY = '@design_engineer_project_id';
 const PROJECT_NAME_KEY = '@design_engineer_project_name';
+const SELECTED_SITE_KEY = '@design_engineer_selected_site';
 
 export const DesignEngineerProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth(); // Get logged-in user
   const [engineerId, setEngineerIdState] = useState<string>('');
   const [projectId, setProjectIdState] = useState<string>('');
   const [projectName, setProjectNameState] = useState<string>('');
+  const [selectedSiteId, setSelectedSiteIdState] = useState<string | 'all'>('all');
+  const [selectedSite, setSelectedSite] = useState<any | null>(null);
   const [selectedDoorsId, setSelectedDoorsId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
@@ -137,10 +144,11 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   useEffect(() => {
     const loadSavedData = async () => {
       try {
-        const [savedEngineerId, savedProjectId, savedProjectName] = await Promise.all([
+        const [savedEngineerId, savedProjectId, savedProjectName, savedSiteId] = await Promise.all([
           AsyncStorage.getItem(ENGINEER_ID_KEY),
           AsyncStorage.getItem(PROJECT_ID_KEY),
           AsyncStorage.getItem(PROJECT_NAME_KEY),
+          AsyncStorage.getItem(SELECTED_SITE_KEY),
         ]);
 
         if (savedEngineerId && !user) {
@@ -153,6 +161,10 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
 
         if (savedProjectName && !user) {
           setProjectNameState(savedProjectName);
+        }
+
+        if (savedSiteId) {
+          setSelectedSiteIdState(savedSiteId);
         }
       } catch (error) {
         logger.error('[DesignEngineerContext] Error loading saved data:', error);
@@ -192,6 +204,16 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     }
   };
 
+  // Save selected site when it changes
+  const setSelectedSiteId = async (siteId: string | 'all') => {
+    setSelectedSiteIdState(siteId);
+    try {
+      await AsyncStorage.setItem(SELECTED_SITE_KEY, siteId);
+    } catch (error) {
+      logger.error('[DesignEngineerContext] Error saving selected site:', error);
+    }
+  };
+
   const triggerRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -205,6 +227,10 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
         setProjectId,
         projectName,
         setProjectName,
+        selectedSiteId,
+        setSelectedSiteId,
+        selectedSite,
+        setSelectedSite,
         selectedDoorsId,
         setSelectedDoorsId,
         filterStatus,

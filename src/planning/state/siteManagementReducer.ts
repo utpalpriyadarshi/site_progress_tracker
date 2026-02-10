@@ -21,6 +21,7 @@ export interface SiteManagementState {
   ui: {
     dialogVisible: boolean;
     supervisorPickerVisible: boolean;
+    designerPickerVisible: boolean;
     deleteDialogVisible: boolean;
     snackbarVisible: boolean;
     snackbarMessage: string;
@@ -37,6 +38,8 @@ export interface SiteManagementState {
     selectedProjectId: string;
     selectedSupervisorId: string | undefined;
     supervisorName: string;
+    selectedDesignEngineerId: string | undefined;
+    designerName: string;
     // Dates
     plannedStartDate: Date | undefined;
     plannedEndDate: Date | undefined;
@@ -54,11 +57,12 @@ export interface SiteManagementState {
 export type SiteManagementAction =
   // UI Actions
   | { type: 'OPEN_ADD_DIALOG'; payload: { defaultProjectId: string } }
-  | { type: 'OPEN_EDIT_DIALOG'; payload: { site: SiteModel; supervisorName: string } }
+  | { type: 'OPEN_EDIT_DIALOG'; payload: { site: SiteModel; supervisorName: string; designerName: string } }
   | { type: 'CLOSE_DIALOG' }
   | { type: 'OPEN_DELETE_DIALOG'; payload: { site: SiteModel } }
   | { type: 'CLOSE_DELETE_DIALOG' }
   | { type: 'SET_SUPERVISOR_PICKER_VISIBLE'; payload: boolean }
+  | { type: 'SET_DESIGNER_PICKER_VISIBLE'; payload: boolean }
   // Snackbar Actions
   | { type: 'SHOW_SNACKBAR'; payload: { message: string; type: 'success' | 'error' } }
   | { type: 'HIDE_SNACKBAR' }
@@ -67,6 +71,7 @@ export type SiteManagementAction =
   | { type: 'SET_SITE_LOCATION'; payload: string }
   | { type: 'SET_SELECTED_PROJECT_ID'; payload: string }
   | { type: 'SET_SUPERVISOR'; payload: { id: string | undefined; name: string } }
+  | { type: 'SET_DESIGNER'; payload: { id: string | undefined; name: string } }
   // Date Actions
   | { type: 'SET_PLANNED_START_DATE'; payload: Date | undefined }
   | { type: 'SET_PLANNED_END_DATE'; payload: Date | undefined }
@@ -86,6 +91,7 @@ export const createInitialState = (): SiteManagementState => ({
   ui: {
     dialogVisible: false,
     supervisorPickerVisible: false,
+    designerPickerVisible: false,
     deleteDialogVisible: false,
     snackbarVisible: false,
     snackbarMessage: '',
@@ -101,6 +107,8 @@ export const createInitialState = (): SiteManagementState => ({
     selectedProjectId: '',
     selectedSupervisorId: undefined,
     supervisorName: 'Unassigned',
+    selectedDesignEngineerId: undefined,
+    designerName: 'Unassigned',
     plannedStartDate: undefined,
     plannedEndDate: undefined,
     actualStartDate: undefined,
@@ -133,6 +141,8 @@ export function siteManagementReducer(
           selectedProjectId: action.payload.defaultProjectId,
           selectedSupervisorId: undefined,
           supervisorName: 'Unassigned',
+          selectedDesignEngineerId: undefined,
+          designerName: 'Unassigned',
           plannedStartDate: undefined,
           plannedEndDate: undefined,
           actualStartDate: undefined,
@@ -158,6 +168,8 @@ export function siteManagementReducer(
           selectedProjectId: site.projectId,
           selectedSupervisorId: site.supervisorId,
           supervisorName: action.payload.supervisorName,
+          selectedDesignEngineerId: site.designEngineerId,
+          designerName: action.payload.designerName,
           plannedStartDate: site.plannedStartDate ? new Date(site.plannedStartDate) : undefined,
           plannedEndDate: site.plannedEndDate ? new Date(site.plannedEndDate) : undefined,
           actualStartDate: site.actualStartDate ? new Date(site.actualStartDate) : undefined,
@@ -182,6 +194,8 @@ export function siteManagementReducer(
           selectedProjectId: '',
           selectedSupervisorId: undefined,
           supervisorName: 'Unassigned',
+          selectedDesignEngineerId: undefined,
+          designerName: 'Unassigned',
           plannedStartDate: undefined,
           plannedEndDate: undefined,
           actualStartDate: undefined,
@@ -225,6 +239,15 @@ export function siteManagementReducer(
         ui: {
           ...state.ui,
           supervisorPickerVisible: action.payload,
+        },
+      };
+
+    case 'SET_DESIGNER_PICKER_VISIBLE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          designerPickerVisible: action.payload,
         },
       };
 
@@ -284,6 +307,16 @@ export function siteManagementReducer(
           ...state.form,
           selectedSupervisorId: action.payload.id,
           supervisorName: action.payload.name,
+        },
+      };
+
+    case 'SET_DESIGNER':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          selectedDesignEngineerId: action.payload.id,
+          designerName: action.payload.name,
         },
       };
 
