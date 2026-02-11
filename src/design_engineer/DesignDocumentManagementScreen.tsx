@@ -263,6 +263,7 @@ const DesignDocumentManagementScreen = () => {
             projectId: doc.projectId,
             siteId: doc.siteId,
             siteName,
+            keyDateId: doc.keyDateId,
             revisionNumber: doc.revisionNumber,
             status: doc.status,
             approvalComment: doc.approvalComment,
