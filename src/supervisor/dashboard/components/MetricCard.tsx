@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 interface MetricCardProps {
   title: string;
+  subtitle?: string;
   value: number | string;
   icon: string;
   color: string;
@@ -25,6 +26,7 @@ interface MetricCardProps {
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   title,
+  subtitle,
   value,
   icon,
   color,
@@ -58,6 +60,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         <Text variant="bodyMedium" style={styles.title}>
           {title}
         </Text>
+        {subtitle && (
+          <Text style={styles.subtitle}>{subtitle}</Text>
+        )}
       </Card.Content>
     </Card>
   );
@@ -94,6 +99,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#666',
+  },
+  subtitle: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 2,
   },
   trend: {
     flexDirection: 'row',

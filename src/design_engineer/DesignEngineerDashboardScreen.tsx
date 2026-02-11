@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { DesignerHeader } from '../components/common/DesignerHeader';
 import { MetricCard } from '../supervisor/dashboard/components/MetricCard';
 import { QuickActionButton } from '../supervisor/dashboard/components/QuickActionButton';
 import { AlertsSection } from '../supervisor/dashboard/components/AlertsSection';
@@ -17,40 +16,23 @@ import designerTutorialSteps from '../tutorial/designerTutorialSteps';
 import TutorialService from '../services/TutorialService';
 
 /**
- * DesignEngineerDashboardScreen (v5.0 - Aligned with Supervisor Pattern)
+ * DesignEngineerDashboardScreen (v6.0 - Dual-Scope Dashboard)
  *
- * Dashboard for Design Engineer role showing key metrics and summaries.
+ * Shows two sections:
+ * - "My Work": Metrics scoped to engineer's assigned sites
+ * - "Project Overview": Full project-wide metrics
  *
- * Latest Improvements:
- * - Unified useDashboardData hook (replaces 6 individual widget hooks)
- * - Consistent header with DesignerHeader component
- * - MetricCard-based layout (replaces custom widgets)
- * - Quick Actions section for common tasks
- * - Alerts & Notifications section
- * - Pull-to-refresh support
- * - Improved performance and maintainability
- *
- * KPIs:
- * - Total Design Documents (draft/submitted/approved/rejected)
- * - DOORS Packages (pending/received/reviewed)
- * - Design RFQs (draft/issued/awarded)
- * - Compliance rate and processing time
- *
- * Design Engineer Responsibilities:
- * - Manage design documents and DOORS packages
- * - Create and manage Design RFQs (engineering phase, pre-PM200)
- * - Track design compliance and engineering progress
- * - One design engineer per project
+ * Alerts are generated from "My Work" data only.
  */
 
 const DesignEngineerDashboardScreen = () => {
-  const { projectId, projectName } = useDesignEngineerContext();
+  const { projectId, projectName, engineerId } = useDesignEngineerContext();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { user } = useAuth();
 
-  // Unified dashboard data hook
-  const { metrics, alerts, loading, error, refresh } = useDashboardData(projectId);
+  // Dual-scope dashboard data hook
+  const { myMetrics, projectMetrics, alerts, loading, error, refresh } = useDashboardData(projectId, engineerId);
 
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -114,24 +96,21 @@ const DesignEngineerDashboardScreen = () => {
 
   logger.debug('[Dashboard] Rendering with project:', projectId);
 
-  // Check if we should show welcome empty state
+  // Show empty state only when BOTH scopes have no data at all
   const hasNoData =
     !loading &&
-    metrics &&
-    metrics.totalDesignDocs === 0 &&
-    metrics.doorsPackages === 0 &&
-    metrics.designRfqs === 0;
+    myMetrics &&
+    projectMetrics &&
+    myMetrics.totalDesignDocs === 0 &&
+    myMetrics.doorsPackages === 0 &&
+    myMetrics.designRfqs === 0 &&
+    projectMetrics.totalDesignDocs === 0 &&
+    projectMetrics.doorsPackages === 0 &&
+    projectMetrics.designRfqs === 0;
 
   return (
     <ErrorBoundary>
       <View style={styles.container}>
-        <DesignerHeader
-          title="Dashboard"
-          subtitle={projectName}
-          onRefresh={refresh}
-          refreshing={loading}
-        />
-
         {hasNoData ? (
           <EmptyState
             icon="rocket-launch"
@@ -161,11 +140,21 @@ const DesignEngineerDashboardScreen = () => {
               <Text variant="headlineSmall">Welcome, {user?.fullName}!</Text>
             </View>
 
-            {/* Metrics Grid */}
+            {/* ===== MY WORK SECTION ===== */}
+            <View style={styles.section}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                My Work
+              </Text>
+              <Text variant="bodySmall" style={styles.sectionSubtitle}>
+                Scoped to your assigned sites
+              </Text>
+            </View>
+
+            {/* My Work Metrics Grid */}
             <View style={styles.metricsGrid}>
               <MetricCard
                 title="Design Documents"
-                value={metrics?.totalDesignDocs || 0}
+                value={myMetrics?.totalDesignDocs || 0}
                 icon="description"
                 color="#2196F3"
                 loading={loading}
@@ -173,7 +162,7 @@ const DesignEngineerDashboardScreen = () => {
               />
               <MetricCard
                 title="DOORS Packages"
-                value={metrics?.doorsPackages || 0}
+                value={myMetrics?.doorsPackages || 0}
                 icon="folder-open"
                 color="#673AB7"
                 loading={loading}
@@ -184,7 +173,7 @@ const DesignEngineerDashboardScreen = () => {
             <View style={styles.metricsGrid}>
               <MetricCard
                 title="Design RFQs"
-                value={metrics?.designRfqs || 0}
+                value={myMetrics?.designRfqs || 0}
                 icon="request-quote"
                 color="#FF9800"
                 loading={loading}
@@ -192,10 +181,10 @@ const DesignEngineerDashboardScreen = () => {
               />
               <MetricCard
                 title="Compliance Rate"
-                value={`${metrics?.complianceRate || 0}%`}
+                value={`${myMetrics?.complianceRate || 0}%`}
                 icon="verified"
                 color={
-                  (metrics?.complianceRate || 0) >= (metrics?.complianceTarget || 80)
+                  (myMetrics?.complianceRate || 0) >= (myMetrics?.complianceTarget || 80)
                     ? '#4CAF50'
                     : '#F44336'
                 }
@@ -204,8 +193,8 @@ const DesignEngineerDashboardScreen = () => {
               />
             </View>
 
-            {/* Document Status Breakdown */}
-            {metrics && metrics.totalDesignDocs > 0 && (
+            {/* My Work - Document Status Breakdown */}
+            {myMetrics && myMetrics.totalDesignDocs > 0 && (
               <View style={styles.section}>
                 <Text variant="titleMedium" style={styles.sectionTitle}>
                   Document Status
@@ -213,14 +202,14 @@ const DesignEngineerDashboardScreen = () => {
                 <View style={styles.metricsGrid}>
                   <MetricCard
                     title="Draft"
-                    value={metrics.draftDocs}
+                    value={myMetrics.draftDocs}
                     icon="edit"
                     color="#9E9E9E"
                     loading={loading}
                   />
                   <MetricCard
                     title="Submitted"
-                    value={metrics.submittedDocs}
+                    value={myMetrics.submittedDocs}
                     icon="send"
                     color="#2196F3"
                     loading={loading}
@@ -229,14 +218,14 @@ const DesignEngineerDashboardScreen = () => {
                 <View style={styles.metricsGrid}>
                   <MetricCard
                     title="Approved"
-                    value={metrics.approvedDocs}
+                    value={myMetrics.approvedDocs}
                     icon="check-circle"
                     color="#4CAF50"
                     loading={loading}
                   />
                   <MetricCard
                     title="Rejected"
-                    value={metrics.rejectedDocs}
+                    value={myMetrics.rejectedDocs}
                     icon="cancel"
                     color="#F44336"
                     loading={loading}
@@ -244,6 +233,77 @@ const DesignEngineerDashboardScreen = () => {
                 </View>
               </View>
             )}
+
+            {/* Alerts & Notifications (from My Work data) */}
+            {alerts.length > 0 && (
+              <AlertsSection
+                alerts={alerts}
+                onAlertPress={(alert) => {
+                  logger.debug('[Dashboard] Alert pressed:', alert);
+                  if (alert.id.includes('doc')) {
+                    navigation.navigate('DesignDocuments' as never);
+                  } else if (alert.id.includes('doors') || alert.id.includes('compliance')) {
+                    navigation.navigate('DoorsPackages' as never);
+                  }
+                }}
+              />
+            )}
+
+            {/* ===== PROJECT OVERVIEW SECTION ===== */}
+            <View style={styles.projectOverviewHeader}>
+              <Text variant="titleMedium" style={styles.projectOverviewTitle}>
+                Project Overview
+              </Text>
+              <Text variant="bodySmall" style={styles.sectionSubtitle}>
+                All project-wide totals
+              </Text>
+            </View>
+
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Design Documents"
+                subtitle="Project total"
+                value={projectMetrics?.totalDesignDocs || 0}
+                icon="description"
+                color="#90CAF9"
+                loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments' as never)}
+              />
+              <MetricCard
+                title="DOORS Packages"
+                subtitle="Project total"
+                value={projectMetrics?.doorsPackages || 0}
+                icon="folder-open"
+                color="#B39DDB"
+                loading={loading}
+                onPress={() => navigation.navigate('DoorsPackages' as never)}
+              />
+            </View>
+
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Design RFQs"
+                subtitle="Project total"
+                value={projectMetrics?.designRfqs || 0}
+                icon="request-quote"
+                color="#FFCC80"
+                loading={loading}
+                onPress={() => navigation.navigate('DesignRfqs' as never)}
+              />
+              <MetricCard
+                title="Compliance Rate"
+                subtitle="Project total"
+                value={`${projectMetrics?.complianceRate || 0}%`}
+                icon="verified"
+                color={
+                  (projectMetrics?.complianceRate || 0) >= (projectMetrics?.complianceTarget || 80)
+                    ? '#81C784'
+                    : '#E57373'
+                }
+                loading={loading}
+                onPress={() => navigation.navigate('DoorsPackages' as never)}
+              />
+            </View>
 
             {/* Quick Actions */}
             <View style={styles.section}>
@@ -277,22 +337,6 @@ const DesignEngineerDashboardScreen = () => {
                 />
               </ScrollView>
             </View>
-
-            {/* Alerts & Notifications */}
-            {alerts.length > 0 && (
-              <AlertsSection
-                alerts={alerts}
-                onAlertPress={(alert) => {
-                  logger.debug('[Dashboard] Alert pressed:', alert);
-                  // Handle alert navigation based on alert ID
-                  if (alert.id.includes('doc')) {
-                    navigation.navigate('DesignDocuments' as never);
-                  } else if (alert.id.includes('doors') || alert.id.includes('compliance')) {
-                    navigation.navigate('DoorsPackages' as never);
-                  }
-                }}
-              />
-            )}
           </ScrollView>
         )}
 
@@ -338,8 +382,25 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: 'bold',
+  },
+  sectionSubtitle: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    color: '#999',
+  },
+  projectOverviewHeader: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  projectOverviewTitle: {
+    marginHorizontal: 16,
+    marginBottom: 4,
+    fontWeight: 'bold',
+    color: '#666',
   },
   quickActionsScroll: {
     paddingHorizontal: 8,

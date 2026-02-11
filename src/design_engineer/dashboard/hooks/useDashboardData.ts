@@ -6,8 +6,9 @@ import { logger } from '../../../services/LoggingService';
 /**
  * useDashboardData Hook - Design Engineer
  *
- * Consolidated hook that fetches all dashboard metrics and alerts
- * Replaces individual widget hooks for better performance and maintainability
+ * Dual-scope hook that fetches both "My Work" (assigned sites) and "Project" metrics.
+ * - myMetrics: Scoped to engineer's assigned sites
+ * - projectMetrics: Full project-wide totals
  */
 
 interface DashboardMetrics {
@@ -49,7 +50,8 @@ interface Alert {
 }
 
 interface UseDashboardDataReturn {
-  metrics: DashboardMetrics | null;
+  myMetrics: DashboardMetrics | null;
+  projectMetrics: DashboardMetrics | null;
   alerts: Alert[];
   loading: boolean;
   error: string | null;
@@ -57,7 +59,69 @@ interface UseDashboardDataReturn {
 }
 
 /**
- * Generate alerts based on business rules
+ * Calculate metrics from raw data arrays
+ */
+const calculateMetrics = (
+  designDocs: any[],
+  doorsPackages: any[],
+  rfqs: any[]
+): DashboardMetrics => {
+  const draftDocs = designDocs.filter((d: any) => d.status === 'draft').length;
+  const submittedDocs = designDocs.filter((d: any) => d.status === 'submitted').length;
+  const approvedDocs = designDocs.filter(
+    (d: any) => d.status === 'approved' || d.status === 'approved_with_comment'
+  ).length;
+  const rejectedDocs = designDocs.filter((d: any) => d.status === 'rejected').length;
+
+  const pendingDoors = doorsPackages.filter((pkg: any) => pkg.status === 'pending').length;
+  const receivedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'received').length;
+  const reviewedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'reviewed').length;
+
+  const draftRfqs = rfqs.filter((rfq: any) => rfq.status === 'draft').length;
+  const issuedRfqs = rfqs.filter((rfq: any) => rfq.status === 'issued').length;
+  const awardedRfqs = rfqs.filter((rfq: any) => rfq.status === 'awarded').length;
+
+  const complianceRate =
+    doorsPackages.length > 0
+      ? Math.round((reviewedDoors / doorsPackages.length) * 100)
+      : 0;
+
+  let totalProcessingDays = 0;
+  let processedCount = 0;
+  doorsPackages.forEach((pkg: any) => {
+    if (pkg.receivedDate && pkg.reviewedDate) {
+      const processingTime =
+        (pkg.reviewedDate - pkg.receivedDate) / (1000 * 60 * 60 * 24);
+      totalProcessingDays += processingTime;
+      processedCount++;
+    }
+  });
+  const avgProcessingTime =
+    processedCount > 0 ? Math.round(totalProcessingDays / processedCount) : 0;
+
+  return {
+    totalDesignDocs: designDocs.length,
+    draftDocs,
+    submittedDocs,
+    approvedDocs,
+    rejectedDocs,
+    doorsPackages: doorsPackages.length,
+    pendingDoors,
+    receivedDoors,
+    reviewedDoors,
+    designRfqs: rfqs.length,
+    draftRfqs,
+    issuedRfqs,
+    awardedRfqs,
+    complianceRate,
+    complianceTarget: 80,
+    avgProcessingTime,
+    processingBenchmark: 7,
+  };
+};
+
+/**
+ * Generate alerts based on business rules (from "My Work" data only)
  */
 const generateAlerts = (
   designDocs: any[],
@@ -132,10 +196,14 @@ const generateAlerts = (
 };
 
 /**
- * Main hook - fetches all dashboard data
+ * Main hook - fetches dual-scope dashboard data
  */
-export const useDashboardData = (projectId: string | null): UseDashboardDataReturn => {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+export const useDashboardData = (
+  projectId: string | null,
+  engineerId: string | null
+): UseDashboardDataReturn => {
+  const [myMetrics, setMyMetrics] = useState<DashboardMetrics | null>(null);
+  const [projectMetrics, setProjectMetrics] = useState<DashboardMetrics | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +211,8 @@ export const useDashboardData = (projectId: string | null): UseDashboardDataRetu
   const fetchData = useCallback(async () => {
     if (!projectId) {
       setLoading(false);
-      setMetrics(null);
+      setMyMetrics(null);
+      setProjectMetrics(null);
       setAlerts([]);
       return;
     }
@@ -152,90 +221,59 @@ export const useDashboardData = (projectId: string | null): UseDashboardDataRetu
       setLoading(true);
       setError(null);
 
-      // Fetch all data in parallel using Promise.all
-      const [designDocs, doorsPackages, rfqs] = await Promise.all([
-        // Design Documents
+      // Fetch engineer's assigned site IDs
+      let mySiteIds: string[] = [];
+      if (engineerId) {
+        const mySites = await database.collections
+          .get('sites')
+          .query(Q.where('design_engineer_id', engineerId))
+          .fetch();
+        mySiteIds = mySites.map((s: any) => s.id);
+      }
+
+      // Fetch all project-level data
+      const [allDesignDocs, allDoorsPackages, allRfqs] = await Promise.all([
         database.collections
           .get('design_documents')
           .query(Q.where('project_id', projectId))
           .fetch(),
-
-        // DOORS Packages
         database.collections
           .get('doors_packages')
           .query(Q.where('project_id', projectId))
           .fetch(),
-
-        // RFQs (design type only)
         database.collections
           .get('rfqs')
           .query(Q.where('project_id', projectId), Q.where('rfq_type', 'design'))
           .fetch(),
       ]);
 
-      // Calculate Design Document metrics
-      const draftDocs = designDocs.filter((d: any) => d.status === 'draft').length;
-      const submittedDocs = designDocs.filter((d: any) => d.status === 'submitted').length;
-      const approvedDocs = designDocs.filter(
-        (d: any) => d.status === 'approved' || d.status === 'approved_with_comment'
-      ).length;
-      const rejectedDocs = designDocs.filter((d: any) => d.status === 'rejected').length;
+      // Calculate project-wide metrics
+      const projMetrics = calculateMetrics(allDesignDocs, allDoorsPackages, allRfqs);
+      setProjectMetrics(projMetrics);
 
-      // Calculate DOORS metrics
-      const pendingDoors = doorsPackages.filter((pkg: any) => pkg.status === 'pending').length;
-      const receivedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'received').length;
-      const reviewedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'reviewed').length;
+      // Filter "My Work" data
+      // Design docs: filter by site_id matching engineer's assigned sites
+      const myDesignDocs = mySiteIds.length > 0
+        ? allDesignDocs.filter((d: any) => d.siteId && mySiteIds.includes(d.siteId))
+        : [];
 
-      // Calculate RFQ metrics
-      const draftRfqs = rfqs.filter((rfq: any) => rfq.status === 'draft').length;
-      const issuedRfqs = rfqs.filter((rfq: any) => rfq.status === 'issued').length;
-      const awardedRfqs = rfqs.filter((rfq: any) => rfq.status === 'awarded').length;
+      // DOORS packages: filter by created_by or assigned_to matching engineerId
+      const myDoorsPackages = engineerId
+        ? allDoorsPackages.filter(
+            (pkg: any) => pkg.createdBy === engineerId || pkg.assignedTo === engineerId
+          )
+        : [];
 
-      // Calculate compliance rate
-      const complianceRate =
-        doorsPackages.length > 0
-          ? Math.round((reviewedDoors / doorsPackages.length) * 100)
-          : 0;
+      // RFQs: filter by created_by_id matching engineerId
+      const myRfqs = engineerId
+        ? allRfqs.filter((rfq: any) => rfq.createdById === engineerId)
+        : [];
 
-      // Calculate average processing time
-      let totalProcessingDays = 0;
-      let processedCount = 0;
+      const myCalcMetrics = calculateMetrics(myDesignDocs, myDoorsPackages, myRfqs);
+      setMyMetrics(myCalcMetrics);
 
-      doorsPackages.forEach((pkg: any) => {
-        if (pkg.receivedDate && pkg.reviewedDate) {
-          const processingTime =
-            (pkg.reviewedDate - pkg.receivedDate) / (1000 * 60 * 60 * 24);
-          totalProcessingDays += processingTime;
-          processedCount++;
-        }
-      });
-
-      const avgProcessingTime =
-        processedCount > 0 ? Math.round(totalProcessingDays / processedCount) : 0;
-
-      // Set metrics
-      setMetrics({
-        totalDesignDocs: designDocs.length,
-        draftDocs,
-        submittedDocs,
-        approvedDocs,
-        rejectedDocs,
-        doorsPackages: doorsPackages.length,
-        pendingDoors,
-        receivedDoors,
-        reviewedDoors,
-        designRfqs: rfqs.length,
-        draftRfqs,
-        issuedRfqs,
-        awardedRfqs,
-        complianceRate,
-        complianceTarget: 80,
-        avgProcessingTime,
-        processingBenchmark: 7,
-      });
-
-      // Generate alerts
-      const generatedAlerts = generateAlerts(designDocs, doorsPackages, complianceRate);
+      // Generate alerts from "My Work" data only
+      const generatedAlerts = generateAlerts(myDesignDocs, myDoorsPackages, myCalcMetrics.complianceRate);
       setAlerts(generatedAlerts);
     } catch (err) {
       const errorMessage =
@@ -245,7 +283,7 @@ export const useDashboardData = (projectId: string | null): UseDashboardDataRetu
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, engineerId]);
 
   useEffect(() => {
     fetchData();
@@ -256,7 +294,8 @@ export const useDashboardData = (projectId: string | null): UseDashboardDataRetu
   }, [fetchData]);
 
   return {
-    metrics,
+    myMetrics,
+    projectMetrics,
     alerts,
     loading,
     error,
