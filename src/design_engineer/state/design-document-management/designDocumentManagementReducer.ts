@@ -14,6 +14,7 @@ export interface DocumentFormData {
   categoryId: string;
   siteId: string;
   revisionNumber: string;
+  weightage: string; // String for input, will be converted to number on save
 }
 
 export interface DesignDocumentManagementState {
@@ -105,6 +106,7 @@ export const createInitialState = (): DesignDocumentManagementState => ({
     categoryId: '',
     siteId: '',
     revisionNumber: 'R0',
+    weightage: '',
   },
   approvalComment: '',
 });

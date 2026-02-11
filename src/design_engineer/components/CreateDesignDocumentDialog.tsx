@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
 import {
   DesignDocument,
@@ -235,6 +235,21 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               onChangeText={(v) => onUpdateField('revisionNumber', v)}
               style={styles.input}
               mode="outlined"
+            />
+
+            <TextInput
+              label="Weightage (%)"
+              value={form.weightage}
+              onChangeText={(v) => onUpdateField('weightage', v)}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="0-100"
+              helperText={
+                requiresSite && form.siteId
+                  ? 'Total weightage per site should equal 100%'
+                  : 'Leave empty for project-wide documents'
+              }
             />
           </ScrollView>
         </Dialog.ScrollArea>

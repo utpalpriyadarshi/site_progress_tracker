@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 38, // Added design_engineer_id to sites for designer assignment
+  version: 39, // Added weightage to design_documents for progress tracking
   tables: [
     tableSchema({
       name: 'projects',
@@ -762,6 +762,7 @@ export default appSchema({
         { name: 'approval_comment', type: 'string', isOptional: true },
         { name: 'submitted_date', type: 'number', isOptional: true },
         { name: 'approved_date', type: 'number', isOptional: true },
+        { name: 'weightage', type: 'number', isOptional: true }, // v39: percentage weight for progress tracking (total per site = 100%)
         { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

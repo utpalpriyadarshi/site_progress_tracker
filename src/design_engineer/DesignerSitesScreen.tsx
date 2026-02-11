@@ -16,7 +16,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Title, Button } from 'react-native-paper';
+import { Text, Card, Title, Button, FAB, Portal, Dialog, TextInput } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -26,6 +26,8 @@ import { EmptyState } from '../components/common/EmptyState';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { useDebounce } from '../hooks';
+import { useSnackbar } from '../components/Snackbar';
+import { logger } from '../services/LoggingService';
 
 // Activity filter options
 const ACTIVITY_FILTERS: FilterOption[] = [
@@ -45,7 +47,8 @@ interface DesignerSitesScreenProps {
 }
 
 const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ sites, projects }) => {
-  const { projectName, projectId } = useDesignEngineerContext();
+  const { projectName, projectId, engineerId } = useDesignEngineerContext();
+  const { showSnackbar } = useSnackbar();
 
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +56,11 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
   const [selectedActivity, setSelectedActivity] = useState<string[]>(['all']);
   const [sortBy, setSortBy] = useState<'name'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Site creation dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [siteName, setSiteName] = useState('');
+  const [siteLocation, setSiteLocation] = useState('');
 
   // Combined filtering and sorting logic (memoized for performance)
   const displayedSites = useMemo(() => {
@@ -106,6 +114,55 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
     return debouncedSearchQuery.trim() !== '' ||
            !selectedActivity.includes('all');
   }, [debouncedSearchQuery, selectedActivity]);
+
+  // ==================== Site Creation ====================
+
+  const openAddDialog = () => {
+    setSiteName('');
+    setSiteLocation('');
+    setDialogVisible(true);
+  };
+
+  const closeDialog = () => {
+    setDialogVisible(false);
+    setSiteName('');
+    setSiteLocation('');
+  };
+
+  const handleSave = async () => {
+    if (!siteName.trim() || !siteLocation.trim()) {
+      setDialogVisible(false);
+      showSnackbar('Please fill in all fields', 'warning');
+      return;
+    }
+
+    try {
+      await database.write(async () => {
+        await database.collections.get('sites').create((site: any) => {
+          site.name = siteName.trim();
+          site.location = siteLocation.trim();
+          site.projectId = projectId;
+          site.designEngineerId = engineerId;
+        });
+      });
+
+      showSnackbar('Site created successfully', 'success');
+      closeDialog();
+
+      logger.info('Site created successfully', {
+        component: 'DesignerSitesScreen',
+        siteName: siteName.trim(),
+        engineerId,
+      });
+    } catch (error) {
+      logger.error('Failed to create site', error as Error, {
+        component: 'DesignerSitesScreen',
+        action: 'createSite',
+        siteName,
+      });
+      showSnackbar('Failed to create site: ' + (error as Error).message, 'error');
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -179,7 +236,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
               message={
                 hasActiveFilters
                   ? 'No sites match your current search or filter criteria.'
-                  : "You don't have any sites assigned yet. Contact your planner to get assigned to sites."
+                  : "You don't have any sites assigned yet. Click the + button to add a new site."
               }
               helpText={
                 hasActiveFilters
@@ -230,6 +287,57 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
             })
           )}
         </ScrollView>
+
+        {/* Add Site FAB */}
+        <FAB
+          style={styles.fab}
+          icon="plus"
+          label="Add Site"
+          onPress={openAddDialog}
+          accessibilityLabel="Add new site"
+          color="#FFFFFF"
+        />
+
+        {/* Add/Edit Site Dialog */}
+        <Portal>
+          <Dialog
+            visible={dialogVisible}
+            onDismiss={closeDialog}
+            style={styles.dialog}
+          >
+            <Dialog.Title>Add New Site</Dialog.Title>
+            <Dialog.Content>
+              <TextInput
+                label="Site Name *"
+                value={siteName}
+                onChangeText={setSiteName}
+                mode="outlined"
+                style={styles.input}
+                autoFocus
+              />
+              <TextInput
+                label="Location *"
+                value={siteLocation}
+                onChangeText={setSiteLocation}
+                mode="outlined"
+                style={styles.input}
+              />
+              <Text style={styles.helperText}>
+                This site will be added to {projectName}
+              </Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={closeDialog}>Cancel</Button>
+              <Button
+                mode="contained"
+                onPress={handleSave}
+                disabled={!siteName.trim() || !siteLocation.trim()}
+              >
+                Create
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </View>
     </ErrorBoundary>
   );
@@ -350,6 +458,26 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: 12,
     color: '#999',
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    backgroundColor: '#7C4DFF',
+  },
+  dialog: {
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '90%',
+  },
+  input: {
+    marginBottom: 12,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
 
