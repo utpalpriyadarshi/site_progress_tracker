@@ -30,6 +30,10 @@ export { default as ErrorBoundary } from './ErrorBoundary';
 export { SupervisorHeader } from './SupervisorHeader';
 export type { SupervisorHeaderProps } from './SupervisorHeader';
 
+// Designer Header
+export { DesignerHeader } from './DesignerHeader';
+export type { DesignerHeaderProps } from './DesignerHeader';
+
 // Offline Indicator (Phase 3, Task 3.5)
 export { OfflineIndicator } from './OfflineIndicator';
 export type { OfflineIndicatorProps } from './OfflineIndicator';
