@@ -73,68 +73,52 @@ export function calculateSiteProgressFromDesignDocuments(
 }
 
 /**
- * Combine progress from both items and design documents with weighted average
- *
- * Allows both Supervisors (updating Items) and Design Engineers (updating Documents)
- * to contribute to the same Key Date progress tracking.
- *
- * Formula: (itemProgress × itemWeightage + docProgress × docWeightage) / totalWeightage
- *
- * @param items - Array of ItemModel instances
- * @param documents - Array of DesignDocumentModel instances
- * @returns Combined progress percentage (0-100)
- *
- * @example
- * ```typescript
- * // Site with 50% weightage in Items (80% complete) and 50% in Documents (100% approved)
- * const items = [...]; // Total weightage: 50, Progress: 80%
- * const docs = [...];  // Total weightage: 50, Progress: 100%
- * const progress = calculateCombinedSiteProgress(items, docs);
- * // Result: (80 * 50 + 100 * 50) / 100 = 90%
- * ```
+ * Result of dual-track KD progress calculation
  */
-export function calculateCombinedSiteProgress(
-  items: ItemModel[],
-  documents: DesignDocumentModel[]
-): number {
-  const itemWeightage = items.reduce((sum, item) => sum + (item.weightage || 0), 0);
-  const docWeightage = documents.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
-  const totalWeightage = itemWeightage + docWeightage;
-
-  // If no weightage at all, return 0
-  if (totalWeightage === 0) return 0;
-
-  // Calculate progress for each category
-  const itemProgress = calculateSiteProgressFromItems(items);
-  const docProgress = calculateSiteProgressFromDesignDocuments(documents);
-
-  // Weighted average
-  return (itemProgress * itemWeightage + docProgress * docWeightage) / totalWeightage;
+export interface KDProgressResult {
+  combined: number;
+  effectiveSiteWeight: number;
+  effectiveDesignWeight: number;
 }
 
 /**
- * Calculate progress contribution from design documents for a specific site
+ * Calculate KD progress from separate site and design tracks
  *
- * Used when a site has BOTH items and documents contributing to Key Date progress
+ * Rules:
+ * - KD has only sites (no docs or designWeightage=0): 100% from site progress
+ * - KD has only design docs (no sites): 100% from design progress
+ * - KD has both: designWeightage% from design + (100 - designWeightage)% from sites
  *
- * @param documents - Design documents for the site
- * @param siteTotalWeightage - Total weightage allocated to site (from KeyDateSite)
- * @returns Progress contribution (0-100)
- *
- * @example
- * ```typescript
- * // Site has 30% contribution to Key Date
- * // Documents have 100% approval (all approved)
- * const contribution = calculateDesignDocumentContribution(docs, 30);
- * // Result: 30% (full contribution)
- * ```
+ * @param siteProgress - 0-100, from supervisor items
+ * @param designProgress - 0-100, from design documents
+ * @param designWeightage - 0-100, from KeyDateModel.designWeightage
+ * @param hasSites - whether the KD has associated sites
+ * @param hasDocs - whether the KD has linked design documents
+ * @returns Combined progress and effective weights
  */
-export function calculateDesignDocumentContribution(
-  documents: DesignDocumentModel[],
-  siteTotalWeightage: number
-): number {
-  if (siteTotalWeightage === 0) return 0;
+export function calculateKDProgress(
+  siteProgress: number,
+  designProgress: number,
+  designWeightage: number,
+  hasSites: boolean,
+  hasDocs: boolean,
+): KDProgressResult {
+  // Only sites (no docs, or design weightage is 0)
+  if (!hasDocs || designWeightage === 0) {
+    return { combined: siteProgress, effectiveSiteWeight: 100, effectiveDesignWeight: 0 };
+  }
 
-  const docProgress = calculateSiteProgressFromDesignDocuments(documents);
-  return (docProgress / 100) * siteTotalWeightage;
+  // Only docs (no sites)
+  if (!hasSites) {
+    return { combined: designProgress, effectiveSiteWeight: 0, effectiveDesignWeight: 100 };
+  }
+
+  // Both tracks — use designWeightage
+  const dw = Math.min(100, Math.max(0, designWeightage));
+  const combined = siteProgress * (100 - dw) / 100 + designProgress * dw / 100;
+  return {
+    combined,
+    effectiveSiteWeight: 100 - dw,
+    effectiveDesignWeight: dw,
+  };
 }

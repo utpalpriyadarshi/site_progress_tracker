@@ -74,6 +74,9 @@ export default class KeyDateModel extends Model {
   // Dependencies (JSON array of key_date IDs)
   @field('dependencies') dependencies?: string;
 
+  // Design weightage for dual-track progress (0-100, % from design docs)
+  @field('design_weightage') designWeightage?: number;
+
   // Audit
   @field('created_by') createdBy!: string;
   @readonly @field('created_at') createdAt!: number;

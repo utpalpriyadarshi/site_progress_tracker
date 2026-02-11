@@ -11,6 +11,7 @@
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../models/database';
 import ItemModel from '../../../models/ItemModel';
+import DesignDocumentModel from '../../../models/DesignDocumentModel';
 
 // ==================== Types ====================
 
@@ -147,6 +148,71 @@ export async function batchLoadItemsForKDSites(
 
   // Convert Set to Array and batch load
   return batchLoadItemsBySites([...allSiteIds]);
+}
+
+/**
+ * Batch loads all design documents for multiple sites in a single query
+ *
+ * @param siteIds - Array of site IDs to load documents for
+ * @returns Object mapping site IDs to their design documents
+ */
+export async function batchLoadDesignDocsBySites(
+  siteIds: string[]
+): Promise<GroupedData<DesignDocumentModel>> {
+  if (siteIds.length === 0) return {};
+
+  const uniqueSiteIds = [...new Set(siteIds)];
+  const docsCollection = database.collections.get<DesignDocumentModel>('design_documents');
+  const allDocs = await docsCollection
+    .query(Q.where('site_id', Q.oneOf(uniqueSiteIds)))
+    .fetch();
+
+  return groupBy(allDocs, 'siteId');
+}
+
+/**
+ * Batch loads design documents that have a keyDateId but no site_id.
+ * These are project-wide documents that should still contribute to KD progress.
+ *
+ * @param keyDateIds - Array of key date IDs
+ * @returns Object mapping key date IDs to their design documents (without site_id)
+ */
+export async function batchLoadUnsitedDocsByKeyDate(
+  keyDateIds: string[]
+): Promise<GroupedData<DesignDocumentModel>> {
+  if (keyDateIds.length === 0) return {};
+
+  const uniqueKdIds = [...new Set(keyDateIds)];
+  const docsCollection = database.collections.get<DesignDocumentModel>('design_documents');
+  const docs = await docsCollection
+    .query(
+      Q.where('key_date_id', Q.oneOf(uniqueKdIds)),
+      Q.where('site_id', Q.eq(null))
+    )
+    .fetch();
+
+  return groupBy(docs, 'keyDateId');
+}
+
+/**
+ * Batch loads ALL design documents linked to given key date IDs (regardless of site_id).
+ * This is the primary way to get design docs for KD progress in the dual-track system.
+ *
+ * @param keyDateIds - Array of key date IDs
+ * @returns Object mapping key date IDs to their design documents
+ */
+export async function batchLoadDocsByKeyDate(
+  keyDateIds: string[]
+): Promise<GroupedData<DesignDocumentModel>> {
+  if (keyDateIds.length === 0) return {};
+
+  const uniqueKdIds = [...new Set(keyDateIds)];
+  const docsCollection = database.collections.get<DesignDocumentModel>('design_documents');
+  const docs = await docsCollection
+    .query(Q.where('key_date_id', Q.oneOf(uniqueKdIds)))
+    .fetch();
+
+  return groupBy(docs, 'keyDateId');
 }
 
 // ==================== Performance Monitoring (Optional) ====================

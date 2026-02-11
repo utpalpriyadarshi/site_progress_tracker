@@ -92,6 +92,7 @@ interface KeyDateDef {
   description: string;
   targetDays: number;
   weightage: number;
+  designWeightage?: number;
   delayDamagesInitial: number;
   delayDamagesExtended: number;
   sequenceOrder: number;
@@ -116,6 +117,7 @@ const KEY_DATES: KeyDateDef[] = [
     description: 'Design Approval',
     targetDays: 60,
     weightage: 15,
+    designWeightage: 20,
     delayDamagesInitial: 1,
     delayDamagesExtended: 10,
     sequenceOrder: 2,
@@ -363,6 +365,7 @@ export async function generatePlannerDemoData(projectId: string): Promise<DemoDa
         record.projectId = projectId;
         record.sequenceOrder = kdDef.sequenceOrder;
         record.weightage = kdDef.weightage;
+        record.designWeightage = kdDef.designWeightage || 0;
         record.createdBy = 'planner';
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';
@@ -676,6 +679,8 @@ interface DesignDocumentDef {
   categoryIndex: number; // index into DESIGN_DOC_CATEGORIES
   revisionNumber: string;
   status: string;
+  linkToKD?: string; // KD code to link this doc to (e.g., 'KD-A-01')
+  weightage?: number; // weightage for design progress calculation
 }
 
 const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
@@ -687,6 +692,8 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 1,
     revisionNumber: 'R2',
     status: 'approved',
+    linkToKD: 'KD-A-01',
+    weightage: 25,
   },
   {
     documentNumber: 'DD-SIM-002',
@@ -696,6 +703,8 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 2,
     revisionNumber: 'R1',
     status: 'submitted',
+    linkToKD: 'KD-A-01',
+    weightage: 25,
   },
   {
     documentNumber: 'DD-INS-001',
@@ -705,6 +714,8 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 3,
     revisionNumber: 'R3',
     status: 'approved',
+    linkToKD: 'KD-A-01',
+    weightage: 20,
   },
   {
     documentNumber: 'DD-INS-002',
@@ -714,6 +725,8 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 4,
     revisionNumber: 'R1',
     status: 'submitted',
+    linkToKD: 'KD-A-01',
+    weightage: 15,
   },
   {
     documentNumber: 'DD-PRD-001',
@@ -723,6 +736,8 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 6,
     revisionNumber: 'R2',
     status: 'approved_with_comment',
+    linkToKD: 'KD-A-01',
+    weightage: 10,
   },
   {
     documentNumber: 'DD-PRD-002',
@@ -732,6 +747,7 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
     categoryIndex: 7,
     revisionNumber: 'R0',
     status: 'draft',
+    weightage: 5,
   },
 ];
 
@@ -895,7 +911,17 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
       createdCategories.push(cat);
     }
 
-    // 4. Create Design Documents
+    // 4. Look up existing Key Dates by code for linking design docs
+    const keyDatesCollection = database.collections.get<KeyDateModel>('key_dates');
+    const existingKDs = await keyDatesCollection
+      .query(Q.where('project_id', projectId))
+      .fetch();
+    const kdByCode: Record<string, string> = {};
+    for (const kd of existingKDs) {
+      kdByCode[kd.code] = kd.id;
+    }
+
+    // 5. Create Design Documents
     let docIndex = 0;
     for (const docDef of DESIGN_DOCUMENTS) {
       const category = createdCategories[docDef.categoryIndex];
@@ -908,6 +934,11 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.categoryId = category.id;
         record.projectId = projectId;
         record.siteId = siteId;
+        // Link to Key Date if specified
+        if (docDef.linkToKD && kdByCode[docDef.linkToKD]) {
+          record.keyDateId = kdByCode[docDef.linkToKD];
+        }
+        record.weightage = docDef.weightage || 0;
         record.revisionNumber = docDef.revisionNumber;
         record.status = docDef.status;
         if (docDef.status !== 'draft') {
