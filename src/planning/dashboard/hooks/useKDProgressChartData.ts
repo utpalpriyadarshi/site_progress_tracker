@@ -68,7 +68,16 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
 
       // Fetch project to get start date
       const projectsCollection = database.collections.get('projects');
-      const project = await projectsCollection.find(projectId);
+      let project;
+      try {
+        project = await projectsCollection.find(projectId);
+      } catch (err) {
+        // Project not found (likely after logout) - reset state and return
+        setKeyDates([]);
+        setProjectStartDate(null);
+        setLoading(false);
+        return;
+      }
       const startDate = project.startDate || null;
 
       // Fetch key dates for this project

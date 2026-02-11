@@ -99,7 +99,15 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
 
       // Fetch project to get start and end dates
       const projectsCollection = database.collections.get('projects');
-      const project = await projectsCollection.find(projectId);
+      let project;
+      try {
+        project = await projectsCollection.find(projectId);
+      } catch (err) {
+        // Project not found (likely after logout) - reset state and return
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
       const projectStartDate = project.startDate;
       const projectEndDate = project.endDate;
 
