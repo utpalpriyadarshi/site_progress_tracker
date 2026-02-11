@@ -59,7 +59,7 @@ const DesignEngineerDashboardScreen = () => {
   const { projectId, projectName } = useDesignEngineerContext();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
 
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -114,16 +114,6 @@ const DesignEngineerDashboardScreen = () => {
   const processingTime = useProcessingTimeData(projectId);
   const recentActivity = useRecentActivityData(projectId, 10);
 
-  const handleLogout = async () => {
-    await logout();
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Auth' as any }],
-      })
-    );
-  };
-
   if (!projectId) {
     return (
       <ErrorBoundary>
@@ -155,9 +145,6 @@ const DesignEngineerDashboardScreen = () => {
               <Text style={styles.projectName}>{projectName}</Text>
               <Text style={styles.roleLabel}>Design Engineer Dashboard</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -275,17 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFF',
     opacity: 0.9,
-  },
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   errorText: {
     fontSize: 18,

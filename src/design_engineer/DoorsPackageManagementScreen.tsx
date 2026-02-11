@@ -44,20 +44,9 @@ const DoorsPackageManagementScreen = () => {
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
-  const { logout } = useAuth();
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
-
-  const handleLogout = async () => {
-    await logout();
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Auth' as any }],
-      })
-    );
-  };
 
   // Load packages and sites
   useEffect(() => {
@@ -369,9 +358,6 @@ const DoorsPackageManagementScreen = () => {
               </Text>
               <Text style={styles.screenLabel}>DOORS Package Management</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
           <SiteSelector style={styles.siteSelector} />
           <Searchbar
@@ -553,17 +539,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFF',
     opacity: 0.9,
-  },
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   searchbar: {
     marginBottom: 12,
