@@ -9,6 +9,7 @@ import { v36Migration } from './v36_add_design_documents_tables';
 import { v37Migration } from './v37_add_key_date_weightage';
 import { v38Migration } from './v38_add_designer_to_sites';
 import { v39Migration } from './v39_add_design_document_weightage';
+import { v40Migration } from './v40_add_key_date_to_design_documents';
 
 export default schemaMigrations({
   migrations: [
@@ -586,5 +587,7 @@ export default schemaMigrations({
     v38Migration,
     // v39: Add weightage to design_documents for design progress tracking per site
     v39Migration,
+    // v40: Add key_date_id to design_documents for Key Date progress tracking
+    v40Migration,
   ],
 });

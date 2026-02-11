@@ -19,7 +19,9 @@ import { database } from '../../../../models/database';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import ItemModel from '../../../../models/ItemModel';
+import DesignDocumentModel from '../../../../models/DesignDocumentModel';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
+import { calculateCombinedSiteProgress } from '../../utils/designDocumentProgress';
 import { KeyDateStatusBadge } from './KeyDateStatusBadge';
 import { KeyDateProgressBar } from './KeyDateProgressBar';
 import {
@@ -368,7 +370,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// WatermelonDB observable enhancement - fetches associated sites and computes progress from items
+// WatermelonDB observable enhancement - fetches associated sites and computes progress from items AND design documents
 const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => {
   const keyDateSites$ = database.collections
     .get<KeyDateSiteModel>('key_date_sites')
@@ -379,19 +381,33 @@ const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateMod
     switchMap((sites) => {
       if (sites.length === 0) return of([]);
       return combineLatest(
-        sites.map((site) =>
-          database.collections
+        sites.map((site) => {
+          // Observe both Items and Design Documents for each site
+          const items$ = database.collections
             .get<ItemModel>('items')
-            .query(Q.where('site_id', site.siteId))
-            .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage'])
-            .pipe(
-              map((items) => ({
-                siteId: site.siteId,
-                contributionPercentage: site.contributionPercentage,
-                calculatedProgress: calculateSiteProgressFromItems(items),
-              }))
+            .query(
+              Q.where('site_id', site.siteId),
+              Q.where('key_date_id', keyDate.id)
             )
-        )
+            .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage']);
+
+          const documents$ = database.collections
+            .get<DesignDocumentModel>('design_documents')
+            .query(
+              Q.where('site_id', site.siteId),
+              Q.where('key_date_id', keyDate.id)
+            )
+            .observeWithColumns(['status', 'weightage']);
+
+          // Combine both observables and calculate unified progress
+          return combineLatest([items$, documents$]).pipe(
+            map(([items, documents]) => ({
+              siteId: site.siteId,
+              contributionPercentage: site.contributionPercentage,
+              calculatedProgress: calculateCombinedSiteProgress(items, documents),
+            }))
+          );
+        })
       );
     })
   );
