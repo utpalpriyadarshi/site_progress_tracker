@@ -37,14 +37,26 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
       <Card.Content style={styles.cardContent}>
         <View style={styles.topRow}>
           <Text style={styles.documentNumber}>{doc.documentNumber}</Text>
-          <Chip
-            mode="flat"
-            style={{ backgroundColor: statusColor }}
-            textStyle={styles.statusChipText}
-            compact
-          >
-            {getStatusLabel(doc.status)}
-          </Chip>
+          <View style={styles.topRowChips}>
+            {doc.weightage !== undefined && doc.weightage !== null && (
+              <Chip
+                mode="flat"
+                style={styles.weightageChip}
+                textStyle={styles.weightageText}
+                compact
+              >
+                {doc.weightage}%
+              </Chip>
+            )}
+            <Chip
+              mode="flat"
+              style={{ backgroundColor: statusColor }}
+              textStyle={styles.statusChipText}
+              compact
+            >
+              {getStatusLabel(doc.status)}
+            </Chip>
+          </View>
         </View>
 
         <Text style={styles.title} numberOfLines={2}>{doc.title}</Text>
@@ -192,6 +204,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  topRowChips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   documentNumber: {
     fontSize: 13,
     fontWeight: '600',
@@ -225,6 +242,14 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     color: '#666',
+  },
+  weightageChip: {
+    backgroundColor: '#E3F2FD',
+  },
+  weightageText: {
+    color: '#1976D2',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   description: {
     fontSize: 13,

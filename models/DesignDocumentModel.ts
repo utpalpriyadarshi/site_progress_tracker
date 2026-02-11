@@ -34,6 +34,7 @@ export default class DesignDocumentModel extends Model {
   @field('approval_comment') approvalComment?: string;
   @field('submitted_date') submittedDate?: number;
   @field('approved_date') approvedDate?: number;
+  @field('weightage') weightage?: number; // Percentage weight for progress tracking (total per site = 100%)
   @field('created_by') createdBy!: string;
   @field('created_at') createdAt!: number;
   @field('updated_at') updatedAt!: number;

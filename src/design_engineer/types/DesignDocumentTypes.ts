@@ -22,6 +22,7 @@ export interface DesignDocument {
   approvalComment?: string;
   submittedDate?: number;
   approvedDate?: number;
+  weightage?: number; // Percentage weight for progress tracking (total per site = 100%)
   createdBy: string;
   createdAt: number;
   updatedAt: number;

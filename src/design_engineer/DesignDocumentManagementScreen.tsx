@@ -249,6 +249,7 @@ const DesignDocumentManagementScreen = () => {
             approvalComment: doc.approvalComment,
             submittedDate: doc.submittedDate,
             approvedDate: doc.approvedDate,
+            weightage: doc.weightage,
             createdBy: doc.createdBy,
             createdAt: doc.createdAt,
             updatedAt: doc.updatedAt,
@@ -267,7 +268,7 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const handleCreateOrUpdateDocument = async () => {
-    const { documentNumber, title, documentType, categoryId, siteId, revisionNumber } = state.form;
+    const { documentNumber, title, documentType, categoryId, siteId, revisionNumber, weightage } = state.form;
 
     if (!documentNumber || !title || !documentType) {
       Alert.alert('Validation Error', 'Please fill in all required fields');
@@ -278,6 +279,51 @@ const DesignDocumentManagementScreen = () => {
     if (requiresSite && !siteId) {
       Alert.alert('Validation Error', 'Site is required for this document type');
       return;
+    }
+
+    // Validate weightage
+    const weightageNum = weightage ? parseFloat(weightage) : undefined;
+    if (weightage && (isNaN(weightageNum!) || weightageNum! < 0 || weightageNum! > 100)) {
+      Alert.alert('Validation Error', 'Weightage must be a number between 0 and 100');
+      return;
+    }
+
+    // Validate total weightage per site if applicable
+    if (requiresSite && siteId && weightageNum !== undefined) {
+      try {
+        const docsCollection = database.collections.get('design_documents');
+        const siteDocuments = await docsCollection
+          .query(Q.where('site_id', siteId))
+          .fetch();
+
+        // Calculate total weightage for the site (excluding current document if editing)
+        const totalWeightage = siteDocuments
+          .filter((doc: any) => doc.id !== state.ui.editingDocumentId)
+          .reduce((sum: number, doc: any) => sum + (doc.weightage || 0), 0);
+
+        const newTotal = totalWeightage + weightageNum;
+        const siteName = state.data.sites.find(s => s.id === siteId)?.name || 'this site';
+
+        if (newTotal > 100) {
+          Alert.alert(
+            'Weightage Validation',
+            `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
+            `Total weightage per site should equal 100%.\n\n` +
+            `Current total: ${totalWeightage.toFixed(1)}%\n` +
+            `Adding: ${weightageNum.toFixed(1)}%\n` +
+            `New total: ${newTotal.toFixed(1)}%\n\n` +
+            `Available: ${(100 - totalWeightage).toFixed(1)}%`
+          );
+          return;
+        }
+      } catch (error) {
+        logger.error('[DesignDocument] Error validating weightage:', error as Error, {
+          component: 'DesignDocumentManagementScreen',
+          action: 'validateWeightage',
+          siteId,
+          weightageNum,
+        });
+      }
     }
 
     try {
@@ -312,6 +358,7 @@ const DesignDocumentManagementScreen = () => {
             rec.categoryId = categoryId || null;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
+            rec.weightage = weightageNum || null;
             rec.updatedAt = Date.now();
           });
         });
@@ -332,6 +379,7 @@ const DesignDocumentManagementScreen = () => {
           approvalComment: (record as any).approvalComment,
           submittedDate: (record as any).submittedDate,
           approvedDate: (record as any).approvedDate,
+          weightage: weightageNum,
           createdBy: (record as any).createdBy,
           createdAt: (record as any).createdAt,
           updatedAt: Date.now(),
@@ -353,6 +401,7 @@ const DesignDocumentManagementScreen = () => {
             rec.projectId = projectId;
             rec.siteId = requiresSite ? siteId : null;
             rec.revisionNumber = revisionNumber || 'R0';
+            rec.weightage = weightageNum || null;
             rec.status = 'draft';
             rec.createdBy = engineerId;
             rec.createdAt = Date.now();
@@ -390,6 +439,7 @@ const DesignDocumentManagementScreen = () => {
             siteName,
             revisionNumber: revisionNumber || 'R0',
             status: 'draft',
+            weightage: weightageNum,
             createdBy: engineerId,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -446,6 +496,7 @@ const DesignDocumentManagementScreen = () => {
         categoryId: doc.categoryId,
         siteId: doc.siteId || '',
         revisionNumber: doc.revisionNumber,
+        weightage: doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
       },
     });
     dispatch({ type: 'OPEN_DIALOG', payload: { editingDocumentId: doc.id } });
