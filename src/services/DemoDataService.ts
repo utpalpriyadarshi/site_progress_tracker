@@ -10,6 +10,7 @@
  */
 
 import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import KeyDateModel, { KeyDateCategory } from '../../models/KeyDateModel';
 import KeyDateSiteModel from '../../models/KeyDateSiteModel';
 import SiteModel from '../../models/SiteModel';
@@ -769,22 +770,45 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     }
   }
 
-  // Get sites for this project
+  // Get or create sites for this project
   const sitesCollection = database.collections.get('sites');
-  const projectSites = await sitesCollection
+  let projectSites = await sitesCollection
     .query(Q.where('project_id', projectId))
     .fetch();
 
-  const assignedSites = projectSites.slice(0, 2); // Assign designer to first 2 sites
-  const siteIds = assignedSites.map((s: any) => s.id);
-
   await database.write(async () => {
-    // Assign designer to sites
-    for (const site of assignedSites) {
-      await site.update((s: any) => {
-        s.designEngineerId = designerId;
-      });
+    // If no sites exist, create default sites for designer
+    if (projectSites.length === 0) {
+      const defaultSites = [
+        { name: 'Substation A', location: 'Zone 1 — North Block, Plot 14' },
+        { name: 'Substation B', location: 'Zone 2 — South Block, Plot 22' },
+      ];
+
+      for (const siteDef of defaultSites) {
+        const site = await sitesCollection.create((record: any) => {
+          record.name = siteDef.name;
+          record.location = siteDef.location;
+          record.projectId = projectId;
+          record.designEngineerId = designerId;
+          record.plannedStartDate = Date.now();
+          record.plannedEndDate = Date.now() + 365 * 24 * 60 * 60 * 1000; // 1 year
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+        projectSites.push(site);
+      }
+    } else {
+      // Assign designer to first 2 existing sites
+      const assignedSites = projectSites.slice(0, 2);
+      for (const site of assignedSites) {
+        await site.update((s: any) => {
+          s.designEngineerId = designerId;
+        });
+      }
     }
+
+  const assignedSites = projectSites.slice(0, 2);
+  const siteIds = assignedSites.map((s: any) => s.id);
 
     const doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
     const rfqsCollection = database.collections.get<RfqModel>('rfqs');
