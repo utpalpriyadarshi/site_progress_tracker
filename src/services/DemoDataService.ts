@@ -10,6 +10,7 @@
  */
 
 import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import KeyDateModel, { KeyDateCategory } from '../../models/KeyDateModel';
 import KeyDateSiteModel from '../../models/KeyDateSiteModel';
 import SiteModel from '../../models/SiteModel';
