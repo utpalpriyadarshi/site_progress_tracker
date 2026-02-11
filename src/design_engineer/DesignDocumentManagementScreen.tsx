@@ -1,12 +1,14 @@
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Menu } from 'react-native-paper';
+import { FAB, Searchbar, Menu, Snackbar, IconButton } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignDocumentCard from './components/DesignDocumentCard';
 import CreateDesignDocumentDialog from './components/CreateDesignDocumentDialog';
 import ManageCategoriesDialog from './components/ManageCategoriesDialog';
 import ApprovalDialog from './components/ApprovalDialog';
+import CopyDesignDocumentsDialog from './components/CopyDesignDocumentsDialog';
+import DuplicateDocumentsDialog from './components/DuplicateDocumentsDialog';
 import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -48,6 +50,17 @@ const DesignDocumentManagementScreen = () => {
   const [state, dispatch] = useReducer(designDocumentManagementReducer, createDesignDocumentInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
+
+  // Copy dialogs state
+  const [copyDialogVisible, setCopyDialogVisible] = useState(false);
+  const [duplicateDialogVisible, setDuplicateDialogVisible] = useState(false);
+  const [duplicateNumbers, setDuplicateNumbers] = useState<string[]>([]);
+  const [pendingCopyCallback, setPendingCopyCallback] = useState<
+    ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
+  >(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [siteDocumentCount, setSiteDocumentCount] = useState(0);
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -663,6 +676,114 @@ const DesignDocumentManagementScreen = () => {
     }
   };
 
+  // ==================== Copy Functionality ====================
+
+  // Count documents when selected site changes
+  useEffect(() => {
+    const countDocuments = async () => {
+      if (!selectedSiteId) {
+        setSiteDocumentCount(0);
+        return;
+      }
+
+      try {
+        const count = await database.collections
+          .get('design_documents')
+          .query(Q.where('site_id', selectedSiteId))
+          .fetchCount();
+
+        setSiteDocumentCount(count);
+      } catch (error) {
+        logger.error('[DesignDocument] Error counting documents:', error as Error);
+        setSiteDocumentCount(0);
+      }
+    };
+
+    countDocuments();
+  }, [selectedSiteId]);
+
+  /**
+   * Handle opening the copy dialog
+   */
+  const handleOpenCopyDialog = () => {
+    if (!selectedSiteId) {
+      Alert.alert('No Site Selected', 'Please select a site to copy documents from.');
+      return;
+    }
+
+    if (siteDocumentCount === 0) {
+      Alert.alert('No Documents', 'The selected site has no documents to copy.');
+      return;
+    }
+
+    setCopyDialogVisible(true);
+  };
+
+  /**
+   * Handle copy success
+   */
+  const handleCopySuccess = (copiedCount: number, destinationSiteName: string) => {
+    setSnackbarMessage(`Successfully copied ${copiedCount} document${copiedCount !== 1 ? 's' : ''} to ${destinationSiteName}`);
+    setSnackbarVisible(true);
+    setCopyDialogVisible(false);
+
+    // Reload documents to reflect changes
+    loadDocuments();
+
+    logger.info('[DesignDocument] Documents copied successfully', {
+      copiedCount,
+      destinationSiteName,
+    });
+  };
+
+  /**
+   * Handle duplicates found during copy
+   */
+  const handleDuplicatesFound = (
+    duplicates: string[],
+    proceedWithCopy: (skipDuplicates: boolean, selectedDuplicates: string[]) => void
+  ) => {
+    setDuplicateNumbers(duplicates);
+    setPendingCopyCallback(() => proceedWithCopy);
+    setDuplicateDialogVisible(true);
+  };
+
+  /**
+   * Handle skip duplicates option
+   */
+  const handleSkipDuplicates = () => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(true, duplicateNumbers);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+    setDuplicateNumbers([]);
+  };
+
+  /**
+   * Handle create all (including duplicates) option
+   */
+  const handleCreateAllDuplicates = () => {
+    if (pendingCopyCallback) {
+      pendingCopyCallback(false, []);
+    }
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+    setDuplicateNumbers([]);
+  };
+
+  /**
+   * Handle cancel duplicate dialog
+   */
+  const handleCancelDuplicates = () => {
+    setDuplicateDialogVisible(false);
+    setPendingCopyCallback(null);
+    setDuplicateNumbers([]);
+    setCopyDialogVisible(false);
+  };
+
+  // ==================== UI State ====================
+
   const [fabOpen, setFabOpen] = React.useState(false);
   const [typeMenuVisible, setTypeMenuVisible] = React.useState(false);
   const [statusMenuVisible, setStatusMenuVisible] = React.useState(false);
@@ -740,7 +861,7 @@ const DesignDocumentManagementScreen = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={styles.headerTitleContainer}>
               <Text
                 style={styles.projectName}
                 accessible
@@ -751,6 +872,15 @@ const DesignDocumentManagementScreen = () => {
               </Text>
               <Text style={styles.screenLabel}>Design Document Management</Text>
             </View>
+            <IconButton
+              icon="content-copy"
+              iconColor="#FFF"
+              size={24}
+              onPress={handleOpenCopyDialog}
+              accessibilityLabel="Copy documents to another site"
+              accessibilityHint="Opens dialog to copy design documents from the selected site to another site"
+              style={styles.copyButton}
+            />
           </View>
           <SiteSelector style={styles.siteSelector} />
           <Searchbar
@@ -945,6 +1075,41 @@ const DesignDocumentManagementScreen = () => {
             dispatch({ type: 'SET_APPROVAL_COMMENT', payload: { comment } })
           }
         />
+
+        {/* Copy Documents Dialog */}
+        {selectedSiteId && (
+          <CopyDesignDocumentsDialog
+            visible={copyDialogVisible}
+            sourceSiteId={selectedSiteId}
+            sourceSiteName={state.data.sites.find((s) => s.id === selectedSiteId)?.name || 'Unknown Site'}
+            sourceDocumentCount={siteDocumentCount}
+            onClose={() => setCopyDialogVisible(false)}
+            onSuccess={handleCopySuccess}
+            onDuplicatesFound={handleDuplicatesFound}
+          />
+        )}
+
+        {/* Duplicate Documents Dialog */}
+        <DuplicateDocumentsDialog
+          visible={duplicateDialogVisible}
+          duplicateNumbers={duplicateNumbers}
+          onSkip={handleSkipDuplicates}
+          onCreateAll={handleCreateAllDuplicates}
+          onCancel={handleCancelDuplicates}
+        />
+
+        {/* Success Snackbar */}
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={4000}
+          action={{
+            label: 'Dismiss',
+            onPress: () => setSnackbarVisible(false),
+          }}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </View>
     </ErrorBoundary>
   );
@@ -973,6 +1138,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerTitleContainer: {
+    flex: 1,
+  },
+  copyButton: {
+    margin: 0,
   },
   projectName: {
     fontSize: 20,
