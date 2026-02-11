@@ -1,26 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { DashboardLayout } from './dashboard/DashboardLayout';
-import {
-  DesignDocStatusWidget,
-  DoorsPackageStatusWidget,
-  RfqStatusWidget,
-  ComplianceMetricWidget,
-  ProcessingTimeWidget,
-  RecentActivityWidget,
-} from './dashboard/widgets';
-import {
-  useDesignDocStatusData,
-  useDoorsStatusData,
-  useRfqStatusData,
-  useComplianceData,
-  useProcessingTimeData,
-  useRecentActivityData,
-} from './dashboard/hooks';
+import { DesignerHeader } from '../components/common/DesignerHeader';
+import { MetricCard } from '../supervisor/dashboard/components/MetricCard';
+import { QuickActionButton } from '../supervisor/dashboard/components/QuickActionButton';
+import { AlertsSection } from '../supervisor/dashboard/components/AlertsSection';
+import { useDashboardData } from './dashboard/hooks/useDashboardData';
 import { logger } from '../services/LoggingService';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import TutorialModal from '../tutorial/TutorialModal';
@@ -28,28 +17,27 @@ import designerTutorialSteps from '../tutorial/designerTutorialSteps';
 import TutorialService from '../services/TutorialService';
 
 /**
- * DesignEngineerDashboardScreen (v4.0 - Phase 3 Widget System)
+ * DesignEngineerDashboardScreen (v5.0 - Aligned with Supervisor Pattern)
  *
  * Dashboard for Design Engineer role showing key metrics and summaries.
  *
- * Phase 3 Improvements:
- * - Modular widget system with BaseWidget
- * - Interactive dashboard widgets
- * - Enhanced visualizations (charts, progress circles)
- * - Improved accessibility
- * - Refresh capability per widget
- * - Recent activity feed
+ * Latest Improvements:
+ * - Unified useDashboardData hook (replaces 6 individual widget hooks)
+ * - Consistent header with DesignerHeader component
+ * - MetricCard-based layout (replaces custom widgets)
+ * - Quick Actions section for common tasks
+ * - Alerts & Notifications section
+ * - Pull-to-refresh support
+ * - Improved performance and maintainability
  *
  * KPIs:
- * - Total DOORS Packages (100 requirements each)
- * - Pending/Received/Reviewed packages
- * - Total Design RFQs
- * - Draft/Issued/Awarded RFQs
- * - Design compliance rate
- * - Average processing time
+ * - Total Design Documents (draft/submitted/approved/rejected)
+ * - DOORS Packages (pending/received/reviewed)
+ * - Design RFQs (draft/issued/awarded)
+ * - Compliance rate and processing time
  *
  * Design Engineer Responsibilities:
- * - Manage DOORS packages (100 requirements per equipment/material)
+ * - Manage design documents and DOORS packages
  * - Create and manage Design RFQs (engineering phase, pre-PM200)
  * - Track design compliance and engineering progress
  * - One design engineer per project
@@ -61,15 +49,18 @@ const DesignEngineerDashboardScreen = () => {
   const route = useRoute<any>();
   const { user } = useAuth();
 
+  // Unified dashboard data hook
+  const { metrics, alerts, loading, error, refresh } = useDashboardData(projectId);
+
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
 
-  // Check if tutorial should be shown on mount or when triggered from drawer
+  // Check if tutorial should be shown on mount or when triggered from header
   useEffect(() => {
     const checkTutorial = async () => {
       if (!user) return;
-      // Triggered from drawer "Tutorial" item
+      // Triggered from header "Tutorial" menu item
       if (route.params?.showTutorial) {
         setTutorialInitialStep(0);
         setShowTutorial(true);
@@ -106,20 +97,16 @@ const DesignEngineerDashboardScreen = () => {
     }
   }, [user]);
 
-  // Fetch widget data using custom hooks
-  const designDocStatus = useDesignDocStatusData(projectId);
-  const doorsStatus = useDoorsStatusData(projectId);
-  const rfqStatus = useRfqStatusData(projectId);
-  const compliance = useComplianceData(projectId);
-  const processingTime = useProcessingTimeData(projectId);
-  const recentActivity = useRecentActivityData(projectId, 10);
-
   if (!projectId) {
     return (
       <ErrorBoundary>
         <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>No project assigned</Text>
-          <Text style={styles.errorSubtext}>Please contact your administrator to assign a project</Text>
+          <Text variant="headlineSmall" style={styles.errorText}>
+            No project assigned
+          </Text>
+          <Text variant="bodyMedium" style={styles.errorSubtext}>
+            Please contact your administrator to assign a project
+          </Text>
         </View>
       </ErrorBoundary>
     );
@@ -129,91 +116,184 @@ const DesignEngineerDashboardScreen = () => {
 
   // Check if we should show welcome empty state
   const hasNoData =
-    !designDocStatus.loading &&
-    !doorsStatus.loading &&
-    !rfqStatus.loading &&
-    designDocStatus.data.total === 0 &&
-    doorsStatus.data.total === 0 &&
-    rfqStatus.data.total === 0;
+    !loading &&
+    metrics &&
+    metrics.totalDesignDocs === 0 &&
+    metrics.doorsPackages === 0 &&
+    metrics.designRfqs === 0;
 
   return (
     <ErrorBoundary>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.projectName}>{projectName}</Text>
-              <Text style={styles.roleLabel}>Design Engineer Dashboard</Text>
-            </View>
-          </View>
-        </View>
+        <DesignerHeader
+          title="Dashboard"
+          subtitle={projectName}
+          onRefresh={refresh}
+          refreshing={loading}
+        />
 
         {hasNoData ? (
           <EmptyState
             icon="rocket-launch"
             title="Welcome to Design Engineer Dashboard"
-            message="Get started by creating your first DOORS Package or Design RFQ"
-            helpText="DOORS packages track engineering requirements (100 per package). Design RFQs manage vendor quotes during the engineering phase."
+            message="Get started by creating your first design document, DOORS package, or RFQ"
+            helpText="Design documents track engineering deliverables. DOORS packages track requirements (100 per package). Design RFQs manage vendor quotes during the engineering phase."
             tips={[
-              'Start with DOORS packages to organize engineering requirements',
-              'Create Design RFQs to request quotes from vendors',
-              'Track compliance and processing times on this dashboard',
+              'Start with design documents to track engineering deliverables',
+              'Create DOORS packages to organize engineering requirements',
+              'Use Design RFQs to request quotes from vendors',
+              'Monitor compliance and processing times on this dashboard',
             ]}
-            actionText="Create DOORS Package"
-            onAction={() => navigation.navigate('DoorsPackages' as never)}
-            secondaryActionText="Create Design RFQ"
-            onSecondaryAction={() => navigation.navigate('DesignRfqs' as never)}
+            actionText="Create Design Document"
+            onAction={() => navigation.navigate('DesignDocuments' as never)}
+            secondaryActionText="Create DOORS Package"
+            onSecondaryAction={() => navigation.navigate('DoorsPackages' as never)}
             variant="large"
           />
         ) : (
-          <DashboardLayout spacing={16}>
-            <DesignDocStatusWidget
-              data={designDocStatus.data}
-              loading={designDocStatus.loading}
-              error={designDocStatus.error}
-              onRefresh={designDocStatus.refetch}
-              onPress={() => navigation.navigate('DesignDocuments' as never)}
-            />
+          <ScrollView
+            style={styles.scrollView}
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          >
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <Text variant="bodyLarge">{new Date().toLocaleDateString()}</Text>
+              <Text variant="headlineSmall">Welcome, {user?.fullName}!</Text>
+            </View>
 
-            <DoorsPackageStatusWidget
-              data={doorsStatus.data}
-              loading={doorsStatus.loading}
-              error={doorsStatus.error}
-              onRefresh={doorsStatus.refetch}
-              onPress={() => navigation.navigate('DoorsPackages' as never)}
-            />
+            {/* Metrics Grid */}
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Design Documents"
+                value={metrics?.totalDesignDocs || 0}
+                icon="description"
+                color="#2196F3"
+                loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments' as never)}
+              />
+              <MetricCard
+                title="DOORS Packages"
+                value={metrics?.doorsPackages || 0}
+                icon="folder-open"
+                color="#673AB7"
+                loading={loading}
+                onPress={() => navigation.navigate('DoorsPackages' as never)}
+              />
+            </View>
 
-            <RfqStatusWidget
-              data={rfqStatus.data}
-              loading={rfqStatus.loading}
-              error={rfqStatus.error}
-              onRefresh={rfqStatus.refetch}
-              onPress={() => navigation.navigate('DesignRfqs' as never)}
-            />
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Design RFQs"
+                value={metrics?.designRfqs || 0}
+                icon="request-quote"
+                color="#FF9800"
+                loading={loading}
+                onPress={() => navigation.navigate('DesignRfqs' as never)}
+              />
+              <MetricCard
+                title="Compliance Rate"
+                value={`${metrics?.complianceRate || 0}%`}
+                icon="verified"
+                color={
+                  (metrics?.complianceRate || 0) >= (metrics?.complianceTarget || 80)
+                    ? '#4CAF50'
+                    : '#F44336'
+                }
+                loading={loading}
+                onPress={() => navigation.navigate('DoorsPackages' as never)}
+              />
+            </View>
 
-            <ComplianceMetricWidget
-              data={compliance.data}
-              loading={compliance.loading}
-              error={compliance.error}
-              onRefresh={compliance.refetch}
-              onPress={() => navigation.navigate('DoorsPackages' as never)}
-            />
+            {/* Document Status Breakdown */}
+            {metrics && metrics.totalDesignDocs > 0 && (
+              <View style={styles.section}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Document Status
+                </Text>
+                <View style={styles.metricsGrid}>
+                  <MetricCard
+                    title="Draft"
+                    value={metrics.draftDocs}
+                    icon="edit"
+                    color="#9E9E9E"
+                    loading={loading}
+                  />
+                  <MetricCard
+                    title="Submitted"
+                    value={metrics.submittedDocs}
+                    icon="send"
+                    color="#2196F3"
+                    loading={loading}
+                  />
+                </View>
+                <View style={styles.metricsGrid}>
+                  <MetricCard
+                    title="Approved"
+                    value={metrics.approvedDocs}
+                    icon="check-circle"
+                    color="#4CAF50"
+                    loading={loading}
+                  />
+                  <MetricCard
+                    title="Rejected"
+                    value={metrics.rejectedDocs}
+                    icon="cancel"
+                    color="#F44336"
+                    loading={loading}
+                  />
+                </View>
+              </View>
+            )}
 
-            <ProcessingTimeWidget
-              data={processingTime.data}
-              loading={processingTime.loading}
-              error={processingTime.error}
-              onRefresh={processingTime.refetch}
-              onPress={() => navigation.navigate('DoorsPackages' as never)}
-            />
+            {/* Quick Actions */}
+            <View style={styles.section}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Quick Actions
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+                <QuickActionButton
+                  icon="description"
+                  label="Design Docs"
+                  color="#2196F3"
+                  onPress={() => navigation.navigate('DesignDocuments' as never)}
+                />
+                <QuickActionButton
+                  icon="folder-open"
+                  label="DOORS Packages"
+                  color="#673AB7"
+                  onPress={() => navigation.navigate('DoorsPackages' as never)}
+                />
+                <QuickActionButton
+                  icon="request-quote"
+                  label="Design RFQs"
+                  color="#FF9800"
+                  onPress={() => navigation.navigate('DesignRfqs' as never)}
+                />
+                <QuickActionButton
+                  icon="location-on"
+                  label="My Sites"
+                  color="#4CAF50"
+                  onPress={() => navigation.navigate('Sites' as never)}
+                />
+              </ScrollView>
+            </View>
 
-            <RecentActivityWidget
-              data={recentActivity.data}
-              loading={recentActivity.loading}
-              error={recentActivity.error}
-              onRefresh={recentActivity.refetch}
-            />
-          </DashboardLayout>
+            {/* Alerts & Notifications */}
+            {alerts.length > 0 && (
+              <AlertsSection
+                alerts={alerts}
+                onAlertPress={(alert) => {
+                  logger.debug('[Dashboard] Alert pressed:', alert);
+                  // Handle alert navigation based on alert ID
+                  if (alert.id.includes('doc')) {
+                    navigation.navigate('DesignDocuments' as never);
+                  } else if (alert.id.includes('doors') || alert.id.includes('compliance')) {
+                    navigation.navigate('DoorsPackages' as never);
+                  }
+                }}
+              />
+            )}
+          </ScrollView>
         )}
 
         {/* Tutorial Modal */}
@@ -241,36 +321,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  header: {
-    backgroundColor: '#007AFF',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+  scrollView: {
+    flex: 1,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  projectName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  roleLabel: {
-    fontSize: 14,
-    color: '#FFF',
-    opacity: 0.9,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#F44336',
+  headerSection: {
+    padding: 16,
+    backgroundColor: '#fff',
     marginBottom: 8,
   },
+  metricsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+  },
+  section: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  quickActionsScroll: {
+    paddingHorizontal: 8,
+  },
+  errorText: {
+    color: '#F44336',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   errorSubtext: {
-    fontSize: 14,
     color: '#999',
     textAlign: 'center',
   },
