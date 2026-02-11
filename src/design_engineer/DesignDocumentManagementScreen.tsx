@@ -61,6 +61,7 @@ const DesignDocumentManagementScreen = () => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
+  const [keyDates, setKeyDates] = useState<Array<{id: string; code: string; description: string; category: string}>>([]);
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -69,6 +70,7 @@ const DesignDocumentManagementScreen = () => {
     loadSites();
     loadCategories();
     loadDocuments();
+    loadKeyDates();
   }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
   // Seed default top-level categories on first load
@@ -143,6 +145,23 @@ const DesignDocumentManagementScreen = () => {
       dispatch({ type: 'SET_SITES', payload: { sites: sitesList } });
     } catch (error: any) {
       logger.error('[DesignDocument] Error loading sites:', error);
+    }
+  };
+
+  const loadKeyDates = async () => {
+    if (!projectId) return;
+    try {
+      const keyDatesCollection = database.collections.get('key_dates');
+      const keyDatesData = await keyDatesCollection.query(Q.where('project_id', projectId)).fetch();
+      const keyDatesList = keyDatesData.map((kd: any) => ({
+        id: kd.id,
+        code: kd.code,
+        description: kd.description,
+        category: kd.category,
+      }));
+      setKeyDates(keyDatesList);
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error loading key dates:', error);
     }
   };
 
@@ -244,6 +263,7 @@ const DesignDocumentManagementScreen = () => {
             projectId: doc.projectId,
             siteId: doc.siteId,
             siteName,
+            keyDateId: doc.keyDateId,
             revisionNumber: doc.revisionNumber,
             status: doc.status,
             approvalComment: doc.approvalComment,
@@ -268,7 +288,7 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const handleCreateOrUpdateDocument = async () => {
-    const { documentNumber, title, documentType, categoryId, siteId, revisionNumber, weightage } = state.form;
+    const { documentNumber, title, documentType, categoryId, siteId, keyDateId, revisionNumber, weightage } = state.form;
 
     if (!documentNumber || !title || !documentType) {
       Alert.alert('Validation Error', 'Please fill in all required fields');
@@ -357,6 +377,7 @@ const DesignDocumentManagementScreen = () => {
             rec.documentType = documentType;
             rec.categoryId = categoryId || null;
             rec.siteId = requiresSite ? siteId : null;
+            rec.keyDateId = keyDateId || null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.weightage = weightageNum || null;
             rec.updatedAt = Date.now();
@@ -400,6 +421,7 @@ const DesignDocumentManagementScreen = () => {
             rec.categoryId = categoryId || null;
             rec.projectId = projectId;
             rec.siteId = requiresSite ? siteId : null;
+            rec.keyDateId = keyDateId || null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.weightage = weightageNum || null;
             rec.status = 'draft';
@@ -495,6 +517,7 @@ const DesignDocumentManagementScreen = () => {
         documentType: doc.documentType,
         categoryId: doc.categoryId,
         siteId: doc.siteId || '',
+        keyDateId: (doc as any).keyDateId || '',
         revisionNumber: doc.revisionNumber,
         weightage: doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
       },
@@ -1104,6 +1127,7 @@ const DesignDocumentManagementScreen = () => {
           categories={state.data.categories}
           sites={state.data.sites}
           documents={state.data.documents}
+          keyDates={keyDates}
         />
 
         <ManageCategoriesDialog

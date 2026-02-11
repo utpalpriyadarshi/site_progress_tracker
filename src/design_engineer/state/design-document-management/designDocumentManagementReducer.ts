@@ -13,6 +13,7 @@ export interface DocumentFormData {
   documentType: DocumentType | '';
   categoryId: string;
   siteId: string;
+  keyDateId: string; // Link to Key Date for progress tracking
   revisionNumber: string;
   weightage: string; // String for input, will be converted to number on save
 }
@@ -105,6 +106,7 @@ export const createInitialState = (): DesignDocumentManagementState => ({
     documentType: '',
     categoryId: '',
     siteId: '',
+    keyDateId: '',
     revisionNumber: 'R0',
     weightage: '',
   },

@@ -76,6 +76,17 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
           {doc.siteName && (
             <Text style={styles.metaText}>{doc.siteName}</Text>
           )}
+          {(doc as any).keyDateId && (
+            <Chip
+              mode="outlined"
+              icon="calendar-check"
+              style={styles.keyDateChip}
+              textStyle={styles.keyDateText}
+              compact
+            >
+              Key Date
+            </Chip>
+          )}
           <Text style={styles.metaText}>{doc.revisionNumber}</Text>
         </View>
 
@@ -248,6 +259,14 @@ const styles = StyleSheet.create({
   },
   weightageText: {
     color: '#1976D2',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  keyDateChip: {
+    borderColor: '#673AB7',
+  },
+  keyDateText: {
+    color: '#673AB7',
     fontSize: 10,
     fontWeight: 'bold',
   },

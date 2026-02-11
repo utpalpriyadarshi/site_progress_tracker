@@ -19,6 +19,13 @@ const DOCUMENT_TYPE_PREFIXES: Record<string, string> = {
   as_built: 'ABD',
 };
 
+interface KeyDate {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
+}
+
 interface CreateDesignDocumentDialogProps {
   visible: boolean;
   onDismiss: () => void;
@@ -29,6 +36,7 @@ interface CreateDesignDocumentDialogProps {
   categories: DesignDocumentCategory[];
   sites: Site[];
   documents: DesignDocument[];
+  keyDates: KeyDate[];
 }
 
 const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
@@ -41,10 +49,12 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   categories,
   sites,
   documents,
+  keyDates,
 }) => {
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [docTypeMenuVisible, setDocTypeMenuVisible] = useState(false);
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
+  const [keyDateMenuVisible, setKeyDateMenuVisible] = useState(false);
   const [docNumberManuallyEdited, setDocNumberManuallyEdited] = useState(false);
 
   // Top-level categories (documentType === '_category')
@@ -63,6 +73,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
 
   const selectedSubCategory = categories.find((c) => c.id === form.categoryId);
   const selectedSite = sites.find((s) => s.id === form.siteId);
+  const selectedKeyDate = keyDates.find((kd) => kd.id === form.keyDateId);
   const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
 
   // Reset manual edit flag when dialog opens
@@ -228,6 +239,44 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
                 ))}
               </Menu>
             )}
+
+            {/* Key Date Dropdown (optional - for progress tracking) */}
+            <Menu
+              visible={keyDateMenuVisible}
+              onDismiss={() => setKeyDateMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  onPress={() => setKeyDateMenuVisible(true)}
+                  style={styles.pickerButton}
+                >
+                  <Text style={styles.pickerLabel}>Key Date (Optional)</Text>
+                  <Text style={styles.pickerValue}>
+                    {selectedKeyDate
+                      ? `${selectedKeyDate.code} - ${selectedKeyDate.description}`
+                      : 'None - Progress not tracked'}
+                  </Text>
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item
+                key="none"
+                onPress={() => {
+                  onUpdateField('keyDateId', '');
+                  setKeyDateMenuVisible(false);
+                }}
+                title="None - Progress not tracked"
+              />
+              {keyDates.map((kd) => (
+                <Menu.Item
+                  key={kd.id}
+                  onPress={() => {
+                    onUpdateField('keyDateId', kd.id);
+                    setKeyDateMenuVisible(false);
+                  }}
+                  title={`${kd.code} - ${kd.description}`}
+                />
+              ))}
+            </Menu>
 
             <TextInput
               label="Revision Number"
