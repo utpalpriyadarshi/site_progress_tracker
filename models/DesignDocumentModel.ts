@@ -20,6 +20,7 @@ export default class DesignDocumentModel extends Model {
     projects: { type: 'belongs_to', key: 'project_id' },
     design_document_categories: { type: 'belongs_to', key: 'category_id' },
     sites: { type: 'belongs_to', key: 'site_id' },
+    key_dates: { type: 'belongs_to', key: 'key_date_id' },
   };
 
   @field('document_number') documentNumber!: string;
@@ -29,6 +30,7 @@ export default class DesignDocumentModel extends Model {
   @field('category_id') categoryId!: string;
   @field('project_id') projectId!: string;
   @field('site_id') siteId?: string;
+  @field('key_date_id') keyDateId?: string;
   @field('revision_number') revisionNumber!: string;
   @field('status') status!: string; // draft | submitted | approved | approved_with_comment | rejected
   @field('approval_comment') approvalComment?: string;
@@ -44,6 +46,7 @@ export default class DesignDocumentModel extends Model {
   @relation('projects', 'project_id') project: any;
   @relation('design_document_categories', 'category_id') category: any;
   @relation('sites', 'site_id') site: any;
+  @relation('key_dates', 'key_date_id') keyDate: any;
 
   /**
    * Get status display color

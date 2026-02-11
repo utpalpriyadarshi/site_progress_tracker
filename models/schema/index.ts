@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 39, // Added weightage to design_documents for progress tracking
+  version: 40, // Added key_date_id to design_documents for Key Date progress tracking
   tables: [
     tableSchema({
       name: 'projects',
@@ -757,6 +757,7 @@ export default appSchema({
         { name: 'category_id', type: 'string', isIndexed: true },
         { name: 'project_id', type: 'string', isIndexed: true },
         { name: 'site_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'key_date_id', type: 'string', isOptional: true, isIndexed: true },
         { name: 'revision_number', type: 'string' },
         { name: 'status', type: 'string', isIndexed: true },
         { name: 'approval_comment', type: 'string', isOptional: true },
