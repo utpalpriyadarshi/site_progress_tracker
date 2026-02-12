@@ -244,16 +244,6 @@ export const useDashboardData = (
       setLoading(true);
       setError(null);
 
-      // Fetch engineer's assigned site IDs
-      let mySiteIds: string[] = [];
-      if (engineerId) {
-        const mySites = await database.collections
-          .get('sites')
-          .query(Q.where('design_engineer_id', engineerId))
-          .fetch();
-        mySiteIds = mySites.map((s: any) => s.id);
-      }
-
       // Fetch all project-level data
       const [allDesignDocs, allDoorsPackages, allRfqs] = await Promise.all([
         database.collections
@@ -275,9 +265,9 @@ export const useDashboardData = (
       setProjectMetrics(projMetrics);
 
       // Filter "My Work" data
-      // Design docs: filter by site_id matching engineer's assigned sites
-      const myDesignDocs = mySiteIds.length > 0
-        ? allDesignDocs.filter((d: any) => d.siteId && mySiteIds.includes(d.siteId))
+      // Design docs: filter by created_by matching engineer
+      const myDesignDocs = engineerId
+        ? allDesignDocs.filter((d: any) => d.createdBy === engineerId)
         : [];
 
       // DOORS packages: filter by created_by or assigned_to matching engineerId

@@ -82,26 +82,18 @@ const DoorsPackageManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DoorsPackage] Loading packages for project:', projectId);
 
-      // Get sites assigned to this designer
-      const sitesCollection = database.collections.get('sites');
-      const assignedSites = await sitesCollection
-        .query(Q.where('design_engineer_id', engineerId))
-        .fetch();
-
-      const assignedSiteIds = assignedSites.map((site: any) => site.id);
-
-      // Filter packages by assigned sites
+      // Query packages for this project, optionally filtered by site
       const doorsCollection = database.collections.get('doors_packages');
-      let packagesQuery = doorsCollection.query(
-        Q.where('project_id', projectId),
-        Q.where('site_id', Q.oneOf(assignedSiteIds))
-      );
+      let packagesQuery;
 
-      // Further filter by selected site if not 'all'
       if (selectedSiteId !== 'all') {
         packagesQuery = doorsCollection.query(
           Q.where('project_id', projectId),
           Q.where('site_id', selectedSiteId)
+        );
+      } else {
+        packagesQuery = doorsCollection.query(
+          Q.where('project_id', projectId)
         );
       }
 
@@ -517,7 +509,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    paddingTop: 50,
+    paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,

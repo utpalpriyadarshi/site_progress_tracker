@@ -230,7 +230,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10);
             record.weightage = parseFloat(state.form.weightage) || 0;
             record.designWeightage = parseFloat(state.form.designWeightage) || 0;
-            record.progressMode = state.form.progressMode === 'auto' ? null : state.form.progressMode;
+            record.progressMode = state.form.progressMode || 'auto';
             record.dependencies = state.form.dependencies || null;
             record.updatedAt = Date.now();
           });
@@ -256,7 +256,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10) || 1;
             record.weightage = parseFloat(state.form.weightage) || 0;
             record.designWeightage = parseFloat(state.form.designWeightage) || 0;
-            record.progressMode = state.form.progressMode === 'auto' ? null : state.form.progressMode;
+            record.progressMode = state.form.progressMode || 'auto';
             record.dependencies = state.form.dependencies || null;
             record.createdBy = 'planner';
             record.updatedAt = Date.now();
@@ -326,7 +326,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           record.sequenceOrder = nextSeq;
           record.weightage = keyDate.weightage || 0;
           record.designWeightage = keyDate.designWeightage || 0;
-          record.progressMode = keyDate.progressMode || null;
+          record.progressMode = keyDate.progressMode || 'auto';
           record.dependencies = keyDate.dependencies || null;
           record.projectId = projectId;
           record.status = 'not_started';
