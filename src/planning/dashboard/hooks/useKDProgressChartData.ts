@@ -117,6 +117,20 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
       const kdData: KDProgressDataPoint[] = [];
 
       for (const kd of kds) {
+        const mode = kd.progressMode;
+
+        // Short-circuit for manual/binary modes: use stored progress directly
+        if (mode === 'manual' || mode === 'binary') {
+          kdData.push({
+            id: kd.id,
+            code: kd.code,
+            targetDate: kd.targetDate,
+            progress: kd.progressPercentage,
+            sequenceOrder: kd.sequenceOrder,
+          });
+          continue;
+        }
+
         const kdSites = sitesByKdId[kd.id] || [];
         const kdDocs = docsByKd[kd.id] || [];
         let kdProgress = kd.progressPercentage; // fallback

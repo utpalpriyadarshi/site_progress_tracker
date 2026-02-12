@@ -57,8 +57,16 @@ interface KeyDateCardProps {
 const deriveStatusFromProgress = (
   progress: number,
   originalStatus: string,
-  hasSites: boolean
+  hasSites: boolean,
+  progressMode?: string | null,
 ): string => {
+  // For manual/binary modes, always derive status from stored progress
+  if (progressMode === 'manual' || progressMode === 'binary') {
+    if (progress >= 100) return 'completed';
+    if (progress > 0) return 'in_progress';
+    return 'not_started';
+  }
+
   // If no sites are associated, use the original status from the key date
   if (!hasSites) return originalStatus;
 
@@ -111,9 +119,10 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
     return deriveStatusFromProgress(
       calculatedProgress,
       keyDate.status,
-      keyDateSites.length > 0
+      keyDateSites.length > 0,
+      keyDate.progressMode,
     );
-  }, [calculatedProgress, keyDate.status, keyDateSites.length]);
+  }, [calculatedProgress, keyDate.status, keyDateSites.length, keyDate.progressMode]);
 
   return (
     <Card
@@ -156,7 +165,16 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
           category={keyDate.category}
           status={derivedStatus as any}
         />
-        {keyDateSites.length > 0 && (
+        {keyDate.progressMode === 'manual' || keyDate.progressMode === 'binary' ? (
+          <Chip
+            mode="outlined"
+            compact
+            style={styles.progressModeChip}
+            textStyle={styles.progressModeChipText}
+          >
+            {keyDate.progressMode === 'binary' ? 'Done / Not Done' : 'Manual Progress'}
+          </Chip>
+        ) : keyDateSites.length > 0 ? (
           <View>
             {(itemProgressTotal > 0 || docProgressTotal > 0) && (
               <Text style={styles.progressBreakdownText}>
@@ -167,7 +185,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
               {keyDateSites.length} site{keyDateSites.length !== 1 ? 's' : ''} contributing
             </Text>
           </View>
-        )}
+        ) : null}
 
         {/* Schedule Info */}
         <View style={styles.scheduleSection}>
@@ -380,6 +398,15 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
   },
+  progressModeChip: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    borderColor: '#7E57C2',
+  },
+  progressModeChipText: {
+    fontSize: 11,
+    color: '#7E57C2',
+  },
   progressBreakdownText: {
     fontSize: 11,
     color: '#666',
@@ -396,6 +423,27 @@ const styles = StyleSheet.create({
 
 // WatermelonDB observable enhancement - dual-track progress (site items + design docs)
 const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => {
+  const mode = keyDate.progressMode;
+
+  // For manual/binary modes, short-circuit: use stored progressPercentage directly
+  // Must observe the record so updates re-emit (of() would be static/stale)
+  if (mode === 'manual' || mode === 'binary') {
+    return {
+      keyDate,
+      keyDateSites: of([]),
+      siteItemProgress: keyDate.observe().pipe(
+        map((kd) => [{
+          siteId: '__kd_level__',
+          contributionPercentage: 100,
+          calculatedProgress: kd.progressPercentage,
+          itemProgress: 0,
+          docProgress: 0,
+        }]),
+      ),
+    };
+  }
+
+  // Auto mode: calculate from sites + design docs
   const keyDateSites$ = database.collections
     .get<KeyDateSiteModel>('key_date_sites')
     .query(Q.where('key_date_id', keyDate.id))

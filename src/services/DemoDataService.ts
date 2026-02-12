@@ -93,6 +93,7 @@ interface KeyDateDef {
   targetDays: number;
   weightage: number;
   designWeightage?: number;
+  progressMode?: 'auto' | 'manual' | 'binary';
   delayDamagesInitial: number;
   delayDamagesExtended: number;
   sequenceOrder: number;
@@ -106,6 +107,7 @@ const KEY_DATES: KeyDateDef[] = [
     description: 'Site Possession & Access',
     targetDays: 30,
     weightage: 10,
+    progressMode: 'binary',
     delayDamagesInitial: 1,
     delayDamagesExtended: 10,
     sequenceOrder: 1,
@@ -162,6 +164,7 @@ const KEY_DATES: KeyDateDef[] = [
     description: 'Final Completion & Handover',
     targetDays: 365,
     weightage: 15,
+    progressMode: 'manual',
     delayDamagesInitial: 1,
     delayDamagesExtended: 10,
     sequenceOrder: 6,
@@ -187,12 +190,10 @@ const SITES: SiteDef[] = [
 
 // Indexed by KD code, then site index (0, 1, 2)
 const KD_SITE_CONTRIBUTIONS: Record<string, number[]> = {
-  'KD-G-01': [40, 40, 20],
   'KD-A-01': [35, 35, 30],
   'KD-B-01': [40, 40, 20],
   'KD-C-01': [35, 35, 30],
   'KD-D-01': [40, 40, 20],
-  'KD-F-01': [33, 34, 33],
 };
 
 // ─── Milestone definitions ───────────────────────────────────────
@@ -366,6 +367,7 @@ export async function generatePlannerDemoData(projectId: string): Promise<DemoDa
         record.sequenceOrder = kdDef.sequenceOrder;
         record.weightage = kdDef.weightage;
         record.designWeightage = kdDef.designWeightage || 0;
+        record.progressMode = kdDef.progressMode || null;
         record.createdBy = 'planner';
         record.updatedAt = Date.now();
         record.appSyncStatus = 'pending';

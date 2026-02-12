@@ -118,6 +118,28 @@ export function useProjectProgressData(): UseProjectProgressResult {
       let totalWeightage = 0;
 
       for (const kd of keyDates) {
+        const mode = kd.progressMode;
+        const weightage = kd.weightage || 0;
+
+        // Short-circuit for manual/binary modes: use stored progress directly
+        if (mode === 'manual' || mode === 'binary') {
+          const kdProgress = kd.progressPercentage;
+          breakdown.push({
+            id: kd.id,
+            code: kd.code,
+            description: kd.description,
+            weightage,
+            progress: Math.round(kdProgress * 100) / 100,
+            itemProgress: 0,
+            docProgress: 0,
+            status: kd.status,
+            sequenceOrder: kd.sequenceOrder,
+          });
+          totalWeightedProgress += weightage * kdProgress;
+          totalWeightage += weightage;
+          continue;
+        }
+
         const kdSites = sitesByKdId[kd.id] || [];
         const kdDocs = docsByKd[kd.id] || [];
         let kdProgress = kd.progressPercentage; // fallback
@@ -151,7 +173,6 @@ export function useProjectProgressData(): UseProjectProgressResult {
           kdProgress = combined;
         }
 
-        const weightage = kd.weightage || 0;
         breakdown.push({
           id: kd.id,
           code: kd.code,

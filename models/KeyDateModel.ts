@@ -3,6 +3,14 @@ import { field, readonly, relation } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
 
 /**
+ * Key Date Progress Mode
+ * - 'auto': progress calculated from sites + design docs (default)
+ * - 'manual': planner sets percentage directly (0-100%)
+ * - 'binary': done/not done toggle (0% or 100%)
+ */
+export type KeyDateProgressMode = 'auto' | 'manual' | 'binary';
+
+/**
  * Key Date Categories based on CMRL contract structure
  */
 export type KeyDateCategory =
@@ -76,6 +84,9 @@ export default class KeyDateModel extends Model {
 
   // Design weightage for dual-track progress (0-100, % from design docs)
   @field('design_weightage') designWeightage?: number;
+
+  // Progress mode: auto (default), manual, or binary
+  @field('progress_mode') progressMode?: KeyDateProgressMode;
 
   // Audit
   @field('created_by') createdBy!: string;

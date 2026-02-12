@@ -11,6 +11,7 @@ import { v38Migration } from './v38_add_designer_to_sites';
 import { v39Migration } from './v39_add_design_document_weightage';
 import { v40Migration } from './v40_add_key_date_to_design_documents';
 import { v41Migration } from './v41_add_design_weightage';
+import { v42Migration } from './v42_add_progress_mode';
 
 export default schemaMigrations({
   migrations: [
@@ -592,5 +593,7 @@ export default schemaMigrations({
     v40Migration,
     // v41: Add design_weightage to key_dates for dual-track progress
     v41Migration,
+    // v42: Add progress_mode to key_dates for project-level milestones
+    v42Migration,
   ],
 });
