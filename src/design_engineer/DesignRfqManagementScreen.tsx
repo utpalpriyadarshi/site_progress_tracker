@@ -84,28 +84,20 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      // Get sites assigned to this designer
-      const sitesCollection = database.collections.get('sites');
-      const assignedSites = await sitesCollection
-        .query(Q.where('design_engineer_id', engineerId))
-        .fetch();
-
-      const assignedSiteIds = assignedSites.map((site: any) => site.id);
-
-      // Filter RFQs by assigned sites
+      // Query Design RFQs for this project, optionally filtered by site
       const rfqCollection = database.collections.get('rfqs');
-      let rfqsQuery = rfqCollection.query(
-        Q.where('project_id', projectId),
-        Q.where('rfq_type', 'design'),
-        Q.where('site_id', Q.oneOf(assignedSiteIds))
-      );
+      let rfqsQuery;
 
-      // Further filter by selected site if not 'all'
       if (selectedSiteId !== 'all') {
         rfqsQuery = rfqCollection.query(
           Q.where('project_id', projectId),
           Q.where('rfq_type', 'design'),
           Q.where('site_id', selectedSiteId)
+        );
+      } else {
+        rfqsQuery = rfqCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('rfq_type', 'design')
         );
       }
 
@@ -527,7 +519,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    paddingTop: 50,
+    paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,

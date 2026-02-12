@@ -62,7 +62,12 @@ export function calculateSiteProgressFromDesignDocuments(
   if (!documents || documents.length === 0) return 0;
 
   const totalWeightage = documents.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
-  if (totalWeightage === 0) return 0;
+
+  if (totalWeightage === 0) {
+    // Fallback: equal weight per document when no weightage is set
+    const totalProgress = documents.reduce((sum, doc) => sum + getProgressFromStatus(doc.status), 0);
+    return (totalProgress / documents.length) * 100;
+  }
 
   const weightedProgress = documents.reduce((sum, doc) => {
     const statusProgress = getProgressFromStatus(doc.status);

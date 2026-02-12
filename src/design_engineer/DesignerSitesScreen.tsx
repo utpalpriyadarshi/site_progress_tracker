@@ -1,22 +1,20 @@
 /**
  * DesignerSitesScreen
  *
- * Dedicated screen for designers to view their assigned sites.
- * Follows the supervisor Sites screen pattern (read-only version).
+ * Dedicated screen for designers to manage their sites.
  *
  * Features:
- * - Shows all sites assigned to the current designer
+ * - Shows all sites in the engineer's project
  * - Search and filter sites
- * - Site cards showing site details
- * - Empty state when no sites assigned
- * - Read-only (designers cannot add/edit sites)
+ * - Create, edit, and delete sites
+ * - Site cards with edit/delete actions
  *
- * @version 2.0.0
+ * @version 3.0.0
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Title, Button, FAB, Portal, Dialog, TextInput } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, Card, Button, FAB, Portal, Dialog, TextInput, IconButton } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -24,22 +22,10 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import SiteModel from '../../models/SiteModel';
 import { EmptyState } from '../components/common/EmptyState';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { SearchBar } from '../components';
 import { useDebounce } from '../hooks';
 import { useSnackbar } from '../components/Snackbar';
 import { logger } from '../services/LoggingService';
-
-// Activity filter options
-const ACTIVITY_FILTERS: FilterOption[] = [
-  { id: 'all', label: 'All Sites' },
-  { id: 'active', label: 'Active', icon: 'check-circle' },
-  { id: 'inactive', label: 'Inactive', icon: 'circle-outline' },
-];
-
-// Sort options
-const SORT_OPTIONS: SortOption[] = [
-  { id: 'name', label: 'Name', icon: 'format-letter-case' },
-];
 
 interface DesignerSitesScreenProps {
   sites: SiteModel[];
@@ -53,20 +39,18 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [selectedActivity, setSelectedActivity] = useState<string[]>(['all']);
-  const [sortBy, setSortBy] = useState<'name'>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Site creation dialog state
+  // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
 
-  // Combined filtering and sorting logic (memoized for performance)
+  // Filtering and sorting
   const displayedSites = useMemo(() => {
     let result = sites;
 
-    // 1. Search filter (using debounced value for better performance)
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
       result = result.filter(site =>
@@ -75,156 +59,144 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
       );
     }
 
-    // 2. Activity filter (for now, all sites are considered active)
-    if (!selectedActivity.includes('all')) {
-      // Can be enhanced later with explicit active/inactive status
-    }
-
-    // 3. Sort by name
     result = [...result].sort((a, b) => {
       const comparison = a.name.localeCompare(b.name);
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return result;
-  }, [sites, debouncedSearchQuery, selectedActivity, sortBy, sortDirection]);
+  }, [sites, debouncedSearchQuery, sortDirection]);
 
-  // Filter toggle handler
-  const handleActivityToggle = (id: string) => {
-    if (id === 'all') {
-      setSelectedActivity(['all']);
-    } else {
-      const newFilters = selectedActivity.includes(id)
-        ? selectedActivity.filter(f => f !== id && f !== 'all')
-        : [...selectedActivity.filter(f => f !== 'all'), id];
-      setSelectedActivity(newFilters.length === 0 ? ['all'] : newFilters);
-    }
-  };
+  const hasActiveFilters = debouncedSearchQuery.trim() !== '';
 
-  // Clear all filters
   const clearAllFilters = () => {
     setSearchQuery('');
-    setSelectedActivity(['all']);
-    setSortBy('name');
-    setSortDirection('asc');
   };
 
-  // Check if any filters are active
-  const hasActiveFilters = useMemo(() => {
-    return debouncedSearchQuery.trim() !== '' ||
-           !selectedActivity.includes('all');
-  }, [debouncedSearchQuery, selectedActivity]);
-
-  // ==================== Site Creation ====================
+  // ==================== Site CRUD ====================
 
   const openAddDialog = () => {
+    setEditingSiteId(null);
     setSiteName('');
     setSiteLocation('');
     setDialogVisible(true);
   };
 
+  const openEditDialog = (site: SiteModel) => {
+    setEditingSiteId(site.id);
+    setSiteName(site.name);
+    setSiteLocation(site.location);
+    setDialogVisible(true);
+  };
+
   const closeDialog = () => {
     setDialogVisible(false);
+    setEditingSiteId(null);
     setSiteName('');
     setSiteLocation('');
   };
 
   const handleSave = async () => {
     if (!siteName.trim() || !siteLocation.trim()) {
-      setDialogVisible(false);
       showSnackbar('Please fill in all fields', 'warning');
       return;
     }
 
     try {
-      await database.write(async () => {
-        await database.collections.get('sites').create((site: any) => {
-          site.name = siteName.trim();
-          site.location = siteLocation.trim();
-          site.projectId = projectId;
-          site.designEngineerId = engineerId;
+      if (editingSiteId) {
+        // Update existing site
+        const siteRecord = await database.collections.get('sites').find(editingSiteId);
+        await database.write(async () => {
+          await siteRecord.update((site: any) => {
+            site.name = siteName.trim();
+            site.location = siteLocation.trim();
+          });
         });
-      });
+        showSnackbar('Site updated successfully', 'success');
+      } else {
+        // Create new site
+        await database.write(async () => {
+          await database.collections.get('sites').create((site: any) => {
+            site.name = siteName.trim();
+            site.location = siteLocation.trim();
+            site.projectId = projectId;
+            site.designEngineerId = engineerId;
+          });
+        });
+        showSnackbar('Site created successfully', 'success');
+      }
 
-      showSnackbar('Site created successfully', 'success');
       closeDialog();
 
-      logger.info('Site created successfully', {
+      logger.info(`Site ${editingSiteId ? 'updated' : 'created'} successfully`, {
         component: 'DesignerSitesScreen',
         siteName: siteName.trim(),
         engineerId,
       });
     } catch (error) {
-      logger.error('Failed to create site', error as Error, {
+      logger.error(`Failed to ${editingSiteId ? 'update' : 'create'} site`, error as Error, {
         component: 'DesignerSitesScreen',
-        action: 'createSite',
         siteName,
       });
-      showSnackbar('Failed to create site: ' + (error as Error).message, 'error');
+      showSnackbar(`Failed to ${editingSiteId ? 'update' : 'create'} site: ` + (error as Error).message, 'error');
     }
+  };
+
+  const handleDelete = (site: SiteModel) => {
+    Alert.alert(
+      'Delete Site',
+      `Are you sure you want to delete "${site.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await database.write(async () => {
+                await site.markAsDeleted();
+              });
+              showSnackbar('Site deleted successfully', 'success');
+              logger.info('Site deleted', { component: 'DesignerSitesScreen', siteId: site.id });
+            } catch (error) {
+              logger.error('Failed to delete site', error as Error, {
+                component: 'DesignerSitesScreen',
+                siteId: site.id,
+              });
+              showSnackbar('Failed to delete site: ' + (error as Error).message, 'error');
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
     <ErrorBoundary>
       <View style={styles.container}>
-        {/* Header */}
+        {/* Compact Header with project info */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.headerTitle}>My Sites</Text>
-              <Text style={styles.headerSubtitle}>Design Engineer</Text>
-            </View>
-          </View>
+          <Text style={styles.headerTitle}>My Sites</Text>
+          {projectName && (
+            <Text style={styles.headerProject}>{projectName}</Text>
+          )}
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search sites..."
+          />
         </View>
 
-        {/* Project Header - Shows designer's assigned project */}
-        {projectName && (
-          <Card style={styles.projectCard}>
-            <Card.Content>
-              <View style={styles.projectHeader}>
-                <View>
-                  <Text style={styles.projectLabel}>📁 Your Assigned Project</Text>
-                  <Title style={styles.projectTitle}>{projectName}</Title>
-                  <Text style={styles.projectNote}>All sites belong to this project</Text>
-                </View>
-              </View>
-            </Card.Content>
-          </Card>
-        )}
-
-        {/* Search Bar */}
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search sites by name or location..."
-        />
-
-        {/* Activity Filter Chips */}
-        <FilterChips
-          filters={ACTIVITY_FILTERS}
-          selectedFilters={selectedActivity}
-          onFilterToggle={handleActivityToggle}
-        />
-
-        {/* Results Row with Sort and Clear All */}
+        {/* Results count */}
         <View style={styles.resultsRow}>
           <Text style={styles.resultCount}>
-            Showing {displayedSites.length} of {sites.length} sites
+            {displayedSites.length} site{displayedSites.length !== 1 ? 's' : ''}
           </Text>
-
           {hasActiveFilters && (
             <Button mode="text" onPress={clearAllFilters} compact>
-              Clear All
+              Clear
             </Button>
           )}
-
-          <SortMenu
-            sortOptions={SORT_OPTIONS}
-            currentSort={sortBy}
-            onSortChange={(id) => setSortBy(id as any)}
-            sortDirection={sortDirection}
-            onDirectionChange={setSortDirection}
-          />
         </View>
 
         {/* Sites List */}
@@ -232,11 +204,11 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
           {displayedSites.length === 0 ? (
             <EmptyState
               icon={hasActiveFilters ? 'filter-variant' : 'map-marker-off'}
-              title={hasActiveFilters ? 'No Sites Found' : 'No Sites Assigned'}
+              title={hasActiveFilters ? 'No Sites Found' : 'No Sites Yet'}
               message={
                 hasActiveFilters
                   ? 'No sites match your current search or filter criteria.'
-                  : "You don't have any sites assigned yet. Click the + button to add a new site."
+                  : "No sites created yet. Click the + button to add a new site."
               }
               helpText={
                 hasActiveFilters
@@ -273,12 +245,28 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
                     <View style={styles.siteHeader}>
                       <View style={styles.siteInfo}>
                         <Text style={styles.siteName}>{site.name}</Text>
-                        <Text style={styles.siteLocation}>📍 {site.location}</Text>
+                        <Text style={styles.siteLocation}>{site.location}</Text>
                         {project && (
-                          <Text style={styles.projectName}>
+                          <Text style={styles.projectNameText}>
                             Project: {project.name}
                           </Text>
                         )}
+                      </View>
+                      <View style={styles.siteActions}>
+                        <IconButton
+                          icon="pencil"
+                          size={20}
+                          iconColor="#673AB7"
+                          onPress={() => openEditDialog(site)}
+                          accessibilityLabel={`Edit ${site.name}`}
+                        />
+                        <IconButton
+                          icon="delete"
+                          size={20}
+                          iconColor="#F44336"
+                          onPress={() => handleDelete(site)}
+                          accessibilityLabel={`Delete ${site.name}`}
+                        />
                       </View>
                     </View>
                   </Card.Content>
@@ -305,7 +293,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
             onDismiss={closeDialog}
             style={styles.dialog}
           >
-            <Dialog.Title>Add New Site</Dialog.Title>
+            <Dialog.Title>{editingSiteId ? 'Edit Site' : 'Add New Site'}</Dialog.Title>
             <Dialog.Content>
               <TextInput
                 label="Site Name *"
@@ -323,7 +311,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
                 style={styles.input}
               />
               <Text style={styles.helperText}>
-                This site will be added to {projectName}
+                This site will be {editingSiteId ? 'updated in' : 'added to'} {projectName}
               </Text>
             </Dialog.Content>
             <Dialog.Actions>
@@ -333,7 +321,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
                 onPress={handleSave}
                 disabled={!siteName.trim() || !siteLocation.trim()}
               >
-                Create
+                {editingSiteId ? 'Update' : 'Create'}
               </Button>
             </Dialog.Actions>
           </Dialog>
@@ -343,11 +331,11 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
   );
 };
 
-// Enhance component with WatermelonDB observables
-const enhance = withObservables(['engineerId'], ({ engineerId }: { engineerId: string }) => ({
+// Enhance component with WatermelonDB observables — show all project sites
+const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
   sites: database.collections
     .get('sites')
-    .query(Q.where('design_engineer_id', engineerId)),
+    .query(Q.where('project_id', projectId)),
   projects: database.collections.get('projects').query(),
 }));
 
@@ -355,8 +343,8 @@ const EnhancedDesignerSitesScreen = enhance(DesignerSitesScreenComponent as any)
 
 // Wrapper component that provides context
 const DesignerSitesScreen = () => {
-  const { engineerId } = useDesignEngineerContext();
-  return <EnhancedDesignerSitesScreen engineerId={engineerId} />;
+  const { projectId } = useDesignEngineerContext();
+  return <EnhancedDesignerSitesScreen projectId={projectId} />;
 };
 
 const styles = StyleSheet.create({
@@ -366,53 +354,19 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#673AB7',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#FFF',
-    opacity: 0.9,
-  },
-  projectCard: {
-    margin: 16,
-    marginBottom: 8,
-    elevation: 3,
-    backgroundColor: '#EDE7F6',
-  },
-  projectHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  projectLabel: {
-    fontSize: 12,
-    color: '#673AB7',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  projectTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#4527A0',
-    marginBottom: 4,
+    color: '#FFF',
   },
-  projectNote: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
+  headerProject: {
+    fontSize: 13,
+    color: '#E0D0FF',
+    marginBottom: 6,
   },
   resultsRow: {
     flexDirection: 'row',
@@ -444,6 +398,10 @@ const styles = StyleSheet.create({
   siteInfo: {
     flex: 1,
   },
+  siteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   siteName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -455,7 +413,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 4,
   },
-  projectName: {
+  projectNameText: {
     fontSize: 12,
     color: '#999',
   },
