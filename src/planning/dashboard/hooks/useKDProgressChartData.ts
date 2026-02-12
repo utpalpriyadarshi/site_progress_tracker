@@ -11,12 +11,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../../models/database';
-import ItemModel from '../../../../models/ItemModel';
 import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import { usePlanningContext } from '../../context';
+import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../../utils/designDocumentProgress';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
-import { batchLoadItemsBySites } from '../../utils/dataLoading';
+import { batchLoadItemsBySites, batchLoadDocsByKeyDate } from '../../utils/dataLoading';
 
 // ==================== Types ====================
 
@@ -105,25 +105,56 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
         allUniqueSiteIds.add(kdSite.siteId);
       }
 
-      // Batch load ALL items for ALL sites in ONE query (Performance optimization!)
-      const itemsBySite = await batchLoadItemsBySites([...allUniqueSiteIds]);
+      // Batch load items for all sites + design docs by KD
+      const siteIds = [...allUniqueSiteIds];
+      const kdIds = kds.map(kd => kd.id);
+      const [itemsBySite, docsByKd] = await Promise.all([
+        batchLoadItemsBySites(siteIds),
+        batchLoadDocsByKeyDate(kdIds),
+      ]);
 
-      // Calculate actual progress for each KD using pre-loaded data
+      // Calculate dual-track progress for each KD
       const kdData: KDProgressDataPoint[] = [];
 
       for (const kd of kds) {
+        const mode = kd.progressMode;
+
+        // Short-circuit for manual/binary modes: use stored progress directly
+        if (mode === 'manual' || mode === 'binary') {
+          kdData.push({
+            id: kd.id,
+            code: kd.code,
+            targetDate: kd.targetDate,
+            progress: kd.progressPercentage,
+            sequenceOrder: kd.sequenceOrder,
+          });
+          continue;
+        }
+
         const kdSites = sitesByKdId[kd.id] || [];
+        const kdDocs = docsByKd[kd.id] || [];
         let kdProgress = kd.progressPercentage; // fallback
 
-        if (kdSites.length > 0) {
-          // Calculate progress using pre-loaded items (no additional queries!)
-          let siteWeightedSum = 0;
-          for (const site of kdSites) {
-            const siteItems = itemsBySite[site.siteId] || [];
-            const siteProgress = calculateSiteProgressFromItems(siteItems);
-            siteWeightedSum += (site.contributionPercentage / 100) * siteProgress;
+        const hasSites = kdSites.length > 0;
+        const hasDocs = kdDocs.length > 0;
+
+        if (hasSites || hasDocs) {
+          // Site progress = weighted sum of item progress per site
+          let siteItemProgress = 0;
+          if (hasSites) {
+            for (const site of kdSites) {
+              const siteItems = itemsBySite[site.siteId] || [];
+              siteItemProgress += (site.contributionPercentage / 100) * calculateSiteProgressFromItems(siteItems);
+            }
           }
-          kdProgress = siteWeightedSum;
+
+          // Design progress = from all docs linked to this KD
+          const designProgress = hasDocs ? calculateSiteProgressFromDesignDocuments(kdDocs) : 0;
+
+          const { combined } = calculateKDProgress(
+            siteItemProgress, designProgress, kd.designWeightage || 0, hasSites, hasDocs
+          );
+          kdProgress = combined;
         }
 
         kdData.push({

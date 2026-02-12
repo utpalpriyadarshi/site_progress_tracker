@@ -17,7 +17,8 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { Text, useTheme, Banner } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
@@ -369,6 +370,16 @@ const PlanningDashboardScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Unlinked Documents Alert */}
+        {projectProgressData.unlinkedDocCount > 0 && (
+          <View style={styles.alertBanner}>
+            <Icon name="alert-circle-outline" size={18} color="#E65100" />
+            <Text style={styles.alertBannerText}>
+              {projectProgressData.unlinkedDocCount} design document(s) have no Key Date linkage — progress not tracked
+            </Text>
+          </View>
+        )}
+
         {renderWidgets()}
       </ScrollView>
 
@@ -423,6 +434,22 @@ const styles = StyleSheet.create({
   greeting: {
     fontWeight: 'bold',
     marginTop: 4,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  alertBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#E65100',
   },
   row: {
     flexDirection: 'row',

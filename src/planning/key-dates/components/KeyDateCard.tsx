@@ -21,7 +21,7 @@ import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import ItemModel from '../../../../models/ItemModel';
 import DesignDocumentModel from '../../../../models/DesignDocumentModel';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
-import { calculateCombinedSiteProgress } from '../../utils/designDocumentProgress';
+import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../../utils/designDocumentProgress';
 import { KeyDateStatusBadge } from './KeyDateStatusBadge';
 import { KeyDateProgressBar } from './KeyDateProgressBar';
 import {
@@ -35,6 +35,8 @@ interface SiteItemProgress {
   siteId: string;
   contributionPercentage: number;
   calculatedProgress: number;
+  itemProgress: number;
+  docProgress: number;
 }
 
 interface KeyDateCardProps {
@@ -55,8 +57,16 @@ interface KeyDateCardProps {
 const deriveStatusFromProgress = (
   progress: number,
   originalStatus: string,
-  hasSites: boolean
+  hasSites: boolean,
+  progressMode?: string | null,
 ): string => {
+  // For manual/binary modes, always derive status from stored progress
+  if (progressMode === 'manual' || progressMode === 'binary') {
+    if (progress >= 100) return 'completed';
+    if (progress > 0) return 'in_progress';
+    return 'not_started';
+  }
+
   // If no sites are associated, use the original status from the key date
   if (!hasSites) return originalStatus;
 
@@ -85,14 +95,23 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
 
   // Calculate overall progress from auto-calculated site item progress
   // Formula: Σ(site.contributionPercentage / 100 × siteProgress) for all associated sites
-  const calculatedProgress = useMemo(() => {
+  const { calculatedProgress, itemProgressTotal, docProgressTotal } = useMemo(() => {
     if (siteItemProgress.length > 0) {
-      return siteItemProgress.reduce(
+      const combined = siteItemProgress.reduce(
         (total, sp) => total + (sp.contributionPercentage / 100) * sp.calculatedProgress,
         0
       );
+      const items = siteItemProgress.reduce(
+        (total, sp) => total + (sp.contributionPercentage / 100) * sp.itemProgress,
+        0
+      );
+      const docs = siteItemProgress.reduce(
+        (total, sp) => total + (sp.contributionPercentage / 100) * sp.docProgress,
+        0
+      );
+      return { calculatedProgress: combined, itemProgressTotal: items, docProgressTotal: docs };
     }
-    return keyDate.progressPercentage;
+    return { calculatedProgress: keyDate.progressPercentage, itemProgressTotal: 0, docProgressTotal: 0 };
   }, [siteItemProgress, keyDate.progressPercentage]);
 
   // Derive the display status from calculated progress to ensure consistency
@@ -100,9 +119,10 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
     return deriveStatusFromProgress(
       calculatedProgress,
       keyDate.status,
-      keyDateSites.length > 0
+      keyDateSites.length > 0,
+      keyDate.progressMode,
     );
-  }, [calculatedProgress, keyDate.status, keyDateSites.length]);
+  }, [calculatedProgress, keyDate.status, keyDateSites.length, keyDate.progressMode]);
 
   return (
     <Card
@@ -145,11 +165,27 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
           category={keyDate.category}
           status={derivedStatus as any}
         />
-        {keyDateSites.length > 0 && (
-          <Text style={styles.siteCountText}>
-            {keyDateSites.length} site{keyDateSites.length !== 1 ? 's' : ''} contributing
-          </Text>
-        )}
+        {keyDate.progressMode === 'manual' || keyDate.progressMode === 'binary' ? (
+          <Chip
+            mode="outlined"
+            compact
+            style={styles.progressModeChip}
+            textStyle={styles.progressModeChipText}
+          >
+            {keyDate.progressMode === 'binary' ? 'Done / Not Done' : 'Manual Progress'}
+          </Chip>
+        ) : keyDateSites.length > 0 ? (
+          <View>
+            {(itemProgressTotal > 0 || docProgressTotal > 0) && (
+              <Text style={styles.progressBreakdownText}>
+                Items: {Math.round(itemProgressTotal)}% | Design Docs: {Math.round(docProgressTotal)}%
+              </Text>
+            )}
+            <Text style={styles.siteCountText}>
+              {keyDateSites.length} site{keyDateSites.length !== 1 ? 's' : ''} contributing
+            </Text>
+          </View>
+        ) : null}
 
         {/* Schedule Info */}
         <View style={styles.scheduleSection}>
@@ -362,51 +398,115 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
   },
+  progressModeChip: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    borderColor: '#7E57C2',
+  },
+  progressModeChipText: {
+    fontSize: 11,
+    color: '#7E57C2',
+  },
+  progressBreakdownText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'right',
+  },
   siteCountText: {
     fontSize: 11,
     color: '#888',
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'right',
   },
 });
 
-// WatermelonDB observable enhancement - fetches associated sites and computes progress from items AND design documents
+// WatermelonDB observable enhancement - dual-track progress (site items + design docs)
 const enhance = withObservables(['keyDate'], ({ keyDate }: { keyDate: KeyDateModel }) => {
+  const mode = keyDate.progressMode;
+
+  // For manual/binary modes, short-circuit: use stored progressPercentage directly
+  // Must observe the record so updates re-emit (of() would be static/stale)
+  if (mode === 'manual' || mode === 'binary') {
+    return {
+      keyDate,
+      keyDateSites: of([]),
+      siteItemProgress: keyDate.observe().pipe(
+        map((kd) => [{
+          siteId: '__kd_level__',
+          contributionPercentage: 100,
+          calculatedProgress: kd.progressPercentage,
+          itemProgress: 0,
+          docProgress: 0,
+        }]),
+      ),
+    };
+  }
+
+  // Auto mode: calculate from sites + design docs
   const keyDateSites$ = database.collections
     .get<KeyDateSiteModel>('key_date_sites')
     .query(Q.where('key_date_id', keyDate.id))
     .observe();
 
-  const siteItemProgress$ = keyDateSites$.pipe(
-    switchMap((sites) => {
-      if (sites.length === 0) return of([]);
+  // All design documents linked to this KD (regardless of site_id)
+  const allDocsForKD$ = database.collections
+    .get<DesignDocumentModel>('design_documents')
+    .query(Q.where('key_date_id', keyDate.id))
+    .observeWithColumns(['status', 'weightage']);
+
+  // Returns a single-element array with aggregated KD-level progress
+  const siteItemProgress$ = combineLatest([keyDateSites$, allDocsForKD$]).pipe(
+    switchMap(([sites, allDocsForKD]) => {
+      const hasDocs = allDocsForKD.length > 0;
+      const designProgress = calculateSiteProgressFromDesignDocuments(allDocsForKD);
+
+      if (sites.length === 0) {
+        // No sites — progress comes only from design docs (if any)
+        const { combined } = calculateKDProgress(0, designProgress, keyDate.designWeightage || 0, false, hasDocs);
+        return of([{
+          siteId: '__kd_level__',
+          contributionPercentage: 100,
+          calculatedProgress: combined,
+          itemProgress: 0,
+          docProgress: designProgress,
+        }]);
+      }
+
+      // Has sites — calculate item progress per site, then combine with design track
       return combineLatest(
-        sites.map((site) => {
-          // Observe both Items and Design Documents for each site
-          const items$ = database.collections
+        sites.map((site) =>
+          database.collections
             .get<ItemModel>('items')
-            .query(
-              Q.where('site_id', site.siteId),
-              Q.where('key_date_id', keyDate.id)
+            .query(Q.where('site_id', site.siteId))
+            .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage'])
+            .pipe(
+              map((items) => ({
+                contributionPercentage: site.contributionPercentage,
+                itemProgress: calculateSiteProgressFromItems(items),
+              }))
             )
-            .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage']);
-
-          const documents$ = database.collections
-            .get<DesignDocumentModel>('design_documents')
-            .query(
-              Q.where('site_id', site.siteId),
-              Q.where('key_date_id', keyDate.id)
-            )
-            .observeWithColumns(['status', 'weightage']);
-
-          // Combine both observables and calculate unified progress
-          return combineLatest([items$, documents$]).pipe(
-            map(([items, documents]) => ({
-              siteId: site.siteId,
-              contributionPercentage: site.contributionPercentage,
-              calculatedProgress: calculateCombinedSiteProgress(items, documents),
-            }))
+        )
+      ).pipe(
+        map((siteResults) => {
+          // Aggregate site-level item progress
+          const siteProgress = siteResults.reduce(
+            (total, sp) => total + (sp.contributionPercentage / 100) * sp.itemProgress,
+            0
           );
+
+          const { combined } = calculateKDProgress(
+            siteProgress, designProgress, keyDate.designWeightage || 0, true, hasDocs
+          );
+
+          // Return single synthetic entry for UI consumption
+          return [{
+            siteId: '__kd_level__',
+            contributionPercentage: 100,
+            calculatedProgress: combined,
+            itemProgress: siteProgress,
+            docProgress: designProgress,
+          }];
         })
       );
     })

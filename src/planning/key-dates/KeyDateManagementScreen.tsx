@@ -14,6 +14,7 @@ import {
   StyleSheet,
   FlatList,
   ScrollView,
+  Switch,
 } from 'react-native';
 import {
   Button,
@@ -228,6 +229,8 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.delayDamagesSpecial = state.form.delayDamagesSpecial || null;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10);
             record.weightage = parseFloat(state.form.weightage) || 0;
+            record.designWeightage = parseFloat(state.form.designWeightage) || 0;
+            record.progressMode = state.form.progressMode === 'auto' ? null : state.form.progressMode;
             record.dependencies = state.form.dependencies || null;
             record.updatedAt = Date.now();
           });
@@ -252,6 +255,8 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
             record.projectId = projectId;
             record.sequenceOrder = parseInt(state.form.sequenceOrder, 10) || 1;
             record.weightage = parseFloat(state.form.weightage) || 0;
+            record.designWeightage = parseFloat(state.form.designWeightage) || 0;
+            record.progressMode = state.form.progressMode === 'auto' ? null : state.form.progressMode;
             record.dependencies = state.form.dependencies || null;
             record.createdBy = 'planner';
             record.updatedAt = Date.now();
@@ -320,6 +325,8 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           record.delayDamagesSpecial = keyDate.delayDamagesSpecial || null;
           record.sequenceOrder = nextSeq;
           record.weightage = keyDate.weightage || 0;
+          record.designWeightage = keyDate.designWeightage || 0;
+          record.progressMode = keyDate.progressMode || null;
           record.dependencies = keyDate.dependencies || null;
           record.projectId = projectId;
           record.status = 'not_started';
@@ -614,6 +621,63 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
                 placeholder="e.g., 10 (used for project progress rollup)"
               />
 
+              {/* Progress Mode Selector */}
+              <Text style={styles.fieldLabel}>Progress Mode:</Text>
+              <SegmentedButtons
+                value={state.form.progressMode}
+                onValueChange={(value) =>
+                  dispatch({ type: 'SET_FORM_PROGRESS_MODE', payload: value as any })
+                }
+                buttons={[
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'manual', label: 'Manual' },
+                  { value: 'binary', label: 'Binary' },
+                ]}
+                style={styles.progressModeButtons}
+                density="small"
+              />
+
+              {/* Manual: show editable Progress % */}
+              {state.form.progressMode === 'manual' && (
+                <TextInput
+                  label="Progress %"
+                  value={state.form.progressPercentage}
+                  onChangeText={(text) => dispatch({ type: 'SET_FORM_PROGRESS', payload: text })}
+                  mode="outlined"
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="0-100"
+                />
+              )}
+
+              {/* Binary: show Done/Not Done toggle */}
+              {state.form.progressMode === 'binary' && (
+                <View style={styles.binaryToggleRow}>
+                  <Text style={styles.binaryLabel}>
+                    {state.form.progressPercentage === '100' ? 'Done' : 'Not Done'}
+                  </Text>
+                  <Switch
+                    value={state.form.progressPercentage === '100'}
+                    onValueChange={(done) =>
+                      dispatch({ type: 'SET_FORM_PROGRESS', payload: done ? '100' : '0' })
+                    }
+                  />
+                </View>
+              )}
+
+              {/* Design Weightage only shown for auto mode */}
+              {state.form.progressMode === 'auto' && (
+                <TextInput
+                  label="Design Weightage %"
+                  value={state.form.designWeightage}
+                  onChangeText={(text) => dispatch({ type: 'SET_FORM_DESIGN_WEIGHTAGE', payload: text })}
+                  mode="outlined"
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="0-100 (% of KD progress from design docs)"
+                />
+              )}
+
               <Divider style={styles.divider} />
               <Text style={styles.sectionTitle}>Delay Damages</Text>
 
@@ -826,6 +890,23 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     marginRight: 4,
+  },
+  progressModeButtons: {
+    marginBottom: 12,
+  },
+  binaryToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  binaryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
   divider: {
     marginVertical: 16,

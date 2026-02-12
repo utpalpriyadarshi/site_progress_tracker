@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, ProgressBar, Card } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { MetricCard } from '../supervisor/dashboard/components/MetricCard';
@@ -32,7 +33,7 @@ const DesignEngineerDashboardScreen = () => {
   const { user } = useAuth();
 
   // Dual-scope dashboard data hook
-  const { myMetrics, projectMetrics, alerts, loading, error, refresh } = useDashboardData(projectId, engineerId);
+  const { myMetrics, projectMetrics, alerts, kdDocProgress, loading, error, refresh } = useDashboardData(projectId, engineerId);
 
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -234,6 +235,46 @@ const DesignEngineerDashboardScreen = () => {
               </View>
             )}
 
+            {/* Key Date Progress Section */}
+            {kdDocProgress.length > 0 && (
+              <View style={styles.section}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Key Date Progress
+                </Text>
+                <Text variant="bodySmall" style={styles.sectionSubtitle}>
+                  Your design document contribution to project milestones
+                </Text>
+                {kdDocProgress.map((kd) => (
+                  <Card key={kd.keyDateId} style={styles.kdProgressCard}>
+                    <Card.Content>
+                      <View style={styles.kdProgressHeader}>
+                        <View style={styles.kdProgressInfo}>
+                          <Text style={styles.kdCode}>{kd.keyDateCode}</Text>
+                          <Text style={styles.kdDescription} numberOfLines={1}>
+                            {kd.keyDateDescription}
+                          </Text>
+                        </View>
+                        <Text style={[
+                          styles.kdProgressValue,
+                          { color: kd.docProgress >= 100 ? '#4CAF50' : kd.docProgress > 0 ? '#2196F3' : '#999' },
+                        ]}>
+                          {Math.round(kd.docProgress)}%
+                        </Text>
+                      </View>
+                      <ProgressBar
+                        progress={kd.docProgress / 100}
+                        color={kd.docProgress >= 100 ? '#4CAF50' : '#2196F3'}
+                        style={styles.kdProgressBar}
+                      />
+                      <Text style={styles.kdProgressDetail}>
+                        {kd.approvedDocs}/{kd.totalDocs} documents approved
+                      </Text>
+                    </Card.Content>
+                  </Card>
+                ))}
+              </View>
+            )}
+
             {/* Alerts & Notifications (from My Work data) */}
             {alerts.length > 0 && (
               <AlertsSection
@@ -401,6 +442,46 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontWeight: 'bold',
     color: '#666',
+  },
+  kdProgressCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    elevation: 1,
+  },
+  kdProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  kdProgressInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  kdCode: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  kdDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  kdProgressValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  kdProgressBar: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E0E0E0',
+  },
+  kdProgressDetail: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    textAlign: 'right',
   },
   quickActionsScroll: {
     paddingHorizontal: 8,

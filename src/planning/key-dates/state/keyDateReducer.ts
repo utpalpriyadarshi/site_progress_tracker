@@ -8,7 +8,7 @@
  * @since Phase 5b - Key Dates UI
  */
 
-import KeyDateModel, { KeyDateCategory, KeyDateStatus } from '../../../../models/KeyDateModel';
+import KeyDateModel, { KeyDateCategory, KeyDateStatus, KeyDateProgressMode } from '../../../../models/KeyDateModel';
 
 // ==================== State Interface ====================
 
@@ -44,6 +44,8 @@ export interface KeyDateManagementState {
     delayDamagesSpecial: string;
     sequenceOrder: string;
     weightage: string;
+    designWeightage: string;
+    progressMode: KeyDateProgressMode;
     dependencies: string;
   };
 }
@@ -79,6 +81,8 @@ export type KeyDateManagementAction =
   | { type: 'SET_FORM_DAMAGES_SPECIAL'; payload: string }
   | { type: 'SET_FORM_SEQUENCE'; payload: string }
   | { type: 'SET_FORM_WEIGHTAGE'; payload: string }
+  | { type: 'SET_FORM_DESIGN_WEIGHTAGE'; payload: string }
+  | { type: 'SET_FORM_PROGRESS_MODE'; payload: KeyDateProgressMode }
   | { type: 'SET_FORM_DEPENDENCIES'; payload: string }
 
   // Snackbar Actions
@@ -101,6 +105,8 @@ const getDefaultFormState = (): KeyDateManagementState['form'] => ({
   delayDamagesSpecial: '',
   sequenceOrder: '1',
   weightage: '',
+  designWeightage: '0',
+  progressMode: 'auto',
   dependencies: '',
 });
 
@@ -141,6 +147,8 @@ const populateFormFromKeyDate = (keyDate: KeyDateModel): KeyDateManagementState[
   delayDamagesSpecial: keyDate.delayDamagesSpecial || '',
   sequenceOrder: keyDate.sequenceOrder.toString(),
   weightage: keyDate.weightage?.toString() || '',
+  designWeightage: (keyDate.designWeightage || 0).toString(),
+  progressMode: keyDate.progressMode || 'auto',
   dependencies: keyDate.dependencies || '',
 });
 
@@ -264,6 +272,19 @@ export const keyDateReducer = (
     case 'SET_FORM_WEIGHTAGE':
       return { ...state, form: { ...state.form, weightage: action.payload } };
 
+    case 'SET_FORM_DESIGN_WEIGHTAGE':
+      return { ...state, form: { ...state.form, designWeightage: action.payload } };
+
+    case 'SET_FORM_PROGRESS_MODE': {
+      const newMode = action.payload;
+      const updates: Partial<KeyDateManagementState['form']> = { progressMode: newMode };
+      // When switching to binary, reset progress to 0
+      if (newMode === 'binary') {
+        updates.progressPercentage = '0';
+      }
+      return { ...state, form: { ...state.form, ...updates } };
+    }
+
     case 'SET_FORM_DEPENDENCIES':
       return { ...state, form: { ...state.form, dependencies: action.payload } };
 
@@ -342,6 +363,14 @@ export const validateKeyDateForm = (form: KeyDateManagementState['form']): {
     const weightage = parseFloat(form.weightage);
     if (isNaN(weightage) || weightage < 0 || weightage > 100) {
       errors.weightage = 'Weightage must be between 0 and 100';
+    }
+  }
+
+  // Design weightage validation (0-100) - only relevant for auto mode
+  if (form.progressMode === 'auto') {
+    const designWeightage = parseFloat(form.designWeightage);
+    if (isNaN(designWeightage) || designWeightage < 0 || designWeightage > 100) {
+      errors.designWeightage = 'Design weightage must be between 0 and 100';
     }
   }
 
