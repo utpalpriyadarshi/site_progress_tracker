@@ -76,7 +76,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
           {doc.siteName && (
             <Text style={styles.metaText}>{doc.siteName}</Text>
           )}
-          {(doc as any).keyDateId && (
+          {doc.keyDateId && (
             <Chip
               mode="outlined"
               icon="calendar-check"

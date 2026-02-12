@@ -197,26 +197,16 @@ const DesignDocumentManagementScreen = () => {
     try {
       dispatch({ type: 'START_LOADING' });
 
-      // Get sites assigned to designer
-      const sitesCollection = database.collections.get('sites');
-      const assignedSites = await sitesCollection
-        .query(Q.where('design_engineer_id', engineerId))
-        .fetch();
-      const assignedSiteIds = assignedSites.map((site: any) => site.id);
-
-      // Query documents based on site selection
+      // Query documents created by this engineer in this project
       const docsCollection = database.collections.get('design_documents');
       let docsData;
 
-      if (assignedSiteIds.length === 0) {
-        // No sites assigned, show no documents
-        docsData = [];
-      } else if (selectedSiteId === 'all') {
-        // Show documents from all assigned sites
+      if (selectedSiteId === 'all') {
+        // Show all documents created by this engineer in the project
         docsData = await docsCollection
           .query(
             Q.where('project_id', projectId),
-            Q.where('site_id', Q.oneOf(assignedSiteIds))
+            Q.where('created_by', engineerId)
           )
           .fetch();
       } else {
@@ -224,6 +214,7 @@ const DesignDocumentManagementScreen = () => {
         docsData = await docsCollection
           .query(
             Q.where('project_id', projectId),
+            Q.where('created_by', engineerId),
             Q.where('site_id', selectedSiteId)
           )
           .fetch();
@@ -401,6 +392,7 @@ const DesignDocumentManagementScreen = () => {
           submittedDate: (record as any).submittedDate,
           approvedDate: (record as any).approvedDate,
           weightage: weightageNum,
+          keyDateId: keyDateId || undefined,
           createdBy: (record as any).createdBy,
           createdAt: (record as any).createdAt,
           updatedAt: Date.now(),
@@ -462,6 +454,7 @@ const DesignDocumentManagementScreen = () => {
             revisionNumber: revisionNumber || 'R0',
             status: 'draft',
             weightage: weightageNum,
+            keyDateId: keyDateId || undefined,
             createdBy: engineerId,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -517,7 +510,7 @@ const DesignDocumentManagementScreen = () => {
         documentType: doc.documentType,
         categoryId: doc.categoryId,
         siteId: doc.siteId || '',
-        keyDateId: (doc as any).keyDateId || '',
+        keyDateId: doc.keyDateId || '',
         revisionNumber: doc.revisionNumber,
         weightage: doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
       },
