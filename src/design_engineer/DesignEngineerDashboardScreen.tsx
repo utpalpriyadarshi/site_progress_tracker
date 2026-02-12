@@ -138,7 +138,7 @@ const DesignEngineerDashboardScreen = () => {
             {/* Header Section */}
             <View style={styles.headerSection}>
               <Text variant="bodyLarge">{new Date().toLocaleDateString()}</Text>
-              <Text variant="headlineSmall">Welcome, {user?.fullName}!</Text>
+              <Text variant="headlineSmall">Welcome, {user?.fullName || user?.username || 'Engineer'}!</Text>
             </View>
 
             {/* ===== MY WORK SECTION ===== */}

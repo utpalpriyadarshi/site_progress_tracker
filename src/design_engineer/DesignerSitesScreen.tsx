@@ -176,10 +176,12 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
       <View style={styles.container}>
         {/* Compact Header with project info */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Sites</Text>
-          {projectName && (
-            <Text style={styles.headerProject}>{projectName}</Text>
-          )}
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>My Sites</Text>
+            {projectName && (
+              <Text style={styles.headerProject}>{projectName}</Text>
+            )}
+          </View>
           <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -358,15 +360,21 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingHorizontal: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
   },
   headerProject: {
-    fontSize: 13,
+    fontSize: 16,
+    fontWeight: '600',
     color: '#E0D0FF',
-    marginBottom: 6,
   },
   resultsRow: {
     flexDirection: 'row',
