@@ -93,6 +93,14 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
     return `DD-${prefix}-${String(nextNumber).padStart(3, '0')}`;
   };
 
+  // Map document type slugs to Key Date categories for auto-suggestion
+  const DOC_TYPE_TO_KD_CATEGORY: Record<string, string> = {
+    simulation_study: 'A',  // Design category
+    installation: 'A',
+    product_equipment: 'A',
+    as_built: 'A',
+  };
+
   const handleCategorySelect = (category: DesignDocumentCategory) => {
     const slug = getCategorySlug(category.name);
     onUpdateField('documentType', slug as string);
@@ -102,6 +110,16 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
     }
     if (!docNumberManuallyEdited) {
       onUpdateField('documentNumber', generateDocumentNumber(slug as string));
+    }
+    // Auto-suggest a Key Date based on category if none is selected
+    if (!form.keyDateId) {
+      const suggestedCategory = DOC_TYPE_TO_KD_CATEGORY[slug as string];
+      if (suggestedCategory) {
+        const matchingKd = keyDates.find((kd) => kd.category === suggestedCategory);
+        if (matchingKd) {
+          onUpdateField('keyDateId', matchingKd.id);
+        }
+      }
     }
     setCategoryMenuVisible(false);
   };
@@ -210,6 +228,52 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               numberOfLines={3}
             />
 
+            {/* Key Date Dropdown - Prominent placement for progress tracking */}
+            <Menu
+              visible={keyDateMenuVisible}
+              onDismiss={() => setKeyDateMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  onPress={() => setKeyDateMenuVisible(true)}
+                  style={[
+                    styles.pickerButton,
+                    !form.keyDateId && styles.keyDatePickerHighlight,
+                  ]}
+                >
+                  <Text style={styles.pickerLabel}>Key Date</Text>
+                  <Text style={[styles.pickerValue, !form.keyDateId && styles.keyDateUnlinkedValue]}>
+                    {selectedKeyDate
+                      ? `${selectedKeyDate.code} - ${selectedKeyDate.description}`
+                      : 'None selected'}
+                  </Text>
+                  {!form.keyDateId && (
+                    <Text style={styles.keyDateHint}>
+                      Tip: Link to a Key Date so your progress counts toward project tracking
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item
+                key="none"
+                onPress={() => {
+                  onUpdateField('keyDateId', '');
+                  setKeyDateMenuVisible(false);
+                }}
+                title="None - Progress not tracked"
+              />
+              {keyDates.map((kd) => (
+                <Menu.Item
+                  key={kd.id}
+                  onPress={() => {
+                    onUpdateField('keyDateId', kd.id);
+                    setKeyDateMenuVisible(false);
+                  }}
+                  title={`${kd.code} - ${kd.description}`}
+                />
+              ))}
+            </Menu>
+
             {/* Site Dropdown (only for Installation/As-Built) */}
             {requiresSite && (
               <Menu
@@ -239,44 +303,6 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
                 ))}
               </Menu>
             )}
-
-            {/* Key Date Dropdown (optional - for progress tracking) */}
-            <Menu
-              visible={keyDateMenuVisible}
-              onDismiss={() => setKeyDateMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  onPress={() => setKeyDateMenuVisible(true)}
-                  style={styles.pickerButton}
-                >
-                  <Text style={styles.pickerLabel}>Key Date (Optional)</Text>
-                  <Text style={styles.pickerValue}>
-                    {selectedKeyDate
-                      ? `${selectedKeyDate.code} - ${selectedKeyDate.description}`
-                      : 'None - Progress not tracked'}
-                  </Text>
-                </TouchableOpacity>
-              }
-            >
-              <Menu.Item
-                key="none"
-                onPress={() => {
-                  onUpdateField('keyDateId', '');
-                  setKeyDateMenuVisible(false);
-                }}
-                title="None - Progress not tracked"
-              />
-              {keyDates.map((kd) => (
-                <Menu.Item
-                  key={kd.id}
-                  onPress={() => {
-                    onUpdateField('keyDateId', kd.id);
-                    setKeyDateMenuVisible(false);
-                  }}
-                  title={`${kd.code} - ${kd.description}`}
-                />
-              ))}
-            </Menu>
 
             <TextInput
               label="Revision Number"
@@ -341,6 +367,21 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#999',
+    fontStyle: 'italic',
+  },
+  keyDatePickerHighlight: {
+    borderColor: '#FF9800',
+    borderWidth: 1.5,
+    backgroundColor: '#FFF8E1',
+  },
+  keyDateUnlinkedValue: {
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  keyDateHint: {
+    fontSize: 11,
+    color: '#F57C00',
+    marginTop: 4,
     fontStyle: 'italic',
   },
 });

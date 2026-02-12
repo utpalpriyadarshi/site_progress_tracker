@@ -49,10 +49,20 @@ interface Alert {
   onAction?: () => void;
 }
 
+export interface KDDocProgress {
+  keyDateId: string;
+  keyDateCode: string;
+  keyDateDescription: string;
+  docProgress: number; // 0-100
+  totalDocs: number;
+  approvedDocs: number;
+}
+
 interface UseDashboardDataReturn {
   myMetrics: DashboardMetrics | null;
   projectMetrics: DashboardMetrics | null;
   alerts: Alert[];
+  kdDocProgress: KDDocProgress[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -192,6 +202,18 @@ const generateAlerts = (
     });
   }
 
+  // Alert 6: Documents not linked to any Key Date (progress not tracked)
+  const unlinkedDocs = designDocs.filter((doc: any) => !doc.keyDateId);
+  if (unlinkedDocs.length > 0) {
+    alerts.push({
+      id: 'unlinked-docs',
+      type: 'warning',
+      title: 'Unlinked Documents',
+      message: `${unlinkedDocs.length} document(s) not linked to any Key Date — progress not tracked`,
+      actionLabel: 'View Documents',
+    });
+  }
+
   return alerts;
 };
 
@@ -205,6 +227,7 @@ export const useDashboardData = (
   const [myMetrics, setMyMetrics] = useState<DashboardMetrics | null>(null);
   const [projectMetrics, setProjectMetrics] = useState<DashboardMetrics | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [kdDocProgress, setKdDocProgress] = useState<KDDocProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -275,6 +298,60 @@ export const useDashboardData = (
       // Generate alerts from "My Work" data only
       const generatedAlerts = generateAlerts(myDesignDocs, myDoorsPackages, myCalcMetrics.complianceRate);
       setAlerts(generatedAlerts);
+
+      // Calculate per-Key Date document progress
+      const linkedDocs = allDesignDocs.filter((d: any) => d.keyDateId);
+      if (linkedDocs.length > 0) {
+        // Group docs by keyDateId
+        const docsByKd: Record<string, any[]> = {};
+        for (const doc of linkedDocs) {
+          const kdId = (doc as any).keyDateId;
+          if (!docsByKd[kdId]) docsByKd[kdId] = [];
+          docsByKd[kdId].push(doc);
+        }
+
+        // Fetch key date metadata
+        const kdIds = Object.keys(docsByKd);
+        const keyDatesCollection = database.collections.get('key_dates');
+        const keyDates = await keyDatesCollection
+          .query(Q.where('id', Q.oneOf(kdIds)))
+          .fetch();
+
+        const statusProgressMap: Record<string, number> = {
+          draft: 0,
+          submitted: 30,
+          approved: 100,
+          approved_with_comment: 100,
+          rejected: 0,
+        };
+
+        const kdProgress: KDDocProgress[] = keyDates.map((kd: any) => {
+          const docs = docsByKd[kd.id] || [];
+          const totalWeightage = docs.reduce((sum: number, d: any) => sum + (d.weightage || 0), 0);
+          const weightedProgress = totalWeightage > 0
+            ? docs.reduce((sum: number, d: any) => {
+                const progress = statusProgressMap[(d as any).status] || 0;
+                return sum + (d.weightage || 0) * progress;
+              }, 0) / totalWeightage
+            : 0;
+          const approved = docs.filter(
+            (d: any) => d.status === 'approved' || d.status === 'approved_with_comment'
+          ).length;
+
+          return {
+            keyDateId: kd.id,
+            keyDateCode: kd.code,
+            keyDateDescription: kd.description,
+            docProgress: Math.round(weightedProgress * 100) / 100,
+            totalDocs: docs.length,
+            approvedDocs: approved,
+          };
+        });
+
+        setKdDocProgress(kdProgress);
+      } else {
+        setKdDocProgress([]);
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load dashboard data';
@@ -297,6 +374,7 @@ export const useDashboardData = (
     myMetrics,
     projectMetrics,
     alerts,
+    kdDocProgress,
     loading,
     error,
     refresh,
