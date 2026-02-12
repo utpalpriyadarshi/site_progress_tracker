@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthService from '../../services/auth/AuthService';
 import TokenStorage from '../../services/storage/TokenStorage';
+import { database } from '../../models/database';
 
 export type UserRole = 'supervisor' | 'manager' | 'planning' | 'logistics' | 'design_engineer' | 'commercial_manager' | 'admin';
 
@@ -66,9 +67,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Use only the role assigned by backend (no dev mode bypass for security)
         const backendRole = session.user.role as UserRole;
 
+        // Fetch full name from DB
+        let fullName: string | undefined;
+        try {
+          const userRecord = await database.collections.get('users').find(session.user.userId);
+          fullName = (userRecord as any).fullName || undefined;
+        } catch (_) {
+          // User record may not exist yet
+        }
+
         setUser({
           userId: session.user.userId,
           username: session.user.username,
+          fullName,
           availableRoles: [backendRole],
         });
         setCurrentRole(backendRole);
@@ -107,10 +118,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     jwtTokens?: Tokens
   ) => {
     try {
-      // Use only the roles assigned by backend (no dev mode bypass for security)
+      // Fetch full name from DB
+      let fullName: string | undefined;
+      try {
+        const userRecord = await database.collections.get('users').find(userId);
+        fullName = (userRecord as any).fullName || undefined;
+      } catch (_) {
+        // User record may not exist yet
+      }
+
       const userData: User = {
         userId,
         username,
+        fullName,
         availableRoles,
       };
 
