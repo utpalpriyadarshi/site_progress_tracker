@@ -1,24 +1,17 @@
 /**
  * useSiteProgressData Hook
  *
- * Fetches and manages per-site progress data for the dashboard widget.
- * Calculates progress for each site from items and design documents,
- * respecting role assignments (supervisor/DE).
+ * Calculates per-site progress data for the dashboard widget.
+ * Uses shared dashboard cache from PlanningContext (no individual DB queries).
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since Planning Dashboard Phase 6
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Q } from '@nozbe/watermelondb';
-import { database } from '../../../../models/database';
-import SiteModel from '../../../../models/SiteModel';
-import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
-import KeyDateModel from '../../../../models/KeyDateModel';
+import { useMemo } from 'react';
 import { usePlanningContext } from '../../context';
 import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../../utils/designDocumentProgress';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
-import { batchLoadItemsBySites, batchLoadDocsByKeyDate } from '../../utils/dataLoading';
 
 // ==================== Types ====================
 
@@ -44,159 +37,90 @@ interface UseSiteProgressResult {
 // ==================== Hook ====================
 
 export function useSiteProgressData(): UseSiteProgressResult {
-  const { projectId } = usePlanningContext();
-  const [sites, setSites] = useState<SiteProgressItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { sites, dashboardCache, refreshDashboard } = usePlanningContext();
 
-  const fetchData = useCallback(async () => {
-    if (!projectId) {
-      setSites([]);
-      setLoading(false);
-      return;
-    }
+  const siteProgressItems = useMemo(() => {
+    if (!dashboardCache.dataReady || sites.length === 0) return [];
 
-    try {
-      setLoading(true);
-      setError(null);
+    const { keyDates, kdSitesBySiteId, itemsBySite, docsByKeyDate } = dashboardCache;
+    const kdMap = new Map(keyDates.map(kd => [kd.id, kd]));
 
-      // 1. Fetch all sites for the project
-      const allSites = await database.collections
-        .get<SiteModel>('sites')
-        .query(Q.where('project_id', projectId))
-        .fetch();
+    const result: SiteProgressItem[] = sites.map(site => {
+      const hasSupervisor = !!site.supervisorId;
+      const hasDE = !!site.designEngineerId;
+      const siteItems = itemsBySite[site.id] || [];
+      const siteKdSites = kdSitesBySiteId[site.id] || [];
 
-      if (allSites.length === 0) {
-        setSites([]);
-        setLoading(false);
-        return;
-      }
+      // Item progress for this site
+      const itemProgress = calculateSiteProgressFromItems(siteItems);
 
-      const siteIds = allSites.map(s => s.id);
-
-      // 2. Fetch all KD-site associations and key dates
-      const allKdSites = await database.collections
-        .get<KeyDateSiteModel>('key_date_sites')
-        .query(Q.where('site_id', Q.oneOf(siteIds)))
-        .fetch();
-
-      // Group KD-sites by siteId
-      const kdSitesBySiteId: Record<string, KeyDateSiteModel[]> = {};
-      const allKdIds = new Set<string>();
-      for (const kds of allKdSites) {
-        if (!kdSitesBySiteId[kds.siteId]) {
-          kdSitesBySiteId[kds.siteId] = [];
+      // Design doc progress: average across all KDs this site is linked to
+      let docProgressSum = 0;
+      let docKdCount = 0;
+      for (const kds of siteKdSites) {
+        const kdDocs = docsByKeyDate[kds.keyDateId] || [];
+        if (kdDocs.length > 0) {
+          docProgressSum += calculateSiteProgressFromDesignDocuments(kdDocs);
+          docKdCount++;
         }
-        kdSitesBySiteId[kds.siteId].push(kds);
-        allKdIds.add(kds.keyDateId);
       }
+      const docProgress = docKdCount > 0 ? docProgressSum / docKdCount : 0;
 
-      // 3. Batch load items and design docs
-      const kdIds = [...allKdIds];
-      const [itemsBySite, docsByKd] = await Promise.all([
-        batchLoadItemsBySites(siteIds),
-        kdIds.length > 0 ? batchLoadDocsByKeyDate(kdIds) : Promise.resolve({} as Record<string, any[]>),
-      ]);
+      // Combined progress using average design weightage across linked KDs
+      const hasDocs = docKdCount > 0;
+      let combinedProgress = 0;
 
-      // 4. Fetch key dates for designWeightage
-      const keyDates = kdIds.length > 0
-        ? await database.collections
-            .get<KeyDateModel>('key_dates')
-            .query(Q.where('id', Q.oneOf(kdIds)))
-            .fetch()
-        : [];
-      const kdMap = new Map(keyDates.map(kd => [kd.id, kd]));
+      if (siteKdSites.length > 0) {
+        let totalContribution = 0;
+        let weightedProgressSum = 0;
 
-      // 5. Calculate progress per site
-      const siteProgressItems: SiteProgressItem[] = allSites.map(site => {
-        const hasSupervisor = !!site.supervisorId;
-        const hasDE = !!site.designEngineerId;
-        const siteItems = itemsBySite[site.id] || [];
-        const siteKdSites = kdSitesBySiteId[site.id] || [];
-
-        // Item progress for this site
-        const itemProgress = calculateSiteProgressFromItems(siteItems);
-
-        // Design doc progress: average across all KDs this site is linked to
-        let docProgressSum = 0;
-        let docKdCount = 0;
         for (const kds of siteKdSites) {
-          const kdDocs = docsByKd[kds.keyDateId] || [];
-          if (kdDocs.length > 0) {
-            docProgressSum += calculateSiteProgressFromDesignDocuments(kdDocs);
-            docKdCount++;
-          }
-        }
-        const docProgress = docKdCount > 0 ? docProgressSum / docKdCount : 0;
+          const kd = kdMap.get(kds.keyDateId);
+          const designWeightage = kd?.designWeightage || 0;
+          const kdDocs = docsByKeyDate[kds.keyDateId] || [];
+          const kdDocProgress = kdDocs.length > 0 ? calculateSiteProgressFromDesignDocuments(kdDocs) : 0;
+          const kdHasDocs = kdDocs.length > 0;
 
-        // Combined progress using average design weightage across linked KDs
-        const hasDocs = docKdCount > 0;
-        let combinedProgress = 0;
+          const effectiveHasSites = hasSupervisor || !hasDE;
+          const effectiveHasDocs = kdHasDocs && hasDE;
 
-        if (siteKdSites.length > 0) {
-          // Weighted average across KDs this site belongs to
-          let totalContribution = 0;
-          let weightedProgressSum = 0;
+          const { combined } = calculateKDProgress(
+            itemProgress, kdDocProgress, designWeightage, effectiveHasSites, effectiveHasDocs
+          );
 
-          for (const kds of siteKdSites) {
-            const kd = kdMap.get(kds.keyDateId);
-            const designWeightage = kd?.designWeightage || 0;
-            const kdDocs = docsByKd[kds.keyDateId] || [];
-            const kdDocProgress = kdDocs.length > 0 ? calculateSiteProgressFromDesignDocuments(kdDocs) : 0;
-            const kdHasDocs = kdDocs.length > 0;
-
-            const effectiveHasSites = hasSupervisor || !hasDE;
-            const effectiveHasDocs = kdHasDocs && hasDE;
-
-            const { combined } = calculateKDProgress(
-              itemProgress, kdDocProgress, designWeightage, effectiveHasSites, effectiveHasDocs
-            );
-
-            const contribution = kds.contributionPercentage;
-            weightedProgressSum += contribution * combined;
-            totalContribution += contribution;
-          }
-
-          combinedProgress = totalContribution > 0
-            ? weightedProgressSum / totalContribution
-            : itemProgress;
-        } else {
-          combinedProgress = itemProgress;
+          const contribution = kds.contributionPercentage;
+          weightedProgressSum += contribution * combined;
+          totalContribution += contribution;
         }
 
-        return {
-          id: site.id,
-          name: site.name || 'Unnamed Site',
-          location: site.location || '',
-          progress: Math.round(combinedProgress * 100) / 100,
-          itemProgress: Math.round(itemProgress * 100) / 100,
-          docProgress: Math.round(docProgress * 100) / 100,
-          hasSupervisor,
-          hasDE,
-          kdCount: siteKdSites.length,
-        };
-      });
+        combinedProgress = totalContribution > 0
+          ? weightedProgressSum / totalContribution
+          : itemProgress;
+      } else {
+        combinedProgress = itemProgress;
+      }
 
-      // Sort by name
-      siteProgressItems.sort((a, b) => a.name.localeCompare(b.name));
-      setSites(siteProgressItems);
-    } catch (err) {
-      console.error('Error loading site progress data:', err);
-      setError('Failed to load site progress');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+      return {
+        id: site.id,
+        name: site.name || 'Unnamed Site',
+        location: site.location || '',
+        progress: Math.round(combinedProgress * 100) / 100,
+        itemProgress: Math.round(itemProgress * 100) / 100,
+        docProgress: Math.round(docProgress * 100) / 100,
+        hasSupervisor,
+        hasDE,
+        kdCount: siteKdSites.length,
+      };
+    });
 
-  useEffect(() => {
-    fetchData();
-    const subscription = database
-      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'sites'])
-      .subscribe(() => {
-        fetchData();
-      });
-    return () => subscription.unsubscribe();
-  }, [fetchData]);
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  }, [sites, dashboardCache]);
 
-  return { sites, loading, error, refresh: fetchData };
+  return {
+    sites: siteProgressItems,
+    loading: !dashboardCache.dataReady,
+    error: null,
+    refresh: refreshDashboard,
+  };
 }

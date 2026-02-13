@@ -5,19 +5,29 @@
  * Uses user's assigned project from database (set by Admin in RoleManagement).
  * Follows same pattern as Supervisor's SiteContext for uniformity.
  *
- * @version 2.0.0
+ * Includes a shared dashboard data cache that loads key_dates, key_date_sites,
+ * items, and design_documents once and exposes them to all dashboard hooks.
+ * A single unified subscription replaces 14+ individual hook subscriptions.
+ *
+ * @version 3.0.0
  * @since Planning Phase 4
  */
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../models/database';
 import ProjectModel from '../../../models/ProjectModel';
 import SiteModel from '../../../models/SiteModel';
 import UserModel from '../../../models/UserModel';
+import KeyDateModel from '../../../models/KeyDateModel';
+import KeyDateSiteModel from '../../../models/KeyDateSiteModel';
+import ItemModel from '../../../models/ItemModel';
+import DesignDocumentModel from '../../../models/DesignDocumentModel';
 import { useAuth } from '../../auth/AuthContext';
 import { logger } from '../../services/LoggingService';
+import { batchLoadItemsBySites, batchLoadDocsByKeyDate } from '../utils/dataLoading';
+import type { GroupedData } from '../utils/dataLoading';
 
 // ==================== Storage Keys ====================
 
@@ -29,9 +39,37 @@ const STORAGE_KEYS = {
 
 // ==================== Types ====================
 
+/**
+ * Cached dashboard data shared across all dashboard hooks.
+ * Loaded once by loadDashboardData and kept in sync via unified subscription.
+ */
+export interface DashboardCache {
+  keyDates: KeyDateModel[];
+  sitesByKdId: Record<string, KeyDateSiteModel[]>;
+  kdSitesBySiteId: Record<string, KeyDateSiteModel[]>;
+  allItems: ItemModel[];
+  itemsBySite: GroupedData<ItemModel>;
+  docsByKeyDate: GroupedData<DesignDocumentModel>;
+  allProjectDesignDocs: DesignDocumentModel[];
+  dataReady: boolean;
+}
+
+const initialDashboardCache: DashboardCache = {
+  keyDates: [],
+  sitesByKdId: {},
+  kdSitesBySiteId: {},
+  allItems: [],
+  itemsBySite: {},
+  docsByKeyDate: {},
+  allProjectDesignDocs: [],
+  dataReady: false,
+};
+
 interface PlanningState {
   projectId: string | null;
   projectName: string | null;
+  projectStartDate: number | null;
+  projectEndDate: number | null;
   selectedSiteId: string | null;
   selectedSite: SiteModel | null;
   sites: SiteModel[];
@@ -40,7 +78,7 @@ interface PlanningState {
 }
 
 type PlanningAction =
-  | { type: 'SET_PROJECT'; payload: { projectId: string | null; projectName: string | null } }
+  | { type: 'SET_PROJECT'; payload: { projectId: string | null; projectName: string | null; startDate?: number | null; endDate?: number | null } }
   | { type: 'SET_SITE'; payload: { siteId: string | null; site: SiteModel | null } }
   | { type: 'SET_SITES'; payload: SiteModel[] }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -51,6 +89,8 @@ interface PlanningContextValue extends PlanningState {
   selectSite: (siteId: string | null) => void;
   refreshSites: () => Promise<void>;
   refreshProject: () => Promise<void>;
+  dashboardCache: DashboardCache;
+  refreshDashboard: () => Promise<void>;
 }
 
 // ==================== Initial State ====================
@@ -58,6 +98,8 @@ interface PlanningContextValue extends PlanningState {
 const initialState: PlanningState = {
   projectId: null,
   projectName: null,
+  projectStartDate: null,
+  projectEndDate: null,
   selectedSiteId: null,
   selectedSite: null,
   sites: [],
@@ -74,6 +116,8 @@ function planningReducer(state: PlanningState, action: PlanningAction): Planning
         ...state,
         projectId: action.payload.projectId,
         projectName: action.payload.projectName,
+        projectStartDate: action.payload.startDate ?? state.projectStartDate,
+        projectEndDate: action.payload.endDate ?? state.projectEndDate,
         // Reset site when project changes
         selectedSiteId: null,
         selectedSite: null,
@@ -110,6 +154,7 @@ interface PlanningProviderProps {
 export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(planningReducer, initialState);
+  const [dashboardCache, setDashboardCache] = useState<DashboardCache>(initialDashboardCache);
 
   // Load user's assigned project from database (set by Admin in RoleManagement)
   const loadUserProject = useCallback(async () => {
@@ -137,10 +182,15 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
             .find(assignedProjectId);
           const projectName = project.name || 'Unknown Project';
 
-          // Update context state
+          // Update context state including project dates
           dispatch({
             type: 'SET_PROJECT',
-            payload: { projectId: assignedProjectId, projectName },
+            payload: {
+              projectId: assignedProjectId,
+              projectName,
+              startDate: (project as any).startDate || null,
+              endDate: (project as any).endDate || null,
+            },
           });
 
           // Persist to AsyncStorage for offline/fallback
@@ -239,6 +289,113 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
     }
   }, [state.projectId, loadSites]);
 
+  // ==================== Dashboard Data Cache ====================
+
+  /**
+   * Loads all shared dashboard data in a single batch:
+   * 1. Key dates for project (1 query)
+   * 2. KD-sites for those KDs (1 query)
+   * 3. Items for all sites via batchLoadItemsBySites (1 query)
+   * 4. Design docs via batchLoadDocsByKeyDate (1 query)
+   * 5. All design docs for project — unlinked count (1 query)
+   *
+   * Total: 5 queries (down from ~28 across individual hooks)
+   */
+  const loadDashboardData = useCallback(async () => {
+    if (!state.projectId || state.sites.length === 0) {
+      setDashboardCache(initialDashboardCache);
+      return;
+    }
+
+    try {
+      const projectId = state.projectId;
+      const siteIds = state.sites.map(s => s.id);
+
+      // 1. Key dates for project
+      const keyDates = await database.collections
+        .get<KeyDateModel>('key_dates')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      // 2. KD-sites for those KDs
+      const kdIds = keyDates.map(kd => kd.id);
+      const keyDateSites = kdIds.length > 0
+        ? await database.collections
+            .get<KeyDateSiteModel>('key_date_sites')
+            .query(Q.where('key_date_id', Q.oneOf(kdIds)))
+            .fetch()
+        : [];
+
+      // 3 & 4. Items for all sites + design docs by KD (parallel)
+      const [itemsBySite, docsByKeyDate] = await Promise.all([
+        batchLoadItemsBySites(siteIds),
+        kdIds.length > 0
+          ? batchLoadDocsByKeyDate(kdIds)
+          : Promise.resolve({} as GroupedData<DesignDocumentModel>),
+      ]);
+
+      // 5. All design docs for project (unlinked count)
+      const allProjectDesignDocs = await database.collections
+        .get<DesignDocumentModel>('design_documents')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+
+      // Build grouped lookups
+      const sitesByKdId: Record<string, KeyDateSiteModel[]> = {};
+      const kdSitesBySiteId: Record<string, KeyDateSiteModel[]> = {};
+      for (const kds of keyDateSites) {
+        if (!sitesByKdId[kds.keyDateId]) sitesByKdId[kds.keyDateId] = [];
+        sitesByKdId[kds.keyDateId].push(kds);
+        if (!kdSitesBySiteId[kds.siteId]) kdSitesBySiteId[kds.siteId] = [];
+        kdSitesBySiteId[kds.siteId].push(kds);
+      }
+
+      const allItems = Object.values(itemsBySite).flat();
+
+      setDashboardCache({
+        keyDates,
+        sitesByKdId,
+        kdSitesBySiteId,
+        allItems,
+        itemsBySite,
+        docsByKeyDate,
+        allProjectDesignDocs,
+        dataReady: true,
+      });
+    } catch (error) {
+      logger.error('[PlanningContext] Failed to load dashboard data', error as Error, {
+        component: 'PlanningContext',
+        action: 'loadDashboardData',
+      });
+      // Set dataReady even on error so widgets show empty state instead of infinite loading
+      setDashboardCache(prev => prev.dataReady ? prev : { ...initialDashboardCache, dataReady: true });
+    }
+  }, [state.projectId, state.sites]);
+
+  // Unified subscription: one subscription replaces 14+ individual hook subscriptions
+  useEffect(() => {
+    if (!state.projectId || state.sites.length === 0) return;
+
+    loadDashboardData();
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const subscription = database
+      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates', 'progress_logs'])
+      .subscribe(() => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => loadDashboardData(), 300);
+      });
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(debounceTimer);
+    };
+  }, [loadDashboardData]);
+
+  const refreshDashboard = useCallback(async () => {
+    await loadDashboardData();
+  }, [loadDashboardData]);
+
   // Select site handler
   const selectSite = useCallback(async (siteId: string | null) => {
     const site = state.sites.find((s) => s.id === siteId) || null;
@@ -268,6 +425,8 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
     selectSite,
     refreshSites,
     refreshProject,
+    dashboardCache,
+    refreshDashboard,
   };
 
   return (

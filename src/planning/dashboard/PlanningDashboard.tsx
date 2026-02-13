@@ -23,6 +23,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useAuth } from '../../auth/AuthContext';
+import { usePlanningContext } from '../context';
 import { dashboardReducer, initialState } from './dashboardReducer';
 import TutorialModal from '../../tutorial/TutorialModal';
 import plannerTutorialSteps from '../../tutorial/plannerTutorialSteps';
@@ -64,6 +65,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const { announce } = useAccessibility();
   const { user } = useAuth();
+  const { dashboardCache, refreshDashboard } = usePlanningContext();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const route = useRoute<any>();
 
@@ -176,41 +178,17 @@ const PlanningDashboardScreen: React.FC = () => {
     }
   }, [allWidgetsLoaded, state.loading, announce]);
 
-  // Handle pull-to-refresh
+  // Handle pull-to-refresh — single context refresh replaces 10 individual calls
   const handleRefresh = useCallback(async () => {
     dispatch({ type: 'SET_REFRESHING', payload: true });
     announce('Refreshing dashboard');
 
-    // Refresh all widget data
-    await Promise.all([
-      milestones.refresh(),
-      criticalPath.refresh(),
-      scheduleOverview.refresh(),
-      recentActivities.refresh(),
-      resourceUtilization.refresh(),
-      wbsProgress.refresh(),
-      projectProgressData.refresh(),
-      kdProgressChart.refresh(),
-      kdTimelineProgress.refresh(),
-      siteProgress.refresh(),
-    ]);
+    await refreshDashboard();
 
     dispatch({ type: 'SET_REFRESHING', payload: false });
     dispatch({ type: 'SET_LAST_UPDATED', payload: new Date() });
     announce('Dashboard refreshed');
-  }, [
-    milestones,
-    criticalPath,
-    scheduleOverview,
-    recentActivities,
-    resourceUtilization,
-    wbsProgress,
-    projectProgressData,
-    kdProgressChart,
-    kdTimelineProgress,
-    siteProgress,
-    announce,
-  ]);
+  }, [refreshDashboard, announce]);
 
   // Navigation handlers
   const navigateToMilestones = useCallback(() => {
