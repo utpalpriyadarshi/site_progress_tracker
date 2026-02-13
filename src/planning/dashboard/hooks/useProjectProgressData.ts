@@ -214,6 +214,12 @@ export function useProjectProgressData(): UseProjectProgressResult {
 
   useEffect(() => {
     fetchData();
+    const subscription = database
+      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates'])
+      .subscribe(() => {
+        fetchData();
+      });
+    return () => subscription.unsubscribe();
   }, [fetchData]);
 
   return { projectProgress, kdBreakdown, unlinkedDocCount, loading, error, refresh: fetchData };

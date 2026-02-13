@@ -178,6 +178,12 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
 
   useEffect(() => {
     fetchData();
+    const subscription = database
+      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates'])
+      .subscribe(() => {
+        fetchData();
+      });
+    return () => subscription.unsubscribe();
   }, [fetchData]);
 
   return { keyDates, projectStartDate, loading, error, refresh: fetchData };

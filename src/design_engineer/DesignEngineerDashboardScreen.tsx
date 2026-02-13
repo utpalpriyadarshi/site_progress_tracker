@@ -8,6 +8,8 @@ import { MetricCard } from '../supervisor/dashboard/components/MetricCard';
 import { QuickActionButton } from '../supervisor/dashboard/components/QuickActionButton';
 import { AlertsSection } from '../supervisor/dashboard/components/AlertsSection';
 import { useDashboardData } from './dashboard/hooks/useDashboardData';
+import { useSiteDocProgressData } from './dashboard/hooks/useSiteDocProgressData';
+import { SiteProgressWidget } from '../planning/dashboard/widgets/SiteProgressWidget';
 import { logger } from '../services/LoggingService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
@@ -34,6 +36,7 @@ const DesignEngineerDashboardScreen = () => {
 
   // Dual-scope dashboard data hook
   const { myMetrics, projectMetrics, alerts, kdDocProgress, loading, error, refresh } = useDashboardData(projectId, engineerId);
+  const siteDocProgress = useSiteDocProgressData(projectId, engineerId);
 
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -234,6 +237,17 @@ const DesignEngineerDashboardScreen = () => {
                 </View>
               </View>
             )}
+
+            {/* Site Docs Progress Widget */}
+            <View style={styles.section}>
+              <SiteProgressWidget
+                sites={siteDocProgress.sites}
+                loading={siteDocProgress.loading}
+                error={siteDocProgress.error}
+                docsOnly
+                onRefresh={siteDocProgress.refresh}
+              />
+            </View>
 
             {/* Key Date Progress Section */}
             {kdDocProgress.length > 0 && (

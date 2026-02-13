@@ -293,6 +293,12 @@ export function useKDTimelineProgressData(): UseKDTimelineProgressResult {
 
   useEffect(() => {
     fetchData();
+    const subscription = database
+      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates'])
+      .subscribe(() => {
+        fetchData();
+      });
+    return () => subscription.unsubscribe();
   }, [fetchData]);
 
   return { timelineData, loading, error, refresh: fetchData };
