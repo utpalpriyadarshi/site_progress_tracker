@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
-import { Text, ProgressBar, Chip } from 'react-native-paper';
+import { Text, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
@@ -22,6 +22,7 @@ export interface SiteProgressWidgetProps {
   sites: SiteProgressItem[];
   loading?: boolean;
   error?: string | null;
+  docsOnly?: boolean;
   onPress?: () => void;
   onRetry?: () => void;
   onRefresh?: () => void;
@@ -42,12 +43,14 @@ export const SiteProgressWidget: React.FC<SiteProgressWidgetProps> = ({
   sites,
   loading,
   error,
+  docsOnly,
   onPress,
   onRetry,
   onRefresh,
 }) => {
   const renderSiteItem = ({ item }: { item: SiteProgressItem }) => {
-    const progressColor = getProgressColor(item.progress);
+    const displayProgress = docsOnly ? item.docProgress : item.progress;
+    const progressColor = getProgressColor(displayProgress);
 
     return (
       <View style={styles.siteItem}>
@@ -59,39 +62,29 @@ export const SiteProgressWidget: React.FC<SiteProgressWidgetProps> = ({
             ) : null}
           </View>
           <Text style={[styles.progressText, { color: progressColor }]}>
-            {Math.round(item.progress)}%
+            {Math.round(displayProgress)}%
           </Text>
         </View>
 
         <ProgressBar
-          progress={item.progress / 100}
+          progress={displayProgress / 100}
           color={progressColor}
           style={styles.progressBar}
         />
 
         <View style={styles.siteFooter}>
-          <View style={styles.roleChips}>
+          <View style={styles.roleIcons}>
             {item.hasSupervisor && (
-              <Chip
-                compact
-                mode="outlined"
-                style={styles.roleChip}
-                textStyle={styles.roleChipText}
-                icon={() => <Icon name="hard-hat" size={12} color="#666" />}
-              >
-                Sup
-              </Chip>
+              <View style={styles.roleTag}>
+                <Icon name="hard-hat" size={13} color="#666" />
+                <Text style={styles.roleTagText}>Supervisor</Text>
+              </View>
             )}
             {item.hasDE && (
-              <Chip
-                compact
-                mode="outlined"
-                style={styles.roleChip}
-                textStyle={styles.roleChipText}
-                icon={() => <Icon name="pencil-ruler" size={12} color="#666" />}
-              >
-                DE
-              </Chip>
+              <View style={styles.roleTag}>
+                <Icon name="pencil-ruler" size={13} color="#666" />
+                <Text style={styles.roleTagText}>Design Eng.</Text>
+              </View>
             )}
             {!item.hasSupervisor && !item.hasDE && (
               <Text style={styles.unassignedText}>Unassigned</Text>
@@ -102,11 +95,17 @@ export const SiteProgressWidget: React.FC<SiteProgressWidgetProps> = ({
           )}
         </View>
 
-        {(item.itemProgress > 0 || item.docProgress > 0) && (
+        {docsOnly ? (
+          item.docProgress > 0 ? (
+            <Text style={styles.breakdownText}>
+              Docs: {Math.round(item.docProgress)}%
+            </Text>
+          ) : null
+        ) : (item.itemProgress > 0 || item.docProgress > 0) ? (
           <Text style={styles.breakdownText}>
             Items: {Math.round(item.itemProgress)}% | Docs: {Math.round(item.docProgress)}%
           </Text>
-        )}
+        ) : null}
       </View>
     );
   };
@@ -188,15 +187,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
   },
-  roleChips: {
+  roleIcons: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 8,
   },
-  roleChip: {
-    height: 24,
+  roleTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
-  roleChipText: {
-    fontSize: 10,
+  roleTagText: {
+    fontSize: 11,
+    color: '#666',
   },
   unassignedText: {
     fontSize: 11,
