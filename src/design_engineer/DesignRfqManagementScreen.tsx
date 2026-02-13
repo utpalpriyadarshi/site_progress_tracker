@@ -42,7 +42,7 @@ import { EmptyState } from '../components/common/EmptyState';
  */
 
 const DesignRfqManagementScreen = () => {
-  const { projectId, projectName, refreshTrigger, engineerId, selectedSiteId } = useDesignEngineerContext();
+  const { projectId, projectName, refreshTrigger, engineerId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
@@ -54,7 +54,7 @@ const DesignRfqManagementScreen = () => {
   useEffect(() => {
     loadDoorsPackages();
     loadRfqs();
-  }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
+  }, [projectId, refreshTrigger, engineerId]);
 
   const loadDoorsPackages = async () => {
     if (!projectId) return;
@@ -84,24 +84,12 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      // Query Design RFQs for this project, optionally filtered by site
+      // Query Design RFQs for this project (RFQs are project-level, not site-scoped)
       const rfqCollection = database.collections.get('rfqs');
-      let rfqsQuery;
-
-      if (selectedSiteId !== 'all') {
-        rfqsQuery = rfqCollection.query(
-          Q.where('project_id', projectId),
-          Q.where('rfq_type', 'design'),
-          Q.where('site_id', selectedSiteId)
-        );
-      } else {
-        rfqsQuery = rfqCollection.query(
-          Q.where('project_id', projectId),
-          Q.where('rfq_type', 'design')
-        );
-      }
-
-      const rfqsData = await rfqsQuery.fetch();
+      const rfqsData = await rfqCollection.query(
+        Q.where('project_id', projectId),
+        Q.where('rfq_type', 'design')
+      ).fetch();
 
       const rfqsList: DesignRfq[] = rfqsData.map((rfq: any) => ({
         id: rfq.id,

@@ -40,7 +40,7 @@ import { EmptyState } from '../components/common/EmptyState';
  */
 
 const DoorsPackageManagementScreen = () => {
-  const { projectId, projectName, refreshTrigger, engineerId, selectedSiteId } = useDesignEngineerContext();
+  const { projectId, projectName, refreshTrigger, engineerId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
@@ -52,7 +52,7 @@ const DoorsPackageManagementScreen = () => {
   useEffect(() => {
     loadSites();
     loadPackages();
-  }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
+  }, [projectId, refreshTrigger, engineerId]);
 
   const loadSites = async () => {
     if (!projectId) return;
@@ -82,22 +82,11 @@ const DoorsPackageManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DoorsPackage] Loading packages for project:', projectId);
 
-      // Query packages for this project, optionally filtered by site
+      // Query packages for this project (DOORS packages are project-level, not site-scoped)
       const doorsCollection = database.collections.get('doors_packages');
-      let packagesQuery;
-
-      if (selectedSiteId !== 'all') {
-        packagesQuery = doorsCollection.query(
-          Q.where('project_id', projectId),
-          Q.where('site_id', selectedSiteId)
-        );
-      } else {
-        packagesQuery = doorsCollection.query(
-          Q.where('project_id', projectId)
-        );
-      }
-
-      const packagesData = await packagesQuery.fetch();
+      const packagesData = await doorsCollection.query(
+        Q.where('project_id', projectId)
+      ).fetch();
 
       const packagesWithSites = await Promise.all(
         packagesData.map(async (pkg: any) => {
