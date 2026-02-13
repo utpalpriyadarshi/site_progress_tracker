@@ -39,6 +39,7 @@ import {
   ProjectProgressWidget,
   KeyDateProgressChartWidget,
   KDTimelineProgressWidget,
+  SiteProgressWidget,
 } from './widgets';
 
 // Hooks
@@ -52,6 +53,7 @@ import {
   useProjectProgressData,
   useKDProgressChartData,
   useKDTimelineProgressData,
+  useSiteProgressData,
 } from './hooks';
 
 // ==================== Component ====================
@@ -146,6 +148,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const projectProgressData = useProjectProgressData();
   const kdProgressChart = useKDProgressChartData();
   const kdTimelineProgress = useKDTimelineProgressData();
+  const siteProgress = useSiteProgressData();
 
   // Calculate layout: 2 columns on tablets, 1 column on phones
   const isTablet = width >= 768;
@@ -161,14 +164,15 @@ const PlanningDashboardScreen: React.FC = () => {
     !wbsProgress.loading &&
     !projectProgressData.loading &&
     !kdProgressChart.loading &&
-    !kdTimelineProgress.loading;
+    !kdTimelineProgress.loading &&
+    !siteProgress.loading;
 
   // Announce when dashboard is loaded
   useEffect(() => {
     if (allWidgetsLoaded && state.loading) {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'SET_LAST_UPDATED', payload: new Date() });
-      announce('Planning Dashboard loaded with 9 widgets');
+      announce('Planning Dashboard loaded with 10 widgets');
     }
   }, [allWidgetsLoaded, state.loading, announce]);
 
@@ -188,6 +192,7 @@ const PlanningDashboardScreen: React.FC = () => {
       projectProgressData.refresh(),
       kdProgressChart.refresh(),
       kdTimelineProgress.refresh(),
+      siteProgress.refresh(),
     ]);
 
     dispatch({ type: 'SET_REFRESHING', payload: false });
@@ -203,6 +208,7 @@ const PlanningDashboardScreen: React.FC = () => {
     projectProgressData,
     kdProgressChart,
     kdTimelineProgress,
+    siteProgress,
     announce,
   ]);
 
@@ -270,6 +276,13 @@ const PlanningDashboardScreen: React.FC = () => {
           error={kdTimelineProgress.error}
           onPress={navigateToSchedule}
           onRefresh={kdTimelineProgress.refresh}
+        />,
+        <SiteProgressWidget
+          key="siteProgress"
+          sites={siteProgress.sites}
+          loading={siteProgress.loading}
+          error={siteProgress.error}
+          onRefresh={siteProgress.refresh}
         />,
         <UpcomingMilestonesWidget
           key="milestones"

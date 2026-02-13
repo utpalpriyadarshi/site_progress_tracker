@@ -33,7 +33,9 @@ import KeyDateModel from '../../../../models/KeyDateModel';
 import KeyDateSiteModel from '../../../../models/KeyDateSiteModel';
 import SiteModel from '../../../../models/SiteModel';
 import ItemModel from '../../../../models/ItemModel';
+import DesignDocumentModel from '../../../../models/DesignDocumentModel';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
+import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../../utils/designDocumentProgress';
 import { logger } from '../../../services/LoggingService';
 
 // ==================== Types ====================
@@ -54,6 +56,7 @@ interface KeyDateSiteManagerObservedProps {
   keyDateSites: KeyDateSiteModel[];
   allSites: SiteModel[];
   siteProgressData: SiteProgressEntry[];
+  designDocProgress: number;
 }
 
 type KeyDateSiteManagerProps = KeyDateSiteManagerInputProps & KeyDateSiteManagerObservedProps;
@@ -64,6 +67,9 @@ interface SiteAssociationItemProps {
   association: KeyDateSiteModel;
   site: SiteModel | undefined;
   calculatedProgress: number;
+  itemProgress: number;
+  docProgress: number;
+  hasDesignDocs: boolean;
   onUpdateContribution: (id: string, contribution: string) => void;
   onRemove: (id: string) => void;
 }
@@ -72,6 +78,9 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
   association,
   site,
   calculatedProgress,
+  itemProgress,
+  docProgress,
+  hasDesignDocs,
   onUpdateContribution,
   onRemove,
 }) => {
@@ -156,6 +165,12 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
         </Chip>
       </View>
 
+      {hasDesignDocs && (
+        <Text style={styles.progressBreakdown}>
+          Items: {Math.round(itemProgress)}% | Docs: {Math.round(docProgress)}%
+        </Text>
+      )}
+
       <ProgressBar
         progress={calculatedProgress / 100}
         color={derivedStatus === 'completed' ? '#4CAF50' : '#2196F3'}
@@ -188,6 +203,7 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   keyDateSites,
   allSites,
   siteProgressData,
+  designDocProgress,
 }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -213,14 +229,34 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
     [keyDateSites]
   );
 
-  // Build a map of siteId -> calculated progress from observed item data
+  // Build a map of siteId -> combined progress (items + design docs)
+  // Respects role assignment: only include item track if supervisor is assigned,
+  // only include doc track if DE is assigned
+  const hasDesignDocs = designDocProgress > 0;
+  const designWeightage = keyDate.designWeightage || 0;
+
   const siteProgressMap = useMemo(() => {
-    const progressMap = new Map<string, number>();
+    const progressMap = new Map<string, { combined: number; itemProgress: number; hasDE: boolean }>();
     for (const entry of siteProgressData) {
-      progressMap.set(entry.siteId, entry.calculatedProgress);
+      const site = allSites.find(s => s.id === entry.siteId);
+      const hasSupervisor = !!site?.supervisorId;
+      const hasDE = !!site?.designEngineerId;
+      const effectiveHasDocs = hasDesignDocs && hasDE;
+      const effectiveHasSites = hasSupervisor;
+
+      let combined: number;
+      if (!effectiveHasSites && !effectiveHasDocs) {
+        // No one assigned — show raw item progress as fallback
+        combined = entry.calculatedProgress;
+      } else {
+        ({ combined } = calculateKDProgress(
+          entry.calculatedProgress, designDocProgress, designWeightage, effectiveHasSites, effectiveHasDocs
+        ));
+      }
+      progressMap.set(entry.siteId, { combined, itemProgress: entry.calculatedProgress, hasDE: effectiveHasDocs });
     }
     return progressMap;
-  }, [siteProgressData]);
+  }, [siteProgressData, allSites, designDocProgress, designWeightage, hasDesignDocs]);
 
   // Get site by id
   const getSiteById = useCallback(
@@ -333,16 +369,22 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   // ==================== Render ====================
 
   const renderSiteAssociation = useCallback(
-    ({ item }: { item: KeyDateSiteModel }) => (
-      <SiteAssociationItem
-        association={item}
-        site={getSiteById(item.siteId)}
-        calculatedProgress={siteProgressMap.get(item.siteId) ?? 0}
-        onUpdateContribution={handleUpdateContribution}
-        onRemove={handleRemoveSite}
-      />
-    ),
-    [getSiteById, siteProgressMap, handleUpdateContribution, handleRemoveSite]
+    ({ item }: { item: KeyDateSiteModel }) => {
+      const progressEntry = siteProgressMap.get(item.siteId);
+      return (
+        <SiteAssociationItem
+          association={item}
+          site={getSiteById(item.siteId)}
+          calculatedProgress={progressEntry?.combined ?? 0}
+          itemProgress={progressEntry?.itemProgress ?? 0}
+          docProgress={designDocProgress}
+          hasDesignDocs={progressEntry?.hasDE ?? false}
+          onUpdateContribution={handleUpdateContribution}
+          onRemove={handleRemoveSite}
+        />
+      );
+    },
+    [getSiteById, siteProgressMap, designDocProgress, handleUpdateContribution, handleRemoveSite]
   );
 
   return (
@@ -515,6 +557,14 @@ const enhance = withObservables(
       })
     );
 
+    const designDocProgress$ = database.collections
+      .get<DesignDocumentModel>('design_documents')
+      .query(Q.where('key_date_id', keyDate.id))
+      .observeWithColumns(['status', 'weightage'])
+      .pipe(
+        map((docs) => calculateSiteProgressFromDesignDocuments(docs))
+      );
+
     return {
       keyDateSites: keyDateSites$,
       allSites: database.collections
@@ -522,6 +572,7 @@ const enhance = withObservables(
         .query(Q.where('project_id', projectId))
         .observe(),
       siteProgressData: siteProgressData$,
+      designDocProgress: designDocProgress$,
     };
   }
 );
@@ -639,6 +690,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginRight: 8,
+  },
+  progressBreakdown: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic' as const,
   },
   progressBar: {
     height: 6,

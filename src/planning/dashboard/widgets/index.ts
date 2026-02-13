@@ -36,3 +36,6 @@ export type { KeyDateProgressChartWidgetProps } from './KeyDateProgressChartWidg
 
 export { KDTimelineProgressWidget } from './KDTimelineProgressWidget';
 export type { KDTimelineProgressWidgetProps } from './KDTimelineProgressWidget';
+
+export { SiteProgressWidget } from './SiteProgressWidget';
+export type { SiteProgressWidgetProps } from './SiteProgressWidget';

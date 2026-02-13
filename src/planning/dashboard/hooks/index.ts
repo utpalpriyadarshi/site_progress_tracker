@@ -37,3 +37,7 @@ export type { KDProgressDataPoint } from './useKDProgressChartData';
 // KD Timeline Progress Hook
 export { useKDTimelineProgressData } from './useKDTimelineProgressData';
 export type { TimelineDataPoint } from './useKDTimelineProgressData';
+
+// Site Progress Hook
+export { useSiteProgressData } from './useSiteProgressData';
+export type { SiteProgressItem } from './useSiteProgressData';
