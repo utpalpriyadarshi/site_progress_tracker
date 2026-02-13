@@ -17,6 +17,7 @@ interface DesignDocumentCardProps {
   onApprove?: (docId: string) => void;
   onApproveWithComment?: (docId: string) => void;
   onReject?: (docId: string) => void;
+  onRevise?: (doc: DesignDocument) => void;
 }
 
 const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
@@ -27,10 +28,12 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
   onApprove,
   onApproveWithComment,
   onReject,
+  onRevise,
 }) => {
   const statusColor = getStatusColor(doc.status);
   const hasDraftActions = doc.status === 'draft' && (onEdit || onDelete || onSubmit);
   const hasSubmittedActions = doc.status === 'submitted' && (onApprove || onApproveWithComment || onReject);
+  const hasReviseActions = (doc.status === 'rejected' || doc.status === 'approved_with_comment') && onRevise;
 
   return (
     <Card style={[styles.card, { borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
@@ -114,8 +117,20 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
           </View>
         )}
 
-        {(hasDraftActions || hasSubmittedActions) && (
+        {(hasDraftActions || hasSubmittedActions || hasReviseActions) && (
           <View style={styles.actionButtons}>
+            {hasReviseActions && (
+              <Button
+                mode="contained"
+                icon="file-refresh"
+                onPress={() => onRevise!(doc)}
+                compact
+                style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+                labelStyle={styles.actionButtonLabel}
+              >
+                Revise
+              </Button>
+            )}
             {doc.status === 'draft' && onSubmit && (
               <Button
                 mode="contained"

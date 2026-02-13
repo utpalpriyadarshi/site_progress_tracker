@@ -518,6 +518,32 @@ const DesignDocumentManagementScreen = () => {
     dispatch({ type: 'OPEN_DIALOG', payload: { editingDocumentId: doc.id } });
   };
 
+  const handleReviseDocument = (doc: DesignDocument) => {
+    const incrementRevision = (rev: string): string => {
+      const match = rev.match(/^R(\d+)$/);
+      if (match) return `R${parseInt(match[1], 10) + 1}`;
+      return 'R1';
+    };
+
+    const newRevision = incrementRevision(doc.revisionNumber);
+
+    dispatch({ type: 'OPEN_DIALOG' });
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        documentNumber: doc.documentNumber,
+        title: doc.title,
+        description: '',
+        documentType: doc.documentType,
+        categoryId: doc.categoryId,
+        siteId: doc.siteId || '',
+        keyDateId: doc.keyDateId || '',
+        revisionNumber: newRevision,
+        weightage: doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
+      },
+    });
+  };
+
   const handleApprovalAction = async () => {
     const { approvalDocumentId, approvalAction } = state.ui;
     if (!approvalDocumentId || !approvalAction) return;
@@ -1075,6 +1101,7 @@ const DesignDocumentManagementScreen = () => {
                 onReject={(id) =>
                   dispatch({ type: 'OPEN_APPROVAL_DIALOG', payload: { documentId: id, action: 'reject' } })
                 }
+                onRevise={handleReviseDocument}
               />
             )}
             keyExtractor={(item) => item.id}
