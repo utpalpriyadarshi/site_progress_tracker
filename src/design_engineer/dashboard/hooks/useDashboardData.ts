@@ -18,6 +18,7 @@ interface DashboardMetrics {
   submittedDocs: number;
   approvedDocs: number;
   rejectedDocs: number;
+  revisedDocs: number;
 
   // DOORS Packages
   doorsPackages: number;
@@ -82,6 +83,7 @@ const calculateMetrics = (
     (d: any) => d.status === 'approved' || d.status === 'approved_with_comment'
   ).length;
   const rejectedDocs = designDocs.filter((d: any) => d.status === 'rejected').length;
+  const revisedDocs = designDocs.filter((d: any) => d.revisionNumber && d.revisionNumber !== 'R0').length;
 
   const pendingDoors = doorsPackages.filter((pkg: any) => pkg.status === 'pending').length;
   const receivedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'received').length;
@@ -115,6 +117,7 @@ const calculateMetrics = (
     submittedDocs,
     approvedDocs,
     rejectedDocs,
+    revisedDocs,
     doorsPackages: doorsPackages.length,
     pendingDoors,
     receivedDoors,

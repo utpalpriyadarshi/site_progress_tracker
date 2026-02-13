@@ -154,16 +154,59 @@ const DesignEngineerDashboardScreen = () => {
               </Text>
             </View>
 
-            {/* My Work Metrics Grid */}
+            {/* My Work - Document Status */}
             <View style={styles.metricsGrid}>
               <MetricCard
-                title="Design Documents"
+                title="Total Documents"
                 value={myMetrics?.totalDesignDocs || 0}
                 icon="description"
                 color="#2196F3"
                 loading={loading}
                 onPress={() => navigation.navigate('DesignDocuments' as never)}
               />
+              <MetricCard
+                title="Draft"
+                value={myMetrics?.draftDocs || 0}
+                icon="edit"
+                color="#9E9E9E"
+                loading={loading}
+              />
+            </View>
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Submitted"
+                value={myMetrics?.submittedDocs || 0}
+                icon="send"
+                color="#2196F3"
+                loading={loading}
+              />
+              <MetricCard
+                title="Approved"
+                value={myMetrics?.approvedDocs || 0}
+                icon="check-circle"
+                color="#4CAF50"
+                loading={loading}
+              />
+            </View>
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Rejected"
+                value={myMetrics?.rejectedDocs || 0}
+                icon="cancel"
+                color="#F44336"
+                loading={loading}
+              />
+              <MetricCard
+                title="Revised"
+                value={myMetrics?.revisedDocs || 0}
+                icon="refresh"
+                color="#FF9800"
+                loading={loading}
+              />
+            </View>
+
+            {/* My Work - DOORS, RFQs, Compliance */}
+            <View style={styles.metricsGrid}>
               <MetricCard
                 title="DOORS Packages"
                 value={myMetrics?.doorsPackages || 0}
@@ -172,9 +215,6 @@ const DesignEngineerDashboardScreen = () => {
                 loading={loading}
                 onPress={() => navigation.navigate('DoorsPackages' as never)}
               />
-            </View>
-
-            <View style={styles.metricsGrid}>
               <MetricCard
                 title="Design RFQs"
                 value={myMetrics?.designRfqs || 0}
@@ -183,6 +223,8 @@ const DesignEngineerDashboardScreen = () => {
                 loading={loading}
                 onPress={() => navigation.navigate('DesignRfqs' as never)}
               />
+            </View>
+            <View style={styles.metricsGrid}>
               <MetricCard
                 title="Compliance Rate"
                 value={`${myMetrics?.complianceRate || 0}%`}
@@ -195,48 +237,8 @@ const DesignEngineerDashboardScreen = () => {
                 loading={loading}
                 onPress={() => navigation.navigate('DoorsPackages' as never)}
               />
+              <View style={{ flex: 1 }} />
             </View>
-
-            {/* My Work - Document Status Breakdown */}
-            {myMetrics && myMetrics.totalDesignDocs > 0 && (
-              <View style={styles.section}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Document Status
-                </Text>
-                <View style={styles.metricsGrid}>
-                  <MetricCard
-                    title="Draft"
-                    value={myMetrics.draftDocs}
-                    icon="edit"
-                    color="#9E9E9E"
-                    loading={loading}
-                  />
-                  <MetricCard
-                    title="Submitted"
-                    value={myMetrics.submittedDocs}
-                    icon="send"
-                    color="#2196F3"
-                    loading={loading}
-                  />
-                </View>
-                <View style={styles.metricsGrid}>
-                  <MetricCard
-                    title="Approved"
-                    value={myMetrics.approvedDocs}
-                    icon="check-circle"
-                    color="#4CAF50"
-                    loading={loading}
-                  />
-                  <MetricCard
-                    title="Rejected"
-                    value={myMetrics.rejectedDocs}
-                    icon="cancel"
-                    color="#F44336"
-                    loading={loading}
-                  />
-                </View>
-              </View>
-            )}
 
             {/* Site Docs Progress Widget */}
             <View style={styles.section}>
