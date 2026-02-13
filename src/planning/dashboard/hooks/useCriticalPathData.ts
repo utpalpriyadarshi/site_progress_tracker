@@ -1,17 +1,14 @@
 /**
  * useCriticalPathData Hook
  *
- * Fetches and manages critical path items data for the dashboard widget.
- * Queries items marked as critical path and calculates risk levels.
+ * Computes critical path items from cached items in PlanningContext.
+ * No individual DB queries — filters allItems in-memory.
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since Planning Dashboard Phase 4
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Q } from '@nozbe/watermelondb';
-import { database } from '../../../../models/database';
-import ItemModel from '../../../../models/ItemModel';
+import { useMemo } from 'react';
 import { usePlanningContext } from '../../context';
 import type { CriticalPathItem } from '../widgets/CriticalPathWidget';
 
@@ -29,54 +26,25 @@ interface UseCriticalPathResult {
 /**
  * Hook for fetching critical path items
  *
- * Queries items marked as critical path for the assigned project's sites.
+ * Filters items marked as critical path from the shared dashboard cache.
  * Calculates risk levels based on delays, due dates, and float days.
- *
- * @returns {UseCriticalPathResult} Critical path items data, loading state, error, and refresh function
  */
 export function useCriticalPathData(): UseCriticalPathResult {
-  const { projectId, sites } = usePlanningContext();
-  const [items, setItems] = useState<CriticalPathItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { dashboardCache, refreshDashboard } = usePlanningContext();
 
-  const fetchData = useCallback(async () => {
-    if (!projectId) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
+  const items = useMemo(() => {
+    if (!dashboardCache.dataReady) return [];
 
-    try {
-      setLoading(true);
-      setError(null);
+    const { allItems } = dashboardCache;
+    const now = Date.now();
 
-      const siteIds = sites.map((s) => s.id);
-
-      if (siteIds.length === 0) {
-        setItems([]);
-        setLoading(false);
-        return;
-      }
-
-      // Query critical path items
-      const itemsCollection = database.collections.get<ItemModel>('items');
-      const criticalItems = await itemsCollection
-        .query(
-          Q.where('site_id', Q.oneOf(siteIds)),
-          Q.where('is_critical_path', true),
-          Q.where('status', Q.notEq('completed')),
-          Q.sortBy('planned_end_date', Q.asc)
-        )
-        .fetch();
-
-      // Transform to CriticalPathItem type
-      const now = Date.now();
-      const transformedItems: CriticalPathItem[] = criticalItems.map((item) => {
+    return allItems
+      .filter((item) => item.isCriticalPath && item.status !== 'completed')
+      .sort((a, b) => a.plannedEndDate - b.plannedEndDate)
+      .map((item) => {
         const daysUntilDue = Math.ceil((item.plannedEndDate - now) / 86400000);
         const isDelayed = item.status === 'delayed' || daysUntilDue < 0;
 
-        // Determine risk level based on delay and float
         let riskLevel: 'low' | 'medium' | 'high' = 'low';
         if (isDelayed || daysUntilDue < 0) {
           riskLevel = 'high';
@@ -93,19 +61,12 @@ export function useCriticalPathData(): UseCriticalPathResult {
           dueDate: new Date(item.plannedEndDate),
         };
       });
+  }, [dashboardCache]);
 
-      setItems(transformedItems);
-    } catch (err) {
-      console.error('Error loading critical path:', err);
-      setError('Failed to load critical path data');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, sites]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { items, loading, error, refresh: fetchData };
+  return {
+    items,
+    loading: !dashboardCache.dataReady,
+    error: null,
+    refresh: refreshDashboard,
+  };
 }

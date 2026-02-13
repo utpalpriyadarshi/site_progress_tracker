@@ -1,17 +1,17 @@
 /**
  * useRecentActivitiesData Hook
  *
- * Fetches and manages recent activities data for the dashboard widget.
- * Queries recent progress logs and transforms them for activity display.
+ * Fetches recent activities using item IDs from the shared dashboard cache.
+ * Still queries progress_logs directly (unique to this hook), but uses
+ * cached allItems for item ID resolution instead of a separate items query.
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since Planning Dashboard Phase 4
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../../models/database';
-import ItemModel from '../../../../models/ItemModel';
 import ProgressLogModel from '../../../../models/ProgressLogModel';
 import { usePlanningContext } from '../../context';
 import type { Activity } from '../widgets/RecentActivitiesWidget';
@@ -30,84 +30,72 @@ interface UseRecentActivitiesResult {
 /**
  * Hook for fetching recent activities
  *
- * Queries progress logs for the assigned project's items and transforms
- * them into activity records for display in the recent activities widget.
- *
- * @returns {UseRecentActivitiesResult} Activities data, loading state, error, and refresh function
+ * Uses cached allItems from PlanningContext for item IDs and names,
+ * then queries progress_logs (1 query — the only DB query this hook makes).
  */
 export function useRecentActivitiesData(): UseRecentActivitiesResult {
-  const { projectId, sites } = usePlanningContext();
+  const { dashboardCache, refreshDashboard } = usePlanningContext();
+  const { allItems, dataReady } = dashboardCache;
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    if (!projectId) {
+  // Memoize item IDs and name map to avoid unnecessary re-fetches
+  const itemIds = useMemo(() => allItems.map(i => i.id), [allItems]);
+  const itemNameMap = useMemo(() => new Map(allItems.map(i => [i.id, i.name])), [allItems]);
+
+  useEffect(() => {
+    if (!dataReady || itemIds.length === 0) {
       setActivities([]);
-      setLoading(false);
+      setLoading(!dataReady);
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
+    let cancelled = false;
 
-      const siteIds = sites.map((s) => s.id);
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (siteIds.length === 0) {
-        setActivities([]);
-        setLoading(false);
-        return;
+        const logsCollection = database.collections.get<ProgressLogModel>('progress_logs');
+        const recentLogs = await logsCollection
+          .query(
+            Q.where('item_id', Q.oneOf(itemIds)),
+            Q.sortBy('date', Q.desc),
+            Q.take(10)
+          )
+          .fetch();
+
+        if (cancelled) return;
+
+        const transformedActivities: Activity[] = recentLogs.slice(0, 5).map((log) => ({
+          id: log.id,
+          type: 'updated' as const,
+          itemName: itemNameMap.get(log.itemId) || 'Unknown Item',
+          itemType: 'schedule' as const,
+          timestamp: new Date(log.date),
+        }));
+
+        setActivities(transformedActivities);
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error loading recent activities:', err);
+          setError('Failed to load recent activities');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
+    };
 
-      // Get items for the project's sites
-      const itemsCollection = database.collections.get<ItemModel>('items');
-      const projectItems = await itemsCollection
-        .query(Q.where('site_id', Q.oneOf(siteIds)))
-        .fetch();
+    fetchLogs();
 
-      const itemIds = projectItems.map((i) => i.id);
+    return () => {
+      cancelled = true;
+    };
+  }, [dataReady, itemIds, itemNameMap]);
 
-      if (itemIds.length === 0) {
-        setActivities([]);
-        setLoading(false);
-        return;
-      }
-
-      // Query recent progress logs
-      const logsCollection = database.collections.get<ProgressLogModel>('progress_logs');
-      const recentLogs = await logsCollection
-        .query(
-          Q.where('item_id', Q.oneOf(itemIds)),
-          Q.sortBy('date', Q.desc),
-          Q.take(10)
-        )
-        .fetch();
-
-      // Create a map of item IDs to names
-      const itemNameMap = new Map(projectItems.map((i) => [i.id, i.name]));
-
-      // Transform to Activity type
-      const transformedActivities: Activity[] = recentLogs.slice(0, 5).map((log) => ({
-        id: log.id,
-        type: 'updated' as const,
-        itemName: itemNameMap.get(log.itemId) || 'Unknown Item',
-        itemType: 'schedule' as const,
-        timestamp: new Date(log.date),
-      }));
-
-      setActivities(transformedActivities);
-    } catch (err) {
-      console.error('Error loading recent activities:', err);
-      setError('Failed to load recent activities');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, sites]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { activities, loading, error, refresh: fetchData };
+  return { activities, loading, error, refresh: refreshDashboard };
 }
