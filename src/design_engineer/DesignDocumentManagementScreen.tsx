@@ -9,6 +9,7 @@ import ManageCategoriesDialog from './components/ManageCategoriesDialog';
 import ApprovalDialog from './components/ApprovalDialog';
 import CopyDesignDocumentsDialog from './components/CopyDesignDocumentsDialog';
 import DuplicateDocumentsDialog from './components/DuplicateDocumentsDialog';
+import MoveDesignDocumentDialog from './components/MoveDesignDocumentDialog';
 import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -61,6 +62,8 @@ const DesignDocumentManagementScreen = () => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
+  const [moveDialogVisible, setMoveDialogVisible] = useState(false);
+  const [moveDocument, setMoveDocument] = useState<DesignDocument | null>(null);
   const [keyDates, setKeyDates] = useState<Array<{id: string; code: string; description: string; category: string}>>([]);
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -875,6 +878,21 @@ const DesignDocumentManagementScreen = () => {
     setCopyDialogVisible(false);
   };
 
+  // ==================== Move Functionality ====================
+
+  const handleMoveDocument = (doc: DesignDocument) => {
+    setMoveDocument(doc);
+    setMoveDialogVisible(true);
+  };
+
+  const handleMoveSuccess = (destinationSiteName: string) => {
+    setMoveDialogVisible(false);
+    setMoveDocument(null);
+    setSnackbarMessage(`Document moved to ${destinationSiteName}`);
+    setSnackbarVisible(true);
+    loadDocuments();
+  };
+
   // ==================== UI State ====================
 
   const [fabOpen, setFabOpen] = React.useState(false);
@@ -1102,6 +1120,7 @@ const DesignDocumentManagementScreen = () => {
                   dispatch({ type: 'OPEN_APPROVAL_DIALOG', payload: { documentId: id, action: 'reject' } })
                 }
                 onRevise={handleReviseDocument}
+                onMove={handleMoveDocument}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -1191,6 +1210,17 @@ const DesignDocumentManagementScreen = () => {
           onSkip={handleSkipDuplicates}
           onCreateAll={handleCreateAllDuplicates}
           onCancel={handleCancelDuplicates}
+        />
+
+        {/* Move Document Dialog */}
+        <MoveDesignDocumentDialog
+          visible={moveDialogVisible}
+          document={moveDocument}
+          onDismiss={() => {
+            setMoveDialogVisible(false);
+            setMoveDocument(null);
+          }}
+          onSuccess={handleMoveSuccess}
         />
 
         {/* Success Snackbar */}

@@ -18,6 +18,7 @@ interface DesignDocumentCardProps {
   onApproveWithComment?: (docId: string) => void;
   onReject?: (docId: string) => void;
   onRevise?: (doc: DesignDocument) => void;
+  onMove?: (doc: DesignDocument) => void;
 }
 
 const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
@@ -28,12 +29,14 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
   onApprove,
   onApproveWithComment,
   onReject,
+  onMove,
   onRevise,
 }) => {
   const statusColor = getStatusColor(doc.status);
   const hasDraftActions = doc.status === 'draft' && (onEdit || onDelete || onSubmit);
   const hasSubmittedActions = doc.status === 'submitted' && (onApprove || onApproveWithComment || onReject);
   const hasReviseActions = (doc.status === 'rejected' || doc.status === 'approved_with_comment') && onRevise;
+  const hasMoveAction = !!onMove;
 
   return (
     <Card style={[styles.card, { borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
@@ -117,7 +120,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
           </View>
         )}
 
-        {(hasDraftActions || hasSubmittedActions || hasReviseActions) && (
+        {(hasDraftActions || hasSubmittedActions || hasReviseActions || hasMoveAction) && (
           <View style={styles.actionButtons}>
             {hasReviseActions && (
               <Button
@@ -153,6 +156,18 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 labelStyle={styles.actionButtonLabel}
               >
                 Edit
+              </Button>
+            )}
+            {onMove && (
+              <Button
+                mode="outlined"
+                icon="file-move"
+                onPress={() => onMove(doc)}
+                compact
+                style={styles.actionButton}
+                labelStyle={styles.actionButtonLabel}
+              >
+                Move
               </Button>
             )}
             {doc.status === 'draft' && onDelete && (
