@@ -7,6 +7,7 @@ interface CreateDesignRfqDialogProps {
   visible: boolean;
   onDismiss: () => void;
   onCreate: () => void;
+  isEditing?: boolean;
   doorsPackages: DoorsPackage[];
   newTitle: string;
   setNewTitle: (value: string) => void;
@@ -22,6 +23,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
   visible,
   onDismiss,
   onCreate,
+  isEditing = false,
   doorsPackages,
   newTitle,
   setNewTitle,
@@ -35,7 +37,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
-        <Dialog.Title>Create Design RFQ</Dialog.Title>
+        <Dialog.Title>{isEditing ? 'Edit Design RFQ' : 'Create Design RFQ'}</Dialog.Title>
         <Dialog.ScrollArea>
           <ScrollView>
             <Dialog.Content>
@@ -91,7 +93,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={onCreate}>Create</Button>
+          <Button onPress={onCreate}>{isEditing ? 'Save' : 'Create'}</Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

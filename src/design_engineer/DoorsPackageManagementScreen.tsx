@@ -1,6 +1,6 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip, Menu, Portal } from 'react-native-paper';
+import { FAB, Searchbar, Chip, Menu, Portal, Snackbar } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DoorsPackageCard from './components/DoorsPackageCard';
@@ -21,29 +21,26 @@ import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 
 /**
- * DoorsPackageManagementScreen (v5.0 - Phase 3 Complete)
+ * DoorsPackageManagementScreen (v6.0 - Sprint 1)
  *
- * Design Engineer manages DOORS packages (100 requirements per equipment/material).
+ * Design Engineer manages DOORS packages (requirements per equipment/material).
  *
- * Features:
- * - View all DOORS packages for engineer's project
- * - Filter by site, status, category
- * - Create new DOORS package
- * - Mark as received/reviewed
- * - View requirements count (100 per package)
- * - Link to Design RFQs
- *
- * Phase 3 Enhancements:
- * - Accessibility: Screen reader support, ARIA labels, keyboard navigation
- * - Performance: Debounced search (300ms delay)
- * - Enhanced UX: Improved empty states and loading indicators
+ * Sprint 1 Enhancements:
+ * - Configurable category (OHE, TSS, SCADA, etc.) instead of hardcoded 'equipment'
+ * - Configurable requirements count instead of hardcoded 100
+ * - Proper engineerId from context
+ * - Site-aware filtering via selectedSiteId
+ * - Edit and Delete functionality
+ * - Header compaction
  */
 
 const DoorsPackageManagementScreen = () => {
-  const { projectId, projectName, refreshTrigger, engineerId } = useDesignEngineerContext();
+  const { projectId, projectName, refreshTrigger, engineerId, selectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -52,7 +49,7 @@ const DoorsPackageManagementScreen = () => {
   useEffect(() => {
     loadSites();
     loadPackages();
-  }, [projectId, refreshTrigger, engineerId]);
+  }, [projectId, refreshTrigger, engineerId, selectedSiteId]);
 
   const loadSites = async () => {
     if (!projectId) return;
@@ -82,11 +79,21 @@ const DoorsPackageManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DoorsPackage] Loading packages for project:', projectId);
 
-      // Query packages for this project (DOORS packages are project-level, not site-scoped)
       const doorsCollection = database.collections.get('doors_packages');
-      const packagesData = await doorsCollection.query(
-        Q.where('project_id', projectId)
-      ).fetch();
+      let packagesData;
+
+      if (selectedSiteId && selectedSiteId !== 'all') {
+        // Filter by selected site
+        packagesData = await doorsCollection.query(
+          Q.where('project_id', projectId),
+          Q.where('site_id', selectedSiteId)
+        ).fetch();
+      } else {
+        // Show all packages for project
+        packagesData = await doorsCollection.query(
+          Q.where('project_id', projectId)
+        ).fetch();
+      }
 
       const packagesWithSites = await Promise.all(
         packagesData.map(async (pkg: any) => {
@@ -122,7 +129,6 @@ const DoorsPackageManagementScreen = () => {
       logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
       dispatch({ type: 'SET_PACKAGES', payload: { packages: packagesWithSites } });
 
-      // Accessibility announcement
       announce(`Loaded ${packagesWithSites.length} DOORS package${packagesWithSites.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error);
@@ -132,72 +138,194 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
-  const handleCreatePackage = async () => {
-    const { doorsId, siteId, equipmentType, materialType } = state.form;
+  const handleCreateOrUpdatePackage = async () => {
+    const { doorsId, siteId, equipmentType, materialType, category, totalRequirements } = state.form;
 
-    if (!doorsId || !equipmentType || !siteId) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+    if (!doorsId || !equipmentType || !siteId || !category) {
+      Alert.alert('Validation Error', 'Please fill in all required fields (DOORS ID, Site, Category, Equipment Type)');
+      return;
+    }
+
+    const reqCount = parseInt(totalRequirements) || 100;
+    if (reqCount < 1 || reqCount > 500) {
+      Alert.alert('Validation Error', 'Requirements count must be between 1 and 500');
       return;
     }
 
     try {
       const doorsCollection = database.collections.get('doors_packages');
+      const isEditing = !!state.ui.editingPackageId;
 
-      let newPackage: DoorsPackage | null = null;
-
-      await database.write(async () => {
-        const record = await doorsCollection.create((rec: any) => {
-          rec.doorsId = doorsId;
-          rec.projectId = projectId;
-          rec.siteId = siteId;
-          rec.equipmentType = equipmentType;
-          rec.materialType = materialType || null;
-          rec.category = 'equipment';
-          rec.totalRequirements = 100;
-          rec.status = 'pending';
-          rec.engineerId = '';
-          rec.appSyncStatus = 'pending';
-          rec.version = 1;
-        });
-
-        // Get site name
+      if (isEditing) {
+        // Update existing package
+        const record = await doorsCollection.find(state.ui.editingPackageId!);
         let siteName = '';
         try {
           const site = await database.collections.get('sites').find(siteId);
           siteName = (site as any).name;
-        } catch (error) {
-          logger.warn('[DoorsPackage] Site not found:', siteId);
-        }
+        } catch (e) { /* ignored */ }
 
-        newPackage = {
-          id: (record as any).id,
-          doorsId: (record as any).doorsId,
-          projectId: (record as any).projectId,
-          siteId: (record as any).siteId,
+        await database.write(async () => {
+          await record.update((rec: any) => {
+            rec.doorsId = doorsId;
+            rec.siteId = siteId;
+            rec.equipmentType = equipmentType;
+            rec.materialType = materialType || null;
+            rec.category = category;
+            rec.totalRequirements = reqCount;
+            rec.updatedAt = Date.now();
+          });
+        });
+
+        const updatedPkg: DoorsPackage = {
+          id: record.id,
+          doorsId,
+          projectId,
+          siteId,
           siteName,
-          equipmentType: (record as any).equipmentType,
-          materialType: (record as any).materialType,
-          category: (record as any).category,
-          totalRequirements: (record as any).totalRequirements,
+          equipmentType,
+          materialType: materialType || undefined,
+          category,
+          totalRequirements: reqCount,
+          status: (record as any).status,
           receivedDate: (record as any).receivedDate,
           reviewedDate: (record as any).reviewedDate,
-          status: (record as any).status,
           engineerId: (record as any).engineerId,
           createdAt: (record as any).createdAt,
         };
-      });
 
-      if (newPackage) {
-        dispatch({ type: 'ADD_PACKAGE', payload: { package: newPackage } });
+        dispatch({ type: 'UPDATE_PACKAGE', payload: { package: updatedPkg } });
+        setSnackbarMessage('DOORS package updated successfully');
+        setSnackbarVisible(true);
+      } else {
+        // Create new package
+        // Check for duplicate DOORS ID in project
+        const existing = await doorsCollection
+          .query(Q.where('project_id', projectId), Q.where('doors_id', doorsId))
+          .fetchCount();
+
+        if (existing > 0) {
+          Alert.alert('Duplicate DOORS ID', `A package with DOORS ID "${doorsId}" already exists in this project.`);
+          return;
+        }
+
+        let newPackage: DoorsPackage | null = null;
+
+        await database.write(async () => {
+          const record = await doorsCollection.create((rec: any) => {
+            rec.doorsId = doorsId;
+            rec.projectId = projectId;
+            rec.siteId = siteId;
+            rec.equipmentType = equipmentType;
+            rec.materialType = materialType || null;
+            rec.category = category;
+            rec.totalRequirements = reqCount;
+            rec.status = 'pending';
+            rec.engineerId = engineerId;
+            rec.createdAt = Date.now();
+            rec.updatedAt = Date.now();
+            rec.appSyncStatus = 'pending';
+            rec.version = 1;
+          });
+
+          let siteName = '';
+          try {
+            const site = await database.collections.get('sites').find(siteId);
+            siteName = (site as any).name;
+          } catch (error) {
+            logger.warn('[DoorsPackage] Site not found:', siteId);
+          }
+
+          newPackage = {
+            id: (record as any).id,
+            doorsId,
+            projectId,
+            siteId,
+            siteName,
+            equipmentType,
+            materialType: materialType || undefined,
+            category,
+            totalRequirements: reqCount,
+            status: 'pending',
+            engineerId,
+            receivedDate: undefined,
+            reviewedDate: undefined,
+            createdAt: (record as any).createdAt,
+          };
+        });
+
+        if (newPackage) {
+          dispatch({ type: 'ADD_PACKAGE', payload: { package: newPackage } });
+        }
+
+        setSnackbarMessage('DOORS package created successfully');
+        setSnackbarVisible(true);
+        announce('DOORS package created successfully');
       }
 
-      Alert.alert('Success', 'DOORS package created successfully');
-      announce('DOORS package created successfully');
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
-      logger.error('[DoorsPackage] Error creating package:', error);
-      Alert.alert('Error', 'Failed to create DOORS package');
+      logger.error('[DoorsPackage] Error saving package:', error);
+      Alert.alert('Error', 'Failed to save DOORS package');
     }
+  };
+
+  const handleEditPackage = (pkg: DoorsPackage) => {
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        doorsId: pkg.doorsId,
+        siteId: pkg.siteId || '',
+        equipmentType: pkg.equipmentType,
+        materialType: pkg.materialType || '',
+        category: pkg.category,
+        totalRequirements: String(pkg.totalRequirements),
+      },
+    });
+    dispatch({ type: 'OPEN_DIALOG', payload: { editingPackageId: pkg.id } });
+  };
+
+  const handleDeletePackage = async (packageId: string) => {
+    // Check if any RFQs reference this package
+    try {
+      const rfqCount = await database.collections
+        .get('rfqs')
+        .query(Q.where('doors_package_id', packageId))
+        .fetchCount();
+
+      if (rfqCount > 0) {
+        Alert.alert(
+          'Cannot Delete',
+          `This package has ${rfqCount} linked RFQ${rfqCount !== 1 ? 's' : ''}. Remove the RFQs first.`
+        );
+        return;
+      }
+    } catch (error) {
+      logger.error('[DoorsPackage] Error checking RFQ references:', error);
+    }
+
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this DOORS package?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const doorsCollection = database.collections.get('doors_packages');
+            const record = await doorsCollection.find(packageId);
+            await database.write(async () => {
+              await record.markAsDeleted();
+            });
+            dispatch({ type: 'DELETE_PACKAGE', payload: { packageId } });
+            setSnackbarMessage('DOORS package deleted');
+            setSnackbarVisible(true);
+          } catch (error) {
+            logger.error('[DoorsPackage] Error deleting package:', error);
+            Alert.alert('Error', 'Failed to delete DOORS package');
+          }
+        },
+      },
+    ]);
   };
 
   const markAsReceived = async (packageId: string) => {
@@ -209,6 +337,7 @@ const DoorsPackageManagementScreen = () => {
         await packageRecord.update((record: any) => {
           record.receivedDate = Date.now();
           record.status = 'received';
+          record.updatedAt = Date.now();
         });
       });
 
@@ -220,7 +349,8 @@ const DoorsPackageManagementScreen = () => {
         });
       }
 
-      Alert.alert('Success', 'Package marked as received');
+      setSnackbarMessage('Package marked as received');
+      setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as received:', error);
       Alert.alert('Error', 'Failed to update package');
@@ -236,6 +366,7 @@ const DoorsPackageManagementScreen = () => {
         await packageRecord.update((record: any) => {
           record.reviewedDate = Date.now();
           record.status = 'reviewed';
+          record.updatedAt = Date.now();
         });
       });
 
@@ -247,7 +378,8 @@ const DoorsPackageManagementScreen = () => {
         });
       }
 
-      Alert.alert('Success', 'Package marked as reviewed');
+      setSnackbarMessage('Package marked as reviewed');
+      setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as reviewed:', error);
       Alert.alert('Error', 'Failed to update package');
@@ -265,20 +397,18 @@ const DoorsPackageManagementScreen = () => {
     const hasNoPackages = state.data.packages.length === 0;
 
     if (hasNoPackages) {
-      // No DOORS packages at all
       return (
         <EmptyState
           icon="package-variant"
           title="No DOORS Packages Yet"
           message="Create your first DOORS package to start tracking engineering requirements"
-          helpText="Each DOORS package contains 100 requirements for a specific equipment or material."
+          helpText="Each DOORS package contains requirements for a specific equipment or material."
           actionText="Create DOORS Package"
           onAction={() => dispatch({ type: 'OPEN_DIALOG' })}
           variant="large"
         />
       );
     } else if (hasSearchQuery) {
-      // No search results
       return (
         <EmptyState
           icon="magnify"
@@ -292,7 +422,6 @@ const DoorsPackageManagementScreen = () => {
         />
       );
     } else if (hasFilter) {
-      // No filter results
       return (
         <EmptyState
           icon="filter-off"
@@ -396,7 +525,13 @@ const DoorsPackageManagementScreen = () => {
           <FlatList
             data={state.data.filteredPackages}
             renderItem={({ item }) => (
-              <DoorsPackageCard package={item} onMarkReceived={markAsReceived} onMarkReviewed={markAsReviewed} />
+              <DoorsPackageCard
+                package={item}
+                onMarkReceived={markAsReceived}
+                onMarkReviewed={markAsReviewed}
+                onEdit={handleEditPackage}
+                onDelete={handleDeletePackage}
+              />
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
@@ -464,7 +599,8 @@ const DoorsPackageManagementScreen = () => {
         <CreateDoorsPackageDialog
           visible={state.ui.dialogVisible}
           onDismiss={handleDismissDialog}
-          onCreate={handleCreatePackage}
+          onCreate={handleCreateOrUpdatePackage}
+          isEditing={!!state.ui.editingPackageId}
           sites={state.data.sites}
           newDoorsId={state.form.doorsId}
           setNewDoorsId={(doorsId) =>
@@ -480,7 +616,27 @@ const DoorsPackageManagementScreen = () => {
           setNewMaterialType={(materialType) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'materialType', value: materialType } })
           }
+          newCategory={state.form.category}
+          setNewCategory={(category) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'category', value: category } })
+          }
+          newTotalRequirements={state.form.totalRequirements}
+          setNewTotalRequirements={(totalRequirements) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'totalRequirements', value: totalRequirements } })
+          }
         />
+
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          action={{
+            label: 'Dismiss',
+            onPress: () => setSnackbarVisible(false),
+          }}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </View>
     </ErrorBoundary>
   );
@@ -498,8 +654,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -508,7 +664,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   projectName: {
     fontSize: 20,
@@ -522,7 +678,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   searchbar: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   filterRow: {
     flexDirection: 'row',
@@ -533,16 +689,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
   },
   errorText: {
     fontSize: 16,
@@ -556,7 +702,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   siteSelector: {
-    marginTop: 8,
+    marginTop: 4,
   },
 });
 

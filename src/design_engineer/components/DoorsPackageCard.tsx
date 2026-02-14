@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card, Button, Chip } from 'react-native-paper';
+import { Card, Button, Chip, IconButton } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 
 interface DoorsPackageCardProps {
   package: DoorsPackage;
   onMarkReceived: (packageId: string) => void;
   onMarkReviewed: (packageId: string) => void;
+  onEdit?: (pkg: DoorsPackage) => void;
+  onDelete?: (packageId: string) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -22,7 +24,16 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({ package: pkg, onMarkReceived, onMarkReviewed }) => {
+const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
+  package: pkg,
+  onMarkReceived,
+  onMarkReviewed,
+  onEdit,
+  onDelete,
+}) => {
+  const canEdit = pkg.status === 'pending' || pkg.status === 'received';
+  const canDelete = pkg.status === 'pending';
+
   return (
     <Card style={styles.card}>
       <Card.Content>
@@ -82,6 +93,24 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({ package: pkg, onMar
         )}
 
         <View style={styles.actionButtons}>
+          {canEdit && onEdit && (
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => onEdit(pkg)}
+              accessibilityLabel="Edit package"
+            />
+          )}
+          {canDelete && onDelete && (
+            <IconButton
+              icon="delete"
+              size={20}
+              iconColor="#F44336"
+              onPress={() => onDelete(pkg.id)}
+              accessibilityLabel="Delete package"
+            />
+          )}
+          <View style={styles.actionSpacer} />
           {pkg.status === 'pending' && (
             <Button mode="contained" onPress={() => onMarkReceived(pkg.id)} style={styles.actionButton}>
               Mark Received
@@ -139,9 +168,12 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
     marginTop: 12,
-    gap: 8,
+    gap: 4,
+  },
+  actionSpacer: {
+    flex: 1,
   },
   actionButton: {
     marginLeft: 8,

@@ -2,6 +2,17 @@
  * Types for DOORS Package Management
  */
 
+export const DOORS_CATEGORIES = [
+  { value: 'OHE', label: 'OHE' },
+  { value: 'TSS', label: 'TSS' },
+  { value: 'SCADA', label: 'SCADA' },
+  { value: 'Cables', label: 'Cables' },
+  { value: 'Hardware', label: 'Hardware' },
+  { value: 'Consumables', label: 'Consumables' },
+] as const;
+
+export type DoorsCategory = typeof DOORS_CATEGORIES[number]['value'];
+
 export interface DoorsPackage {
   id: string;
   doorsId: string;
