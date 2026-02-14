@@ -10,6 +10,7 @@ import ApprovalDialog from './components/ApprovalDialog';
 import CopyDesignDocumentsDialog from './components/CopyDesignDocumentsDialog';
 import DuplicateDocumentsDialog from './components/DuplicateDocumentsDialog';
 import MoveDesignDocumentDialog from './components/MoveDesignDocumentDialog';
+import ApplyTemplateDialog from './components/ApplyTemplateDialog';
 import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -63,6 +64,7 @@ const DesignDocumentManagementScreen = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
   const [moveDialogVisible, setMoveDialogVisible] = useState(false);
+  const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
   const [moveDocument, setMoveDocument] = useState<DesignDocument | null>(null);
   const [keyDates, setKeyDates] = useState<Array<{id: string; code: string; description: string; category: string}>>([]);
 
@@ -893,6 +895,15 @@ const DesignDocumentManagementScreen = () => {
     loadDocuments();
   };
 
+  // ==================== Template Functionality ====================
+
+  const handleTemplateSuccess = (createdCount: number, templateName: string) => {
+    setTemplateDialogVisible(false);
+    setSnackbarMessage(`Created ${createdCount} document${createdCount !== 1 ? 's' : ''} from "${templateName}" template`);
+    setSnackbarVisible(true);
+    loadDocuments();
+  };
+
   // ==================== UI State ====================
 
   const [fabOpen, setFabOpen] = React.useState(false);
@@ -1144,6 +1155,12 @@ const DesignDocumentManagementScreen = () => {
               accessibilityLabel: 'Create new design document',
             },
             {
+              icon: 'file-document-multiple',
+              label: 'Apply Template',
+              onPress: () => setTemplateDialogVisible(true),
+              accessibilityLabel: 'Apply document template',
+            },
+            {
               icon: 'folder-cog',
               label: 'Manage Categories',
               onPress: () => dispatch({ type: 'OPEN_CATEGORIES_DIALOG' }),
@@ -1221,6 +1238,13 @@ const DesignDocumentManagementScreen = () => {
             setMoveDocument(null);
           }}
           onSuccess={handleMoveSuccess}
+        />
+
+        {/* Apply Template Dialog */}
+        <ApplyTemplateDialog
+          visible={templateDialogVisible}
+          onDismiss={() => setTemplateDialogVisible(false)}
+          onSuccess={handleTemplateSuccess}
         />
 
         {/* Success Snackbar */}
