@@ -1005,6 +1005,37 @@ const DesignDocumentManagementScreen = () => {
             />
           </View>
           <SiteSelector style={styles.siteSelector} />
+
+          {/* Weightage Summary Bar - only when a specific site is selected */}
+          {selectedSiteId && selectedSiteId !== 'all' && (() => {
+            const siteDocuments = state.data.documents.filter(d => d.siteId === selectedSiteId);
+            const totalWeightage = siteDocuments.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
+            const remaining = Math.max(0, 100 - totalWeightage);
+            const barColor = totalWeightage > 100 ? '#F44336' : totalWeightage > 80 ? '#FF9800' : '#4CAF50';
+            const barWidth = Math.min(totalWeightage, 100);
+
+            if (siteDocuments.length === 0) return null;
+
+            return (
+              <View style={styles.weightageContainer}>
+                {totalWeightage === 0 ? (
+                  <Text style={styles.weightageHint}>No weightage assigned</Text>
+                ) : (
+                  <>
+                    <View style={styles.weightageBarBg}>
+                      <View style={[styles.weightageBarFill, { width: `${barWidth}%`, backgroundColor: barColor }]} />
+                    </View>
+                    <Text style={[styles.weightageText, totalWeightage > 100 && styles.weightageWarning]}>
+                      {totalWeightage > 100
+                        ? `⚠ ${totalWeightage.toFixed(1)}% (over by ${(totalWeightage - 100).toFixed(1)}%)`
+                        : `${totalWeightage.toFixed(1)}% used · ${remaining.toFixed(1)}% available`}
+                    </Text>
+                  </>
+                )}
+              </View>
+            );
+          })()}
+
           <Searchbar
             placeholder="Search documents..."
             onChangeText={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } })}
@@ -1276,8 +1307,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -1286,7 +1317,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   headerTitleContainer: {
     flex: 1,
@@ -1306,7 +1337,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   searchbar: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   filterRow: {
     flexDirection: 'row',
@@ -1339,7 +1370,39 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   siteSelector: {
-    marginTop: 8,
+    marginTop: 4,
+  },
+  weightageContainer: {
+    marginVertical: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  weightageBarBg: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  weightageBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  weightageText: {
+    fontSize: 11,
+    color: '#555',
+    marginTop: 3,
+    textAlign: 'center',
+  },
+  weightageWarning: {
+    color: '#F44336',
+    fontWeight: '600',
+  },
+  weightageHint: {
+    fontSize: 11,
+    color: '#999',
+    textAlign: 'center',
   },
 });
 
