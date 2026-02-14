@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card, Button, Chip } from 'react-native-paper';
+import { Card, Button, Chip, IconButton } from 'react-native-paper';
 import { DesignRfq } from '../types/DesignRfqTypes';
 
 interface DesignRfqCardProps {
   rfq: DesignRfq;
   onIssue: (rfqId: string) => void;
   onMarkQuotesReceived: (rfqId: string) => void;
+  onEdit?: (rfq: DesignRfq) => void;
+  onDelete?: (rfqId: string) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -28,7 +30,16 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const DesignRfqCard: React.FC<DesignRfqCardProps> = ({ rfq, onIssue, onMarkQuotesReceived }) => {
+const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
+  rfq,
+  onIssue,
+  onMarkQuotesReceived,
+  onEdit,
+  onDelete,
+}) => {
+  const canEdit = rfq.status === 'draft';
+  const canDelete = rfq.status === 'draft';
+
   return (
     <Card style={styles.card}>
       <Card.Content>
@@ -43,7 +54,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({ rfq, onIssue, onMarkQuote
               backgroundColor: getStatusColor(rfq.status),
             }}
             textStyle={styles.statusChipText}>
-            {rfq.status.toUpperCase()}
+            {rfq.status.replace(/_/g, ' ').toUpperCase()}
           </Chip>
         </View>
 
@@ -101,6 +112,24 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({ rfq, onIssue, onMarkQuote
         )}
 
         <View style={styles.actionButtons}>
+          {canEdit && onEdit && (
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => onEdit(rfq)}
+              accessibilityLabel="Edit RFQ"
+            />
+          )}
+          {canDelete && onDelete && (
+            <IconButton
+              icon="delete"
+              size={20}
+              iconColor="#F44336"
+              onPress={() => onDelete(rfq.id)}
+              accessibilityLabel="Delete RFQ"
+            />
+          )}
+          <View style={styles.actionSpacer} />
           {rfq.status === 'draft' && (
             <Button mode="contained" onPress={() => onIssue(rfq.id)} style={styles.actionButton}>
               Issue RFQ
@@ -164,9 +193,12 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
     marginTop: 12,
-    gap: 8,
+    gap: 4,
+  },
+  actionSpacer: {
+    flex: 1,
   },
   actionButton: {
     marginLeft: 8,

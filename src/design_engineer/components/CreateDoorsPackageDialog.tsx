@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
-import { Site } from '../types/DoorsPackageTypes';
+import { Site, DOORS_CATEGORIES } from '../types/DoorsPackageTypes';
 
 interface CreateDoorsPackageDialogProps {
   visible: boolean;
   onDismiss: () => void;
   onCreate: () => void;
+  isEditing?: boolean;
   sites: Site[];
   newDoorsId: string;
   setNewDoorsId: (value: string) => void;
@@ -16,12 +17,17 @@ interface CreateDoorsPackageDialogProps {
   setNewEquipmentType: (value: string) => void;
   newMaterialType: string;
   setNewMaterialType: (value: string) => void;
+  newCategory: string;
+  setNewCategory: (value: string) => void;
+  newTotalRequirements: string;
+  setNewTotalRequirements: (value: string) => void;
 }
 
 const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   visible,
   onDismiss,
   onCreate,
+  isEditing = false,
   sites,
   newDoorsId,
   setNewDoorsId,
@@ -31,8 +37,13 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   setNewEquipmentType,
   newMaterialType,
   setNewMaterialType,
+  newCategory,
+  setNewCategory,
+  newTotalRequirements,
+  setNewTotalRequirements,
 }) => {
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
   const openSiteMenu = () => setSiteMenuVisible(true);
   const closeSiteMenu = () => setSiteMenuVisible(false);
@@ -42,10 +53,17 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
     closeSiteMenu();
   };
 
+  const handleCategorySelect = (category: string) => {
+    setNewCategory(category);
+    setCategoryMenuVisible(false);
+  };
+
+  const selectedCategoryLabel = DOORS_CATEGORIES.find(c => c.value === newCategory)?.label || 'Select Category';
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
-        <Dialog.Title>Create DOORS Package</Dialog.Title>
+        <Dialog.Title>{isEditing ? 'Edit DOORS Package' : 'Create DOORS Package'}</Dialog.Title>
         <Dialog.Content>
           <TextInput
             label="DOORS ID *"
@@ -70,6 +88,20 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               <Menu.Item key={site.id} onPress={() => handleSiteSelect(site.id)} title={site.name} />
             ))}
           </Menu>
+          <Menu
+            visible={categoryMenuVisible}
+            onDismiss={() => setCategoryMenuVisible(false)}
+            anchor={
+              <TouchableOpacity onPress={() => setCategoryMenuVisible(true)} style={styles.pickerButton}>
+                <Text style={styles.pickerLabel}>Category *</Text>
+                <Text style={styles.pickerValue}>{selectedCategoryLabel}</Text>
+              </TouchableOpacity>
+            }
+          >
+            {DOORS_CATEGORIES.map((cat) => (
+              <Menu.Item key={cat.value} onPress={() => handleCategorySelect(cat.value)} title={cat.label} />
+            ))}
+          </Menu>
           <TextInput
             label="Equipment Type *"
             value={newEquipmentType}
@@ -84,11 +116,20 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             style={styles.input}
             mode="outlined"
           />
-          <Text style={styles.infoText}>Standard: 100 requirements per package</Text>
+          <TextInput
+            label="Total Requirements"
+            value={newTotalRequirements}
+            onChangeText={setNewTotalRequirements}
+            style={styles.input}
+            mode="outlined"
+            keyboardType="numeric"
+            placeholder="100"
+          />
+          <Text style={styles.infoText}>Typical range: 50–200 requirements per package</Text>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={onCreate}>Create</Button>
+          <Button onPress={onCreate}>{isEditing ? 'Save' : 'Create'}</Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

@@ -1,6 +1,6 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip } from 'react-native-paper';
+import { FAB, Searchbar, Chip, Snackbar } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignRfqCard from './components/DesignRfqCard';
@@ -21,24 +21,14 @@ import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 
 /**
- * DesignRfqManagementScreen (v5.0 - Phase 3 Complete)
+ * DesignRfqManagementScreen (v6.0 - Sprint 1)
  *
- * Design Engineer creates and manages Design RFQs (pre-PM200 engineering phase).
- * These are distinct from Procurement RFQs (handled by Logistics).
- *
- * Features:
- * - View all Design RFQs for engineer's project
- * - Filter by DOORS package, status
- * - Create new Design RFQ linked to DOORS package
- * - Issue RFQ to vendors
- * - Track vendor quotes
- * - Evaluate and award RFQs
- * - View RFQ details and timeline
- *
- * Phase 3 Enhancements:
- * - Accessibility: Screen reader support, ARIA labels, keyboard navigation
- * - Performance: Debounced search (300ms delay)
- * - Enhanced UX: Improved empty states and loading indicators
+ * Sprint 1 Enhancements:
+ * - Proper createdById from context (was empty string)
+ * - Delivery days validation (1-365)
+ * - Edit and Delete for draft RFQs
+ * - Header compaction
+ * - Snackbar feedback
  */
 
 const DesignRfqManagementScreen = () => {
@@ -46,6 +36,8 @@ const DesignRfqManagementScreen = () => {
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -84,7 +76,6 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      // Query Design RFQs for this project (RFQs are project-level, not site-scoped)
       const rfqCollection = database.collections.get('rfqs');
       const rfqsData = await rfqCollection.query(
         Q.where('project_id', projectId),
@@ -117,7 +108,6 @@ const DesignRfqManagementScreen = () => {
       logger.debug('[DesignRfq] Loaded RFQs:', rfqsList.length);
       dispatch({ type: 'SET_RFQS', payload: { rfqs: rfqsList } });
 
-      // Accessibility announcement
       announce(`Loaded ${rfqsList.length} Design RFQ${rfqsList.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DesignRfq] Error loading RFQs:', error);
@@ -132,78 +122,158 @@ const DesignRfqManagementScreen = () => {
     return `DRFQ-${timestamp}`;
   };
 
-  const handleCreateRfq = async () => {
+  const handleCreateOrUpdateRfq = async () => {
     const { title, description, doorsPackageId, expectedDeliveryDays } = state.form;
 
     if (!title || !doorsPackageId) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      Alert.alert('Validation Error', 'Please fill in all required fields (Title, DOORS Package)');
+      return;
+    }
+
+    // Validate delivery days
+    const deliveryDays = parseInt(expectedDeliveryDays);
+    if (expectedDeliveryDays && (isNaN(deliveryDays) || deliveryDays < 1 || deliveryDays > 365)) {
+      Alert.alert('Validation Error', 'Expected delivery days must be between 1 and 365');
       return;
     }
 
     try {
       const rfqCollection = database.collections.get('rfqs');
       const selectedPackage = state.data.doorsPackages.find((p) => p.id === doorsPackageId);
+      const isEditing = !!state.ui.editingRfqId;
 
       if (!selectedPackage) {
         Alert.alert('Error', 'Selected DOORS package not found');
         return;
       }
 
-      let newRfq: DesignRfq | null = null;
+      if (isEditing) {
+        // Update existing RFQ
+        const record = await rfqCollection.find(state.ui.editingRfqId!);
 
-      await database.write(async () => {
-        const record = await rfqCollection.create((rec: any) => {
-          rec.rfqNumber = generateRfqNumber();
-          rec.doorsId = selectedPackage.doorsId;
-          rec.doorsPackageId = doorsPackageId;
-          rec.projectId = projectId;
-          rec.title = title;
-          rec.description = description || null;
-          rec.status = 'draft';
-          rec.rfqType = 'design';
-          rec.expectedDeliveryDays = parseInt(expectedDeliveryDays) || 30;
-          rec.totalVendorsInvited = 0;
-          rec.totalQuotesReceived = 0;
-          rec.createdById = '';
-          rec.appSyncStatus = 'pending';
-          rec.version = 1;
+        await database.write(async () => {
+          await record.update((rec: any) => {
+            rec.title = title;
+            rec.description = description || null;
+            rec.doorsId = selectedPackage.doorsId;
+            rec.doorsPackageId = doorsPackageId;
+            rec.expectedDeliveryDays = deliveryDays || 30;
+          });
         });
 
-        newRfq = {
-          id: (record as any).id,
-          rfqNumber: (record as any).rfqNumber,
-          doorsId: (record as any).doorsId,
-          doorsPackageId: (record as any).doorsPackageId,
-          projectId: (record as any).projectId,
-          title: (record as any).title,
-          description: (record as any).description,
-          status: (record as any).status,
-          rfqType: (record as any).rfqType,
-          issueDate: (record as any).issueDate,
-          closingDate: (record as any).closingDate,
-          evaluationDate: (record as any).evaluationDate,
-          awardDate: (record as any).awardDate,
-          expectedDeliveryDays: (record as any).expectedDeliveryDays,
-          totalVendorsInvited: (record as any).totalVendorsInvited,
-          totalQuotesReceived: (record as any).totalQuotesReceived,
-          winningVendorId: (record as any).winningVendorId,
-          awardedValue: (record as any).awardedValue,
-          createdById: (record as any).createdById,
-          createdAt: (record as any).createdAt,
-        };
-      });
+        const existingRfq = state.data.rfqs.find(r => r.id === state.ui.editingRfqId);
+        if (existingRfq) {
+          const updatedRfq: DesignRfq = {
+            ...existingRfq,
+            title,
+            description: description || undefined,
+            doorsId: selectedPackage.doorsId,
+            doorsPackageId,
+            expectedDeliveryDays: deliveryDays || 30,
+          };
+          dispatch({ type: 'UPDATE_RFQ', payload: { rfq: updatedRfq } });
+        }
 
-      if (newRfq) {
-        dispatch({ type: 'ADD_RFQ', payload: { rfq: newRfq } });
+        setSnackbarMessage('Design RFQ updated successfully');
+        setSnackbarVisible(true);
+      } else {
+        // Create new RFQ
+        let newRfq: DesignRfq | null = null;
+
+        await database.write(async () => {
+          const record = await rfqCollection.create((rec: any) => {
+            rec.rfqNumber = generateRfqNumber();
+            rec.doorsId = selectedPackage.doorsId;
+            rec.doorsPackageId = doorsPackageId;
+            rec.projectId = projectId;
+            rec.title = title;
+            rec.description = description || null;
+            rec.status = 'draft';
+            rec.rfqType = 'design';
+            rec.expectedDeliveryDays = deliveryDays || 30;
+            rec.totalVendorsInvited = 0;
+            rec.totalQuotesReceived = 0;
+            rec.createdById = engineerId;
+            rec.appSyncStatus = 'pending';
+            rec.version = 1;
+          });
+
+          newRfq = {
+            id: (record as any).id,
+            rfqNumber: (record as any).rfqNumber,
+            doorsId: (record as any).doorsId,
+            doorsPackageId: (record as any).doorsPackageId,
+            projectId: (record as any).projectId,
+            title: (record as any).title,
+            description: (record as any).description,
+            status: (record as any).status,
+            rfqType: (record as any).rfqType,
+            issueDate: (record as any).issueDate,
+            closingDate: (record as any).closingDate,
+            evaluationDate: (record as any).evaluationDate,
+            awardDate: (record as any).awardDate,
+            expectedDeliveryDays: (record as any).expectedDeliveryDays,
+            totalVendorsInvited: (record as any).totalVendorsInvited,
+            totalQuotesReceived: (record as any).totalQuotesReceived,
+            winningVendorId: (record as any).winningVendorId,
+            awardedValue: (record as any).awardedValue,
+            createdById: (record as any).createdById,
+            createdAt: (record as any).createdAt,
+          };
+        });
+
+        if (newRfq) {
+          dispatch({ type: 'ADD_RFQ', payload: { rfq: newRfq } });
+        }
+
+        setSnackbarMessage('Design RFQ created successfully');
+        setSnackbarVisible(true);
+        announce('Design RFQ created successfully');
       }
 
-      Alert.alert('Success', 'Design RFQ created successfully');
-      announce('Design RFQ created successfully');
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
-      logger.error('[DesignRfq] Error creating RFQ:', error);
-      Alert.alert('Error', 'Failed to create Design RFQ');
+      logger.error('[DesignRfq] Error saving RFQ:', error);
+      Alert.alert('Error', 'Failed to save Design RFQ');
     }
+  };
+
+  const handleEditRfq = (rfq: DesignRfq) => {
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        title: rfq.title,
+        description: rfq.description || '',
+        doorsPackageId: rfq.doorsPackageId,
+        expectedDeliveryDays: String(rfq.expectedDeliveryDays || 30),
+      },
+    });
+    dispatch({ type: 'OPEN_DIALOG', payload: { editingRfqId: rfq.id } });
+  };
+
+  const handleDeleteRfq = async (rfqId: string) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this Design RFQ?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const rfqCollection = database.collections.get('rfqs');
+            const record = await rfqCollection.find(rfqId);
+            await database.write(async () => {
+              await record.markAsDeleted();
+            });
+            dispatch({ type: 'DELETE_RFQ', payload: { rfqId } });
+            setSnackbarMessage('Design RFQ deleted');
+            setSnackbarVisible(true);
+          } catch (error) {
+            logger.error('[DesignRfq] Error deleting RFQ:', error);
+            Alert.alert('Error', 'Failed to delete Design RFQ');
+          }
+        },
+      },
+    ]);
   };
 
   const issueRfq = async (rfqId: string) => {
@@ -226,7 +296,8 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      Alert.alert('Success', 'RFQ issued successfully');
+      setSnackbarMessage('RFQ issued successfully');
+      setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error issuing RFQ:', error);
       Alert.alert('Error', 'Failed to issue RFQ');
@@ -252,7 +323,8 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      Alert.alert('Success', 'Marked as quotes received');
+      setSnackbarMessage('Marked as quotes received');
+      setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error updating RFQ:', error);
       Alert.alert('Error', 'Failed to update RFQ');
@@ -270,7 +342,6 @@ const DesignRfqManagementScreen = () => {
     const hasNoRfqs = state.data.rfqs.length === 0;
 
     if (hasNoRfqs) {
-      // No Design RFQs at all
       return (
         <EmptyState
           icon="file-document-edit"
@@ -283,7 +354,6 @@ const DesignRfqManagementScreen = () => {
         />
       );
     } else if (hasSearchQuery) {
-      // No search results
       return (
         <EmptyState
           icon="magnify"
@@ -297,7 +367,6 @@ const DesignRfqManagementScreen = () => {
         />
       );
     } else if (hasFilter) {
-      // No filter results
       return (
         <EmptyState
           icon="filter-off"
@@ -443,7 +512,13 @@ const DesignRfqManagementScreen = () => {
           <FlatList
             data={state.data.filteredRfqs}
             renderItem={({ item }) => (
-              <DesignRfqCard rfq={item} onIssue={issueRfq} onMarkQuotesReceived={markQuotesReceived} />
+              <DesignRfqCard
+                rfq={item}
+                onIssue={issueRfq}
+                onMarkQuotesReceived={markQuotesReceived}
+                onEdit={handleEditRfq}
+                onDelete={handleDeleteRfq}
+              />
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
@@ -470,7 +545,8 @@ const DesignRfqManagementScreen = () => {
         <CreateDesignRfqDialog
           visible={state.ui.dialogVisible}
           onDismiss={handleDismissDialog}
-          onCreate={handleCreateRfq}
+          onCreate={handleCreateOrUpdateRfq}
+          isEditing={!!state.ui.editingRfqId}
           doorsPackages={state.data.doorsPackages}
           newTitle={state.form.title}
           setNewTitle={(title) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'title', value: title } })}
@@ -490,6 +566,18 @@ const DesignRfqManagementScreen = () => {
             })
           }
         />
+
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          action={{
+            label: 'Dismiss',
+            onPress: () => setSnackbarVisible(false),
+          }}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </View>
     </ErrorBoundary>
   );
@@ -507,8 +595,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#007AFF',
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -517,7 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   projectName: {
     fontSize: 20,
@@ -531,7 +619,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   searchbar: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   filterRow: {
     flexDirection: 'row',
@@ -542,21 +630,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#BBB',
   },
   errorText: {
     fontSize: 16,
@@ -570,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   siteSelector: {
-    marginTop: 8,
+    marginTop: 4,
   },
 });
 

@@ -12,13 +12,15 @@
 import { DoorsPackage, Site } from '../../types/DoorsPackageTypes';
 
 /**
- * Form data for creating new DOORS package
+ * Form data for creating/editing DOORS package
  */
 export interface PackageFormData {
   doorsId: string;
   siteId: string;
   equipmentType: string;
   materialType: string;
+  category: string;
+  totalRequirements: string;
 }
 
 /**
@@ -29,6 +31,7 @@ export interface DoorsPackageManagementState {
     loading: boolean;
     dialogVisible: boolean;
     filterMenuVisible: boolean;
+    editingPackageId: string | null;
   };
   data: {
     packages: DoorsPackage[];
@@ -56,9 +59,10 @@ export type DoorsPackageManagementAction =
   | { type: 'SET_SITES'; payload: { sites: Site[] } }
   | { type: 'ADD_PACKAGE'; payload: { package: DoorsPackage } }
   | { type: 'UPDATE_PACKAGE'; payload: { package: DoorsPackage } }
+  | { type: 'DELETE_PACKAGE'; payload: { packageId: string } }
 
   // Dialog management
-  | { type: 'OPEN_DIALOG' }
+  | { type: 'OPEN_DIALOG'; payload?: { editingPackageId?: string } }
   | { type: 'CLOSE_DIALOG' }
 
   // Filter menu management
@@ -67,6 +71,7 @@ export type DoorsPackageManagementAction =
 
   // Form management
   | { type: 'UPDATE_FORM_FIELD'; payload: { field: keyof PackageFormData; value: string } }
+  | { type: 'SET_FORM'; payload: Partial<PackageFormData> }
   | { type: 'RESET_FORM' }
 
   // Filter management
@@ -83,6 +88,7 @@ export const createInitialState = (): DoorsPackageManagementState => ({
     loading: true,
     dialogVisible: false,
     filterMenuVisible: false,
+    editingPackageId: null,
   },
   data: {
     packages: [],
@@ -99,6 +105,8 @@ export const createInitialState = (): DoorsPackageManagementState => ({
     siteId: '',
     equipmentType: '',
     materialType: '',
+    category: '',
+    totalRequirements: '100',
   },
 });
 
@@ -230,6 +238,26 @@ export const doorsPackageManagementReducer = (
       };
     }
 
+    case 'DELETE_PACKAGE': {
+      const remainingPackages = state.data.packages.filter(
+        (pkg) => pkg.id !== action.payload.packageId
+      );
+      const filteredPackages = applyFiltersToPackages(
+        remainingPackages,
+        state.filters.searchQuery,
+        state.filters.status,
+        state.filters.category
+      );
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          packages: remainingPackages,
+          filteredPackages,
+        },
+      };
+    }
+
     // Dialog management
     case 'OPEN_DIALOG':
       return {
@@ -237,6 +265,7 @@ export const doorsPackageManagementReducer = (
         ui: {
           ...state.ui,
           dialogVisible: true,
+          editingPackageId: action.payload?.editingPackageId || null,
         },
       };
 
@@ -246,8 +275,9 @@ export const doorsPackageManagementReducer = (
         ui: {
           ...state.ui,
           dialogVisible: false,
+          editingPackageId: null,
         },
-        form: createInitialState().form, // Reset form when closing
+        form: createInitialState().form,
       };
 
     // Filter menu management
@@ -276,6 +306,15 @@ export const doorsPackageManagementReducer = (
         form: {
           ...state.form,
           [action.payload.field]: action.payload.value,
+        },
+      };
+
+    case 'SET_FORM':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          ...action.payload,
         },
       };
 

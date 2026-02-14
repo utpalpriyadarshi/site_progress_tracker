@@ -28,6 +28,7 @@ export interface DesignRfqManagementState {
   ui: {
     loading: boolean;
     dialogVisible: boolean;
+    editingRfqId: string | null;
   };
   data: {
     rfqs: DesignRfq[];
@@ -57,11 +58,12 @@ export type DesignRfqManagementAction =
   | { type: 'DELETE_RFQ'; payload: { rfqId: string } }
 
   // Dialog management
-  | { type: 'OPEN_DIALOG' }
+  | { type: 'OPEN_DIALOG'; payload?: { editingRfqId?: string } }
   | { type: 'CLOSE_DIALOG' }
 
   // Form management
   | { type: 'UPDATE_FORM_FIELD'; payload: { field: keyof RfqFormData; value: string } }
+  | { type: 'SET_FORM'; payload: Partial<RfqFormData> }
   | { type: 'RESET_FORM' }
 
   // Filter management
@@ -76,6 +78,7 @@ export const createInitialState = (): DesignRfqManagementState => ({
   ui: {
     loading: true,
     dialogVisible: false,
+    editingRfqId: null,
   },
   data: {
     rfqs: [],
@@ -238,6 +241,7 @@ export const designRfqManagementReducer = (
         ui: {
           ...state.ui,
           dialogVisible: true,
+          editingRfqId: action.payload?.editingRfqId || null,
         },
       };
 
@@ -247,8 +251,9 @@ export const designRfqManagementReducer = (
         ui: {
           ...state.ui,
           dialogVisible: false,
+          editingRfqId: null,
         },
-        form: createInitialState().form, // Reset form when closing
+        form: createInitialState().form,
       };
 
     // Form management
@@ -258,6 +263,15 @@ export const designRfqManagementReducer = (
         form: {
           ...state.form,
           [action.payload.field]: action.payload.value,
+        },
+      };
+
+    case 'SET_FORM':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          ...action.payload,
         },
       };
 
