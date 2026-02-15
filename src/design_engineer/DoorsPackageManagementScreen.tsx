@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -128,6 +128,19 @@ const DoorsPackageManagementScreen = () => {
             closureDate: pkg.closureDate,
             closureRemarks: pkg.closureRemarks,
             createdAt: pkg.createdAt,
+            equipmentName: pkg.equipmentName,
+            priority: pkg.priority,
+            quantity: pkg.quantity,
+            unit: pkg.unit,
+            specificationRef: pkg.specificationRef,
+            drawingRef: pkg.drawingRef,
+            compliantRequirements: pkg.compliantRequirements,
+            compliancePercentage: pkg.compliancePercentage,
+            technicalReqCompliance: pkg.technicalReqCompliance,
+            datasheetCompliance: pkg.datasheetCompliance,
+            typeTestCompliance: pkg.typeTestCompliance,
+            routineTestCompliance: pkg.routineTestCompliance,
+            siteReqCompliance: pkg.siteReqCompliance,
           };
         })
       );
@@ -593,6 +606,55 @@ const DoorsPackageManagementScreen = () => {
           </View>
         </View>
 
+        {/* Summary Bar */}
+        {!state.ui.loading && state.data.packages.length > 0 && (() => {
+          const packages = state.data.packages;
+          const compliancePackages = packages.filter(p => p.compliancePercentage !== undefined && p.compliancePercentage > 0);
+          const avgCompliance = compliancePackages.length > 0
+            ? compliancePackages.reduce((sum, p) => sum + (p.compliancePercentage || 0), 0) / compliancePackages.length
+            : 0;
+          const complianceColor = avgCompliance >= 80 ? '#4CAF50' : avgCompliance >= 50 ? '#FF9800' : '#F44336';
+
+          const statusCounts = packages.reduce((acc, p) => {
+            acc[p.status] = (acc[p.status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          const statusDots: { key: string; label: string; color: string }[] = [
+            { key: 'pending', label: 'Pending', color: '#FFA500' },
+            { key: 'received', label: 'Received', color: '#2196F3' },
+            { key: 'reviewed', label: 'Reviewed', color: '#4CAF50' },
+            { key: 'approved', label: 'Approved', color: '#7B1FA2' },
+            { key: 'closed', label: 'Closed', color: '#616161' },
+          ];
+
+          return (
+            <View style={styles.summaryBar}>
+              <View style={styles.summaryTopRow}>
+                <Text style={styles.summaryCount}>{packages.length} package{packages.length !== 1 ? 's' : ''}</Text>
+                {compliancePackages.length > 0 && (
+                  <Text style={[styles.summaryCompliance, { color: complianceColor }]}>
+                    Avg Compliance: {avgCompliance.toFixed(0)}%
+                  </Text>
+                )}
+              </View>
+              {compliancePackages.length > 0 && (
+                <View style={styles.summaryBarBg}>
+                  <View style={[styles.summaryBarFill, { width: `${Math.min(avgCompliance, 100)}%`, backgroundColor: complianceColor }]} />
+                </View>
+              )}
+              <View style={styles.summaryStatusRow}>
+                {statusDots.filter(s => statusCounts[s.key]).map(s => (
+                  <View key={s.key} style={styles.summaryStatusItem}>
+                    <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
+                    <Text style={styles.summaryStatusText}>{statusCounts[s.key]} {s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
+
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator
@@ -829,6 +891,60 @@ const styles = StyleSheet.create({
   },
   siteSelector: {
     marginTop: 4,
+  },
+  summaryBar: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    elevation: 1,
+  },
+  summaryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  summaryCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  summaryCompliance: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  summaryBarBg: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  summaryBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  summaryStatusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  summaryStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  summaryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  summaryStatusText: {
+    fontSize: 11,
+    color: '#555',
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -567,6 +567,49 @@ const DesignRfqManagementScreen = () => {
           </View>
         </View>
 
+        {/* Summary Bar */}
+        {!state.ui.loading && state.data.rfqs.length > 0 && (() => {
+          const rfqs = state.data.rfqs;
+          const statusCounts = rfqs.reduce((acc, r) => {
+            acc[r.status] = (acc[r.status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          const totalAwarded = rfqs
+            .filter(r => r.status === 'awarded' && r.awardedValue)
+            .reduce((sum, r) => sum + (r.awardedValue || 0), 0);
+
+          const statusDots: { key: string; label: string; color: string }[] = [
+            { key: 'draft', label: 'Draft', color: '#9E9E9E' },
+            { key: 'issued', label: 'Issued', color: '#2196F3' },
+            { key: 'quotes_received', label: 'Quotes Recd', color: '#FF9800' },
+            { key: 'evaluated', label: 'Evaluated', color: '#9C27B0' },
+            { key: 'awarded', label: 'Awarded', color: '#4CAF50' },
+            { key: 'cancelled', label: 'Cancelled', color: '#F44336' },
+          ];
+
+          return (
+            <View style={styles.summaryBar}>
+              <View style={styles.summaryTopRow}>
+                <Text style={styles.summaryCount}>{rfqs.length} RFQ{rfqs.length !== 1 ? 's' : ''}</Text>
+                {totalAwarded > 0 && (
+                  <Text style={styles.summaryAwarded}>
+                    Awarded: {'\u20B9'}{totalAwarded.toLocaleString('en-IN')}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.summaryStatusRow}>
+                {statusDots.filter(s => statusCounts[s.key]).map(s => (
+                  <View key={s.key} style={styles.summaryStatusItem}>
+                    <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
+                    <Text style={styles.summaryStatusText}>{statusCounts[s.key]} {s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
+
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator
@@ -786,6 +829,50 @@ const styles = StyleSheet.create({
   },
   siteSelector: {
     marginTop: 4,
+  },
+  summaryBar: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    elevation: 1,
+  },
+  summaryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  summaryCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  summaryAwarded: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  summaryStatusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  summaryStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  summaryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  summaryStatusText: {
+    fontSize: 11,
+    color: '#555',
   },
 });
 

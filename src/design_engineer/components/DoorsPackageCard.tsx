@@ -31,6 +31,40 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'high':
+      return '#F44336';
+    case 'medium':
+      return '#FF9800';
+    case 'low':
+      return '#9E9E9E';
+    default:
+      return '#9E9E9E';
+  }
+};
+
+const getComplianceColor = (percentage: number) => {
+  if (percentage >= 80) return '#4CAF50';
+  if (percentage >= 50) return '#FF9800';
+  return '#F44336';
+};
+
+const ComplianceMiniBar: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+  <View style={styles.miniBarRow}>
+    <Text style={styles.miniBarLabel}>{label}</Text>
+    <View style={styles.miniBarBg}>
+      <View
+        style={[
+          styles.miniBarFill,
+          { width: `${Math.min(value, 100)}%`, backgroundColor: getComplianceColor(value) },
+        ]}
+      />
+    </View>
+    <Text style={styles.miniBarValue}>{value}%</Text>
+  </View>
+);
+
 const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   package: pkg,
   onMarkReceived,
@@ -42,6 +76,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
 }) => {
   const canEdit = pkg.status === 'pending' || pkg.status === 'received';
   const canDelete = pkg.status === 'pending';
+  const hasCompliance = pkg.compliancePercentage !== undefined && pkg.compliancePercentage > 0;
 
   return (
     <Card style={styles.card}>
@@ -49,15 +84,31 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
         <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
             <Text style={styles.doorsId}>{pkg.doorsId}</Text>
+            {pkg.equipmentName ? (
+              <Text style={styles.equipmentName} numberOfLines={1} ellipsizeMode="tail">
+                {pkg.equipmentName}
+              </Text>
+            ) : null}
           </View>
-          <Chip
-            mode="flat"
-            style={{
-              backgroundColor: getStatusColor(pkg.status),
-            }}
-            textStyle={styles.statusChipText}>
-            {pkg.status.toUpperCase()}
-          </Chip>
+          <View style={styles.headerRight}>
+            {pkg.priority ? (
+              <Chip
+                mode="flat"
+                compact
+                style={{ backgroundColor: getPriorityColor(pkg.priority) }}
+                textStyle={styles.priorityChipText}>
+                {pkg.priority.toUpperCase()}
+              </Chip>
+            ) : null}
+            <Chip
+              mode="flat"
+              style={{
+                backgroundColor: getStatusColor(pkg.status),
+              }}
+              textStyle={styles.statusChipText}>
+              {pkg.status.toUpperCase()}
+            </Chip>
+          </View>
         </View>
 
         <StatusTimeline steps={DOORS_STATUS_STEPS} currentStatus={pkg.status} />
@@ -84,9 +135,27 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           </View>
         )}
 
+        {(pkg.quantity !== undefined && pkg.quantity > 0) && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Quantity:</Text>
+            <Text style={styles.value}>{pkg.quantity} {pkg.unit || ''}</Text>
+          </View>
+        )}
+
+        {pkg.specificationRef ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Spec Ref:</Text>
+            <Text style={styles.value}>{pkg.specificationRef}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.detailRow}>
           <Text style={styles.label}>Requirements:</Text>
-          <Text style={styles.value}>{pkg.totalRequirements}</Text>
+          <Text style={styles.value}>
+            {pkg.compliantRequirements !== undefined
+              ? `${pkg.compliantRequirements} / ${pkg.totalRequirements} compliant`
+              : pkg.totalRequirements}
+          </Text>
         </View>
 
         {pkg.receivedDate && (
@@ -114,6 +183,46 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           <View style={styles.detailRow}>
             <Text style={styles.label}>Remarks:</Text>
             <Text style={styles.value}>{pkg.closureRemarks}</Text>
+          </View>
+        )}
+
+        {hasCompliance && (
+          <View style={styles.complianceSection}>
+            <View style={styles.overallComplianceRow}>
+              <Text style={styles.complianceLabel}>Compliance</Text>
+              <Text style={[styles.compliancePercent, { color: getComplianceColor(pkg.compliancePercentage!) }]}>
+                {pkg.compliancePercentage}%
+              </Text>
+            </View>
+            <View style={styles.complianceBarBg}>
+              <View
+                style={[
+                  styles.complianceBarFill,
+                  {
+                    width: `${Math.min(pkg.compliancePercentage!, 100)}%`,
+                    backgroundColor: getComplianceColor(pkg.compliancePercentage!),
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.categoryBreakdown}>
+              {pkg.technicalReqCompliance !== undefined && (
+                <ComplianceMiniBar label="Tech" value={pkg.technicalReqCompliance} />
+              )}
+              {pkg.datasheetCompliance !== undefined && (
+                <ComplianceMiniBar label="Data" value={pkg.datasheetCompliance} />
+              )}
+              {pkg.typeTestCompliance !== undefined && (
+                <ComplianceMiniBar label="Type" value={pkg.typeTestCompliance} />
+              )}
+              {pkg.routineTestCompliance !== undefined && (
+                <ComplianceMiniBar label="Routine" value={pkg.routineTestCompliance} />
+              )}
+              {pkg.siteReqCompliance !== undefined && (
+                <ComplianceMiniBar label="Site" value={pkg.siteReqCompliance} />
+              )}
+            </View>
           </View>
         )}
 
@@ -183,13 +292,28 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
   doorsId: {
     fontSize: 18,
     fontWeight: 'bold',
   },
+  equipmentName: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
   statusChipText: {
     color: 'white',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  priorityChipText: {
+    color: 'white',
+    fontSize: 10,
     fontWeight: 'bold',
   },
   detailRow: {
@@ -206,6 +330,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
     flex: 1,
+  },
+  complianceSection: {
+    marginTop: 8,
+    marginBottom: 4,
+    padding: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+  },
+  overallComplianceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  complianceLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  compliancePercent: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  complianceBarBg: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  complianceBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  categoryBreakdown: {
+    gap: 3,
+  },
+  miniBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  miniBarLabel: {
+    fontSize: 11,
+    color: '#666',
+    width: 42,
+  },
+  miniBarBg: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  miniBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  miniBarValue: {
+    fontSize: 10,
+    color: '#666',
+    width: 30,
+    textAlign: 'right',
   },
   actionButtons: {
     flexDirection: 'row',
