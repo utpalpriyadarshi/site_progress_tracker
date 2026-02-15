@@ -982,6 +982,7 @@ const DoorsPackageManagementScreen = () => {
           }
           templates={DOORS_PACKAGE_TEMPLATES}
           onSelectTemplate={handleSelectTemplate}
+          existingDoorsIds={state.data.packages.map(p => p.doorsId)}
         />
 
         <Portal>
@@ -1078,6 +1079,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+    paddingBottom: 140,
   },
   errorText: {
     fontSize: 16,
