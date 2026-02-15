@@ -13,6 +13,7 @@ interface DesignRfqCardProps {
   onCancel?: (rfqId: string) => void;
   onEdit?: (rfq: DesignRfq) => void;
   onDelete?: (rfqId: string) => void;
+  onDuplicate?: (rfq: DesignRfq) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -43,6 +44,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
   onCancel,
   onEdit,
   onDelete,
+  onDuplicate,
 }) => {
   const canEdit = rfq.status === 'draft';
   const canDelete = rfq.status === 'draft';
@@ -164,6 +166,14 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
               iconColor="#F44336"
               onPress={() => onCancel(rfq.id)}
               accessibilityLabel="Cancel RFQ"
+            />
+          )}
+          {rfq.status !== 'cancelled' && onDuplicate && (
+            <IconButton
+              icon="content-copy"
+              size={20}
+              onPress={() => onDuplicate(rfq)}
+              accessibilityLabel="Duplicate RFQ"
             />
           )}
           <View style={styles.actionSpacer} />

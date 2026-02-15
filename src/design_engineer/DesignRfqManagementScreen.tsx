@@ -20,6 +20,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import RfqService from '../services/RfqService';
+import { validateRfqTitle, getErrorMessage } from './utils/validation';
 
 /**
  * DesignRfqManagementScreen (v6.0 - Sprint 1)
@@ -120,7 +121,7 @@ const DesignRfqManagementScreen = () => {
       announce(`Loaded ${rfqsList.length} Design RFQ${rfqsList.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DesignRfq] Error loading RFQs:', error);
-      Alert.alert('Error', 'Failed to load Design RFQs');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQs'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
     }
@@ -134,8 +135,14 @@ const DesignRfqManagementScreen = () => {
   const handleCreateOrUpdateRfq = async () => {
     const { title, description, doorsPackageId, expectedDeliveryDays } = state.form;
 
-    if (!title || !doorsPackageId) {
-      Alert.alert('Validation Error', 'Please fill in all required fields (Title, DOORS Package)');
+    if (!doorsPackageId) {
+      Alert.alert('Validation Error', 'Please select a DOORS Package');
+      return;
+    }
+
+    const titleValidation = validateRfqTitle(title);
+    if (!titleValidation.valid) {
+      Alert.alert('Validation Error', titleValidation.message || 'Please enter a valid RFQ title');
       return;
     }
 
@@ -154,6 +161,25 @@ const DesignRfqManagementScreen = () => {
       if (!selectedPackage) {
         Alert.alert('Error', 'Selected DOORS package not found');
         return;
+      }
+
+      // Check for existing active RFQ on same DOORS package (create only)
+      if (!isEditing) {
+        const existingActiveCount = await rfqCollection
+          .query(
+            Q.where('doors_package_id', doorsPackageId),
+            Q.where('rfq_type', 'design'),
+            Q.where('status', Q.notEq('cancelled'))
+          )
+          .fetchCount();
+
+        if (existingActiveCount > 0) {
+          Alert.alert(
+            'Active RFQ Exists',
+            `There is already an active Design RFQ for DOORS package "${selectedPackage.doorsId}". Cancel or complete it before creating a new one.`
+          );
+          return;
+        }
       }
 
       if (isEditing) {
@@ -243,7 +269,7 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DesignRfq] Error saving RFQ:', error);
-      Alert.alert('Error', 'Failed to save Design RFQ');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -258,6 +284,19 @@ const DesignRfqManagementScreen = () => {
       },
     });
     dispatch({ type: 'OPEN_DIALOG', payload: { editingRfqId: rfq.id } });
+  };
+
+  const handleDuplicateRfq = (rfq: DesignRfq) => {
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        title: rfq.title + ' (Copy)',
+        description: rfq.description || '',
+        doorsPackageId: rfq.doorsPackageId,
+        expectedDeliveryDays: String(rfq.expectedDeliveryDays || 30),
+      },
+    });
+    dispatch({ type: 'OPEN_DIALOG' });
   };
 
   const handleDeleteRfq = async (rfqId: string) => {
@@ -278,7 +317,7 @@ const DesignRfqManagementScreen = () => {
             setSnackbarVisible(true);
           } catch (error) {
             logger.error('[DesignRfq] Error deleting RFQ:', error);
-            Alert.alert('Error', 'Failed to delete Design RFQ');
+            Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
           }
         },
       },
@@ -309,7 +348,7 @@ const DesignRfqManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error issuing RFQ:', error);
-      Alert.alert('Error', 'Failed to issue RFQ');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -336,7 +375,7 @@ const DesignRfqManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error updating RFQ:', error);
-      Alert.alert('Error', 'Failed to update RFQ');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -366,7 +405,7 @@ const DesignRfqManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error evaluating RFQ:', error);
-      Alert.alert('Error', 'Failed to evaluate RFQ');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -411,7 +450,7 @@ const DesignRfqManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DesignRfq] Error awarding RFQ:', error);
-      Alert.alert('Error', 'Failed to award RFQ');
+      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -633,6 +672,7 @@ const DesignRfqManagementScreen = () => {
                 onCancel={handleCancelRfq}
                 onEdit={handleEditRfq}
                 onDelete={handleDeleteRfq}
+                onDuplicate={handleDuplicateRfq}
               />
             )}
             keyExtractor={(item) => item.id}
