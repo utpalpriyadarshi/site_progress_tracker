@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 42, // Added progress_mode to key_dates for project-level milestones
+  version: 43, // Added site_id, material_type, engineer_id, received_date, reviewed_date to doors_packages
   tables: [
     tableSchema({
       name: 'projects',
@@ -380,6 +380,11 @@ export default appSchema({
         { name: 'category', type: 'string', isIndexed: true },
         { name: 'equipment_type', type: 'string', isIndexed: true },
         { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'site_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'material_type', type: 'string', isOptional: true },
+        { name: 'engineer_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'received_date', type: 'number', isOptional: true },
+        { name: 'reviewed_date', type: 'number', isOptional: true },
         { name: 'specification_ref', type: 'string', isOptional: true },
         { name: 'drawing_ref', type: 'string', isOptional: true },
         { name: 'quantity', type: 'number' },

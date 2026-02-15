@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Card, Button, Chip, IconButton } from 'react-native-paper';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
 import { DesignRfq } from '../types/DesignRfqTypes';
 import StatusTimeline, { RFQ_STATUS_STEPS } from './StatusTimeline';
 
@@ -14,6 +14,11 @@ interface DesignRfqCardProps {
   onEdit?: (rfq: DesignRfq) => void;
   onDelete?: (rfqId: string) => void;
   onDuplicate?: (rfq: DesignRfq) => void;
+  onViewQuotes?: (rfqId: string) => void;
+  bulkSelectMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (rfqId: string) => void;
+  onLongPress?: (rfqId: string) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -45,14 +50,41 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  onViewQuotes,
+  bulkSelectMode = false,
+  isSelected = false,
+  onSelect,
+  onLongPress,
 }) => {
   const canEdit = rfq.status === 'draft';
   const canDelete = rfq.status === 'draft';
   const canCancel = rfq.status !== 'awarded' && rfq.status !== 'cancelled';
+  const canViewQuotes = ['quotes_received', 'evaluated', 'awarded'].includes(rfq.status);
+
+  const handlePress = () => {
+    if (bulkSelectMode && onSelect) {
+      onSelect(rfq.id);
+    }
+  };
+
+  const handleLongPress = () => {
+    if (onLongPress) {
+      onLongPress(rfq.id);
+    }
+  };
 
   return (
-    <Card style={styles.card}>
+    <Pressable onPress={bulkSelectMode ? handlePress : undefined} onLongPress={handleLongPress}>
+    <Card style={[styles.card, isSelected && styles.selectedCard]}>
       <Card.Content>
+        {bulkSelectMode && (
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              status={isSelected ? 'checked' : 'unchecked'}
+              onPress={() => onSelect?.(rfq.id)}
+            />
+          </View>
+        )}
         <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
             <Text style={styles.rfqNumber}>{rfq.rfqNumber}</Text>
@@ -203,9 +235,20 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
               Award
             </Button>
           )}
+          {canViewQuotes && onViewQuotes && (
+            <Button
+              mode="outlined"
+              compact
+              onPress={() => onViewQuotes(rfq.id)}
+              style={styles.actionButton}
+              icon="format-list-bulleted">
+              Quotes ({rfq.totalQuotesReceived})
+            </Button>
+          )}
         </View>
       </Card.Content>
     </Card>
+    </Pressable>
   );
 };
 
@@ -265,6 +308,17 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginLeft: 8,
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  checkboxRow: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    zIndex: 1,
   },
 });
 
