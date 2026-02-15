@@ -12,6 +12,7 @@ import { v39Migration } from './v39_add_design_document_weightage';
 import { v40Migration } from './v40_add_key_date_to_design_documents';
 import { v41Migration } from './v41_add_design_weightage';
 import { v42Migration } from './v42_add_progress_mode';
+import { v43Migration } from './v43_add_doors_package_fields';
 
 export default schemaMigrations({
   migrations: [
@@ -595,5 +596,7 @@ export default schemaMigrations({
     v41Migration,
     // v42: Add progress_mode to key_dates for project-level milestones
     v42Migration,
+    // v43: Add site_id, material_type, engineer_id, received_date, reviewed_date to doors_packages
+    v43Migration,
   ],
 });
