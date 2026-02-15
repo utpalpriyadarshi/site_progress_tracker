@@ -32,6 +32,7 @@ export interface DoorsPackageManagementState {
     dialogVisible: boolean;
     filterMenuVisible: boolean;
     editingPackageId: string | null;
+    copyDialogVisible: boolean;
   };
   data: {
     packages: DoorsPackage[];
@@ -58,12 +59,15 @@ export type DoorsPackageManagementAction =
   | { type: 'SET_PACKAGES'; payload: { packages: DoorsPackage[] } }
   | { type: 'SET_SITES'; payload: { sites: Site[] } }
   | { type: 'ADD_PACKAGE'; payload: { package: DoorsPackage } }
+  | { type: 'ADD_PACKAGES'; payload: { packages: DoorsPackage[] } }
   | { type: 'UPDATE_PACKAGE'; payload: { package: DoorsPackage } }
   | { type: 'DELETE_PACKAGE'; payload: { packageId: string } }
 
   // Dialog management
   | { type: 'OPEN_DIALOG'; payload?: { editingPackageId?: string } }
   | { type: 'CLOSE_DIALOG' }
+  | { type: 'OPEN_COPY_DIALOG' }
+  | { type: 'CLOSE_COPY_DIALOG' }
 
   // Filter menu management
   | { type: 'OPEN_FILTER_MENU' }
@@ -89,6 +93,7 @@ export const createInitialState = (): DoorsPackageManagementState => ({
     dialogVisible: false,
     filterMenuVisible: false,
     editingPackageId: null,
+    copyDialogVisible: false,
   },
   data: {
     packages: [],
@@ -218,6 +223,24 @@ export const doorsPackageManagementReducer = (
       };
     }
 
+    case 'ADD_PACKAGES': {
+      const newPackages = [...state.data.packages, ...action.payload.packages];
+      const filteredPackages = applyFiltersToPackages(
+        newPackages,
+        state.filters.searchQuery,
+        state.filters.status,
+        state.filters.category
+      );
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          packages: newPackages,
+          filteredPackages,
+        },
+      };
+    }
+
     case 'UPDATE_PACKAGE': {
       const updatedPackages = state.data.packages.map((pkg) =>
         pkg.id === action.payload.package.id ? action.payload.package : pkg
@@ -278,6 +301,24 @@ export const doorsPackageManagementReducer = (
           editingPackageId: null,
         },
         form: createInitialState().form,
+      };
+
+    case 'OPEN_COPY_DIALOG':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          copyDialogVisible: true,
+        },
+      };
+
+    case 'CLOSE_COPY_DIALOG':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          copyDialogVisible: false,
+        },
       };
 
     // Filter menu management

@@ -12,6 +12,7 @@ interface DoorsPackageCardProps {
   onClose?: (packageId: string) => void;
   onEdit?: (pkg: DoorsPackage) => void;
   onDelete?: (packageId: string) => void;
+  onDuplicate?: (pkg: DoorsPackage) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -73,6 +74,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   onClose,
   onEdit,
   onDelete,
+  onDuplicate,
 }) => {
   const canEdit = pkg.status === 'pending' || pkg.status === 'received';
   const canDelete = pkg.status === 'pending';
@@ -242,6 +244,14 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
               iconColor="#F44336"
               onPress={() => onDelete(pkg.id)}
               accessibilityLabel="Delete package"
+            />
+          )}
+          {onDuplicate && (
+            <IconButton
+              icon="content-copy"
+              size={20}
+              onPress={() => onDuplicate(pkg)}
+              accessibilityLabel="Duplicate package"
             />
           )}
           <View style={styles.actionSpacer} />

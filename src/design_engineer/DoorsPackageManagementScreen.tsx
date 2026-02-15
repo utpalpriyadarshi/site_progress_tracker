@@ -5,7 +5,10 @@ import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DoorsPackageCard from './components/DoorsPackageCard';
 import CreateDoorsPackageDialog from './components/CreateDoorsPackageDialog';
+import CopyDoorsPackagesDialog from './components/CopyDoorsPackagesDialog';
 import SiteSelector from './components/SiteSelector';
+import DOORS_PACKAGE_TEMPLATES from './data/doorsPackageTemplates';
+import { validateDoorsId, getErrorMessage } from './utils/validation';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -151,7 +154,7 @@ const DoorsPackageManagementScreen = () => {
       announce(`Loaded ${packagesWithSites.length} DOORS package${packagesWithSites.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error);
-      Alert.alert('Error', 'Failed to load DOORS packages');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS packages'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
     }
@@ -160,8 +163,14 @@ const DoorsPackageManagementScreen = () => {
   const handleCreateOrUpdatePackage = async () => {
     const { doorsId, siteId, equipmentType, materialType, category, totalRequirements } = state.form;
 
-    if (!doorsId || !equipmentType || !siteId || !category) {
+    if (!equipmentType || !siteId || !category) {
       Alert.alert('Validation Error', 'Please fill in all required fields (DOORS ID, Site, Category, Equipment Type)');
+      return;
+    }
+
+    const doorsIdValidation = validateDoorsId(doorsId);
+    if (!doorsIdValidation.valid) {
+      Alert.alert('Invalid DOORS ID', doorsIdValidation.message || 'Please enter a valid DOORS ID.\n\nFormat: DOORS-CAT-TYPE-001');
       return;
     }
 
@@ -285,7 +294,7 @@ const DoorsPackageManagementScreen = () => {
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DoorsPackage] Error saving package:', error);
-      Alert.alert('Error', 'Failed to save DOORS package');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
 
@@ -340,11 +349,102 @@ const DoorsPackageManagementScreen = () => {
             setSnackbarVisible(true);
           } catch (error) {
             logger.error('[DoorsPackage] Error deleting package:', error);
-            Alert.alert('Error', 'Failed to delete DOORS package');
+            Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
           }
         },
       },
     ]);
+  };
+
+  const handleDuplicatePackage = (pkg: DoorsPackage) => {
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        doorsId: '',
+        siteId: pkg.siteId || '',
+        equipmentType: pkg.equipmentType,
+        materialType: pkg.materialType || '',
+        category: pkg.category,
+        totalRequirements: String(pkg.totalRequirements),
+      },
+    });
+    dispatch({ type: 'OPEN_DIALOG' });
+  };
+
+  const handleSelectTemplate = (template: typeof DOORS_PACKAGE_TEMPLATES[number]) => {
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        equipmentType: template.equipmentType,
+        materialType: template.materialType || '',
+        category: template.category,
+        totalRequirements: String(template.totalRequirements),
+      },
+    });
+  };
+
+  const handleCopyPackages = async (selectedIds: string[], targetSiteId: string) => {
+    try {
+      const packagesToCopy = state.data.packages.filter((p) => selectedIds.includes(p.id));
+      if (packagesToCopy.length === 0) return;
+
+      let targetSiteName = '';
+      try {
+        const site = await database.collections.get('sites').find(targetSiteId);
+        targetSiteName = (site as any).name;
+      } catch (e) { /* ignored */ }
+
+      const siteCode = targetSiteName.replace(/\s+/g, '').substring(0, 4).toUpperCase() || 'SITE';
+      const newPackages: DoorsPackage[] = [];
+
+      await database.write(async () => {
+        const doorsCollection = database.collections.get('doors_packages');
+
+        for (let i = 0; i < packagesToCopy.length; i++) {
+          const src = packagesToCopy[i];
+          const newDoorsId = `${src.doorsId}-${siteCode}-${String(i + 1).padStart(2, '0')}`;
+
+          const record = await doorsCollection.create((rec: any) => {
+            rec.doorsId = newDoorsId;
+            rec.projectId = projectId;
+            rec.siteId = targetSiteId;
+            rec.equipmentType = src.equipmentType;
+            rec.materialType = src.materialType || null;
+            rec.category = src.category;
+            rec.totalRequirements = src.totalRequirements;
+            rec.status = 'pending';
+            rec.engineerId = engineerId;
+            rec.createdAt = Date.now();
+            rec.updatedAt = Date.now();
+            rec.appSyncStatus = 'pending';
+            rec.version = 1;
+          });
+
+          newPackages.push({
+            id: (record as any).id,
+            doorsId: newDoorsId,
+            projectId,
+            siteId: targetSiteId,
+            siteName: targetSiteName,
+            equipmentType: src.equipmentType,
+            materialType: src.materialType,
+            category: src.category,
+            totalRequirements: src.totalRequirements,
+            status: 'pending',
+            engineerId,
+            createdAt: (record as any).createdAt,
+          });
+        }
+      });
+
+      dispatch({ type: 'ADD_PACKAGES', payload: { packages: newPackages } });
+      dispatch({ type: 'CLOSE_COPY_DIALOG' });
+      setSnackbarMessage(`Copied ${newPackages.length} package(s) to ${targetSiteName}`);
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DoorsPackage] Error copying packages:', error);
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package copy'));
+    }
   };
 
   const markAsReceived = async (packageId: string) => {
@@ -372,7 +472,7 @@ const DoorsPackageManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as received:', error);
-      Alert.alert('Error', 'Failed to update package');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
 
@@ -402,7 +502,7 @@ const DoorsPackageManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as reviewed:', error);
-      Alert.alert('Error', 'Failed to update package');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
 
@@ -430,7 +530,7 @@ const DoorsPackageManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error approving package:', error);
-      Alert.alert('Error', 'Failed to approve package');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
 
@@ -477,7 +577,7 @@ const DoorsPackageManagementScreen = () => {
       setSnackbarVisible(true);
     } catch (error) {
       logger.error('[DoorsPackage] Error closing package:', error);
-      Alert.alert('Error', 'Failed to close package');
+      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
 
@@ -677,6 +777,7 @@ const DoorsPackageManagementScreen = () => {
                 onClose={handleClosePackage}
                 onEdit={handleEditPackage}
                 onDelete={handleDeletePackage}
+                onDuplicate={handleDuplicatePackage}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -687,6 +788,19 @@ const DoorsPackageManagementScreen = () => {
               state.data.filteredPackages.length === 1 ? 'item' : 'items'
             }`}
             ListEmptyComponent={renderEmptyState()}
+          />
+        )}
+
+        {state.data.packages.length > 0 && state.data.sites.length > 1 && (
+          <FAB
+            icon="content-copy"
+            style={styles.fabSecondary}
+            onPress={() => dispatch({ type: 'OPEN_COPY_DIALOG' })}
+            small
+            label="Copy to Site"
+            accessible
+            accessibilityLabel="Copy packages to another site"
+            accessibilityRole="button"
           />
         )}
 
@@ -790,6 +904,8 @@ const DoorsPackageManagementScreen = () => {
           setNewTotalRequirements={(totalRequirements) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'totalRequirements', value: totalRequirements } })
           }
+          templates={DOORS_PACKAGE_TEMPLATES}
+          onSelectTemplate={handleSelectTemplate}
         />
 
         <Portal>
@@ -813,6 +929,15 @@ const DoorsPackageManagementScreen = () => {
             </Dialog.Actions>
           </Dialog>
         </Portal>
+
+        <CopyDoorsPackagesDialog
+          visible={state.ui.copyDialogVisible}
+          onDismiss={() => dispatch({ type: 'CLOSE_COPY_DIALOG' })}
+          onCopy={handleCopyPackages}
+          packages={state.data.packages}
+          sites={state.data.sites}
+          currentSiteId={selectedSiteId && selectedSiteId !== 'all' ? selectedSiteId : undefined}
+        />
 
         <Snackbar
           visible={snackbarVisible}
@@ -888,6 +1013,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#007AFF',
+  },
+  fabSecondary: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 64,
+    backgroundColor: '#616161',
   },
   siteSelector: {
     marginTop: 4,

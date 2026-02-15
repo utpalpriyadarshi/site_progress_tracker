@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Portal, Dialog, Button, TextInput, Menu, Chip, HelperText } from 'react-native-paper';
 import { Site, DOORS_CATEGORIES } from '../types/DoorsPackageTypes';
+import { DoorsPackageTemplate } from '../data/doorsPackageTemplates';
 
 interface CreateDoorsPackageDialogProps {
   visible: boolean;
@@ -21,6 +22,8 @@ interface CreateDoorsPackageDialogProps {
   setNewCategory: (value: string) => void;
   newTotalRequirements: string;
   setNewTotalRequirements: (value: string) => void;
+  templates?: DoorsPackageTemplate[];
+  onSelectTemplate?: (template: DoorsPackageTemplate) => void;
 }
 
 const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
@@ -41,6 +44,8 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   setNewCategory,
   newTotalRequirements,
   setNewTotalRequirements,
+  templates,
+  onSelectTemplate,
 }) => {
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
@@ -60,6 +65,10 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
 
   const selectedCategoryLabel = DOORS_CATEGORIES.find(c => c.value === newCategory)?.label || 'Select Category';
 
+  const categoryTemplates = !isEditing && newCategory && templates
+    ? templates.filter((t) => t.category === newCategory)
+    : [];
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
@@ -72,6 +81,9 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             style={styles.input}
             mode="outlined"
           />
+          <HelperText type="info" visible={!isEditing}>
+            Format: DOORS-CAT-TYPE-001
+          </HelperText>
           <Menu
             visible={siteMenuVisible}
             onDismiss={closeSiteMenu}
@@ -102,6 +114,24 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               <Menu.Item key={cat.value} onPress={() => handleCategorySelect(cat.value)} title={cat.label} />
             ))}
           </Menu>
+          {categoryTemplates.length > 0 && onSelectTemplate && (
+            <View style={styles.templateSection}>
+              <Text style={styles.templateLabel}>Quick-fill from template:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
+                {categoryTemplates.map((tpl) => (
+                  <Chip
+                    key={tpl.id}
+                    mode="outlined"
+                    onPress={() => onSelectTemplate(tpl)}
+                    style={styles.templateChip}
+                    compact
+                  >
+                    {tpl.name}
+                  </Chip>
+                ))}
+              </ScrollView>
+            </View>
+          )}
           <TextInput
             label="Equipment Type *"
             value={newEquipmentType}
@@ -161,6 +191,20 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     marginTop: 8,
+  },
+  templateSection: {
+    marginBottom: 12,
+  },
+  templateLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+  },
+  templateScroll: {
+    flexDirection: 'row',
+  },
+  templateChip: {
+    marginRight: 8,
   },
 });
 
