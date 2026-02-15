@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Button, Chip, IconButton } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
+import StatusTimeline, { DOORS_STATUS_STEPS } from './StatusTimeline';
 
 interface DoorsPackageCardProps {
   package: DoorsPackage;
   onMarkReceived: (packageId: string) => void;
   onMarkReviewed: (packageId: string) => void;
+  onApprove?: (packageId: string) => void;
+  onClose?: (packageId: string) => void;
   onEdit?: (pkg: DoorsPackage) => void;
   onDelete?: (packageId: string) => void;
 }
@@ -19,6 +22,10 @@ const getStatusColor = (status: string) => {
       return '#2196F3';
     case 'reviewed':
       return '#4CAF50';
+    case 'approved':
+      return '#7B1FA2';
+    case 'closed':
+      return '#616161';
     default:
       return '#9E9E9E';
   }
@@ -28,6 +35,8 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   package: pkg,
   onMarkReceived,
   onMarkReviewed,
+  onApprove,
+  onClose,
   onEdit,
   onDelete,
 }) => {
@@ -50,6 +59,8 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
             {pkg.status.toUpperCase()}
           </Chip>
         </View>
+
+        <StatusTimeline steps={DOORS_STATUS_STEPS} currentStatus={pkg.status} />
 
         <View style={styles.detailRow}>
           <Text style={styles.label}>Site:</Text>
@@ -92,6 +103,20 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           </View>
         )}
 
+        {pkg.closureDate && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Closed:</Text>
+            <Text style={styles.value}>{new Date(pkg.closureDate).toLocaleDateString()}</Text>
+          </View>
+        )}
+
+        {pkg.closureRemarks && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Remarks:</Text>
+            <Text style={styles.value}>{pkg.closureRemarks}</Text>
+          </View>
+        )}
+
         <View style={styles.actionButtons}>
           {canEdit && onEdit && (
             <IconButton
@@ -119,6 +144,22 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           {pkg.status === 'received' && (
             <Button mode="contained" onPress={() => onMarkReviewed(pkg.id)} style={styles.actionButton}>
               Mark Reviewed
+            </Button>
+          )}
+          {pkg.status === 'reviewed' && onApprove && (
+            <Button
+              mode="contained"
+              onPress={() => onApprove(pkg.id)}
+              style={[styles.actionButton, { backgroundColor: '#7B1FA2' }]}>
+              Approve
+            </Button>
+          )}
+          {pkg.status === 'approved' && onClose && (
+            <Button
+              mode="contained"
+              onPress={() => onClose(pkg.id)}
+              style={[styles.actionButton, { backgroundColor: '#616161' }]}>
+              Close
             </Button>
           )}
         </View>
