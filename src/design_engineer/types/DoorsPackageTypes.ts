@@ -31,6 +31,19 @@ export interface DoorsPackage {
   closureDate?: number;
   closureRemarks?: string;
   createdAt: Date;
+  equipmentName?: string;
+  priority?: string;
+  quantity?: number;
+  unit?: string;
+  specificationRef?: string;
+  drawingRef?: string;
+  compliantRequirements?: number;
+  compliancePercentage?: number;
+  technicalReqCompliance?: number;
+  datasheetCompliance?: number;
+  typeTestCompliance?: number;
+  routineTestCompliance?: number;
+  siteReqCompliance?: number;
 }
 
 export interface Site {
