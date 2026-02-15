@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: '#666',
-    width: 100,
+    width: 115,
     fontWeight: '600',
   },
   value: {

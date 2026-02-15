@@ -4,8 +4,8 @@
 
 /**
  * Validates a DOORS ID format.
- * Expected format: DOORS-{CAT}-{...}-{NNN} (at least 4 segments, starts with DOORS-, ends with digits)
- * Examples: DOORS-TSS-AUX-001, DOORS-TSS-AUX-TRF-001
+ * Expected format: DOORS-{CAT}-{EQUIP}-{NNN} (at least 4 segments, starts with DOORS-, ends with digits)
+ * Examples: DOORS-OHE-CW-001, DOORS-TSS-TRF-001
  */
 export const validateDoorsId = (id: string): { valid: boolean; message?: string } => {
   if (!id || !id.trim()) {
@@ -16,7 +16,7 @@ export const validateDoorsId = (id: string): { valid: boolean; message?: string 
   const segments = trimmed.split('-');
 
   if (segments.length < 4) {
-    return { valid: false, message: 'DOORS ID must have at least 4 segments (e.g., DOORS-TSS-AUX-001)' };
+    return { valid: false, message: 'DOORS ID must have at least 4 segments (e.g., DOORS-OHE-CW-001)' };
   }
 
   if (segments[0] !== 'DOORS') {

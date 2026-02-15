@@ -97,15 +97,15 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
           </View>
         )}
 
-        {quote.overallScore !== undefined && (
+        {quote.overallScore != null && (
           <View style={styles.scoresSection}>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreLabel}>Tech</Text>
-              <Text style={styles.scoreValue}>{quote.technicalScore}</Text>
+              <Text style={styles.scoreValue}>{quote.technicalScore ?? '-'}</Text>
             </View>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreLabel}>Comm</Text>
-              <Text style={styles.scoreValue}>{quote.commercialScore}</Text>
+              <Text style={styles.scoreValue}>{quote.commercialScore ?? '-'}</Text>
             </View>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreLabel}>Overall</Text>
