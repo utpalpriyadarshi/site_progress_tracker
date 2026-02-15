@@ -581,6 +581,59 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
+  // Bulk operations
+  const handleLongPress = (packageId: string) => {
+    if (!state.ui.bulkSelectMode) {
+      dispatch({ type: 'TOGGLE_BULK_MODE' });
+      dispatch({ type: 'TOGGLE_PACKAGE_SELECTION', payload: { packageId } });
+    }
+  };
+
+  const handleBulkMarkReceived = async () => {
+    const selectedIds = state.ui.selectedPackageIds;
+    const pendingIds = state.data.packages
+      .filter((p) => selectedIds.includes(p.id) && p.status === 'pending')
+      .map((p) => p.id);
+
+    if (pendingIds.length === 0) {
+      Alert.alert('No Pending Packages', 'Only pending packages can be marked as received.');
+      return;
+    }
+
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const now = Date.now();
+
+      await database.write(async () => {
+        for (const id of pendingIds) {
+          const record = await doorsCollection.find(id);
+          await record.update((rec: any) => {
+            rec.receivedDate = now;
+            rec.status = 'received';
+            rec.updatedAt = now;
+          });
+        }
+      });
+
+      for (const id of pendingIds) {
+        const pkg = state.data.packages.find((p) => p.id === id);
+        if (pkg) {
+          dispatch({
+            type: 'UPDATE_PACKAGE',
+            payload: { package: { ...pkg, status: 'received', receivedDate: now } },
+          });
+        }
+      }
+
+      dispatch({ type: 'CLEAR_SELECTION' });
+      setSnackbarMessage(`${pendingIds.length} package(s) marked as received`);
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DoorsPackage] Error bulk marking received:', error);
+      Alert.alert('Error', 'Failed to mark selected packages as received');
+    }
+  };
+
   const handleDismissDialog = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
@@ -755,6 +808,25 @@ const DoorsPackageManagementScreen = () => {
           );
         })()}
 
+        {state.ui.bulkSelectMode && (
+          <View style={styles.bulkBar}>
+            <Text style={styles.bulkCount}>{state.ui.selectedPackageIds.length} selected</Text>
+            <Button compact mode="outlined" onPress={() => dispatch({ type: 'SELECT_ALL_PACKAGES' })}>
+              Select All
+            </Button>
+            <Button
+              compact
+              mode="contained"
+              onPress={handleBulkMarkReceived}
+              disabled={state.ui.selectedPackageIds.length === 0}>
+              Mark All Received
+            </Button>
+            <Button compact mode="text" onPress={() => dispatch({ type: 'CLEAR_SELECTION' })}>
+              Cancel
+            </Button>
+          </View>
+        )}
+
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator
@@ -778,6 +850,10 @@ const DoorsPackageManagementScreen = () => {
                 onEdit={handleEditPackage}
                 onDelete={handleDeletePackage}
                 onDuplicate={handleDuplicatePackage}
+                bulkSelectMode={state.ui.bulkSelectMode}
+                isSelected={state.ui.selectedPackageIds.includes(item.id)}
+                onSelect={(id) => dispatch({ type: 'TOGGLE_PACKAGE_SELECTION', payload: { packageId: id } })}
+                onLongPress={handleLongPress}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -1077,6 +1153,20 @@ const styles = StyleSheet.create({
   summaryStatusText: {
     fontSize: 11,
     color: '#555',
+  },
+  bulkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  bulkCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1565C0',
+    flex: 1,
   },
 });
 

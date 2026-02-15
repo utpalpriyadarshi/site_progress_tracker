@@ -5,7 +5,9 @@ import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignRfqCard from './components/DesignRfqCard';
 import CreateDesignRfqDialog from './components/CreateDesignRfqDialog';
+import VendorQuotesSheet from './components/VendorQuotesSheet';
 import SiteSelector from './components/SiteSelector';
+import { Vendor } from './types/VendorQuoteTypes';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -47,14 +49,16 @@ const DesignRfqManagementScreen = () => {
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [cancelRfqId, setCancelRfqId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [vendors, setVendors] = useState<Vendor[]>([]);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
-  // Load RFQs and DOORS packages
+  // Load RFQs, DOORS packages, and vendors
   useEffect(() => {
     loadDoorsPackages();
     loadRfqs();
+    loadVendors();
   }, [projectId, refreshTrigger, engineerId]);
 
   const loadDoorsPackages = async () => {
@@ -72,6 +76,28 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'SET_DOORS_PACKAGES', payload: { packages: packagesList } });
     } catch (error) {
       logger.error('[DesignRfq] Error loading DOORS packages:', error);
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      const vendorsCollection = database.collections.get('vendors');
+      const vendorsData = await vendorsCollection.query().fetch();
+      const vendorsList: Vendor[] = vendorsData.map((v: any) => ({
+        id: v.id,
+        vendorCode: v.vendorCode,
+        vendorName: v.vendorName,
+        category: v.category,
+        contactPerson: v.contactPerson,
+        email: v.email,
+        phone: v.phone,
+        rating: v.rating,
+        isApproved: v.isApproved,
+        performanceScore: v.performanceScore,
+      }));
+      setVendors(vendorsList);
+    } catch (error) {
+      logger.error('[DesignRfq] Error loading vendors:', error);
     }
   };
 
@@ -483,6 +509,67 @@ const DesignRfqManagementScreen = () => {
     }
   };
 
+  const handleViewQuotes = (rfqId: string) => {
+    dispatch({ type: 'OPEN_QUOTES_SHEET', payload: { rfqId } });
+  };
+
+  const handleQuotesRfqUpdated = (updatedRfq: DesignRfq) => {
+    dispatch({ type: 'UPDATE_RFQ', payload: { rfq: updatedRfq } });
+  };
+
+  // Bulk operations
+  const handleLongPress = (rfqId: string) => {
+    if (!state.ui.bulkSelectMode) {
+      dispatch({ type: 'TOGGLE_BULK_MODE' });
+      dispatch({ type: 'TOGGLE_RFQ_SELECTION', payload: { rfqId } });
+    }
+  };
+
+  const handleBulkIssue = async () => {
+    const selectedIds = state.ui.selectedRfqIds;
+    const draftIds = state.data.rfqs
+      .filter((r) => selectedIds.includes(r.id) && r.status === 'draft')
+      .map((r) => r.id);
+
+    if (draftIds.length === 0) {
+      Alert.alert('No Draft RFQs', 'Only draft RFQs can be issued. Select at least one draft RFQ.');
+      return;
+    }
+
+    try {
+      const rfqCollection = database.collections.get('rfqs');
+      const now = Date.now();
+
+      await database.write(async () => {
+        for (const id of draftIds) {
+          const record = await rfqCollection.find(id);
+          await record.update((rec: any) => {
+            rec.status = 'issued';
+            rec.issueDate = now;
+          });
+        }
+      });
+
+      // Update state for each issued RFQ
+      for (const id of draftIds) {
+        const rfq = state.data.rfqs.find((r) => r.id === id);
+        if (rfq) {
+          dispatch({
+            type: 'UPDATE_RFQ',
+            payload: { rfq: { ...rfq, status: 'issued', issueDate: now } },
+          });
+        }
+      }
+
+      dispatch({ type: 'CLEAR_SELECTION' });
+      setSnackbarMessage(`${draftIds.length} RFQ(s) issued successfully`);
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DesignRfq] Error bulk issuing RFQs:', error);
+      Alert.alert('Error', 'Failed to issue selected RFQs');
+    }
+  };
+
   const handleDismissDialog = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
@@ -649,6 +736,25 @@ const DesignRfqManagementScreen = () => {
           );
         })()}
 
+        {state.ui.bulkSelectMode && (
+          <View style={styles.bulkBar}>
+            <Text style={styles.bulkCount}>{state.ui.selectedRfqIds.length} selected</Text>
+            <Button compact mode="outlined" onPress={() => dispatch({ type: 'SELECT_ALL_RFQS' })}>
+              Select All
+            </Button>
+            <Button
+              compact
+              mode="contained"
+              onPress={handleBulkIssue}
+              disabled={state.ui.selectedRfqIds.length === 0}>
+              Issue All
+            </Button>
+            <Button compact mode="text" onPress={() => dispatch({ type: 'CLEAR_SELECTION' })}>
+              Cancel
+            </Button>
+          </View>
+        )}
+
         {state.ui.loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator
@@ -673,6 +779,11 @@ const DesignRfqManagementScreen = () => {
                 onEdit={handleEditRfq}
                 onDelete={handleDeleteRfq}
                 onDuplicate={handleDuplicateRfq}
+                onViewQuotes={handleViewQuotes}
+                bulkSelectMode={state.ui.bulkSelectMode}
+                isSelected={state.ui.selectedRfqIds.includes(item.id)}
+                onSelect={(id) => dispatch({ type: 'TOGGLE_RFQ_SELECTION', payload: { rfqId: id } })}
+                onLongPress={handleLongPress}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -791,6 +902,15 @@ const DesignRfqManagementScreen = () => {
             </Dialog.Actions>
           </Dialog>
         </Portal>
+
+        <VendorQuotesSheet
+          visible={state.ui.quotesSheetVisible}
+          onDismiss={() => dispatch({ type: 'CLOSE_QUOTES_SHEET' })}
+          rfq={state.data.rfqs.find((r) => r.id === state.ui.selectedRfqIdForQuotes) || null}
+          vendors={vendors}
+          engineerId={engineerId}
+          onRfqUpdated={handleQuotesRfqUpdated}
+        />
 
         <Snackbar
           visible={snackbarVisible}
@@ -913,6 +1033,20 @@ const styles = StyleSheet.create({
   summaryStatusText: {
     fontSize: 11,
     color: '#555',
+  },
+  bulkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  bulkCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1565C0',
+    flex: 1,
   },
 });
 

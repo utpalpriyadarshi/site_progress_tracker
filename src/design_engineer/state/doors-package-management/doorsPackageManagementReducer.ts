@@ -33,6 +33,8 @@ export interface DoorsPackageManagementState {
     filterMenuVisible: boolean;
     editingPackageId: string | null;
     copyDialogVisible: boolean;
+    bulkSelectMode: boolean;
+    selectedPackageIds: string[];
   };
   data: {
     packages: DoorsPackage[];
@@ -73,6 +75,12 @@ export type DoorsPackageManagementAction =
   | { type: 'OPEN_FILTER_MENU' }
   | { type: 'CLOSE_FILTER_MENU' }
 
+  // Bulk operations
+  | { type: 'TOGGLE_BULK_MODE' }
+  | { type: 'TOGGLE_PACKAGE_SELECTION'; payload: { packageId: string } }
+  | { type: 'SELECT_ALL_PACKAGES' }
+  | { type: 'CLEAR_SELECTION' }
+
   // Form management
   | { type: 'UPDATE_FORM_FIELD'; payload: { field: keyof PackageFormData; value: string } }
   | { type: 'SET_FORM'; payload: Partial<PackageFormData> }
@@ -94,6 +102,8 @@ export const createInitialState = (): DoorsPackageManagementState => ({
     filterMenuVisible: false,
     editingPackageId: null,
     copyDialogVisible: false,
+    bulkSelectMode: false,
+    selectedPackageIds: [],
   },
   data: {
     packages: [],
@@ -441,6 +451,50 @@ export const doorsPackageManagementReducer = (
         },
       };
     }
+
+    // Bulk operations
+    case 'TOGGLE_BULK_MODE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          bulkSelectMode: !state.ui.bulkSelectMode,
+          selectedPackageIds: [],
+        },
+      };
+
+    case 'TOGGLE_PACKAGE_SELECTION': {
+      const pkgId = action.payload.packageId;
+      const selectedPackageIds = state.ui.selectedPackageIds.includes(pkgId)
+        ? state.ui.selectedPackageIds.filter((id) => id !== pkgId)
+        : [...state.ui.selectedPackageIds, pkgId];
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedPackageIds,
+        },
+      };
+    }
+
+    case 'SELECT_ALL_PACKAGES':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedPackageIds: state.data.filteredPackages.map((pkg) => pkg.id),
+        },
+      };
+
+    case 'CLEAR_SELECTION':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          bulkSelectMode: false,
+          selectedPackageIds: [],
+        },
+      };
 
     default:
       return state;

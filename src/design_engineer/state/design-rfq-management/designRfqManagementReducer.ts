@@ -29,6 +29,10 @@ export interface DesignRfqManagementState {
     loading: boolean;
     dialogVisible: boolean;
     editingRfqId: string | null;
+    quotesSheetVisible: boolean;
+    selectedRfqIdForQuotes: string | null;
+    bulkSelectMode: boolean;
+    selectedRfqIds: string[];
   };
   data: {
     rfqs: DesignRfq[];
@@ -66,6 +70,16 @@ export type DesignRfqManagementAction =
   | { type: 'SET_FORM'; payload: Partial<RfqFormData> }
   | { type: 'RESET_FORM' }
 
+  // Quotes sheet
+  | { type: 'OPEN_QUOTES_SHEET'; payload: { rfqId: string } }
+  | { type: 'CLOSE_QUOTES_SHEET' }
+
+  // Bulk operations
+  | { type: 'TOGGLE_BULK_MODE' }
+  | { type: 'TOGGLE_RFQ_SELECTION'; payload: { rfqId: string } }
+  | { type: 'SELECT_ALL_RFQS' }
+  | { type: 'CLEAR_SELECTION' }
+
   // Filter management
   | { type: 'SET_SEARCH_QUERY'; payload: { query: string } }
   | { type: 'SET_FILTER_STATUS'; payload: { status: string | null } }
@@ -79,6 +93,10 @@ export const createInitialState = (): DesignRfqManagementState => ({
     loading: true,
     dialogVisible: false,
     editingRfqId: null,
+    quotesSheetVisible: false,
+    selectedRfqIdForQuotes: null,
+    bulkSelectMode: false,
+    selectedRfqIds: [],
   },
   data: {
     rfqs: [],
@@ -334,6 +352,71 @@ export const designRfqManagementReducer = (
         },
       };
     }
+
+    // Quotes sheet
+    case 'OPEN_QUOTES_SHEET':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          quotesSheetVisible: true,
+          selectedRfqIdForQuotes: action.payload.rfqId,
+        },
+      };
+
+    case 'CLOSE_QUOTES_SHEET':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          quotesSheetVisible: false,
+          selectedRfqIdForQuotes: null,
+        },
+      };
+
+    // Bulk operations
+    case 'TOGGLE_BULK_MODE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          bulkSelectMode: !state.ui.bulkSelectMode,
+          selectedRfqIds: [],
+        },
+      };
+
+    case 'TOGGLE_RFQ_SELECTION': {
+      const rfqId = action.payload.rfqId;
+      const selectedRfqIds = state.ui.selectedRfqIds.includes(rfqId)
+        ? state.ui.selectedRfqIds.filter((id) => id !== rfqId)
+        : [...state.ui.selectedRfqIds, rfqId];
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedRfqIds,
+        },
+      };
+    }
+
+    case 'SELECT_ALL_RFQS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedRfqIds: state.data.filteredRfqs.map((rfq) => rfq.id),
+        },
+      };
+
+    case 'CLEAR_SELECTION':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          bulkSelectMode: false,
+          selectedRfqIds: [],
+        },
+      };
 
     default:
       return state;

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Card, Button, Chip, IconButton } from 'react-native-paper';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 import StatusTimeline, { DOORS_STATUS_STEPS } from './StatusTimeline';
 
@@ -13,6 +13,10 @@ interface DoorsPackageCardProps {
   onEdit?: (pkg: DoorsPackage) => void;
   onDelete?: (packageId: string) => void;
   onDuplicate?: (pkg: DoorsPackage) => void;
+  bulkSelectMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (packageId: string) => void;
+  onLongPress?: (packageId: string) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -75,14 +79,39 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  bulkSelectMode = false,
+  isSelected = false,
+  onSelect,
+  onLongPress,
 }) => {
   const canEdit = pkg.status === 'pending' || pkg.status === 'received';
   const canDelete = pkg.status === 'pending';
   const hasCompliance = pkg.compliancePercentage !== undefined && pkg.compliancePercentage > 0;
 
+  const handlePress = () => {
+    if (bulkSelectMode && onSelect) {
+      onSelect(pkg.id);
+    }
+  };
+
+  const handleLongPress = () => {
+    if (onLongPress) {
+      onLongPress(pkg.id);
+    }
+  };
+
   return (
-    <Card style={styles.card}>
+    <Pressable onPress={bulkSelectMode ? handlePress : undefined} onLongPress={handleLongPress}>
+    <Card style={[styles.card, isSelected && styles.selectedCard]}>
       <Card.Content>
+        {bulkSelectMode && (
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              status={isSelected ? 'checked' : 'unchecked'}
+              onPress={() => onSelect?.(pkg.id)}
+            />
+          </View>
+        )}
         <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
             <Text style={styles.doorsId}>{pkg.doorsId}</Text>
@@ -284,12 +313,24 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
         </View>
       </Card.Content>
     </Card>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     marginBottom: 16,
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  checkboxRow: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    zIndex: 1,
   },
   cardHeader: {
     flexDirection: 'row',
