@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip, Menu, Portal, Snackbar } from 'react-native-paper';
+import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DoorsPackageCard from './components/DoorsPackageCard';
@@ -41,6 +41,9 @@ const DoorsPackageManagementScreen = () => {
   const navigation = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [closureDialogVisible, setClosureDialogVisible] = useState(false);
+  const [closureRemarks, setClosureRemarks] = useState('');
+  const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -121,6 +124,9 @@ const DoorsPackageManagementScreen = () => {
             reviewedDate: pkg.reviewedDate,
             status: pkg.status,
             engineerId: pkg.engineerId,
+            reviewedBy: pkg.reviewedBy,
+            closureDate: pkg.closureDate,
+            closureRemarks: pkg.closureRemarks,
             createdAt: pkg.createdAt,
           };
         })
@@ -365,6 +371,7 @@ const DoorsPackageManagementScreen = () => {
       await database.write(async () => {
         await packageRecord.update((record: any) => {
           record.reviewedDate = Date.now();
+          record.reviewedBy = engineerId;
           record.status = 'reviewed';
           record.updatedAt = Date.now();
         });
@@ -374,7 +381,7 @@ const DoorsPackageManagementScreen = () => {
       if (updatedPackage) {
         dispatch({
           type: 'UPDATE_PACKAGE',
-          payload: { package: { ...updatedPackage, status: 'reviewed', reviewedDate: Date.now() } },
+          payload: { package: { ...updatedPackage, status: 'reviewed', reviewedDate: Date.now(), reviewedBy: engineerId } },
         });
       }
 
@@ -383,6 +390,81 @@ const DoorsPackageManagementScreen = () => {
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as reviewed:', error);
       Alert.alert('Error', 'Failed to update package');
+    }
+  };
+
+  const markAsApproved = async (packageId: string) => {
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const packageRecord = await doorsCollection.find(packageId);
+
+      await database.write(async () => {
+        await packageRecord.update((record: any) => {
+          record.status = 'approved';
+          record.updatedAt = Date.now();
+        });
+      });
+
+      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
+      if (updatedPackage) {
+        dispatch({
+          type: 'UPDATE_PACKAGE',
+          payload: { package: { ...updatedPackage, status: 'approved' } },
+        });
+      }
+
+      setSnackbarMessage('Package approved');
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DoorsPackage] Error approving package:', error);
+      Alert.alert('Error', 'Failed to approve package');
+    }
+  };
+
+  const handleClosePackage = (packageId: string) => {
+    setClosurePackageId(packageId);
+    setClosureRemarks('');
+    setClosureDialogVisible(true);
+  };
+
+  const confirmClosePackage = async () => {
+    if (!closurePackageId) return;
+
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const packageRecord = await doorsCollection.find(closurePackageId);
+      const now = Date.now();
+
+      await database.write(async () => {
+        await packageRecord.update((record: any) => {
+          record.status = 'closed';
+          record.closureDate = now;
+          record.closureRemarks = closureRemarks || null;
+          record.updatedAt = now;
+        });
+      });
+
+      const updatedPackage = state.data.packages.find((p) => p.id === closurePackageId);
+      if (updatedPackage) {
+        dispatch({
+          type: 'UPDATE_PACKAGE',
+          payload: {
+            package: {
+              ...updatedPackage,
+              status: 'closed',
+              closureDate: now,
+              closureRemarks: closureRemarks || undefined,
+            },
+          },
+        });
+      }
+
+      setClosureDialogVisible(false);
+      setSnackbarMessage('Package closed');
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DoorsPackage] Error closing package:', error);
+      Alert.alert('Error', 'Failed to close package');
     }
   };
 
@@ -529,6 +611,8 @@ const DoorsPackageManagementScreen = () => {
                 package={item}
                 onMarkReceived={markAsReceived}
                 onMarkReviewed={markAsReviewed}
+                onApprove={markAsApproved}
+                onClose={handleClosePackage}
                 onEdit={handleEditPackage}
                 onDelete={handleDeletePackage}
               />
@@ -593,6 +677,26 @@ const DoorsPackageManagementScreen = () => {
               accessibilityLabel="Filter by reviewed status"
               accessibilityRole="menuitem"
             />
+            <Menu.Item
+              onPress={() => {
+                dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'approved' } });
+                dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by approved status');
+              }}
+              title="Approved"
+              accessibilityLabel="Filter by approved status"
+              accessibilityRole="menuitem"
+            />
+            <Menu.Item
+              onPress={() => {
+                dispatch({ type: 'SET_FILTER_STATUS', payload: { status: 'closed' } });
+                dispatch({ type: 'CLOSE_FILTER_MENU' });
+                announce('Filtered by closed status');
+              }}
+              title="Closed"
+              accessibilityLabel="Filter by closed status"
+              accessibilityRole="menuitem"
+            />
           </Menu>
         </Portal>
 
@@ -625,6 +729,28 @@ const DoorsPackageManagementScreen = () => {
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'totalRequirements', value: totalRequirements } })
           }
         />
+
+        <Portal>
+          <Dialog visible={closureDialogVisible} onDismiss={() => setClosureDialogVisible(false)}>
+            <Dialog.Title>Close DOORS Package</Dialog.Title>
+            <Dialog.Content>
+              <Paragraph>Add optional closure remarks before closing this package.</Paragraph>
+              <TextInput
+                label="Closure Remarks (optional)"
+                value={closureRemarks}
+                onChangeText={setClosureRemarks}
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+                style={{ marginTop: 8 }}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setClosureDialogVisible(false)}>Cancel</Button>
+              <Button onPress={confirmClosePackage}>Close Package</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
 
         <Snackbar
           visible={snackbarVisible}

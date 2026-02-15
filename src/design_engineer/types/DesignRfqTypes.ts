@@ -21,6 +21,7 @@ export interface DesignRfq {
   totalQuotesReceived: number;
   winningVendorId?: string;
   awardedValue?: number;
+  evaluatedById?: string;
   createdById: string;
   createdAt: Date;
 }

@@ -589,7 +589,7 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     unit: 'nos',
     totalRequirements: 50,
     compliantRequirements: 50,
-    status: 'approved',
+    status: 'closed',
     priority: 'medium',
   },
   {
@@ -631,7 +631,7 @@ const DESIGN_RFQS: DesignRfqDef[] = [
     rfqNumber: 'RFQ-DE-2026-002',
     title: '33kV GIS Switchgear Supply',
     description: 'Supply and installation of 33kV Gas Insulated Switchgear',
-    status: 'quotes_received',
+    status: 'evaluated',
     totalVendorsInvited: 4,
     totalQuotesReceived: 4,
     doorsPackageIndex: 1,
@@ -653,6 +653,15 @@ const DESIGN_RFQS: DesignRfqDef[] = [
     totalVendorsInvited: 0,
     totalQuotesReceived: 0,
     doorsPackageIndex: 3,
+  },
+  {
+    rfqNumber: 'RFQ-DE-2026-005',
+    title: 'SCADA RTU Panel Supply',
+    description: 'Supply of Remote Terminal Units for SCADA system',
+    status: 'cancelled',
+    totalVendorsInvited: 3,
+    totalQuotesReceived: 0,
+    doorsPackageIndex: 4,
   },
 ];
 
@@ -858,6 +867,14 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.siteReqCompliance = compliancePercentage - Math.floor(Math.random() * 3);
         record.status = pkgDef.status;
         record.priority = pkgDef.priority;
+        if (pkgDef.status === 'closed') {
+          record.closureDate = daysFromNow(-3);
+          record.closureRemarks = 'All requirements verified and procurement complete.';
+          record.reviewedBy = designerId;
+        }
+        if (pkgDef.status === 'approved' || pkgDef.status === 'closed') {
+          record.reviewedBy = designerId;
+        }
         record.createdBy = designerId;
         record.createdAt = Date.now();
         record.updatedAt = Date.now();
@@ -886,9 +903,16 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         if (rfqDef.status !== 'draft') {
           record.issueDate = daysFromNow(-30);
         }
+        if (rfqDef.status === 'evaluated' || rfqDef.status === 'awarded') {
+          record.evaluationDate = daysFromNow(-14);
+          record.evaluatedById = 'design_engineer';
+        }
         if (rfqDef.status === 'awarded') {
           record.awardDate = daysFromNow(-7);
           record.awardedValue = 1500000 + Math.floor(Math.random() * 500000);
+        }
+        if (rfqDef.status === 'cancelled') {
+          record.description = `${rfqDef.description}\n\nCancellation Reason: Vendor requirements changed`;
         }
         record.appSyncStatus = 'pending';
         record.version = 1;

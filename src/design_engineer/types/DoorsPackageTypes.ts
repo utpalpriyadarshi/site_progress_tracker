@@ -27,6 +27,9 @@ export interface DoorsPackage {
   reviewedDate?: number;
   status: string;
   engineerId: string;
+  reviewedBy?: string;
+  closureDate?: number;
+  closureRemarks?: string;
   createdAt: Date;
 }
 

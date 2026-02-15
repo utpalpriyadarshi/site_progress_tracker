@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { FAB, Searchbar, Chip, Snackbar } from 'react-native-paper';
+import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DesignRfqCard from './components/DesignRfqCard';
@@ -19,6 +19,7 @@ import { useDebounce } from '../utils/performance';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
+import RfqService from '../services/RfqService';
 
 /**
  * DesignRfqManagementScreen (v6.0 - Sprint 1)
@@ -38,6 +39,13 @@ const DesignRfqManagementScreen = () => {
   const navigation = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const [awardDialogVisible, setAwardDialogVisible] = useState(false);
+  const [awardRfqId, setAwardRfqId] = useState<string | null>(null);
+  const [awardedValue, setAwardedValue] = useState('');
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [cancelRfqId, setCancelRfqId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -101,6 +109,7 @@ const DesignRfqManagementScreen = () => {
         totalQuotesReceived: rfq.totalQuotesReceived,
         winningVendorId: rfq.winningVendorId,
         awardedValue: rfq.awardedValue,
+        evaluatedById: rfq.evaluatedById,
         createdById: rfq.createdById,
         createdAt: rfq.createdAt,
       }));
@@ -331,6 +340,110 @@ const DesignRfqManagementScreen = () => {
     }
   };
 
+  const evaluateRfq = async (rfqId: string) => {
+    try {
+      const rfqCollection = database.collections.get('rfqs');
+      const rfqRecord = await rfqCollection.find(rfqId);
+      const now = Date.now();
+
+      await database.write(async () => {
+        await rfqRecord.update((record: any) => {
+          record.status = 'evaluated';
+          record.evaluationDate = now;
+          record.evaluatedById = engineerId;
+        });
+      });
+
+      const updatedRfq = state.data.rfqs.find((r) => r.id === rfqId);
+      if (updatedRfq) {
+        dispatch({
+          type: 'UPDATE_RFQ',
+          payload: { rfq: { ...updatedRfq, status: 'evaluated', evaluationDate: now, evaluatedById: engineerId } },
+        });
+      }
+
+      setSnackbarMessage('RFQ marked as evaluated');
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DesignRfq] Error evaluating RFQ:', error);
+      Alert.alert('Error', 'Failed to evaluate RFQ');
+    }
+  };
+
+  const handleAwardRfq = (rfqId: string) => {
+    setAwardRfqId(rfqId);
+    setAwardedValue('');
+    setAwardDialogVisible(true);
+  };
+
+  const confirmAwardRfq = async () => {
+    if (!awardRfqId) return;
+
+    const value = parseFloat(awardedValue);
+    if (!awardedValue || isNaN(value) || value <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid awarded value');
+      return;
+    }
+
+    try {
+      const rfqCollection = database.collections.get('rfqs');
+      const rfqRecord = await rfqCollection.find(awardRfqId);
+      const now = Date.now();
+
+      await database.write(async () => {
+        await rfqRecord.update((record: any) => {
+          record.status = 'awarded';
+          record.awardDate = now;
+          record.awardedValue = value;
+        });
+      });
+
+      const updatedRfq = state.data.rfqs.find((r) => r.id === awardRfqId);
+      if (updatedRfq) {
+        dispatch({
+          type: 'UPDATE_RFQ',
+          payload: { rfq: { ...updatedRfq, status: 'awarded', awardDate: now, awardedValue: value } },
+        });
+      }
+
+      setAwardDialogVisible(false);
+      setSnackbarMessage('RFQ awarded successfully');
+      setSnackbarVisible(true);
+    } catch (error) {
+      logger.error('[DesignRfq] Error awarding RFQ:', error);
+      Alert.alert('Error', 'Failed to award RFQ');
+    }
+  };
+
+  const handleCancelRfq = (rfqId: string) => {
+    setCancelRfqId(rfqId);
+    setCancelReason('');
+    setCancelDialogVisible(true);
+  };
+
+  const confirmCancelRfq = async () => {
+    if (!cancelRfqId) return;
+
+    try {
+      await RfqService.cancelRfq(cancelRfqId, cancelReason || undefined);
+
+      const updatedRfq = state.data.rfqs.find((r) => r.id === cancelRfqId);
+      if (updatedRfq) {
+        dispatch({
+          type: 'UPDATE_RFQ',
+          payload: { rfq: { ...updatedRfq, status: 'cancelled' } },
+        });
+      }
+
+      setCancelDialogVisible(false);
+      setSnackbarMessage('RFQ cancelled');
+      setSnackbarVisible(true);
+    } catch (error: any) {
+      logger.error('[DesignRfq] Error cancelling RFQ:', error);
+      Alert.alert('Error', error.message || 'Failed to cancel RFQ');
+    }
+  };
+
   const handleDismissDialog = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
@@ -425,76 +538,32 @@ const DesignRfqManagementScreen = () => {
             accessibilityHint="Enter text to search for RFQs by number or title"
             accessibilityRole="search"
           />
-          <View
-            style={styles.filterRow}
-            accessible
-            accessibilityRole="radiogroup"
-            accessibilityLabel="Filter RFQs by status"
-          >
+          <View style={styles.filterRow}>
             <Chip
               mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status === 'draft'}
-              onPress={() =>
-                dispatch({
-                  type: 'SET_FILTER_STATUS',
-                  payload: { status: state.filters.status === 'draft' ? null : 'draft' },
-                })
-              }
+              selected={state.filters.status !== null}
+              onPress={() => setFilterMenuVisible(true)}
               style={styles.filterChip}
               accessible
-              accessibilityRole="radio"
-              accessibilityLabel="Draft filter"
-              accessibilityState={{ checked: state.filters.status === 'draft' }}
-              accessibilityHint={
-                state.filters.status === 'draft' ? 'Double tap to clear filter' : 'Double tap to filter by draft RFQs'
-              }
+              accessibilityRole="button"
+              accessibilityLabel={state.filters.status ? `Status filter: ${state.filters.status}` : 'Open filter menu'}
             >
-              {state.filters.status === 'draft' ? 'Clear Draft' : 'Draft'}
+              {state.filters.status ? `Status: ${state.filters.status.replace(/_/g, ' ')}` : 'Filter'}
             </Chip>
-            <Chip
-              mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status === 'issued'}
-              onPress={() =>
-                dispatch({
-                  type: 'SET_FILTER_STATUS',
-                  payload: { status: state.filters.status === 'issued' ? null : 'issued' },
-                })
-              }
-              style={styles.filterChip}
-              accessible
-              accessibilityRole="radio"
-              accessibilityLabel="Issued filter"
-              accessibilityState={{ checked: state.filters.status === 'issued' }}
-              accessibilityHint={
-                state.filters.status === 'issued'
-                  ? 'Double tap to clear filter'
-                  : 'Double tap to filter by issued RFQs'
-              }
-            >
-              {state.filters.status === 'issued' ? 'Clear Issued' : 'Issued'}
-            </Chip>
-            <Chip
-              mode={state.filters.status ? 'flat' : 'outlined'}
-              selected={state.filters.status === 'awarded'}
-              onPress={() =>
-                dispatch({
-                  type: 'SET_FILTER_STATUS',
-                  payload: { status: state.filters.status === 'awarded' ? null : 'awarded' },
-                })
-              }
-              style={styles.filterChip}
-              accessible
-              accessibilityRole="radio"
-              accessibilityLabel="Awarded filter"
-              accessibilityState={{ checked: state.filters.status === 'awarded' }}
-              accessibilityHint={
-                state.filters.status === 'awarded'
-                  ? 'Double tap to clear filter'
-                  : 'Double tap to filter by awarded RFQs'
-              }
-            >
-              {state.filters.status === 'awarded' ? 'Clear Awarded' : 'Awarded'}
-            </Chip>
+            {state.filters.status && (
+              <Chip
+                mode="outlined"
+                onPress={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
+                closeIcon="close"
+                onClose={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
+                style={styles.filterChip}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Clear status filter"
+              >
+                Clear
+              </Chip>
+            )}
           </View>
         </View>
 
@@ -516,6 +585,9 @@ const DesignRfqManagementScreen = () => {
                 rfq={item}
                 onIssue={issueRfq}
                 onMarkQuotesReceived={markQuotesReceived}
+                onEvaluate={evaluateRfq}
+                onAward={handleAwardRfq}
+                onCancel={handleCancelRfq}
                 onEdit={handleEditRfq}
                 onDelete={handleDeleteRfq}
               />
@@ -566,6 +638,76 @@ const DesignRfqManagementScreen = () => {
             })
           }
         />
+
+        <Portal>
+          <Menu
+            visible={filterMenuVisible}
+            onDismiss={() => setFilterMenuVisible(false)}
+            anchor={{ x: 0, y: 0 }}
+            accessibilityLabel="Status filter menu"
+          >
+            {[
+              { key: 'draft', title: 'Draft' },
+              { key: 'issued', title: 'Issued' },
+              { key: 'quotes_received', title: 'Quotes Received' },
+              { key: 'evaluated', title: 'Evaluated' },
+              { key: 'awarded', title: 'Awarded' },
+              { key: 'cancelled', title: 'Cancelled' },
+            ].map((item) => (
+              <Menu.Item
+                key={item.key}
+                onPress={() => {
+                  dispatch({ type: 'SET_FILTER_STATUS', payload: { status: item.key } });
+                  setFilterMenuVisible(false);
+                }}
+                title={item.title}
+              />
+            ))}
+          </Menu>
+        </Portal>
+
+        <Portal>
+          <Dialog visible={awardDialogVisible} onDismiss={() => setAwardDialogVisible(false)}>
+            <Dialog.Title>Award RFQ</Dialog.Title>
+            <Dialog.Content>
+              <Paragraph>Enter the awarded value for this RFQ.</Paragraph>
+              <TextInput
+                label="Awarded Value"
+                value={awardedValue}
+                onChangeText={setAwardedValue}
+                mode="outlined"
+                keyboardType="numeric"
+                style={{ marginTop: 8 }}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setAwardDialogVisible(false)}>Cancel</Button>
+              <Button onPress={confirmAwardRfq}>Award</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+
+        <Portal>
+          <Dialog visible={cancelDialogVisible} onDismiss={() => setCancelDialogVisible(false)}>
+            <Dialog.Title>Cancel RFQ</Dialog.Title>
+            <Dialog.Content>
+              <Paragraph>Are you sure you want to cancel this RFQ?</Paragraph>
+              <TextInput
+                label="Reason (optional)"
+                value={cancelReason}
+                onChangeText={setCancelReason}
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+                style={{ marginTop: 8 }}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setCancelDialogVisible(false)}>Back</Button>
+              <Button onPress={confirmCancelRfq} textColor="#F44336">Cancel RFQ</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
 
         <Snackbar
           visible={snackbarVisible}

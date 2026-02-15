@@ -2,11 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Button, Chip, IconButton } from 'react-native-paper';
 import { DesignRfq } from '../types/DesignRfqTypes';
+import StatusTimeline, { RFQ_STATUS_STEPS } from './StatusTimeline';
 
 interface DesignRfqCardProps {
   rfq: DesignRfq;
   onIssue: (rfqId: string) => void;
   onMarkQuotesReceived: (rfqId: string) => void;
+  onEvaluate?: (rfqId: string) => void;
+  onAward?: (rfqId: string) => void;
+  onCancel?: (rfqId: string) => void;
   onEdit?: (rfq: DesignRfq) => void;
   onDelete?: (rfqId: string) => void;
 }
@@ -34,11 +38,15 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
   rfq,
   onIssue,
   onMarkQuotesReceived,
+  onEvaluate,
+  onAward,
+  onCancel,
   onEdit,
   onDelete,
 }) => {
   const canEdit = rfq.status === 'draft';
   const canDelete = rfq.status === 'draft';
+  const canCancel = rfq.status !== 'awarded' && rfq.status !== 'cancelled';
 
   return (
     <Card style={styles.card}>
@@ -57,6 +65,12 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
             {rfq.status.replace(/_/g, ' ').toUpperCase()}
           </Chip>
         </View>
+
+        <StatusTimeline
+          steps={RFQ_STATUS_STEPS}
+          currentStatus={rfq.status}
+          cancelledStatus="cancelled"
+        />
 
         <View style={styles.detailRow}>
           <Text style={styles.label}>DOORS ID:</Text>
@@ -104,6 +118,20 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
           <Text style={styles.value}>{rfq.totalQuotesReceived}</Text>
         </View>
 
+        {rfq.evaluationDate && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Evaluated:</Text>
+            <Text style={styles.value}>{new Date(rfq.evaluationDate).toLocaleDateString()}</Text>
+          </View>
+        )}
+
+        {rfq.awardDate && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Award Date:</Text>
+            <Text style={styles.value}>{new Date(rfq.awardDate).toLocaleDateString()}</Text>
+          </View>
+        )}
+
         {rfq.awardedValue && (
           <View style={styles.detailRow}>
             <Text style={styles.label}>Awarded Value:</Text>
@@ -129,6 +157,15 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
               accessibilityLabel="Delete RFQ"
             />
           )}
+          {canCancel && onCancel && (
+            <IconButton
+              icon="cancel"
+              size={20}
+              iconColor="#F44336"
+              onPress={() => onCancel(rfq.id)}
+              accessibilityLabel="Cancel RFQ"
+            />
+          )}
           <View style={styles.actionSpacer} />
           {rfq.status === 'draft' && (
             <Button mode="contained" onPress={() => onIssue(rfq.id)} style={styles.actionButton}>
@@ -138,6 +175,22 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
           {rfq.status === 'issued' && (
             <Button mode="contained" onPress={() => onMarkQuotesReceived(rfq.id)} style={styles.actionButton}>
               Quotes Received
+            </Button>
+          )}
+          {rfq.status === 'quotes_received' && onEvaluate && (
+            <Button
+              mode="contained"
+              onPress={() => onEvaluate(rfq.id)}
+              style={[styles.actionButton, { backgroundColor: '#9C27B0' }]}>
+              Evaluate
+            </Button>
+          )}
+          {rfq.status === 'evaluated' && onAward && (
+            <Button
+              mode="contained"
+              onPress={() => onAward(rfq.id)}
+              style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}>
+              Award
             </Button>
           )}
         </View>
