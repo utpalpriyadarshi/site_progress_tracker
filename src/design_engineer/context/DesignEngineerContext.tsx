@@ -40,6 +40,8 @@ interface DesignEngineerContextType {
   setFilterStatus: (status: string | null) => void;
   filterCategory: string | null;
   setFilterCategory: (category: string | null) => void;
+  filterDomain: string | null;
+  setFilterDomain: (domain: string | null) => void;
   refreshTrigger: number;
   triggerRefresh: () => void;
 }
@@ -61,6 +63,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   const [selectedDoorsId, setSelectedDoorsId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterDomain, setFilterDomain] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load design engineer's project from database when user logs in OR when role switching
@@ -237,6 +240,8 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
         setFilterStatus,
         filterCategory,
         setFilterCategory,
+        filterDomain,
+        setFilterDomain,
         refreshTrigger,
         triggerRefresh,
       }}

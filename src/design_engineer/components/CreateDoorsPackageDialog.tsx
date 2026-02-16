@@ -4,6 +4,12 @@ import { Portal, Dialog, Button, TextInput, Menu, Chip, HelperText, IconButton }
 import { Site, DOORS_CATEGORIES } from '../types/DoorsPackageTypes';
 import { DoorsPackageTemplate } from '../data/doorsPackageTemplates';
 
+/** Domain type passed from parent */
+interface Domain {
+  id: string;
+  name: string;
+}
+
 /** Common equipment types per category for quick-fill chips */
 const EQUIPMENT_SUGGESTIONS: Record<string, { label: string; abbr: string; equipment: string; material?: string }[]> = {
   OHE: [
@@ -45,6 +51,10 @@ const EQUIPMENT_SUGGESTIONS: Record<string, { label: string; abbr: string; equip
     { label: 'Lubricants', abbr: 'LUB', equipment: 'Lubricants & Greases' },
     { label: 'Tapes', abbr: 'TPE', equipment: 'Insulation Tape & Sealant' },
   ],
+  PSY: [
+    { label: 'Transformer', abbr: 'TRF', equipment: 'Power Transformer' },
+    { label: 'Panel', abbr: 'PNL', equipment: 'Control Panel' },
+  ],
 };
 
 /** Derive abbreviation from equipment type: take uppercase first letter of each word */
@@ -65,7 +75,7 @@ function getEquipmentAbbr(category: string, equipmentType: string): string {
   return deriveAbbr(equipmentType);
 }
 
-/** Generate next DOORS ID: DOORS-{CAT}-{EQUIP_ABBR}-{NNN} */
+/** Generate next DOORS ID: DOORS-{DOMAIN}-{EQUIP_ABBR}-{NNN} */
 function generateDoorsId(category: string, equipAbbr: string, existingDoorsIds: string[]): string {
   if (!category) return '';
   const prefix = `DOORS-${category}-${equipAbbr}-`;
@@ -86,6 +96,7 @@ interface CreateDoorsPackageDialogProps {
   onCreate: () => void;
   isEditing?: boolean;
   sites: Site[];
+  domains?: Domain[];
   newDoorsId: string;
   setNewDoorsId: (value: string) => void;
   newSiteId: string;
@@ -96,6 +107,8 @@ interface CreateDoorsPackageDialogProps {
   setNewMaterialType: (value: string) => void;
   newCategory: string;
   setNewCategory: (value: string) => void;
+  newDomainId?: string;
+  setNewDomainId?: (value: string) => void;
   newTotalRequirements: string;
   setNewTotalRequirements: (value: string) => void;
   templates?: DoorsPackageTemplate[];
@@ -109,6 +122,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   onCreate,
   isEditing = false,
   sites,
+  domains = [],
   newDoorsId,
   setNewDoorsId,
   newSiteId,
@@ -119,6 +133,8 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   setNewMaterialType,
   newCategory,
   setNewCategory,
+  newDomainId = '',
+  setNewDomainId,
   newTotalRequirements,
   setNewTotalRequirements,
   templates,
@@ -126,7 +142,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   existingDoorsIds = [],
 }) => {
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [domainMenuVisible, setDomainMenuVisible] = useState(false);
   // Track whether user manually typed into DOORS ID field
   const [idManuallyEdited, setIdManuallyEdited] = useState(false);
 
@@ -138,10 +154,26 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
     closeSiteMenu();
   };
 
-  const handleCategorySelect = (category: string) => {
+  const handleDomainSelect = (domain: Domain) => {
+    // Set domain_id
+    if (setNewDomainId) {
+      setNewDomainId(domain.id);
+    }
+    // Set category to domain name (backward compat for DOORS ID generation and equipment suggestions)
+    setNewCategory(domain.name);
+    setDomainMenuVisible(false);
+    // Auto-generate DOORS ID when domain is selected (not editing)
+    if (!isEditing) {
+      setIdManuallyEdited(false);
+      const abbr = newEquipmentType ? getEquipmentAbbr(domain.name, newEquipmentType) : 'GEN';
+      setNewDoorsId(generateDoorsId(domain.name, abbr, existingDoorsIds));
+    }
+  };
+
+  // Fall back to hardcoded categories if no domains exist
+  const handleLegacyCategorySelect = (category: string) => {
     setNewCategory(category);
-    setCategoryMenuVisible(false);
-    // Auto-generate DOORS ID when category is selected (not editing)
+    setDomainMenuVisible(false);
     if (!isEditing) {
       setIdManuallyEdited(false);
       const abbr = newEquipmentType ? getEquipmentAbbr(category, newEquipmentType) : 'GEN';
@@ -173,7 +205,17 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
     }
   };
 
-  const selectedCategoryLabel = DOORS_CATEGORIES.find(c => c.value === newCategory)?.label || 'Select Category';
+  // Determine the selected domain/category label
+  const selectedDomainLabel = (() => {
+    if (newDomainId && domains.length > 0) {
+      const domain = domains.find(d => d.id === newDomainId);
+      if (domain) return domain.name;
+    }
+    if (newCategory) return newCategory;
+    return 'Select Domain';
+  })();
+
+  const useDomains = domains.length > 0;
 
   const categoryTemplates = !isEditing && newCategory && templates
     ? templates.filter((t) => t.category === newCategory)
@@ -205,20 +247,25 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               ))}
             </Menu>
 
-            {/* Category picker second */}
+            {/* Domain picker (replaces hardcoded Category) */}
             <Menu
-              visible={categoryMenuVisible}
-              onDismiss={() => setCategoryMenuVisible(false)}
+              visible={domainMenuVisible}
+              onDismiss={() => setDomainMenuVisible(false)}
               anchor={
-                <TouchableOpacity onPress={() => setCategoryMenuVisible(true)} style={styles.pickerButton}>
-                  <Text style={styles.pickerLabel}>Category *</Text>
-                  <Text style={styles.pickerValue}>{selectedCategoryLabel}</Text>
+                <TouchableOpacity onPress={() => setDomainMenuVisible(true)} style={styles.pickerButton}>
+                  <Text style={styles.pickerLabel}>Domain *</Text>
+                  <Text style={styles.pickerValue}>{selectedDomainLabel}</Text>
                 </TouchableOpacity>
               }
             >
-              {DOORS_CATEGORIES.map((cat) => (
-                <Menu.Item key={cat.value} onPress={() => handleCategorySelect(cat.value)} title={cat.label} />
-              ))}
+              {useDomains
+                ? domains.map((domain) => (
+                    <Menu.Item key={domain.id} onPress={() => handleDomainSelect(domain)} title={domain.name} />
+                  ))
+                : DOORS_CATEGORIES.map((cat) => (
+                    <Menu.Item key={cat.value} onPress={() => handleLegacyCategorySelect(cat.value)} title={cat.label} />
+                  ))
+              }
             </Menu>
 
             {/* Auto-generated DOORS ID */}
@@ -246,7 +293,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             ) : null}
             {!newCategory && !isEditing ? (
               <HelperText type="info" visible>
-                Select category & equipment to auto-generate
+                Select domain & equipment to auto-generate
               </HelperText>
             ) : null}
 

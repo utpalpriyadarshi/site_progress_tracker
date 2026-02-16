@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 43, // Added site_id, material_type, engineer_id, received_date, reviewed_date to doors_packages
+  version: 44, // Added domains table and domain_id to sites and doors_packages
   tables: [
     tableSchema({
       name: 'projects',
@@ -17,11 +17,22 @@ export default appSchema({
       ],
     }),
     tableSchema({
+      name: 'domains',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
       name: 'sites',
       columns: [
         { name: 'name', type: 'string' },
         { name: 'location', type: 'string' },
         { name: 'project_id', type: 'string', isIndexed: true }, // belongs to project
+        { name: 'domain_id', type: 'string', isOptional: true, isIndexed: true }, // belongs to domain (v44)
         { name: 'supervisor_id', type: 'string', isIndexed: true, isOptional: true }, // assigned supervisor (optional)
         { name: 'design_engineer_id', type: 'string', isIndexed: true, isOptional: true }, // assigned design engineer (optional)
         // v2.11: Planning Engineer role - site schedule dates
@@ -378,6 +389,7 @@ export default appSchema({
         { name: 'doors_id', type: 'string', isIndexed: true },
         { name: 'equipment_name', type: 'string' },
         { name: 'category', type: 'string', isIndexed: true },
+        { name: 'domain_id', type: 'string', isOptional: true, isIndexed: true }, // v44: belongs to domain
         { name: 'equipment_type', type: 'string', isIndexed: true },
         { name: 'project_id', type: 'string', isIndexed: true },
         { name: 'site_id', type: 'string', isOptional: true, isIndexed: true },

@@ -19,6 +19,8 @@ export interface DoorsPackage {
   projectId: string;
   siteId?: string;
   siteName?: string;
+  domainId?: string;
+  domainName?: string;
   equipmentType: string;
   materialType?: string;
   category: string;

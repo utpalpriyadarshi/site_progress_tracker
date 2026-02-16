@@ -20,6 +20,7 @@ export interface PackageFormData {
   equipmentType: string;
   materialType: string;
   category: string;
+  domainId: string;
   totalRequirements: string;
 }
 
@@ -121,6 +122,7 @@ export const createInitialState = (): DoorsPackageManagementState => ({
     equipmentType: '',
     materialType: '',
     category: '',
+    domainId: '',
     totalRequirements: '100',
   },
 });

@@ -23,6 +23,7 @@ export default class DoorsPackageModel extends Model {
 
   static associations: Associations = {
     project: { type: 'belongs_to', key: 'project_id' },
+    domain: { type: 'belongs_to', key: 'domain_id' },
     requirements: { type: 'has_many', foreignKey: 'doors_package_id' },
     bom_items: { type: 'has_many', foreignKey: 'doors_id' },
   };
@@ -33,6 +34,7 @@ export default class DoorsPackageModel extends Model {
   @field('category') category!: string; // OHE, TSS, SCADA, Cables, Hardware, Consumables
   @field('equipment_type') equipmentType!: string; // Transformer, Switchgear, Cable, Mast, Panel, etc.
   @field('project_id') projectId!: string; // Foreign key to projects table
+  @field('domain_id') domainId?: string; // Foreign key to domains table (v44)
   @field('site_id') siteId?: string; // Foreign key to sites table
   @field('material_type') materialType?: string; // Material classification
   @field('engineer_id') engineerId?: string; // Assigned design engineer
