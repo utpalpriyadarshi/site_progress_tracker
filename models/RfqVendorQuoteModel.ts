@@ -21,6 +21,22 @@ export default class RfqVendorQuoteModel extends Model {
   @field('payment_terms') paymentTerms?: string;
   @field('warranty_months') warrantyMonths?: number;
   @field('technical_compliance_percentage') technicalCompliancePercentage!: number;
+  // v45: 5-category compliance breakup
+  @field('tech_complied') techComplied?: number;
+  @field('tech_complied_with_comments') techCompliedWithComments?: number;
+  @field('tech_not_complied') techNotComplied?: number;
+  @field('datasheet_complied') datasheetComplied?: number;
+  @field('datasheet_complied_with_comments') datasheetCompliedWithComments?: number;
+  @field('datasheet_not_complied') datasheetNotComplied?: number;
+  @field('type_test_complied') typeTestComplied?: number;
+  @field('type_test_complied_with_comments') typeTestCompliedWithComments?: number;
+  @field('type_test_not_complied') typeTestNotComplied?: number;
+  @field('routine_test_complied') routineTestComplied?: number;
+  @field('routine_test_complied_with_comments') routineTestCompliedWithComments?: number;
+  @field('routine_test_not_complied') routineTestNotComplied?: number;
+  @field('site_req_complied') siteReqComplied?: number;
+  @field('site_req_complied_with_comments') siteReqCompliedWithComments?: number;
+  @field('site_req_not_complied') siteReqNotComplied?: number;
   @field('technical_deviations') technicalDeviations?: string; // JSON array
   @field('commercial_deviations') commercialDeviations?: string; // JSON array
   @field('notes') notes?: string;

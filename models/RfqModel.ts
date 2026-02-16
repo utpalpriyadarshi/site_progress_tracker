@@ -12,6 +12,7 @@ export default class RfqModel extends Model {
   @field('doors_id') doorsId!: string;
   @field('doors_package_id') doorsPackageId!: string;
   @field('project_id') projectId!: string;
+  @field('domain_id') domainId?: string; // v45: domain-based filtering
   @field('title') title!: string;
   @field('description') description?: string;
   @field('status') status!: string; // draft, issued, quotes_received, evaluated, awarded, cancelled

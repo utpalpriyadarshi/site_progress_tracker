@@ -32,6 +32,13 @@ export interface DoorsPackage {
   reviewedBy?: string;
   closureDate?: number;
   closureRemarks?: string;
+  // v45: Status transition audit fields
+  receivedBy?: string;
+  receivedRemarks?: string;
+  reviewObservations?: string;
+  approvedBy?: string;
+  approvedDate?: number;
+  approvalRemarks?: string;
   createdAt: Date;
   equipmentName?: string;
   priority?: string;

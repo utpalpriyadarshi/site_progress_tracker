@@ -1,11 +1,12 @@
 import React, { useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
+import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Button } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import DoorsPackageCard from './components/DoorsPackageCard';
 import CreateDoorsPackageDialog from './components/CreateDoorsPackageDialog';
 import CopyDoorsPackagesDialog from './components/CopyDoorsPackagesDialog';
+import StatusTransitionDialog, { TransitionStage } from './components/StatusTransitionDialog';
 import SiteSelector from './components/SiteSelector';
 import DOORS_PACKAGE_TEMPLATES from './data/doorsPackageTemplates';
 import { validateDoorsId, getErrorMessage } from './utils/validation';
@@ -53,6 +54,9 @@ const DoorsPackageManagementScreen = () => {
   const [closureRemarks, setClosureRemarks] = useState('');
   const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
   const [projectDomains, setProjectDomains] = useState<DomainItem[]>([]);
+  const [transitionDialogVisible, setTransitionDialogVisible] = useState(false);
+  const [transitionStage, setTransitionStage] = useState<TransitionStage>('received');
+  const [transitionPackageId, setTransitionPackageId] = useState<string | null>(null);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -162,6 +166,12 @@ const DoorsPackageManagementScreen = () => {
             reviewedBy: pkg.reviewedBy,
             closureDate: pkg.closureDate,
             closureRemarks: pkg.closureRemarks,
+            receivedBy: pkg.receivedBy,
+            receivedRemarks: pkg.receivedRemarks,
+            reviewObservations: pkg.reviewObservations,
+            approvedBy: pkg.approvedBy,
+            approvedDate: pkg.approvedDate,
+            approvalRemarks: pkg.approvalRemarks,
             createdAt: pkg.createdAt,
             equipmentName: pkg.equipmentName,
             priority: pkg.priority,
@@ -195,8 +205,8 @@ const DoorsPackageManagementScreen = () => {
   const handleCreateOrUpdatePackage = async () => {
     const { doorsId, siteId, equipmentType, materialType, category, domainId, totalRequirements } = state.form;
 
-    if (!equipmentType || !siteId || !category) {
-      Alert.alert('Validation Error', 'Please fill in all required fields (DOORS ID, Site, Category, Equipment Type)');
+    if (!equipmentType || !category) {
+      Alert.alert('Validation Error', 'Please fill in all required fields (Domain, Equipment Type)');
       return;
     }
 
@@ -494,136 +504,111 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
-  const markAsReceived = async (packageId: string) => {
-    try {
-      const doorsCollection = database.collections.get('doors_packages');
-      const packageRecord = await doorsCollection.find(packageId);
-
-      await database.write(async () => {
-        await packageRecord.update((record: any) => {
-          record.receivedDate = Date.now();
-          record.status = 'received';
-          record.updatedAt = Date.now();
-        });
-      });
-
-      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
-      if (updatedPackage) {
-        dispatch({
-          type: 'UPDATE_PACKAGE',
-          payload: { package: { ...updatedPackage, status: 'received', receivedDate: Date.now() } },
-        });
-      }
-
-      setSnackbarMessage('Package marked as received');
-      setSnackbarVisible(true);
-    } catch (error) {
-      logger.error('[DoorsPackage] Error marking as received:', error);
-      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
-    }
+  const openTransitionDialog = (packageId: string, stage: TransitionStage) => {
+    setTransitionPackageId(packageId);
+    setTransitionStage(stage);
+    setTransitionDialogVisible(true);
   };
 
-  const markAsReviewed = async (packageId: string) => {
-    try {
-      const doorsCollection = database.collections.get('doors_packages');
-      const packageRecord = await doorsCollection.find(packageId);
-
-      await database.write(async () => {
-        await packageRecord.update((record: any) => {
-          record.reviewedDate = Date.now();
-          record.reviewedBy = engineerId;
-          record.status = 'reviewed';
-          record.updatedAt = Date.now();
-        });
-      });
-
-      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
-      if (updatedPackage) {
-        dispatch({
-          type: 'UPDATE_PACKAGE',
-          payload: { package: { ...updatedPackage, status: 'reviewed', reviewedDate: Date.now(), reviewedBy: engineerId } },
-        });
-      }
-
-      setSnackbarMessage('Package marked as reviewed');
-      setSnackbarVisible(true);
-    } catch (error) {
-      logger.error('[DoorsPackage] Error marking as reviewed:', error);
-      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
-    }
+  const markAsReceived = (packageId: string) => {
+    openTransitionDialog(packageId, 'received');
   };
 
-  const markAsApproved = async (packageId: string) => {
-    try {
-      const doorsCollection = database.collections.get('doors_packages');
-      const packageRecord = await doorsCollection.find(packageId);
+  const markAsReviewed = (packageId: string) => {
+    openTransitionDialog(packageId, 'reviewed');
+  };
 
-      await database.write(async () => {
-        await packageRecord.update((record: any) => {
-          record.status = 'approved';
-          record.updatedAt = Date.now();
-        });
-      });
-
-      const updatedPackage = state.data.packages.find((p) => p.id === packageId);
-      if (updatedPackage) {
-        dispatch({
-          type: 'UPDATE_PACKAGE',
-          payload: { package: { ...updatedPackage, status: 'approved' } },
-        });
-      }
-
-      setSnackbarMessage('Package approved');
-      setSnackbarVisible(true);
-    } catch (error) {
-      logger.error('[DoorsPackage] Error approving package:', error);
-      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
-    }
+  const markAsApproved = (packageId: string) => {
+    openTransitionDialog(packageId, 'approved');
   };
 
   const handleClosePackage = (packageId: string) => {
-    setClosurePackageId(packageId);
-    setClosureRemarks('');
-    setClosureDialogVisible(true);
+    openTransitionDialog(packageId, 'closed');
   };
 
-  const confirmClosePackage = async () => {
-    if (!closurePackageId) return;
+  const handleTransitionConfirm = async (data: { remarks: string }) => {
+    if (!transitionPackageId) return;
 
     try {
       const doorsCollection = database.collections.get('doors_packages');
-      const packageRecord = await doorsCollection.find(closurePackageId);
+      const packageRecord = await doorsCollection.find(transitionPackageId);
       const now = Date.now();
 
       await database.write(async () => {
         await packageRecord.update((record: any) => {
-          record.status = 'closed';
-          record.closureDate = now;
-          record.closureRemarks = closureRemarks || null;
           record.updatedAt = now;
+
+          switch (transitionStage) {
+            case 'received':
+              record.status = 'received';
+              record.receivedDate = now;
+              record.receivedBy = engineerId;
+              record.receivedRemarks = data.remarks || null;
+              break;
+            case 'reviewed':
+              record.status = 'reviewed';
+              record.reviewedDate = now;
+              record.reviewedBy = engineerId;
+              record.reviewObservations = data.remarks || null;
+              break;
+            case 'approved':
+              record.status = 'approved';
+              record.approvedBy = engineerId;
+              record.approvedDate = now;
+              record.approvalRemarks = data.remarks || null;
+              break;
+            case 'closed':
+              record.status = 'closed';
+              record.closureDate = now;
+              record.closureRemarks = data.remarks || null;
+              break;
+          }
         });
       });
 
-      const updatedPackage = state.data.packages.find((p) => p.id === closurePackageId);
+      const updatedPackage = state.data.packages.find((p) => p.id === transitionPackageId);
       if (updatedPackage) {
+        const updates: Partial<DoorsPackage> = { status: transitionStage };
+        switch (transitionStage) {
+          case 'received':
+            updates.receivedDate = now;
+            updates.receivedBy = engineerId;
+            updates.receivedRemarks = data.remarks || undefined;
+            break;
+          case 'reviewed':
+            updates.reviewedDate = now;
+            updates.reviewedBy = engineerId;
+            updates.reviewObservations = data.remarks || undefined;
+            break;
+          case 'approved':
+            updates.approvedBy = engineerId;
+            updates.approvedDate = now;
+            updates.approvalRemarks = data.remarks || undefined;
+            break;
+          case 'closed':
+            updates.closureDate = now;
+            updates.closureRemarks = data.remarks || undefined;
+            break;
+        }
+
         dispatch({
           type: 'UPDATE_PACKAGE',
-          payload: {
-            package: {
-              ...updatedPackage,
-              status: 'closed',
-              closureDate: now,
-              closureRemarks: closureRemarks || undefined,
-            },
-          },
+          payload: { package: { ...updatedPackage, ...updates } },
         });
       }
 
-      setClosureDialogVisible(false);
-      setSnackbarMessage('Package closed');
+      setTransitionDialogVisible(false);
+
+      const stageLabels: Record<TransitionStage, string> = {
+        received: 'Package marked as received',
+        reviewed: 'Package marked as reviewed',
+        approved: 'Package approved',
+        closed: 'Package closed',
+      };
+      setSnackbarMessage(stageLabels[transitionStage]);
       setSnackbarVisible(true);
     } catch (error) {
-      logger.error('[DoorsPackage] Error closing package:', error);
+      logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     }
   };
@@ -1037,27 +1022,12 @@ const DoorsPackageManagementScreen = () => {
           existingDoorsIds={state.data.packages.map(p => p.doorsId)}
         />
 
-        <Portal>
-          <Dialog visible={closureDialogVisible} onDismiss={() => setClosureDialogVisible(false)}>
-            <Dialog.Title>Close DOORS Package</Dialog.Title>
-            <Dialog.Content>
-              <Paragraph>Add optional closure remarks before closing this package.</Paragraph>
-              <TextInput
-                label="Closure Remarks (optional)"
-                value={closureRemarks}
-                onChangeText={setClosureRemarks}
-                mode="outlined"
-                multiline
-                numberOfLines={3}
-                style={{ marginTop: 8 }}
-              />
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setClosureDialogVisible(false)}>Cancel</Button>
-              <Button onPress={confirmClosePackage}>Close Package</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+        <StatusTransitionDialog
+          visible={transitionDialogVisible}
+          stage={transitionStage}
+          onConfirm={handleTransitionConfirm}
+          onDismiss={() => setTransitionDialogVisible(false)}
+        />
 
         <CopyDoorsPackagesDialog
           visible={state.ui.copyDialogVisible}
