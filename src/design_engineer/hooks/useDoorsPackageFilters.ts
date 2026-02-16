@@ -6,10 +6,11 @@ export const useDoorsPackageFilters = (packages: DoorsPackage[]) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterDomain, setFilterDomain] = useState<string | null>(null);
 
   useEffect(() => {
     applyFilters();
-  }, [packages, searchQuery, filterStatus, filterCategory]);
+  }, [packages, searchQuery, filterStatus, filterCategory, filterDomain]);
 
   const applyFilters = () => {
     let filtered = [...packages];
@@ -21,7 +22,8 @@ export const useDoorsPackageFilters = (packages: DoorsPackage[]) => {
           pkg.doorsId.toLowerCase().includes(query) ||
           pkg.equipmentType.toLowerCase().includes(query) ||
           (pkg.materialType && pkg.materialType.toLowerCase().includes(query)) ||
-          (pkg.siteName && pkg.siteName.toLowerCase().includes(query))
+          (pkg.siteName && pkg.siteName.toLowerCase().includes(query)) ||
+          (pkg.domainName && pkg.domainName.toLowerCase().includes(query))
       );
     }
 
@@ -31,6 +33,10 @@ export const useDoorsPackageFilters = (packages: DoorsPackage[]) => {
 
     if (filterCategory) {
       filtered = filtered.filter((pkg) => pkg.category === filterCategory);
+    }
+
+    if (filterDomain) {
+      filtered = filtered.filter((pkg) => pkg.domainId === filterDomain);
     }
 
     setFilteredPackages(filtered);
@@ -44,5 +50,7 @@ export const useDoorsPackageFilters = (packages: DoorsPackage[]) => {
     setFilterStatus,
     filterCategory,
     setFilterCategory,
+    filterDomain,
+    setFilterDomain,
   };
 };

@@ -34,6 +34,7 @@ import VendorModel from '../../models/VendorModel';
 import BudgetModel from '../../models/BudgetModel';
 import CostModel from '../../models/CostModel';
 import InvoiceModel from '../../models/InvoiceModel';
+import DomainModel from '../../models/DomainModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ export interface DemoDataResult {
 }
 
 export interface DesignerDemoDataResult {
+  domainsCreated: number;
   doorsPackagesCreated: number;
   designRfqsCreated: number;
   designDocumentsCreated: number;
@@ -775,11 +777,25 @@ const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
  *
  * All records are created in a single atomic database.write() transaction.
  */
+/** Default domains for a project */
+const DEFAULT_DOMAINS = ['Simulation Studies', 'OHE', 'PSY', 'SCADA', 'Civil'];
+
+/** Map DOORS package categories to domain names */
+const CATEGORY_TO_DOMAIN: Record<string, string> = {
+  'OHE': 'OHE',
+  'TSS': 'PSY', // TSS maps to PSY domain
+  'SCADA': 'SCADA',
+  'Cables': 'OHE',
+  'Hardware': 'Civil',
+  'Consumables': 'Civil',
+};
+
 export async function generateDesignerDemoData(projectId: string): Promise<DesignerDemoDataResult> {
   const createdDoorsPackages: DoorsPackageModel[] = [];
   const createdCategories: DesignDocumentCategoryModel[] = [];
   let rfqCount = 0;
   let docCount = 0;
+  let domainCount = 0;
 
   // Get designer user ID
   const rolesCollection = database.collections.get('roles');
@@ -837,6 +853,39 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
   const assignedSites = projectSites.slice(0, 2);
   const siteIds = assignedSites.map((s: any) => s.id);
 
+    // 0. Create default domains for the project
+    const domainsCollection = database.collections.get<DomainModel>('domains');
+    const existingDomains = await domainsCollection.query(Q.where('project_id', projectId)).fetch();
+    const domainsByName: Record<string, string> = {};
+
+    if (existingDomains.length === 0) {
+      for (const domainName of DEFAULT_DOMAINS) {
+        const domain = await domainsCollection.create((record: any) => {
+          record.name = domainName;
+          record.projectId = projectId;
+          record.createdAt = Date.now();
+          record.appSyncStatus = 'pending';
+          record.version = 1;
+        });
+        domainsByName[domainName] = domain.id;
+        domainCount++;
+      }
+
+      // Assign domains to sites (distribute evenly)
+      const domainIds = Object.values(domainsByName);
+      for (let i = 0; i < assignedSites.length; i++) {
+        const site = assignedSites[i];
+        const domainId = domainIds[i % domainIds.length];
+        await site.update((s: any) => {
+          s.domainId = domainId;
+        });
+      }
+    } else {
+      for (const d of existingDomains) {
+        domainsByName[d.name] = d.id;
+      }
+    }
+
     const doorsPackagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
     const rfqsCollection = database.collections.get<RfqModel>('rfqs');
     const docCategoriesCollection = database.collections.get<DesignDocumentCategoryModel>('design_document_categories');
@@ -847,6 +896,10 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     for (const pkgDef of DOORS_PACKAGES) {
       const compliancePercentage = Math.round((pkgDef.compliantRequirements / pkgDef.totalRequirements) * 100);
       const siteId = siteIds.length > 0 ? siteIds[pkgIndex % siteIds.length] : null;
+      // Map category to domain
+      const domainName = CATEGORY_TO_DOMAIN[pkgDef.category] || 'Civil';
+      const domainId = domainsByName[domainName] || null;
+
       const pkg = await doorsPackagesCollection.create((record: any) => {
         record.doorsId = pkgDef.doorsId;
         record.equipmentName = pkgDef.equipmentName;
@@ -854,6 +907,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.equipmentType = pkgDef.equipmentType;
         record.projectId = projectId;
         record.siteId = siteId;
+        record.domainId = domainId;
         record.specificationRef = pkgDef.specificationRef;
         record.quantity = pkgDef.quantity;
         record.unit = pkgDef.unit;
@@ -988,6 +1042,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
   });
 
   return {
+    domainsCreated: domainCount,
     doorsPackagesCreated: createdDoorsPackages.length,
     designRfqsCreated: rfqCount,
     designDocumentsCreated: docCount,

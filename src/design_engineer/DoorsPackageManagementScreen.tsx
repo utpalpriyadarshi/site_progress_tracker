@@ -37,6 +37,11 @@ import { EmptyState } from '../components/common/EmptyState';
  * - Header compaction
  */
 
+interface DomainItem {
+  id: string;
+  name: string;
+}
+
 const DoorsPackageManagementScreen = () => {
   const { projectId, projectName, refreshTrigger, engineerId, selectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
@@ -47,13 +52,15 @@ const DoorsPackageManagementScreen = () => {
   const [closureDialogVisible, setClosureDialogVisible] = useState(false);
   const [closureRemarks, setClosureRemarks] = useState('');
   const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
+  const [projectDomains, setProjectDomains] = useState<DomainItem[]>([]);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
-  // Load packages and sites
+  // Load packages, sites, and domains
   useEffect(() => {
     loadSites();
+    loadDomains();
     loadPackages();
   }, [projectId, refreshTrigger, engineerId, selectedSiteId]);
 
@@ -72,6 +79,19 @@ const DoorsPackageManagementScreen = () => {
       dispatch({ type: 'SET_SITES', payload: { sites: sitesList } });
     } catch (error) {
       logger.error('[DoorsPackage] Error loading sites:', error);
+    }
+  };
+
+  const loadDomains = async () => {
+    if (!projectId) return;
+
+    try {
+      const domainsCollection = database.collections.get('domains');
+      const domainsData = await domainsCollection.query(Q.where('project_id', projectId)).fetch();
+      const domainsList = domainsData.map((d: any) => ({ id: d.id, name: d.name }));
+      setProjectDomains(domainsList);
+    } catch (error) {
+      logger.error('[DoorsPackage] Error loading domains:', error);
     }
   };
 
@@ -113,12 +133,24 @@ const DoorsPackageManagementScreen = () => {
             }
           }
 
+          let domainName = '';
+          if (pkg.domainId) {
+            try {
+              const domain = await database.collections.get('domains').find(pkg.domainId);
+              domainName = (domain as any).name;
+            } catch (error) {
+              logger.warn('[DoorsPackage] Domain not found:', pkg.domainId);
+            }
+          }
+
           return {
             id: pkg.id,
             doorsId: pkg.doorsId,
             projectId: pkg.projectId,
             siteId: pkg.siteId,
             siteName,
+            domainId: pkg.domainId,
+            domainName,
             equipmentType: pkg.equipmentType,
             materialType: pkg.materialType,
             category: pkg.category,
@@ -161,7 +193,7 @@ const DoorsPackageManagementScreen = () => {
   };
 
   const handleCreateOrUpdatePackage = async () => {
-    const { doorsId, siteId, equipmentType, materialType, category, totalRequirements } = state.form;
+    const { doorsId, siteId, equipmentType, materialType, category, domainId, totalRequirements } = state.form;
 
     if (!equipmentType || !siteId || !category) {
       Alert.alert('Validation Error', 'Please fill in all required fields (DOORS ID, Site, Category, Equipment Type)');
@@ -197,6 +229,7 @@ const DoorsPackageManagementScreen = () => {
           await record.update((rec: any) => {
             rec.doorsId = doorsId;
             rec.siteId = siteId;
+            rec.domainId = domainId || null;
             rec.equipmentType = equipmentType;
             rec.materialType = materialType || null;
             rec.category = category;
@@ -205,12 +238,16 @@ const DoorsPackageManagementScreen = () => {
           });
         });
 
+        const domainRecord = domainId ? projectDomains.find(d => d.id === domainId) : null;
+
         const updatedPkg: DoorsPackage = {
           id: record.id,
           doorsId,
           projectId,
           siteId,
           siteName,
+          domainId: domainId || undefined,
+          domainName: domainRecord?.name || '',
           equipmentType,
           materialType: materialType || undefined,
           category,
@@ -239,11 +276,14 @@ const DoorsPackageManagementScreen = () => {
 
         let newPackage: DoorsPackage | null = null;
 
+        const domainRecord = domainId ? projectDomains.find(d => d.id === domainId) : null;
+
         await database.write(async () => {
           const record = await doorsCollection.create((rec: any) => {
             rec.doorsId = doorsId;
             rec.projectId = projectId;
             rec.siteId = siteId;
+            rec.domainId = domainId || null;
             rec.equipmentType = equipmentType;
             rec.materialType = materialType || null;
             rec.category = category;
@@ -270,6 +310,8 @@ const DoorsPackageManagementScreen = () => {
             projectId,
             siteId,
             siteName,
+            domainId: domainId || undefined,
+            domainName: domainRecord?.name || '',
             equipmentType,
             materialType: materialType || undefined,
             category,
@@ -307,6 +349,7 @@ const DoorsPackageManagementScreen = () => {
         equipmentType: pkg.equipmentType,
         materialType: pkg.materialType || '',
         category: pkg.category,
+        domainId: pkg.domainId || '',
         totalRequirements: String(pkg.totalRequirements),
       },
     });
@@ -365,6 +408,7 @@ const DoorsPackageManagementScreen = () => {
         equipmentType: pkg.equipmentType,
         materialType: pkg.materialType || '',
         category: pkg.category,
+        domainId: pkg.domainId || '',
         totalRequirements: String(pkg.totalRequirements),
       },
     });
@@ -408,6 +452,7 @@ const DoorsPackageManagementScreen = () => {
             rec.doorsId = newDoorsId;
             rec.projectId = projectId;
             rec.siteId = targetSiteId;
+            rec.domainId = src.domainId || null;
             rec.equipmentType = src.equipmentType;
             rec.materialType = src.materialType || null;
             rec.category = src.category;
@@ -426,6 +471,8 @@ const DoorsPackageManagementScreen = () => {
             projectId,
             siteId: targetSiteId,
             siteName: targetSiteName,
+            domainId: src.domainId,
+            domainName: src.domainName,
             equipmentType: src.equipmentType,
             materialType: src.materialType,
             category: src.category,
@@ -958,6 +1005,7 @@ const DoorsPackageManagementScreen = () => {
           onCreate={handleCreateOrUpdatePackage}
           isEditing={!!state.ui.editingPackageId}
           sites={state.data.sites}
+          domains={projectDomains}
           newDoorsId={state.form.doorsId}
           setNewDoorsId={(doorsId) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'doorsId', value: doorsId } })
@@ -975,6 +1023,10 @@ const DoorsPackageManagementScreen = () => {
           newCategory={state.form.category}
           setNewCategory={(category) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'category', value: category } })
+          }
+          newDomainId={state.form.domainId}
+          setNewDomainId={(domainId) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'domainId', value: domainId } })
           }
           newTotalRequirements={state.form.totalRequirements}
           setNewTotalRequirements={(totalRequirements) =>
