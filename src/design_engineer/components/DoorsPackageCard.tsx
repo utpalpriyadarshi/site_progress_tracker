@@ -196,10 +196,38 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           </View>
         )}
 
+        {pkg.receivedRemarks && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Recv Remarks:</Text>
+            <Text style={styles.value}>{pkg.receivedRemarks}</Text>
+          </View>
+        )}
+
         {pkg.reviewedDate && (
           <View style={styles.detailRow}>
             <Text style={styles.label}>Reviewed:</Text>
             <Text style={styles.value}>{new Date(pkg.reviewedDate).toLocaleDateString()}</Text>
+          </View>
+        )}
+
+        {pkg.reviewObservations && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Observations:</Text>
+            <Text style={styles.value}>{pkg.reviewObservations}</Text>
+          </View>
+        )}
+
+        {pkg.approvedDate && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Approved:</Text>
+            <Text style={styles.value}>{new Date(pkg.approvedDate).toLocaleDateString()}</Text>
+          </View>
+        )}
+
+        {pkg.approvalRemarks && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>Appr Remarks:</Text>
+            <Text style={styles.value}>{pkg.approvalRemarks}</Text>
           </View>
         )}
 

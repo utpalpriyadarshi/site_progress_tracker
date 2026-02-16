@@ -69,6 +69,22 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         paymentTerms: q.paymentTerms,
         warrantyMonths: q.warrantyMonths,
         technicalCompliancePercentage: q.technicalCompliancePercentage,
+        // v45: compliance breakup
+        techComplied: q.techComplied,
+        techCompliedWithComments: q.techCompliedWithComments,
+        techNotComplied: q.techNotComplied,
+        datasheetComplied: q.datasheetComplied,
+        datasheetCompliedWithComments: q.datasheetCompliedWithComments,
+        datasheetNotComplied: q.datasheetNotComplied,
+        typeTestComplied: q.typeTestComplied,
+        typeTestCompliedWithComments: q.typeTestCompliedWithComments,
+        typeTestNotComplied: q.typeTestNotComplied,
+        routineTestComplied: q.routineTestComplied,
+        routineTestCompliedWithComments: q.routineTestCompliedWithComments,
+        routineTestNotComplied: q.routineTestNotComplied,
+        siteReqComplied: q.siteReqComplied,
+        siteReqCompliedWithComments: q.siteReqCompliedWithComments,
+        siteReqNotComplied: q.siteReqNotComplied,
         technicalDeviations: q.technicalDeviations,
         commercialDeviations: q.commercialDeviations,
         notes: q.notes,
@@ -129,6 +145,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   const handleAddQuote = async (data: {
     vendorId: string;
+    vendorName: string;
     quotedPrice: number;
     currency: string;
     leadTimeDays: number;
@@ -137,12 +154,45 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     warrantyMonths?: number;
     technicalCompliancePercentage: number;
     notes?: string;
+    techComplied?: number;
+    techCompliedWithComments?: number;
+    techNotComplied?: number;
+    datasheetComplied?: number;
+    datasheetCompliedWithComments?: number;
+    datasheetNotComplied?: number;
+    typeTestComplied?: number;
+    typeTestCompliedWithComments?: number;
+    typeTestNotComplied?: number;
+    routineTestComplied?: number;
+    routineTestCompliedWithComments?: number;
+    routineTestNotComplied?: number;
+    siteReqComplied?: number;
+    siteReqCompliedWithComments?: number;
+    siteReqNotComplied?: number;
   }) => {
     if (!rfq) return;
     try {
+      // If no vendorId, create a new vendor record
+      let resolvedVendorId = data.vendorId;
+      if (!resolvedVendorId && data.vendorName) {
+        const newVendor = await database.write(async () => {
+          return await database.collections.get('vendors').create((rec: any) => {
+            rec.vendorName = data.vendorName;
+            rec.category = 'General';
+            rec.contactPerson = '';
+            rec.email = '';
+            rec.phone = '';
+            rec.rating = 0;
+            rec.appSyncStatus = 'pending';
+          });
+        });
+        resolvedVendorId = newVendor.id;
+      }
+
+      // Use RfqService for base fields, then update compliance breakup
       await RfqService.addVendorQuote({
         rfqId: rfq.id,
-        vendorId: data.vendorId,
+        vendorId: resolvedVendorId,
         quotedPrice: data.quotedPrice,
         currency: data.currency,
         leadTimeDays: data.leadTimeDays,
@@ -152,6 +202,33 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         technicalCompliancePercentage: data.technicalCompliancePercentage,
         notes: data.notes,
       });
+
+      // Update the latest quote with compliance breakup fields
+      const latestQuotes = await database.collections.get('rfq_vendor_quotes')
+        .query(Q.where('rfq_id', rfq.id), Q.where('vendor_id', resolvedVendorId))
+        .fetch();
+      if (latestQuotes.length > 0) {
+        const latestQuote = latestQuotes[latestQuotes.length - 1];
+        await database.write(async () => {
+          await latestQuote.update((rec: any) => {
+            rec.techComplied = data.techComplied ?? null;
+            rec.techCompliedWithComments = data.techCompliedWithComments ?? null;
+            rec.techNotComplied = data.techNotComplied ?? null;
+            rec.datasheetComplied = data.datasheetComplied ?? null;
+            rec.datasheetCompliedWithComments = data.datasheetCompliedWithComments ?? null;
+            rec.datasheetNotComplied = data.datasheetNotComplied ?? null;
+            rec.typeTestComplied = data.typeTestComplied ?? null;
+            rec.typeTestCompliedWithComments = data.typeTestCompliedWithComments ?? null;
+            rec.typeTestNotComplied = data.typeTestNotComplied ?? null;
+            rec.routineTestComplied = data.routineTestComplied ?? null;
+            rec.routineTestCompliedWithComments = data.routineTestCompliedWithComments ?? null;
+            rec.routineTestNotComplied = data.routineTestNotComplied ?? null;
+            rec.siteReqComplied = data.siteReqComplied ?? null;
+            rec.siteReqCompliedWithComments = data.siteReqCompliedWithComments ?? null;
+            rec.siteReqNotComplied = data.siteReqNotComplied ?? null;
+          });
+        });
+      }
 
       setAddDialogVisible(false);
       await loadQuotes();
@@ -262,6 +339,46 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
           onPress: async () => {
             try {
               await RfqService.awardRfq(rfq.id, l1Quote.id, l1Quote.quotedPrice, engineerId);
+
+              // Write compliance breakup back to DOORS package
+              if (rfq.doorsPackageId) {
+                try {
+                  const doorsCollection = database.collections.get('doors_packages');
+                  const doorsPkg = await doorsCollection.find(rfq.doorsPackageId);
+
+                  // Calculate per-category percentages from winning quote
+                  const calcPct = (c?: number, wc?: number, nc?: number) => {
+                    const total = (c || 0) + (wc || 0) + (nc || 0);
+                    return total > 0 ? Math.round(((c || 0) + (wc || 0)) / total * 100) : 0;
+                  };
+
+                  const totalComplied = (l1Quote.techComplied || 0) + (l1Quote.techCompliedWithComments || 0) +
+                    (l1Quote.datasheetComplied || 0) + (l1Quote.datasheetCompliedWithComments || 0) +
+                    (l1Quote.typeTestComplied || 0) + (l1Quote.typeTestCompliedWithComments || 0) +
+                    (l1Quote.routineTestComplied || 0) + (l1Quote.routineTestCompliedWithComments || 0) +
+                    (l1Quote.siteReqComplied || 0) + (l1Quote.siteReqCompliedWithComments || 0);
+                  const totalAll = totalComplied +
+                    (l1Quote.techNotComplied || 0) + (l1Quote.datasheetNotComplied || 0) +
+                    (l1Quote.typeTestNotComplied || 0) + (l1Quote.routineTestNotComplied || 0) +
+                    (l1Quote.siteReqNotComplied || 0);
+
+                  await database.write(async () => {
+                    await doorsPkg.update((rec: any) => {
+                      rec.compliantRequirements = totalComplied;
+                      rec.compliancePercentage = totalAll > 0 ? Math.round(totalComplied / totalAll * 100) : 0;
+                      rec.technicalReqCompliance = calcPct(l1Quote.techComplied, l1Quote.techCompliedWithComments, l1Quote.techNotComplied);
+                      rec.datasheetCompliance = calcPct(l1Quote.datasheetComplied, l1Quote.datasheetCompliedWithComments, l1Quote.datasheetNotComplied);
+                      rec.typeTestCompliance = calcPct(l1Quote.typeTestComplied, l1Quote.typeTestCompliedWithComments, l1Quote.typeTestNotComplied);
+                      rec.routineTestCompliance = calcPct(l1Quote.routineTestComplied, l1Quote.routineTestCompliedWithComments, l1Quote.routineTestNotComplied);
+                      rec.siteReqCompliance = calcPct(l1Quote.siteReqComplied, l1Quote.siteReqCompliedWithComments, l1Quote.siteReqNotComplied);
+                      rec.updatedAt = Date.now();
+                    });
+                  });
+                } catch (compErr: any) {
+                  logger.error('[VendorQuotes] Error updating DOORS compliance:', compErr);
+                }
+              }
+
               await loadQuotes();
               onRfqUpdated({
                 ...rfq,
@@ -360,7 +477,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
             ))}
           </View>
 
-          {/* Compliance row */}
+          {/* Overall Compliance row */}
           <View style={styles.compareRow}>
             <View style={styles.compareLabel}>
               <Text style={styles.compareLabelText}>Compliance</Text>
@@ -376,6 +493,47 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               </View>
             ))}
           </View>
+
+          {/* Per-category compliance breakup rows */}
+          {['Tech Req', 'Datasheet', 'Type Test', 'Routine', 'Site Req'].map((catLabel, idx) => {
+            const catKeys = [
+              { c: 'techComplied', wc: 'techCompliedWithComments', nc: 'techNotComplied' },
+              { c: 'datasheetComplied', wc: 'datasheetCompliedWithComments', nc: 'datasheetNotComplied' },
+              { c: 'typeTestComplied', wc: 'typeTestCompliedWithComments', nc: 'typeTestNotComplied' },
+              { c: 'routineTestComplied', wc: 'routineTestCompliedWithComments', nc: 'routineTestNotComplied' },
+              { c: 'siteReqComplied', wc: 'siteReqCompliedWithComments', nc: 'siteReqNotComplied' },
+            ][idx];
+            const hasData = comparison.quotes.some((cq) => {
+              const q = cq.quote as any;
+              return q[catKeys.c] !== undefined || q[catKeys.wc] !== undefined || q[catKeys.nc] !== undefined;
+            });
+            if (!hasData) return null;
+            return (
+              <View key={catLabel} style={styles.compareRow}>
+                <View style={styles.compareLabel}>
+                  <Text style={styles.compareLabelText}>{catLabel}</Text>
+                </View>
+                {comparison.quotes.map((cq) => {
+                  const q = cq.quote as any;
+                  const c = q[catKeys.c] || 0;
+                  const wc = q[catKeys.wc] || 0;
+                  const nc = q[catKeys.nc] || 0;
+                  const total = c + wc + nc;
+                  const pct = total > 0 ? Math.round((c + wc) / total * 100) : 0;
+                  return (
+                    <View key={cq.quote.id} style={styles.compareCell}>
+                      <Text style={styles.compareCellText}>{total > 0 ? `${pct}%` : '-'}</Text>
+                      {total > 0 && (
+                        <Text style={[styles.compareCellText, { fontSize: 9, color: '#999' }]}>
+                          {c}/{wc}/{nc}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
 
           {/* Tech Score row */}
           {hasEvaluatedQuotes && (

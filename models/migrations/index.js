@@ -14,6 +14,7 @@ import { v41Migration } from './v41_add_design_weightage';
 import { v42Migration } from './v42_add_progress_mode';
 import { v43Migration } from './v43_add_doors_package_fields';
 import { v44Migration } from './v44_add_domains';
+import { v45Migration } from './v45_rfq_compliance_status';
 
 export default schemaMigrations({
   migrations: [
@@ -601,5 +602,7 @@ export default schemaMigrations({
     v43Migration,
     // v44: Add domains table and domain_id to sites and doors_packages
     v44Migration,
+    // v45: Add RFQ compliance breakup + DOORS status transition fields
+    v45Migration,
   ],
 });

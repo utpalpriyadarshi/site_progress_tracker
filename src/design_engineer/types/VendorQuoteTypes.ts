@@ -15,6 +15,22 @@ export interface VendorQuote {
   paymentTerms?: string;
   warrantyMonths?: number;
   technicalCompliancePercentage: number;
+  // v45: 5-category compliance breakup
+  techComplied?: number;
+  techCompliedWithComments?: number;
+  techNotComplied?: number;
+  datasheetComplied?: number;
+  datasheetCompliedWithComments?: number;
+  datasheetNotComplied?: number;
+  typeTestComplied?: number;
+  typeTestCompliedWithComments?: number;
+  typeTestNotComplied?: number;
+  routineTestComplied?: number;
+  routineTestCompliedWithComments?: number;
+  routineTestNotComplied?: number;
+  siteReqComplied?: number;
+  siteReqCompliedWithComments?: number;
+  siteReqNotComplied?: number;
   technicalDeviations?: string;
   commercialDeviations?: string;
   notes?: string;

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 44, // Added domains table and domain_id to sites and doors_packages
+  version: 45, // RFQ compliance breakup + DOORS status transition fields
   tables: [
     tableSchema({
       name: 'projects',
@@ -439,6 +439,13 @@ export default appSchema({
         // Edit audit trail (Phase 3)
         { name: 'last_modified_at', type: 'number', isOptional: true },
         { name: 'modified_by_id', type: 'string', isOptional: true, isIndexed: true },
+        // v45: Status transition audit fields
+        { name: 'received_by', type: 'string', isOptional: true },
+        { name: 'received_remarks', type: 'string', isOptional: true },
+        { name: 'review_observations', type: 'string', isOptional: true },
+        { name: 'approved_by', type: 'string', isOptional: true },
+        { name: 'approved_date', type: 'number', isOptional: true },
+        { name: 'approval_remarks', type: 'string', isOptional: true },
         // Sync
         { name: 'app_sync_status', type: 'string' },
         { name: 'version', type: 'number' },
@@ -512,6 +519,7 @@ export default appSchema({
         { name: 'doors_id', type: 'string', isIndexed: true },
         { name: 'doors_package_id', type: 'string', isIndexed: true },
         { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'domain_id', type: 'string', isOptional: true, isIndexed: true }, // v45: domain-based filtering
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
         { name: 'status', type: 'string', isIndexed: true },
@@ -550,6 +558,22 @@ export default appSchema({
         { name: 'payment_terms', type: 'string', isOptional: true },
         { name: 'warranty_months', type: 'number', isOptional: true },
         { name: 'technical_compliance_percentage', type: 'number' },
+        // v45: 5-category compliance breakup (3 counts each)
+        { name: 'tech_complied', type: 'number', isOptional: true },
+        { name: 'tech_complied_with_comments', type: 'number', isOptional: true },
+        { name: 'tech_not_complied', type: 'number', isOptional: true },
+        { name: 'datasheet_complied', type: 'number', isOptional: true },
+        { name: 'datasheet_complied_with_comments', type: 'number', isOptional: true },
+        { name: 'datasheet_not_complied', type: 'number', isOptional: true },
+        { name: 'type_test_complied', type: 'number', isOptional: true },
+        { name: 'type_test_complied_with_comments', type: 'number', isOptional: true },
+        { name: 'type_test_not_complied', type: 'number', isOptional: true },
+        { name: 'routine_test_complied', type: 'number', isOptional: true },
+        { name: 'routine_test_complied_with_comments', type: 'number', isOptional: true },
+        { name: 'routine_test_not_complied', type: 'number', isOptional: true },
+        { name: 'site_req_complied', type: 'number', isOptional: true },
+        { name: 'site_req_complied_with_comments', type: 'number', isOptional: true },
+        { name: 'site_req_not_complied', type: 'number', isOptional: true },
         { name: 'technical_deviations', type: 'string', isOptional: true },
         { name: 'commercial_deviations', type: 'string', isOptional: true },
         { name: 'notes', type: 'string', isOptional: true },

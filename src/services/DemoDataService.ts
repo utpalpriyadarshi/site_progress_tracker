@@ -532,6 +532,7 @@ interface DoorsPackageDef {
   equipmentName: string;
   category: string;
   equipmentType: string;
+  materialType?: string;
   specificationRef: string;
   quantity: number;
   unit: string;
@@ -547,12 +548,13 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     equipmentName: 'Auxiliary Transformer 1000kVA',
     category: 'TSS',
     equipmentType: 'Transformer',
+    materialType: 'Copper Wound',
     specificationRef: 'SPEC-TSS-TRF-001',
     quantity: 4,
     unit: 'nos',
     totalRequirements: 100,
     compliantRequirements: 85,
-    status: 'under_review',
+    status: 'reviewed',
     priority: 'high',
   },
   {
@@ -560,6 +562,7 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     equipmentName: '33kV GIS Switchgear',
     category: 'TSS',
     equipmentType: 'Switchgear',
+    materialType: 'SF6 Gas Insulated',
     specificationRef: 'SPEC-TSS-SWG-001',
     quantity: 6,
     unit: 'sets',
@@ -573,12 +576,13 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     equipmentName: 'Contact Wire Cu-Mg 107mm²',
     category: 'OHE',
     equipmentType: 'Cable',
+    materialType: 'Copper-Magnesium Alloy',
     specificationRef: 'SPEC-OHE-CBL-001',
     quantity: 25000,
     unit: 'meters',
     totalRequirements: 60,
     compliantRequirements: 48,
-    status: 'under_review',
+    status: 'received',
     priority: 'medium',
   },
   {
@@ -586,6 +590,7 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     equipmentName: 'OHE Mast 9m',
     category: 'OHE',
     equipmentType: 'Mast',
+    materialType: 'Galvanized Steel',
     specificationRef: 'SPEC-OHE-MST-001',
     quantity: 120,
     unit: 'nos',
@@ -599,12 +604,13 @@ const DOORS_PACKAGES: DoorsPackageDef[] = [
     equipmentName: 'Remote Terminal Unit',
     category: 'SCADA',
     equipmentType: 'Panel',
+    materialType: 'Industrial Grade',
     specificationRef: 'SPEC-SCADA-RTU-001',
     quantity: 8,
     unit: 'nos',
     totalRequirements: 75,
     compliantRequirements: 60,
-    status: 'draft',
+    status: 'pending',
     priority: 'low',
   },
 ];
@@ -905,9 +911,11 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.equipmentName = pkgDef.equipmentName;
         record.category = pkgDef.category;
         record.equipmentType = pkgDef.equipmentType;
+        record.materialType = pkgDef.materialType || null;
         record.projectId = projectId;
         record.siteId = siteId;
         record.domainId = domainId;
+        record.engineerId = designerId;
         record.specificationRef = pkgDef.specificationRef;
         record.quantity = pkgDef.quantity;
         record.unit = pkgDef.unit;
@@ -921,13 +929,25 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.siteReqCompliance = compliancePercentage - Math.floor(Math.random() * 3);
         record.status = pkgDef.status;
         record.priority = pkgDef.priority;
+        // v45: Status transition audit fields
+        if (['received', 'reviewed', 'approved', 'closed'].includes(pkgDef.status)) {
+          record.receivedDate = daysFromNow(-30);
+          record.receivedBy = designerId;
+          record.receivedRemarks = 'Package received and initial check completed.';
+        }
+        if (['reviewed', 'approved', 'closed'].includes(pkgDef.status)) {
+          record.reviewedDate = daysFromNow(-20);
+          record.reviewedBy = designerId;
+          record.reviewObservations = 'Technical specifications reviewed. Compliance verified against project requirements.';
+        }
+        if (['approved', 'closed'].includes(pkgDef.status)) {
+          record.approvedBy = designerId;
+          record.approvedDate = daysFromNow(-10);
+          record.approvalRemarks = 'Approved for procurement. All requirements meet project specifications.';
+        }
         if (pkgDef.status === 'closed') {
           record.closureDate = daysFromNow(-3);
           record.closureRemarks = 'All requirements verified and procurement complete.';
-          record.reviewedBy = designerId;
-        }
-        if (pkgDef.status === 'approved' || pkgDef.status === 'closed') {
-          record.reviewedBy = designerId;
         }
         record.createdBy = designerId;
         record.createdAt = Date.now();
@@ -942,24 +962,30 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     // 2. Create Design RFQs
     for (const rfqDef of DESIGN_RFQS) {
       const doorsPackage = createdDoorsPackages[rfqDef.doorsPackageIndex];
+      // Get domain from DOORS package
+      const pkgDef = DOORS_PACKAGES[rfqDef.doorsPackageIndex];
+      const rfqDomainName = CATEGORY_TO_DOMAIN[pkgDef.category] || 'Civil';
+      const rfqDomainId = domainsByName[rfqDomainName] || null;
+
       await rfqsCollection.create((record: any) => {
         record.rfqNumber = rfqDef.rfqNumber;
         record.doorsId = doorsPackage.doorsId;
         record.doorsPackageId = doorsPackage.id;
         record.projectId = projectId;
+        record.domainId = rfqDomainId;
         record.title = rfqDef.title;
         record.description = rfqDef.description;
         record.status = rfqDef.status;
         record.rfqType = 'design';
         record.totalVendorsInvited = rfqDef.totalVendorsInvited;
         record.totalQuotesReceived = rfqDef.totalQuotesReceived;
-        record.createdById = 'design_engineer';
+        record.createdById = designerId;
         if (rfqDef.status !== 'draft') {
           record.issueDate = daysFromNow(-30);
         }
         if (rfqDef.status === 'evaluated' || rfqDef.status === 'awarded') {
           record.evaluationDate = daysFromNow(-14);
-          record.evaluatedById = 'design_engineer';
+          record.evaluatedById = designerId;
         }
         if (rfqDef.status === 'awarded') {
           record.awardDate = daysFromNow(-7);

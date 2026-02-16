@@ -9,7 +9,7 @@
  * Reduction: 11 useState → 1 useReducer (91% reduction)
  */
 
-import { DesignRfq, DoorsPackage } from '../../types/DesignRfqTypes';
+import { DesignRfq, DoorsPackage, Domain } from '../../types/DesignRfqTypes';
 
 /**
  * Form data for creating new RFQ
@@ -17,6 +17,7 @@ import { DesignRfq, DoorsPackage } from '../../types/DesignRfqTypes';
 export interface RfqFormData {
   title: string;
   description: string;
+  domainId: string;
   doorsPackageId: string;
   expectedDeliveryDays: string;
 }
@@ -37,6 +38,7 @@ export interface DesignRfqManagementState {
   data: {
     rfqs: DesignRfq[];
     doorsPackages: DoorsPackage[];
+    domains: Domain[];
     filteredRfqs: DesignRfq[];
   };
   filters: {
@@ -57,6 +59,7 @@ export type DesignRfqManagementAction =
   // Data operations
   | { type: 'SET_RFQS'; payload: { rfqs: DesignRfq[] } }
   | { type: 'SET_DOORS_PACKAGES'; payload: { packages: DoorsPackage[] } }
+  | { type: 'SET_DOMAINS'; payload: { domains: Domain[] } }
   | { type: 'ADD_RFQ'; payload: { rfq: DesignRfq } }
   | { type: 'UPDATE_RFQ'; payload: { rfq: DesignRfq } }
   | { type: 'DELETE_RFQ'; payload: { rfqId: string } }
@@ -101,6 +104,7 @@ export const createInitialState = (): DesignRfqManagementState => ({
   data: {
     rfqs: [],
     doorsPackages: [],
+    domains: [],
     filteredRfqs: [],
   },
   filters: {
@@ -110,6 +114,7 @@ export const createInitialState = (): DesignRfqManagementState => ({
   form: {
     title: '',
     description: '',
+    domainId: '',
     doorsPackageId: '',
     expectedDeliveryDays: '30',
   },
@@ -194,6 +199,15 @@ export const designRfqManagementReducer = (
         data: {
           ...state.data,
           doorsPackages: action.payload.packages,
+        },
+      };
+
+    case 'SET_DOMAINS':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          domains: action.payload.domains,
         },
       };
 

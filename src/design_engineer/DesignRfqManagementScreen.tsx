@@ -11,7 +11,7 @@ import { Vendor } from './types/VendorQuoteTypes';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
-import { DesignRfq } from './types/DesignRfqTypes';
+import { DesignRfq, DoorsPackage, Domain } from './types/DesignRfqTypes';
 import {
   designRfqManagementReducer,
   createDesignRfqInitialState,
@@ -54,12 +54,25 @@ const DesignRfqManagementScreen = () => {
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
-  // Load RFQs, DOORS packages, and vendors
+  // Load RFQs, DOORS packages, vendors, and domains
   useEffect(() => {
+    loadDomains();
     loadDoorsPackages();
     loadRfqs();
     loadVendors();
   }, [projectId, refreshTrigger, engineerId]);
+
+  const loadDomains = async () => {
+    if (!projectId) return;
+    try {
+      const domainsCollection = database.collections.get('domains');
+      const domainsData = await domainsCollection.query(Q.where('project_id', projectId)).fetch();
+      const domainsList: Domain[] = domainsData.map((d: any) => ({ id: d.id, name: d.name }));
+      dispatch({ type: 'SET_DOMAINS', payload: { domains: domainsList } });
+    } catch (error) {
+      logger.error('[DesignRfq] Error loading domains:', error);
+    }
+  };
 
   const loadDoorsPackages = async () => {
     if (!projectId) return;
@@ -68,10 +81,36 @@ const DesignRfqManagementScreen = () => {
       const doorsCollection = database.collections.get('doors_packages');
       const packagesData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
 
-      const packagesList = packagesData.map((pkg: any) => ({
-        id: pkg.id,
-        doorsId: pkg.doorsId,
-      }));
+      const packagesList: DoorsPackage[] = await Promise.all(
+        packagesData.map(async (pkg: any) => {
+          let siteName = '';
+          if (pkg.siteId) {
+            try {
+              const site = await database.collections.get('sites').find(pkg.siteId);
+              siteName = (site as any).name;
+            } catch (e) { /* site not found */ }
+          }
+          let domainName = '';
+          if (pkg.domainId) {
+            try {
+              const domain = await database.collections.get('domains').find(pkg.domainId);
+              domainName = (domain as any).name;
+            } catch (e) { /* domain not found */ }
+          }
+          return {
+            id: pkg.id,
+            doorsId: pkg.doorsId,
+            equipmentType: pkg.equipmentType,
+            category: pkg.category,
+            domainId: pkg.domainId,
+            domainName,
+            materialType: pkg.materialType,
+            totalRequirements: pkg.totalRequirements,
+            siteName,
+            siteId: pkg.siteId,
+          };
+        })
+      );
 
       dispatch({ type: 'SET_DOORS_PACKAGES', payload: { packages: packagesList } });
     } catch (error) {
@@ -156,6 +195,21 @@ const DesignRfqManagementScreen = () => {
   const generateRfqNumber = () => {
     const timestamp = Date.now().toString().slice(-6);
     return `DRFQ-${timestamp}`;
+  };
+
+  const handlePackageSelected = (pkg: DoorsPackage) => {
+    const domainName = pkg.domainName || '';
+    const autoTitle = `Design RFQ - ${pkg.equipmentType}${domainName ? ` - ${domainName}` : ''}`;
+    const autoDesc = `${pkg.equipmentType}${pkg.materialType ? ` (${pkg.materialType})` : ''} - ${pkg.totalRequirements} requirements`;
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        title: autoTitle,
+        description: autoDesc,
+        doorsPackageId: pkg.id,
+        domainId: pkg.domainId || '',
+      },
+    });
   };
 
   const handleCreateOrUpdateRfq = async () => {
@@ -247,6 +301,7 @@ const DesignRfqManagementScreen = () => {
             rec.doorsId = selectedPackage.doorsId;
             rec.doorsPackageId = doorsPackageId;
             rec.projectId = projectId;
+            rec.domainId = state.form.domainId || null;
             rec.title = title;
             rec.description = description || null;
             rec.status = 'draft';
@@ -305,6 +360,7 @@ const DesignRfqManagementScreen = () => {
       payload: {
         title: rfq.title,
         description: rfq.description || '',
+        domainId: rfq.domainId || '',
         doorsPackageId: rfq.doorsPackageId,
         expectedDeliveryDays: String(rfq.expectedDeliveryDays || 30),
       },
@@ -318,6 +374,7 @@ const DesignRfqManagementScreen = () => {
       payload: {
         title: rfq.title + ' (Copy)',
         description: rfq.description || '',
+        domainId: rfq.domainId || '',
         doorsPackageId: rfq.doorsPackageId,
         expectedDeliveryDays: String(rfq.expectedDeliveryDays || 30),
       },
@@ -813,12 +870,17 @@ const DesignRfqManagementScreen = () => {
           onDismiss={handleDismissDialog}
           onCreate={handleCreateOrUpdateRfq}
           isEditing={!!state.ui.editingRfqId}
+          domains={state.data.domains}
           doorsPackages={state.data.doorsPackages}
           newTitle={state.form.title}
           setNewTitle={(title) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'title', value: title } })}
           newDescription={state.form.description}
           setNewDescription={(description) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'description', value: description } })
+          }
+          newDomainId={state.form.domainId}
+          setNewDomainId={(domainId) =>
+            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'domainId', value: domainId } })
           }
           newDoorsPackageId={state.form.doorsPackageId}
           setNewDoorsPackageId={(doorsPackageId) =>
@@ -831,6 +893,7 @@ const DesignRfqManagementScreen = () => {
               payload: { field: 'expectedDeliveryDays', value: expectedDeliveryDays },
             })
           }
+          onPackageSelected={handlePackageSelected}
         />
 
         <Portal>
