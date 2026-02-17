@@ -53,6 +53,10 @@ const EQUIPMENT_SUGGESTIONS: Record<string, { label: string; abbr: string; equip
   ],
   PSY: [
     { label: 'Transformer', abbr: 'TRF', equipment: 'Power Transformer' },
+    { label: 'Switchgear', abbr: 'SWG', equipment: 'HV Switchgear' },
+    { label: 'CT/PT', abbr: 'CTPT', equipment: 'Current/Potential Transformer' },
+    { label: 'Battery', abbr: 'BAT', equipment: 'Battery Bank & Charger' },
+    { label: 'Isolator', abbr: 'ISO', equipment: 'Motorized Isolator' },
     { label: 'Panel', abbr: 'PNL', equipment: 'Control Panel' },
   ],
 };
@@ -229,25 +233,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
         <Dialog.Title>{isEditing ? 'Edit DOORS Package' : 'Create DOORS Package'}</Dialog.Title>
         <Dialog.Content style={styles.dialogContent}>
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator>
-            {/* Site picker first */}
-            <Menu
-              visible={siteMenuVisible}
-              onDismiss={closeSiteMenu}
-              anchor={
-                <TouchableOpacity onPress={openSiteMenu} style={styles.pickerButton}>
-                  <Text style={styles.pickerLabel}>Site *</Text>
-                  <Text style={styles.pickerValue}>
-                    {sites.find((s) => s.id === newSiteId)?.name || 'Select Site'}
-                  </Text>
-                </TouchableOpacity>
-              }
-            >
-              {sites.map((site) => (
-                <Menu.Item key={site.id} onPress={() => handleSiteSelect(site.id)} title={site.name} />
-              ))}
-            </Menu>
-
-            {/* Domain picker (replaces hardcoded Category) */}
+            {/* 1. Domain picker — first, drives equipment suggestions */}
             <Menu
               visible={domainMenuVisible}
               onDismiss={() => setDomainMenuVisible(false)}
@@ -268,64 +254,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               }
             </Menu>
 
-            {/* Auto-generated DOORS ID */}
-            <View style={styles.doorsIdRow}>
-              <TextInput
-                label="DOORS ID *"
-                value={newDoorsId}
-                onChangeText={handleDoorsIdChange}
-                style={styles.doorsIdInput}
-                mode="outlined"
-              />
-              {idManuallyEdited && newCategory ? (
-                <IconButton
-                  icon="refresh"
-                  size={20}
-                  onPress={handleResetDoorsId}
-                  style={styles.resetButton}
-                />
-              ) : null}
-            </View>
-            {!isEditing && newCategory ? (
-              <HelperText type="info" visible>
-                Auto-generated. Pick equipment below to refine.
-              </HelperText>
-            ) : null}
-            {!newCategory && !isEditing ? (
-              <HelperText type="info" visible>
-                Select domain & equipment to auto-generate
-              </HelperText>
-            ) : null}
-
-            {/* Quick-fill templates */}
-            {categoryTemplates.length > 0 && onSelectTemplate && (
-              <View style={styles.templateSection}>
-                <Text style={styles.sectionLabel}>Quick-fill template:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                  {categoryTemplates.map((tpl) => (
-                    <Chip
-                      key={tpl.id}
-                      mode="outlined"
-                      onPress={() => {
-                        onSelectTemplate(tpl);
-                        // Also auto-generate DOORS ID using template's equipment
-                        if (!isEditing && !idManuallyEdited) {
-                          const abbr = getEquipmentAbbr(tpl.category, tpl.equipmentType);
-                          setNewDoorsId(generateDoorsId(tpl.category, abbr, existingDoorsIds));
-                        }
-                      }}
-                      style={styles.templateChip}
-                      compact
-                      icon="flash"
-                    >
-                      {tpl.name}
-                    </Chip>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Equipment type with quick-fill suggestions */}
+            {/* 2. Equipment type with quick-fill suggestions (driven by domain) */}
             <TextInput
               label="Equipment Type *"
               value={newEquipmentType}
@@ -353,6 +282,63 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               </View>
             )}
 
+            {/* Quick-fill templates */}
+            {categoryTemplates.length > 0 && onSelectTemplate && (
+              <View style={styles.templateSection}>
+                <Text style={styles.sectionLabel}>Quick-fill template:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                  {categoryTemplates.map((tpl) => (
+                    <Chip
+                      key={tpl.id}
+                      mode="outlined"
+                      onPress={() => {
+                        onSelectTemplate(tpl);
+                        if (!isEditing && !idManuallyEdited) {
+                          const abbr = getEquipmentAbbr(tpl.category, tpl.equipmentType);
+                          setNewDoorsId(generateDoorsId(tpl.category, abbr, existingDoorsIds));
+                        }
+                      }}
+                      style={styles.templateChip}
+                      compact
+                      icon="flash"
+                    >
+                      {tpl.name}
+                    </Chip>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* 3. Auto-generated DOORS ID */}
+            <View style={styles.doorsIdRow}>
+              <TextInput
+                label="DOORS ID *"
+                value={newDoorsId}
+                onChangeText={handleDoorsIdChange}
+                style={styles.doorsIdInput}
+                mode="outlined"
+              />
+              {idManuallyEdited && newCategory ? (
+                <IconButton
+                  icon="refresh"
+                  size={20}
+                  onPress={handleResetDoorsId}
+                  style={styles.resetButton}
+                />
+              ) : null}
+            </View>
+            {!isEditing && newCategory ? (
+              <HelperText type="info" visible>
+                Auto-generated from domain + equipment.
+              </HelperText>
+            ) : null}
+            {!newCategory && !isEditing ? (
+              <HelperText type="info" visible>
+                Select domain & equipment to auto-generate
+              </HelperText>
+            ) : null}
+
+            {/* 4. Material type */}
             <TextInput
               label="Material Type (Optional)"
               value={newMaterialType}
@@ -360,6 +346,8 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               style={styles.input}
               mode="outlined"
             />
+
+            {/* 5. Total requirements */}
             <TextInput
               label="Total Requirements"
               value={newTotalRequirements}
@@ -370,6 +358,25 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
               placeholder="100"
             />
             <Text style={styles.infoText}>Typical range: 50-200 requirements per package</Text>
+
+            {/* 6. Site picker — optional, at the bottom */}
+            <Menu
+              visible={siteMenuVisible}
+              onDismiss={closeSiteMenu}
+              anchor={
+                <TouchableOpacity onPress={openSiteMenu} style={styles.pickerButton}>
+                  <Text style={styles.pickerLabel}>Site (Optional)</Text>
+                  <Text style={styles.pickerValue}>
+                    {sites.find((s) => s.id === newSiteId)?.name || 'No site selected'}
+                  </Text>
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item onPress={() => handleSiteSelect('')} title="— None —" />
+              {sites.map((site) => (
+                <Menu.Item key={site.id} onPress={() => handleSiteSelect(site.id)} title={site.name} />
+              ))}
+            </Menu>
           </ScrollView>
         </Dialog.Content>
         <Dialog.Actions>
