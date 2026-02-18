@@ -29,30 +29,27 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
   quote,
 }) => {
   const [technicalScore, setTechnicalScore] = useState('70');
-  const [commercialScore, setCommercialScore] = useState('70');
   const [techDeviations, setTechDeviations] = useState('');
   const [commDeviations, setCommDeviations] = useState('');
 
   useEffect(() => {
     if (visible && quote) {
       setTechnicalScore(String(quote.technicalScore || 70));
-      setCommercialScore(String(quote.commercialScore || 70));
       setTechDeviations('');
       setCommDeviations('');
     }
   }, [visible, quote]);
 
   const techVal = parseInt(technicalScore) || 0;
-  const commVal = parseInt(commercialScore) || 0;
-  const overallScore = (techVal * 60 + commVal * 40) / 100;
+  const isQualified = techVal >= 70;
 
   const handleSubmit = () => {
     if (!quote) return;
-    if (techVal < 0 || techVal > 100 || commVal < 0 || commVal > 100) return;
+    if (techVal < 0 || techVal > 100) return;
     onSubmit({
       quoteId: quote.id,
       technicalScore: techVal,
-      commercialScore: commVal,
+      commercialScore: 0,
       technicalDeviations: techDeviations || undefined,
       commercialDeviations: commDeviations || undefined,
     });
@@ -74,7 +71,7 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
 
               <View style={styles.scoreSection}>
                 <View style={styles.scoreLabelRow}>
-                  <Text style={styles.scoreLabel}>Technical Score (60% weight)</Text>
+                  <Text style={styles.scoreLabel}>Technical Score</Text>
                   <TextInput
                     value={technicalScore}
                     onChangeText={setTechnicalScore}
@@ -84,27 +81,16 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
                     dense
                   />
                 </View>
-                <ScoreBar value={techVal} color="#2196F3" />
+                <ScoreBar value={techVal} color={isQualified ? '#2196F3' : '#F44336'} />
               </View>
 
-              <View style={styles.scoreSection}>
-                <View style={styles.scoreLabelRow}>
-                  <Text style={styles.scoreLabel}>Commercial Score (40% weight)</Text>
-                  <TextInput
-                    value={commercialScore}
-                    onChangeText={setCommercialScore}
-                    style={styles.scoreInput}
-                    mode="outlined"
-                    keyboardType="numeric"
-                    dense
-                  />
-                </View>
-                <ScoreBar value={commVal} color="#FF9800" />
-              </View>
-
-              <View style={styles.overallScoreBox}>
-                <Text style={styles.overallLabel}>Overall Score</Text>
-                <Text style={styles.overallValue}>{overallScore.toFixed(1)}</Text>
+              <View style={[styles.qualificationBox, { backgroundColor: isQualified ? '#E8F5E9' : '#FFEBEE' }]}>
+                <Text style={[styles.qualificationLabel, { color: isQualified ? '#2E7D32' : '#C62828' }]}>
+                  {isQualified ? 'Qualified' : 'Below Threshold'}
+                </Text>
+                <Text style={[styles.qualificationHint, { color: isQualified ? '#388E3C' : '#D32F2F' }]}>
+                  {isQualified ? `Score >= 70 — eligible for L1 ranking` : `Score < 70 — will not be ranked`}
+                </Text>
               </View>
 
               <TextInput
@@ -184,24 +170,19 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
-  overallScoreBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+  qualificationBox: {
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
+    alignItems: 'center',
   },
-  overallLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1565C0',
-  },
-  overallValue: {
-    fontSize: 24,
+  qualificationLabel: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#1565C0',
+  },
+  qualificationHint: {
+    fontSize: 12,
+    marginTop: 4,
   },
   input: {
     marginBottom: 12,
