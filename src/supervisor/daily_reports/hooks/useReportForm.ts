@@ -1,4 +1,4 @@
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useState } from 'react';
 import { database } from '../../../../models/database';
 import ItemModel from '../../../../models/ItemModel';
 import { logger } from '../../../services/LoggingService';
@@ -42,6 +42,9 @@ interface UseReportFormReturn {
   setShowExceedsWarning: (show: boolean) => void;
   pendingQuantity: number;
 
+  // Loading state
+  isSubmitting: boolean;
+
   // Actions
   openUpdateDialog: (item: ItemModel) => void;
   incrementQuantity: (amount: number) => void;
@@ -72,6 +75,7 @@ export const useReportForm = ({
 }: UseReportFormParams): UseReportFormReturn => {
   // ==================== State Management with useReducer ====================
   const [state, dispatch] = useReducer(reportFormReducer, initialReportFormState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ==================== Wrapper Functions for Dispatch ====================
 
@@ -137,6 +141,8 @@ export const useReportForm = ({
   const saveProgress = useCallback(
     async (newQuantity: number) => {
       if (!state.selectedItem) return;
+      if (isSubmitting) return;
+      setIsSubmitting(true);
 
       try {
         const plannedQty = state.selectedItem.plannedQuantity;
@@ -210,9 +216,11 @@ export const useReportForm = ({
           itemId: state.selectedItem?.id,
         });
         onError('Failed to update progress: ' + (error as Error).message);
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [state.selectedItem, state.form.notesInput, supervisorId, photos, onSuccess, onError, onLoadPhotoCounts, closeDialog]
+    [state.selectedItem, state.form.notesInput, supervisorId, photos, onSuccess, onError, onLoadPhotoCounts, closeDialog, isSubmitting]
   );
 
   /**
@@ -262,6 +270,9 @@ export const useReportForm = ({
     showExceedsWarning: state.showExceedsWarning,
     setShowExceedsWarning,
     pendingQuantity: state.pendingQuantity,
+
+    // Loading state
+    isSubmitting,
 
     // Actions
     openUpdateDialog,

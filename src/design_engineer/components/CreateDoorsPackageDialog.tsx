@@ -99,6 +99,7 @@ interface CreateDoorsPackageDialogProps {
   onDismiss: () => void;
   onCreate: () => void;
   isEditing?: boolean;
+  isSubmitting?: boolean;
   sites: Site[];
   domains?: Domain[];
   newDoorsId: string;
@@ -125,6 +126,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
   onDismiss,
   onCreate,
   isEditing = false,
+  isSubmitting = false,
   sites,
   domains = [],
   newDoorsId,
@@ -380,8 +382,10 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
           </ScrollView>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={onCreate}>{isEditing ? 'Save' : 'Create'}</Button>
+          <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
+          <Button onPress={onCreate} loading={isSubmitting} disabled={isSubmitting}>
+            {isEditing ? 'Save' : 'Create'}
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

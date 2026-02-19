@@ -80,6 +80,8 @@ export const useHindranceForm = ({
 
   // Handle saving hindrance (create or update)
   const handleSave = async () => {
+    if (isSaving) return;
+
     const validation = validateHindranceForm(title, selectedSiteId);
 
     if (!validation.isValid) {

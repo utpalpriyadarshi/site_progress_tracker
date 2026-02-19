@@ -58,6 +58,7 @@ const PurchaseOrderManagementScreen = () => {
   // Local search state for debouncing
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(localSearchQuery, 300);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync debounced search to reducer
   useEffect(() => {
@@ -211,6 +212,8 @@ const PurchaseOrderManagementScreen = () => {
       Alert.alert('Validation Error', 'Please select vendor and enter amount');
       return;
     }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       const poCollection = database.collections.get('purchase_orders');
@@ -241,6 +244,8 @@ const PurchaseOrderManagementScreen = () => {
     } catch (error) {
       logger.error('[PO] Error creating PO:', error);
       Alert.alert('Error', 'Failed to create Purchase Order');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -516,7 +521,7 @@ const PurchaseOrderManagementScreen = () => {
             >
               Cancel
             </Button>
-            <Button onPress={handleCreatePO}>Create</Button>
+            <Button onPress={handleCreatePO} loading={isSubmitting} disabled={isSubmitting}>Create</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

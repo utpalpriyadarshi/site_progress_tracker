@@ -32,6 +32,7 @@ interface CreateDesignDocumentDialogProps {
   onDismiss: () => void;
   onSave: () => void;
   isEditing: boolean;
+  isSubmitting?: boolean;
   form: DocumentFormData;
   onUpdateField: (field: keyof DocumentFormData, value: string) => void;
   categories: DesignDocumentCategory[];
@@ -45,6 +46,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   onDismiss,
   onSave,
   isEditing,
+  isSubmitting = false,
   form,
   onUpdateField,
   categories,
@@ -330,8 +332,10 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={onSave}>{isEditing ? 'Update' : 'Create'}</Button>
+          <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
+          <Button onPress={onSave} loading={isSubmitting} disabled={isSubmitting}>
+            {isEditing ? 'Update' : 'Create'}
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

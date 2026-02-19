@@ -51,6 +51,7 @@ const DesignRfqManagementScreen = () => {
   const [cancelRfqId, setCancelRfqId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -225,6 +226,8 @@ const DesignRfqManagementScreen = () => {
   };
 
   const handleCreateOrUpdateRfq = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const { title, description, doorsPackageId, expectedDeliveryDays } = state.form;
 
     if (!doorsPackageId) {
@@ -363,6 +366,8 @@ const DesignRfqManagementScreen = () => {
     } catch (error) {
       logger.error('[DesignRfq] Error saving RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -882,6 +887,7 @@ const DesignRfqManagementScreen = () => {
           onDismiss={handleDismissDialog}
           onCreate={handleCreateOrUpdateRfq}
           isEditing={!!state.ui.editingRfqId}
+          isSubmitting={isSubmitting}
           domains={state.data.domains}
           doorsPackages={state.data.doorsPackages}
           newTitle={state.form.title}

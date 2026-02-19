@@ -68,6 +68,8 @@ const DesignDocumentManagementScreen = () => {
   const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
   const [moveDocument, setMoveDocument] = useState<DesignDocument | null>(null);
   const [keyDates, setKeyDates] = useState<Array<{id: string; code: string; description: string; category: string}>>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -285,6 +287,8 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const handleCreateOrUpdateDocument = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const { documentNumber, title, documentType, categoryId, siteId, keyDateId, revisionNumber, weightage } = state.form;
 
     if (!documentNumber || !title || !documentType) {
@@ -479,6 +483,8 @@ const DesignDocumentManagementScreen = () => {
     } catch (error: any) {
       logger.error('[DesignDocument] Error saving document:', error);
       Alert.alert('Error', 'Failed to save design document');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -551,8 +557,10 @@ const DesignDocumentManagementScreen = () => {
   };
 
   const handleApprovalAction = async () => {
+    if (isApproving) return;
     const { approvalDocumentId, approvalAction } = state.ui;
     if (!approvalDocumentId || !approvalAction) return;
+    setIsApproving(true);
 
     try {
       const docsCollection = database.collections.get('design_documents');
@@ -612,6 +620,8 @@ const DesignDocumentManagementScreen = () => {
     } catch (error: any) {
       logger.error('[DesignDocument] Error updating document status:', error);
       Alert.alert('Error', 'Failed to update document status');
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -1208,6 +1218,7 @@ const DesignDocumentManagementScreen = () => {
           onDismiss={() => dispatch({ type: 'CLOSE_DIALOG' })}
           onSave={handleCreateOrUpdateDocument}
           isEditing={!!state.ui.editingDocumentId}
+          isSubmitting={isSubmitting}
           form={state.form}
           onUpdateField={(field, value) =>
             dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field, value } })

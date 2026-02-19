@@ -13,7 +13,7 @@ interface StatusTimelineProps {
   cancelledStatus?: string;
 }
 
-const COLORS = {
+const STATUS_COLORS = {
   completed: COLORS.SUCCESS,
   current: COLORS.INFO,
   pending: '#BDBDBD',
@@ -35,20 +35,20 @@ const StatusTimeline: React.FC<StatusTimelineProps> = ({ steps, currentStatus, c
         let labelColor: string;
 
         if (isCancelled) {
-          circleColor = COLORS.pending;
-          lineColor = COLORS.pending;
+          circleColor = STATUS_COLORS.pending;
+          lineColor = STATUS_COLORS.pending;
           labelColor = '#999';
         } else if (index < currentIndex) {
-          circleColor = COLORS.completed;
-          lineColor = COLORS.completed;
-          labelColor = COLORS.completed;
+          circleColor = STATUS_COLORS.completed;
+          lineColor = STATUS_COLORS.completed;
+          labelColor = STATUS_COLORS.completed;
         } else if (index === currentIndex) {
-          circleColor = COLORS.current;
-          lineColor = COLORS.pending;
-          labelColor = COLORS.current;
+          circleColor = STATUS_COLORS.current;
+          lineColor = STATUS_COLORS.pending;
+          labelColor = STATUS_COLORS.current;
         } else {
-          circleColor = COLORS.pending;
-          lineColor = COLORS.pending;
+          circleColor = STATUS_COLORS.pending;
+          lineColor = STATUS_COLORS.pending;
           labelColor = '#999';
         }
 
@@ -70,7 +70,7 @@ const StatusTimeline: React.FC<StatusTimelineProps> = ({ steps, currentStatus, c
                   styles.line,
                   {
                     backgroundColor:
-                      !isCancelled && index < currentIndex ? COLORS.completed : COLORS.pending,
+                      !isCancelled && index < currentIndex ? STATUS_COLORS.completed : STATUS_COLORS.pending,
                   },
                 ]}
               />
