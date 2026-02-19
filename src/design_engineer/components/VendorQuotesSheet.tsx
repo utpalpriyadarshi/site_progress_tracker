@@ -43,6 +43,8 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     fastestDelivery: number;
     highestCompliance: number;
   } | null>(null);
+  const [isAddingQuote, setIsAddingQuote] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   useEffect(() => {
     if (visible && rfq) {
@@ -172,6 +174,8 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     siteReqNotComplied?: number;
   }) => {
     if (!rfq) return;
+    if (isAddingQuote) return;
+    setIsAddingQuote(true);
     try {
       // If no vendorId, create a new vendor record
       let resolvedVendorId = data.vendorId;
@@ -243,6 +247,8 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     } catch (error: any) {
       logger.error('[VendorQuotes] Error adding quote:', error);
       Alert.alert('Error', error.message || 'Failed to add quote');
+    } finally {
+      setIsAddingQuote(false);
     }
   };
 
@@ -262,6 +268,8 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     commercialDeviations?: string;
   }) => {
     if (!rfq) return;
+    if (isEvaluating) return;
+    setIsEvaluating(true);
     try {
       await RfqService.evaluateQuote(
         {
@@ -287,6 +295,8 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     } catch (error: any) {
       logger.error('[VendorQuotes] Error evaluating quote:', error);
       Alert.alert('Error', error.message || 'Failed to evaluate quote');
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
@@ -706,6 +716,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         onDismiss={() => setAddDialogVisible(false)}
         onSubmit={handleAddQuote}
         vendors={vendors}
+        isSubmitting={isAddingQuote}
       />
 
       <EvaluateQuoteDialog
@@ -716,6 +727,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         }}
         onSubmit={handleSubmitEvaluation}
         quote={selectedQuote}
+        isSubmitting={isEvaluating}
       />
     </Portal>
   );

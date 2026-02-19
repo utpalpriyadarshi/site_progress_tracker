@@ -15,6 +15,7 @@ interface EvaluateQuoteDialogProps {
     commercialDeviations?: string;
   }) => void;
   quote: VendorQuote | null;
+  isSubmitting?: boolean;
 }
 
 const ScoreBar: React.FC<{ value: number; color: string }> = ({ value, color }) => (
@@ -28,6 +29,7 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
   onDismiss,
   onSubmit,
   quote,
+  isSubmitting = false,
 }) => {
   const [technicalScore, setTechnicalScore] = useState('70');
   const [techDeviations, setTechDeviations] = useState('');
@@ -119,8 +121,10 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={handleSubmit}>Submit Evaluation</Button>
+          <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
+          <Button onPress={handleSubmit} loading={isSubmitting} disabled={isSubmitting}>
+            Submit Evaluation
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

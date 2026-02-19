@@ -57,6 +57,7 @@ interface AddVendorQuoteDialogProps {
   vendors: Vendor[];
   isEditing?: boolean;
   editingQuote?: VendorQuote | null;
+  isSubmitting?: boolean;
 }
 
 const AddVendorQuoteDialog: React.FC<AddVendorQuoteDialogProps> = ({
@@ -66,6 +67,7 @@ const AddVendorQuoteDialog: React.FC<AddVendorQuoteDialogProps> = ({
   vendors,
   isEditing = false,
   editingQuote,
+  isSubmitting = false,
 }) => {
   const [vendorId, setVendorId] = useState('');
   const [vendorName, setVendorName] = useState('');
@@ -416,8 +418,12 @@ const AddVendorQuoteDialog: React.FC<AddVendorQuoteDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={handleSubmit} disabled={!vendorName.trim() || !quotedPrice || !leadTimeDays}>
+          <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
+          <Button
+            onPress={handleSubmit}
+            loading={isSubmitting}
+            disabled={isSubmitting || !vendorName.trim() || !quotedPrice || !leadTimeDays}
+          >
             {isEditing ? 'Save' : 'Add Quote'}
           </Button>
         </Dialog.Actions>

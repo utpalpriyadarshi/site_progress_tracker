@@ -58,6 +58,7 @@ const DoorsPackageManagementScreen = () => {
   const [transitionDialogVisible, setTransitionDialogVisible] = useState(false);
   const [transitionStage, setTransitionStage] = useState<TransitionStage>('received');
   const [transitionPackageId, setTransitionPackageId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -204,6 +205,8 @@ const DoorsPackageManagementScreen = () => {
   };
 
   const handleCreateOrUpdatePackage = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const { doorsId, siteId, equipmentType, materialType, category, domainId, totalRequirements } = state.form;
 
     if (!equipmentType || !category) {
@@ -348,6 +351,8 @@ const DoorsPackageManagementScreen = () => {
     } catch (error) {
       logger.error('[DoorsPackage] Error saving package:', error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -990,6 +995,7 @@ const DoorsPackageManagementScreen = () => {
           onDismiss={handleDismissDialog}
           onCreate={handleCreateOrUpdatePackage}
           isEditing={!!state.ui.editingPackageId}
+          isSubmitting={isSubmitting}
           sites={state.data.sites}
           domains={projectDomains}
           newDoorsId={state.form.doorsId}

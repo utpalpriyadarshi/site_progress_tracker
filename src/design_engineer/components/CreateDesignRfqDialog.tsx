@@ -9,6 +9,7 @@ interface CreateDesignRfqDialogProps {
   onDismiss: () => void;
   onCreate: () => void;
   isEditing?: boolean;
+  isSubmitting?: boolean;
   domains: Domain[];
   doorsPackages: DoorsPackage[];
   newTitle: string;
@@ -29,6 +30,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
   onDismiss,
   onCreate,
   isEditing = false,
+  isSubmitting = false,
   domains,
   doorsPackages,
   newTitle,
@@ -175,8 +177,10 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={onCreate}>{isEditing ? 'Save' : 'Create'}</Button>
+          <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
+          <Button onPress={onCreate} loading={isSubmitting} disabled={isSubmitting}>
+            {isEditing ? 'Save' : 'Create'}
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>
