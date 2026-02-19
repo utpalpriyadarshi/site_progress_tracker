@@ -73,3 +73,6 @@ export type {
   UseOfflineSyncOptions,
   UseOfflineSyncReturn,
 } from './useOfflineSync';
+
+// Snackbar hook
+export { useSnackbar } from './useSnackbar';

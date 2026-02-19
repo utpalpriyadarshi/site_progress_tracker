@@ -3,14 +3,14 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, TextInput, Button, HelperText, Portal, Snackbar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import PasswordResetService from '../services/PasswordResetService';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 export const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [emailSent, setEmailSent] = useState(false);
 
   const validateEmail = (email: string): boolean => {
@@ -38,15 +38,12 @@ export const ForgotPasswordScreen: React.FC = () => {
 
       if (result.success) {
         setEmailSent(true);
-        setSnackbarMessage('Password reset email sent! Check your inbox.');
-        setSnackbarVisible(true);
+        showSnackbar('Password reset email sent! Check your inbox.');
       } else {
-        setSnackbarMessage(result.message);
-        setSnackbarVisible(true);
+        showSnackbar(result.message);
       }
     } catch (error) {
-      setSnackbarMessage('Failed to send reset request. Please try again.');
-      setSnackbarVisible(true);
+      showSnackbar('Failed to send reset request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -151,13 +148,7 @@ export const ForgotPasswordScreen: React.FC = () => {
       </ScrollView>
 
       <Portal>
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={5000}
-        >
-          {snackbarMessage}
-        </Snackbar>
+        <Snackbar {...snackbarProps} duration={5000} />
       </Portal>
     </View>
   );

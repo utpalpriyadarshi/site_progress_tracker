@@ -37,6 +37,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 /**
  * DesignDocumentManagementScreen
@@ -61,8 +62,7 @@ const DesignDocumentManagementScreen = () => {
   const [pendingCopyCallback, setPendingCopyCallback] = useState<
     ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
   >(null);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
   const [moveDialogVisible, setMoveDialogVisible] = useState(false);
   const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
@@ -832,8 +832,7 @@ const DesignDocumentManagementScreen = () => {
    * Handle copy success
    */
   const handleCopySuccess = (copiedCount: number, destinationSiteName: string) => {
-    setSnackbarMessage(`Successfully copied ${copiedCount} document${copiedCount !== 1 ? 's' : ''} to ${destinationSiteName}`);
-    setSnackbarVisible(true);
+    showSnackbar(`Successfully copied ${copiedCount} document${copiedCount !== 1 ? 's' : ''} to ${destinationSiteName}`);
     setCopyDialogVisible(false);
 
     // Reload documents to reflect changes
@@ -901,8 +900,7 @@ const DesignDocumentManagementScreen = () => {
   const handleMoveSuccess = (destinationSiteName: string) => {
     setMoveDialogVisible(false);
     setMoveDocument(null);
-    setSnackbarMessage(`Document moved to ${destinationSiteName}`);
-    setSnackbarVisible(true);
+    showSnackbar(`Document moved to ${destinationSiteName}`);
     loadDocuments();
   };
 
@@ -910,8 +908,7 @@ const DesignDocumentManagementScreen = () => {
 
   const handleTemplateSuccess = (createdCount: number, templateName: string) => {
     setTemplateDialogVisible(false);
-    setSnackbarMessage(`Created ${createdCount} document${createdCount !== 1 ? 's' : ''} from "${templateName}" template`);
-    setSnackbarVisible(true);
+    showSnackbar(`Created ${createdCount} document${createdCount !== 1 ? 's' : ''} from "${templateName}" template`);
     loadDocuments();
   };
 
@@ -1292,16 +1289,10 @@ const DesignDocumentManagementScreen = () => {
 
         {/* Success Snackbar */}
         <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
+          {...snackbarProps}
           duration={4000}
-          action={{
-            label: 'Dismiss',
-            onPress: () => setSnackbarVisible(false),
-          }}
-        >
-          {snackbarMessage}
-        </Snackbar>
+          action={{ label: 'Dismiss', onPress: snackbarProps.onDismiss }}
+        />
       </View>
     </ErrorBoundary>
   );

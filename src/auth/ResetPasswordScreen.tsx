@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Text, TextInput, Button, HelperText, Portal, Snackbar } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PasswordResetService from '../services/PasswordResetService';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 export const ResetPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -13,8 +14,7 @@ export const ResetPasswordScreen: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [validatingToken, setValidatingToken] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -82,8 +82,7 @@ export const ResetPasswordScreen: React.FC = () => {
     setLoading(true);
 
     if (!params?.token || !params?.email) {
-      setSnackbarMessage('Invalid reset link.');
-      setSnackbarVisible(true);
+      showSnackbar('Invalid reset link.');
       setLoading(false);
       return;
     }
@@ -96,20 +95,17 @@ export const ResetPasswordScreen: React.FC = () => {
       );
 
       if (result.success) {
-        setSnackbarMessage('Password reset successful! Redirecting...');
-        setSnackbarVisible(true);
+        showSnackbar('Password reset successful! Redirecting...');
 
         // Navigate to login after 2 seconds
         setTimeout(() => {
           navigation.navigate('Login' as never);
         }, 2000);
       } else {
-        setSnackbarMessage(result.message);
-        setSnackbarVisible(true);
+        showSnackbar(result.message);
       }
     } catch (error) {
-      setSnackbarMessage('Failed to reset password. Please try again.');
-      setSnackbarVisible(true);
+      showSnackbar('Failed to reset password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -266,13 +262,7 @@ export const ResetPasswordScreen: React.FC = () => {
       </ScrollView>
 
       <Portal>
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={5000}
-        >
-          {snackbarMessage}
-        </Snackbar>
+        <Snackbar {...snackbarProps} duration={5000} />
       </Portal>
     </View>
   );
