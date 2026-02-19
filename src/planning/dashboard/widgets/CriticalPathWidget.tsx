@@ -13,6 +13,7 @@ import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Constants ====================
 
@@ -61,11 +62,11 @@ export const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
   const getRiskColor = (risk: string): string => {
     switch (risk) {
       case 'high':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'medium':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       default:
         return theme.colors.outline;
     }
@@ -151,22 +152,22 @@ export const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
       <View>
         <View style={styles.summaryRow}>
           <View
-            style={[styles.summaryBadge, { backgroundColor: '#FFEBEE' }]}
+            style={[styles.summaryBadge, { backgroundColor: COLORS.ERROR_BG }]}
             accessible
             accessibilityLabel={`${items.filter((i) => i.riskLevel === 'high').length} high risk items`}
           >
-            <Icon name="alert-circle" size={14} color="#F44336" />
-            <Text variant="labelSmall" style={{ color: '#F44336', marginLeft: 4 }}>
+            <Icon name="alert-circle" size={14} color={COLORS.ERROR} />
+            <Text variant="labelSmall" style={{ color: COLORS.ERROR, marginLeft: 4 }}>
               {items.filter((i) => i.riskLevel === 'high').length} High
             </Text>
           </View>
           <View
-            style={[styles.summaryBadge, { backgroundColor: '#FFF3E0' }]}
+            style={[styles.summaryBadge, { backgroundColor: COLORS.WARNING_BG }]}
             accessible
             accessibilityLabel={`${items.filter((i) => i.riskLevel === 'medium').length} medium risk items`}
           >
-            <Icon name="alert" size={14} color="#FF9800" />
-            <Text variant="labelSmall" style={{ color: '#FF9800', marginLeft: 4 }}>
+            <Icon name="alert" size={14} color={COLORS.WARNING} />
+            <Text variant="labelSmall" style={{ color: COLORS.WARNING, marginLeft: 4 }}>
               {items.filter((i) => i.riskLevel === 'medium').length} Medium
             </Text>
           </View>

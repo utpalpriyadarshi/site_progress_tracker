@@ -20,15 +20,16 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Text, Button, ProgressBar, Chip } from 'react-native-paper';
 import { MilestoneCardProps, MilestoneStatus } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Status colors mapping
  */
 const STATUS_COLORS: Record<MilestoneStatus, string> = {
-  'pending': '#9E9E9E',       // Gray
-  'in-progress': '#2196F3',   // Blue
-  'completed': '#4CAF50',     // Green
-  'delayed': '#F44336',       // Red
+  'pending': COLORS.DISABLED,       // Gray
+  'in-progress': COLORS.INFO,   // Blue
+  'completed': COLORS.SUCCESS,     // Green
+  'delayed': COLORS.ERROR,       // Red
 };
 
 /**
@@ -249,7 +250,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                 mode="outlined"
                 onPress={() => onDelete(milestone)}
                 style={styles.actionButton}
-                textColor="#F44336"
+                textColor={COLORS.ERROR}
                 compact
               >
                 Delete
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   delayedText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: 'bold',
   },
   dependentSection: {

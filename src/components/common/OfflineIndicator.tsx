@@ -27,6 +27,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -89,9 +90,9 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
 
   // Determine colors and icon based on state
   const backgroundColor = isOffline
-    ? theme.colors.errorContainer || '#FFEBEE'
+    ? theme.colors.errorContainer || COLORS.ERROR_BG
     : hasPending
-    ? theme.colors.tertiaryContainer || '#E3F2FD'
+    ? theme.colors.tertiaryContainer || COLORS.INFO_BG
     : theme.colors.surfaceVariant || '#F5F5F5';
 
   const textColor = isOffline

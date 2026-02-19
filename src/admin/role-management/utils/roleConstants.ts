@@ -1,4 +1,5 @@
 import RoleModel from '../../../../models/RoleModel';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get role color based on role name
@@ -6,21 +7,21 @@ import RoleModel from '../../../../models/RoleModel';
 export const getRoleColor = (roleName: string): string => {
   switch (roleName) {
     case 'Admin':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'Supervisor':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'Manager':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'Planner':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'Logistics':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     case 'DesignEngineer':
       return '#00BCD4';
     case 'CommercialManager':
       return '#FF5722';
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

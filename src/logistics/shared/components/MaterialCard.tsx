@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * MaterialCard
@@ -78,15 +79,15 @@ const MaterialCard: React.FC<MaterialCardProps> = ({
   const getStatusColor = (status: Material['stockStatus']) => {
     switch (status) {
       case 'in-stock':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'low-stock':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'out-of-stock':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'on-order':
-        return '#2196F3';
+        return COLORS.INFO;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
   },
   stockRange: {
     fontSize: 10,
-    color: '#9E9E9E',
+    color: COLORS.DISABLED,
   },
   infoRow: {
     flexDirection: 'row',
@@ -358,15 +359,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   actionButtonPrimary: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   actionText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   actionTextPrimary: {

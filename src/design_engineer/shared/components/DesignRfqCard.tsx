@@ -29,6 +29,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Chip, Button, IconButton } from 'react-native-paper';
 import { DesignRfqCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get status color based on RFQ status
@@ -36,19 +37,19 @@ import { DesignRfqCardProps } from '../types';
 const getStatusColor = (status: string): string => {
   switch (status) {
     case 'draft':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     case 'issued':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'quotes_received':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'evaluated':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     case 'awarded':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'cancelled':
-      return '#F44336';
+      return COLORS.ERROR;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

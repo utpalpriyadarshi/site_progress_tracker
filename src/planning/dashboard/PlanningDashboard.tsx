@@ -56,6 +56,7 @@ import {
   useKDTimelineProgressData,
   useSiteProgressData,
 } from './hooks';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Component ====================
 
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
   alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginHorizontal: 16,

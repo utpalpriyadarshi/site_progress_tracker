@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import DoorsPackageModel from '../../../models/DoorsPackageModel';
+import { COLORS } from '../../theme/colors';
 
 /**
  * DoorsLinkingModal
@@ -202,11 +203,11 @@ const DoorsLinkingModal: React.FC<DoorsLinkingModalProps> = ({
 function getStatusColor(status: string) {
   switch (status) {
     case 'draft':
-      return { backgroundColor: '#FFF3E0' };
+      return { backgroundColor: COLORS.WARNING_BG };
     case 'under_review':
-      return { backgroundColor: '#E3F2FD' };
+      return { backgroundColor: COLORS.INFO_BG };
     case 'approved':
-      return { backgroundColor: '#E8F5E9' };
+      return { backgroundColor: COLORS.SUCCESS_BG };
     case 'closed':
       return { backgroundColor: '#F5F5F5' };
     default:

@@ -37,6 +37,7 @@ import DesignDocumentModel from '../../../../models/DesignDocumentModel';
 import { calculateSiteProgressFromItems } from '../../utils/progressCalculations';
 import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../../utils/designDocumentProgress';
 import { logger } from '../../../services/LoggingService';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -105,11 +106,11 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
       : 'not_started';
 
   const statusColors: Record<string, string> = {
-    not_started: '#9E9E9E',
-    in_progress: '#2196F3',
-    completed: '#4CAF50',
+    not_started: COLORS.DISABLED,
+    in_progress: COLORS.INFO,
+    completed: COLORS.SUCCESS,
   };
-  const statusColor = statusColors[derivedStatus] || '#9E9E9E';
+  const statusColor = statusColors[derivedStatus] || COLORS.DISABLED;
 
   return (
     <Surface style={styles.siteItem} elevation={1}>
@@ -121,7 +122,7 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
         <IconButton
           icon="delete-outline"
           size={20}
-          iconColor="#F44336"
+          iconColor={COLORS.ERROR}
           onPress={() => onRemove(association.id)}
         />
       </View>
@@ -139,8 +140,8 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
               dense
             />
             <Text style={styles.percentSymbol}>%</Text>
-            <IconButton icon="check" size={18} iconColor="#4CAF50" onPress={handleSaveContribution} />
-            <IconButton icon="close" size={18} iconColor="#F44336" onPress={handleCancelContribution} />
+            <IconButton icon="check" size={18} iconColor={COLORS.SUCCESS} onPress={handleSaveContribution} />
+            <IconButton icon="close" size={18} iconColor={COLORS.ERROR} onPress={handleCancelContribution} />
           </View>
         ) : (
           <View style={styles.editRow}>
@@ -173,7 +174,7 @@ const SiteAssociationItem: React.FC<SiteAssociationItemProps> = ({
 
       <ProgressBar
         progress={calculatedProgress / 100}
-        color={derivedStatus === 'completed' ? '#4CAF50' : '#2196F3'}
+        color={derivedStatus === 'completed' ? COLORS.SUCCESS : COLORS.INFO}
         style={styles.progressBar}
       />
 
@@ -607,17 +608,17 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   totalValid: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   totalExceeds: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   totalIncomplete: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   warningText: {
     fontSize: 12,
-    color: '#FF9800',
+    color: COLORS.WARNING,
     marginBottom: 8,
     fontStyle: 'italic',
   },
@@ -679,7 +680,7 @@ const styles = StyleSheet.create({
   },
   progressChip: {
     minHeight: 28,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   progressRow: {
     flexDirection: 'row',

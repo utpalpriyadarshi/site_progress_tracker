@@ -22,6 +22,7 @@ import { Q } from '@nozbe/watermelondb';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsStatisticsService, { DoorsKPIs } from '../services/DoorsStatisticsService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 
 /**
@@ -137,13 +138,13 @@ const LogisticsDashboardScreen = () => {
   const getSeverityColor = (severity: string): string => {
     switch (severity) {
       case 'critical':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'high':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'medium':
         return '#FFC107';
       case 'low':
-        return '#2196F3';
+        return COLORS.INFO;
       default:
         return '#999';
     }
@@ -152,13 +153,13 @@ const LogisticsDashboardScreen = () => {
   const getSeverityBgColor = (severity: string): string => {
     switch (severity) {
       case 'critical':
-        return '#FFEBEE';
+        return COLORS.ERROR_BG;
       case 'high':
-        return '#FFF3E0';
+        return COLORS.WARNING_BG;
       case 'medium':
         return '#FFF8E1';
       case 'low':
-        return '#E3F2FD';
+        return COLORS.INFO_BG;
       default:
         return '#F5F5F5';
     }
@@ -167,11 +168,11 @@ const LogisticsDashboardScreen = () => {
   const getPriorityColor = (priority: string): string => {
     switch (priority) {
       case 'high':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'medium':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       default:
         return '#999';
     }
@@ -267,7 +268,7 @@ const LogisticsDashboardScreen = () => {
             <Text style={styles.metricValue}>{doorsKPIs.totalPackages}</Text>
             <Text style={styles.metricLabel}>DOORS Packages</Text>
             {doorsKPIs.criticalPackages > 0 && (
-              <Text style={[styles.metricSubtext, { color: '#F44336' }]}>
+              <Text style={[styles.metricSubtext, { color: COLORS.ERROR }]}>
                 {doorsKPIs.criticalPackages} critical
               </Text>
             )}
@@ -277,8 +278,8 @@ const LogisticsDashboardScreen = () => {
             <Text style={[
               styles.metricValue,
               {
-                color: doorsKPIs.averageCompliance >= 95 ? '#4CAF50' :
-                       doorsKPIs.averageCompliance >= 80 ? '#FF9800' : '#F44336'
+                color: doorsKPIs.averageCompliance >= 95 ? COLORS.SUCCESS :
+                       doorsKPIs.averageCompliance >= 80 ? COLORS.WARNING : COLORS.ERROR
               }
             ]}>
               {doorsKPIs.averageCompliance.toFixed(1)}%
@@ -523,7 +524,7 @@ const LogisticsDashboardScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={COLORS.INFO} />
         <Text style={styles.loadingText}>Loading logistics dashboard...</Text>
       </View>
     );
@@ -617,15 +618,15 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   projectChipActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO_BG,
+    borderColor: COLORS.INFO,
   },
   projectChipText: {
     fontSize: 14,
     color: '#666',
   },
   projectChipTextActive: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   kpiScroll: {
@@ -644,13 +645,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   kpiCardPrimary: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   kpiCardSuccess: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   kpiCardWarning: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   kpiCardInfo: {
     backgroundColor: '#F3E5F5',
@@ -738,7 +739,7 @@ const styles = StyleSheet.create({
   },
   alertAction: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginTop: 4,
     fontWeight: '500',
   },
@@ -751,14 +752,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     borderRadius: 4,
     alignItems: 'center',
   },
   alertButtonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   alertButtonText: {
     color: '#fff',
@@ -766,7 +767,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   alertButtonTextSecondary: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -830,7 +831,7 @@ const styles = StyleSheet.create({
   recSavings: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   recDescription: {
     fontSize: 13,
@@ -839,7 +840,7 @@ const styles = StyleSheet.create({
   },
   recAction: {
     fontSize: 12,
-    color: '#FF9800',
+    color: COLORS.WARNING,
     fontWeight: '500',
   },
   metricsGrid: {
@@ -914,7 +915,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   costSavingsValue: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
 });
 

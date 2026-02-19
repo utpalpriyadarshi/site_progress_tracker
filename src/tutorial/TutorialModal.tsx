@@ -20,6 +20,7 @@ import {
 import { Text, Button, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TutorialStep } from './plannerTutorialSteps';
+import { COLORS } from '../theme/colors';
 
 interface TutorialModalProps {
   visible: boolean;
@@ -129,7 +130,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
             {/* Screen Hint */}
             {currentStep.actionHint && (
               <View style={styles.hintContainer}>
-                <Icon name="lightbulb-outline" size={16} color="#FF9800" />
+                <Icon name="lightbulb-outline" size={16} color={COLORS.WARNING} />
                 <Text style={styles.hintText}>{currentStep.actionHint}</Text>
               </View>
             )}

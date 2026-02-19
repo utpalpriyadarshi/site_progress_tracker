@@ -6,6 +6,7 @@ import { Q } from '@nozbe/watermelondb';
 import { useDesignEngineerContext } from '../context/DesignEngineerContext';
 import { DesignDocument } from '../types/DesignDocumentTypes';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface MoveDesignDocumentDialogProps {
   visible: boolean;
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   summaryBox: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 8,
     padding: 12,
     marginTop: 12,

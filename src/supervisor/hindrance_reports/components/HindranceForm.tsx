@@ -13,6 +13,7 @@ import {
 import ItemModel from '../../../../models/ItemModel';
 import { HindrancePriority, HindranceStatus } from '../types';
 import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
+import { COLORS } from '../../../theme/colors';
 
 interface HindranceFormProps {
   visible: boolean;
@@ -45,7 +46,7 @@ const PhotoThumbnail = React.memo(({ uri, index, onRemove }: { uri: string; inde
     <IconButton
       icon="close-circle"
       size={20}
-      iconColor="#F44336"
+      iconColor={COLORS.ERROR}
       style={styles.removePhotoButton}
       onPress={() => onRemove(index)}
     />

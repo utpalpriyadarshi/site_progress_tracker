@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * RecentTransactionsWidget Component
@@ -66,14 +67,14 @@ const TYPE_CONFIG = {
   },
   invoice: {
     icon: '📄',
-    color: '#2196F3',
+    color: COLORS.INFO,
     label: 'Invoice',
   },
 };
 
 const STATUS_CONFIG = {
-  pending: { color: '#FF9800', label: 'Pending' },
-  paid: { color: '#4CAF50', label: 'Paid' },
+  pending: { color: COLORS.WARNING, label: 'Pending' },
+  paid: { color: COLORS.SUCCESS, label: 'Paid' },
   overdue: { color: '#ff6b6b', label: 'Overdue' },
 };
 

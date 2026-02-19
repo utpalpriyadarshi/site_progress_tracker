@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Button, Card, Title, Paragraph, Divider } from 'react-native-paper';
 import { database } from '../../models/database';
+import { COLORS } from '../theme/colors';
 
 export const Phase1TestUtility = () => {
   const [testResults, setTestResults] = useState<string[]>([]);
@@ -227,7 +228,7 @@ export const Phase1TestUtility = () => {
           onPress={runAllTests}
           disabled={testing}
           style={styles.button}
-          buttonColor="#4CAF50"
+          buttonColor={COLORS.SUCCESS}
         >
           Run All Tests
         </Button>

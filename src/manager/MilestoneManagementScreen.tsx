@@ -30,6 +30,7 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAccessibility } from '../utils/accessibility';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 interface Milestone {
   id: string;
@@ -491,21 +492,21 @@ const MilestoneManagementScreen = () => {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'completed':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'in_progress':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'on_hold':
         return '#FFC107';
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
   const getProgressColor = (progress: number): string => {
-    if (progress >= 75) return '#4CAF50';
+    if (progress >= 75) return COLORS.SUCCESS;
     if (progress >= 50) return '#FFC107';
-    if (progress > 0) return '#FF9800';
-    return '#9E9E9E';
+    if (progress > 0) return COLORS.WARNING;
+    return COLORS.DISABLED;
   };
 
   const formatDate = (timestamp?: number): string => {
@@ -525,7 +526,7 @@ const MilestoneManagementScreen = () => {
               <Chip
                 style={[
                   styles.milestoneCodeChip,
-                  { backgroundColor: milestone.isCustom ? '#9C27B0' : '#2196F3' },
+                  { backgroundColor: milestone.isCustom ? COLORS.STATUS_EVALUATED : COLORS.INFO },
                 ]}
                 textStyle={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}
               >
@@ -618,9 +619,9 @@ const MilestoneManagementScreen = () => {
                 <Button
                   mode="outlined"
                   onPress={() => handleDeleteMilestone(milestone)}
-                  style={[styles.actionButton, { borderColor: '#F44336' }]}
+                  style={[styles.actionButton, { borderColor: COLORS.ERROR }]}
                   icon="delete"
-                  textColor="#F44336"
+                  textColor={COLORS.ERROR}
                 >
                   Delete
                 </Button>
@@ -1033,7 +1034,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   summaryLabel: {
     fontSize: 11,
@@ -1101,7 +1102,7 @@ const styles = StyleSheet.create({
   progressValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   progressBar: {
     height: 8,
@@ -1138,7 +1139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timelineToggleText: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1160,7 +1161,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
+    borderLeftColor: COLORS.INFO,
   },
   timelineItemHeader: {
     flexDirection: 'row',
@@ -1215,7 +1216,7 @@ const styles = StyleSheet.create({
   },
   // Batch Approval Styles
   batchApproveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   batchApprovalDialog: {
     maxHeight: '80%',
@@ -1275,7 +1276,7 @@ const styles = StyleSheet.create({
   batchSelectionCount: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
     textAlign: 'center',
     marginTop: 8,
   },

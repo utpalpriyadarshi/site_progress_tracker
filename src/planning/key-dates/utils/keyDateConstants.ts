@@ -9,15 +9,16 @@
  */
 
 import { KeyDateCategory, KeyDateStatus } from '../../../../models/KeyDateModel';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Status colors for key dates
  */
 export const KEY_DATE_STATUS_COLORS: Record<KeyDateStatus, string> = {
-  not_started: '#9E9E9E', // Grey
-  in_progress: '#2196F3', // Blue
-  completed: '#4CAF50',   // Green
-  delayed: '#F44336',     // Red
+  not_started: COLORS.DISABLED, // Grey
+  in_progress: COLORS.INFO, // Blue
+  completed: COLORS.SUCCESS,   // Green
+  delayed: COLORS.ERROR,     // Red
 };
 
 /**
@@ -35,11 +36,11 @@ export const KEY_DATE_STATUS_LABELS: Record<KeyDateStatus, string> = {
  * Categories A-G can be configured per project
  */
 export const KEY_DATE_CATEGORY_COLORS: Record<KeyDateCategory, string> = {
-  G: '#607D8B', // Blue Grey
-  A: '#2196F3', // Blue
-  B: '#4CAF50', // Green
-  C: '#FF9800', // Orange
-  D: '#9C27B0', // Purple
+  G: COLORS.STATUS_CLOSED, // Blue Grey
+  A: COLORS.INFO, // Blue
+  B: COLORS.SUCCESS, // Green
+  C: COLORS.WARNING, // Orange
+  D: COLORS.STATUS_EVALUATED, // Purple
   E: '#00BCD4', // Cyan
   F: '#E91E63', // Pink
 };

@@ -9,6 +9,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Button, Text, Card, Divider } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
+import { COLORS } from '../theme/colors';
 
 const SnackbarTestScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -146,7 +147,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testSuccess}
             style={styles.button}
-            buttonColor="#4CAF50"
+            buttonColor={COLORS.SUCCESS}
           >
             Success Snackbar (Green)
           </Button>
@@ -155,7 +156,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testError}
             style={styles.button}
-            buttonColor="#F44336"
+            buttonColor={COLORS.ERROR}
           >
             Error Snackbar (Red)
           </Button>
@@ -164,7 +165,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testWarning}
             style={styles.button}
-            buttonColor="#FF9800"
+            buttonColor={COLORS.WARNING}
           >
             Warning Snackbar (Orange)
           </Button>
@@ -173,7 +174,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testInfo}
             style={styles.button}
-            buttonColor="#2196F3"
+            buttonColor={COLORS.INFO}
           >
             Info Snackbar (Blue)
           </Button>
@@ -225,7 +226,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testSimpleDialog}
             style={styles.button}
-            buttonColor="#2196F3"
+            buttonColor={COLORS.INFO}
           >
             Simple Dialog
           </Button>
@@ -234,7 +235,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testDestructiveDialog}
             style={styles.button}
-            buttonColor="#F44336"
+            buttonColor={COLORS.ERROR}
           >
             Destructive Dialog (Red Button)
           </Button>
@@ -243,7 +244,7 @@ const SnackbarTestScreen = () => {
             mode="contained"
             onPress={testAsyncDialog}
             style={styles.button}
-            buttonColor="#9C27B0"
+            buttonColor={COLORS.STATUS_EVALUATED}
           >
             Async Dialog (Loading State)
           </Button>

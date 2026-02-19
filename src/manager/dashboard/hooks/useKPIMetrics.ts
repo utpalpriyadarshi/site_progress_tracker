@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ProjectStats, ProjectInfo } from '../state';
 import { getKPIIndicatorColor, formatCurrency } from '../utils/dashboardFormatters';
+import { COLORS } from '../../../theme/colors';
 
 export interface KPIMetric {
   label: string;
@@ -31,10 +32,10 @@ export const useKPIMetrics = (
         subtext: `of ${formatCurrency(projectInfo.budget)}`,
         indicatorColor:
           stats.budgetUtilization <= 100
-            ? '#4CAF50'
+            ? COLORS.SUCCESS
             : stats.budgetUtilization <= 110
             ? '#FFC107'
-            : '#F44336',
+            : COLORS.ERROR,
       },
       // KPI 3: Open Issues
       {
@@ -69,14 +70,14 @@ export const useKPIMetrics = (
         label: 'Milestones',
         value: stats.upcomingMilestones,
         subtext: 'Next 30 days',
-        indicatorColor: '#2196F3', // Info color
+        indicatorColor: COLORS.INFO, // Info color
       },
       // KPI 8: Active Supervisors
       {
         label: 'Supervisors',
         value: stats.activeSupervisors,
         subtext: 'Active on sites',
-        indicatorColor: '#4CAF50', // Success color
+        indicatorColor: COLORS.SUCCESS, // Success color
       },
     ];
   }, [stats, projectInfo]);

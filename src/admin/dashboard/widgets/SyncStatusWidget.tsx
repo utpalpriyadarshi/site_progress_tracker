@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * SyncStatusWidget Component
@@ -58,11 +59,11 @@ export const SyncStatusWidget: React.FC<SyncStatusWidgetProps> = ({
   };
 
   const syncStatus = useMemo(() => {
-    if (!isConnected) return { color: '#9E9E9E', label: 'Offline', icon: '○' };
-    if (data.isSyncing) return { color: '#2196F3', label: 'Syncing...', icon: '↻' };
-    if (!data.lastSyncSuccess) return { color: '#F44336', label: 'Failed', icon: '✗' };
-    if (data.queueCount > 0) return { color: '#FF9800', label: 'Pending', icon: '!' };
-    return { color: '#4CAF50', label: 'Synced', icon: '✓' };
+    if (!isConnected) return { color: COLORS.DISABLED, label: 'Offline', icon: '○' };
+    if (data.isSyncing) return { color: COLORS.INFO, label: 'Syncing...', icon: '↻' };
+    if (!data.lastSyncSuccess) return { color: COLORS.ERROR, label: 'Failed', icon: '✗' };
+    if (data.queueCount > 0) return { color: COLORS.WARNING, label: 'Pending', icon: '!' };
+    return { color: COLORS.SUCCESS, label: 'Synced', icon: '✓' };
   }, [data, isConnected]);
 
   const accessibilityLabel = useMemo(() => {
@@ -181,10 +182,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   warningValue: {
-    color: '#FF9800',
+    color: COLORS.WARNING,
   },
   errorValue: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   statLabel: {
     fontSize: 12,

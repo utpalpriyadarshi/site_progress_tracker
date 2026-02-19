@@ -12,6 +12,7 @@ import {
   SyncStatusData,
   QuickStatsData,
 } from '../widgets';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Hook to provide data for admin dashboard widgets
@@ -229,13 +230,13 @@ export function useWidgetData() {
 
 function getRoleColor(role: string): string {
   const colors: Record<string, string> = {
-    admin: '#9C27B0',
-    manager: '#2196F3',
-    supervisor: '#4CAF50',
-    commercial: '#FF9800',
+    admin: COLORS.STATUS_EVALUATED,
+    manager: COLORS.INFO,
+    supervisor: COLORS.SUCCESS,
+    commercial: COLORS.WARNING,
     logistics: '#00BCD4',
     planning: '#E91E63',
     design_engineer: '#795548',
   };
-  return colors[role] || '#9E9E9E';
+  return colors[role] || COLORS.DISABLED;
 }

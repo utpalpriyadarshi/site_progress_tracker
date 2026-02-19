@@ -5,6 +5,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface Step5ImportProps {
   importing: boolean;
@@ -27,7 +28,7 @@ export const Step5Import: React.FC<Step5ImportProps> = ({
 
         {importing && (
           <View style={styles.importProgress}>
-            <ProgressBar progress={importProgress / 100} color="#4CAF50" />
+            <ProgressBar progress={importProgress / 100} color={COLORS.SUCCESS} />
             <Paragraph style={styles.progressText}>{Math.round(importProgress)}%</Paragraph>
           </View>
         )}
@@ -68,11 +69,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   importReady: {
     padding: 20,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 8,
     alignItems: 'center',
   },

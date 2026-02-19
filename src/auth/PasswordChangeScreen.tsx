@@ -17,6 +17,7 @@ import {
   calculatePasswordStrength,
   getPasswordRequirements,
 } from '../../utils/passwordValidator';
+import { COLORS } from '../theme/colors';
 
 /**
  * PasswordChangeScreen
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   errorText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 12,
     marginTop: -12,
     marginBottom: 16,
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   noticeCard: {
     margin: 16,
     marginTop: 0,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     elevation: 2,
   },
   noticeText: {

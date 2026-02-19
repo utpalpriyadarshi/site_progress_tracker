@@ -8,6 +8,7 @@ import {
   getDocumentTypeLabel,
   getStatusLabel,
 } from '../types/DesignDocumentTypes';
+import { COLORS } from '../../theme/colors';
 
 interface DesignDocumentCardProps {
   document: DesignDocument;
@@ -128,7 +129,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 icon="file-refresh"
                 onPress={() => onRevise!(doc)}
                 compact
-                style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+                style={[styles.actionButton, { backgroundColor: COLORS.INFO }]}
                 labelStyle={styles.actionButtonLabel}
               >
                 Revise
@@ -140,7 +141,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 icon="send"
                 onPress={() => onSubmit(doc.id)}
                 compact
-                style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+                style={[styles.actionButton, { backgroundColor: COLORS.INFO }]}
                 labelStyle={styles.actionButtonLabel}
               >
                 Submit
@@ -178,7 +179,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 compact
                 style={styles.actionButton}
                 labelStyle={styles.actionButtonLabel}
-                textColor="#F44336"
+                textColor={COLORS.ERROR}
               >
                 Delete
               </Button>
@@ -189,7 +190,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 icon="check"
                 onPress={() => onApprove(doc.id)}
                 compact
-                style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+                style={[styles.actionButton, { backgroundColor: COLORS.SUCCESS }]}
                 labelStyle={styles.actionButtonLabel}
               >
                 Approve
@@ -203,7 +204,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 compact
                 style={styles.actionButton}
                 labelStyle={styles.actionButtonLabel}
-                textColor="#FF9800"
+                textColor={COLORS.WARNING}
               >
                 Approve w/ Comment
               </Button>
@@ -216,7 +217,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 compact
                 style={styles.actionButton}
                 labelStyle={styles.actionButtonLabel}
-                textColor="#F44336"
+                textColor={COLORS.ERROR}
               >
                 Reject
               </Button>
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   weightageChip: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   weightageText: {
     color: '#1976D2',
@@ -293,10 +294,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   keyDateChip: {
-    borderColor: '#673AB7',
+    borderColor: COLORS.PRIMARY,
   },
   keyDateText: {
-    color: '#673AB7',
+    color: COLORS.PRIMARY,
     fontSize: 10,
     fontWeight: 'bold',
   },

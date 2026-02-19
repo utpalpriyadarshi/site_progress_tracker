@@ -8,6 +8,7 @@ import { Card, ProgressBar } from 'react-native-paper';
 import { StepIndicator } from './StepIndicator';
 import { WIZARD_STEPS, WizardStep } from '../utils/wizardConstants';
 import { getStepStatus, calculateProgress } from '../utils/wizardHelpers';
+import { COLORS } from '../../../theme/colors';
 
 interface ProgressStepperProps {
   currentStep: WizardStep;
@@ -31,7 +32,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({ currentStep })
         </View>
         <ProgressBar
           progress={calculateProgress(currentStep)}
-          color="#2196F3"
+          color={COLORS.INFO}
           style={styles.progressBar}
         />
       </Card.Content>

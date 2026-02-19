@@ -25,6 +25,7 @@ import { logger } from '../../../services/LoggingService';
 import { StatusBadge } from '../../components/StatusBadge';
 import { EmptyState } from '../../../components/common/EmptyState';
 import type { ScheduleItem, ScheduleFilters } from '../UnifiedSchedule';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -107,7 +108,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           </Text>
           <ProgressBar
             progress={item.progress}
-            color={item.isCriticalPath ? '#F44336' : '#2196F3'}
+            color={item.isCriticalPath ? COLORS.ERROR : COLORS.INFO}
             style={styles.progressBar}
           />
         </View>
@@ -154,7 +155,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             mode={item.isCriticalPath ? 'contained' : 'outlined'}
             onPress={() => handleToggleCriticalPath(item.id, item.isCriticalPath)}
             style={styles.actionButton}
-            buttonColor={item.isCriticalPath ? '#F44336' : undefined}
+            buttonColor={item.isCriticalPath ? COLORS.ERROR : undefined}
             compact
             accessible
             accessibilityLabel={
@@ -290,7 +291,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             <Switch
               value={filters.showCriticalPathOnly}
               onValueChange={onCriticalPathToggle}
-              color="#F44336"
+              color={COLORS.ERROR}
               accessible
               accessibilityLabel="Toggle critical path filter"
               accessibilityState={{ checked: filters.showCriticalPathOnly }}
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   projectChip: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   projectChipText: {
     color: '#1976D2',
@@ -377,10 +378,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   criticalPathBadge: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   criticalPathBadgeText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   },
   criticalPathCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
+    borderLeftColor: COLORS.ERROR,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   detailsSection: {
     marginBottom: 12,
     padding: 8,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 4,
   },
   detailText: {
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   criticalFloat: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: 'bold',
   },
   actions: {

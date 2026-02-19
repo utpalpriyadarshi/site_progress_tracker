@@ -11,6 +11,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -30,13 +31,13 @@ export interface StatusBadgeProps {
 // ==================== Constants ====================
 
 const STATUS_COLORS: Record<StatusType, { bg: string; text: string }> = {
-  success: { bg: '#E8F5E9', text: '#2E7D32' },
-  on_track: { bg: '#E8F5E9', text: '#2E7D32' },
-  warning: { bg: '#FFF3E0', text: '#E65100' },
-  at_risk: { bg: '#FFF3E0', text: '#E65100' },
-  error: { bg: '#FFEBEE', text: '#C62828' },
-  delayed: { bg: '#FFEBEE', text: '#C62828' },
-  info: { bg: '#E3F2FD', text: '#1565C0' },
+  success: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  on_track: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  warning: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  at_risk: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  error: { bg: COLORS.ERROR_BG, text: '#C62828' },
+  delayed: { bg: COLORS.ERROR_BG, text: '#C62828' },
+  info: { bg: COLORS.INFO_BG, text: '#1565C0' },
   default: { bg: '#F5F5F5', text: '#616161' },
 };
 

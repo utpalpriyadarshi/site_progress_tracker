@@ -12,6 +12,7 @@ import { database } from '../../../models/database';
 import SiteModel from '../../../models/SiteModel';
 import ResourceRequestService from '../../../services/resource/ResourceRequestService';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface ResourceRequestFormProps {
   onSuccess?: () => void;
@@ -49,10 +50,10 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
   ];
 
   const priorities = [
-    { value: 'low', label: 'Low', color: '#4CAF50' },
+    { value: 'low', label: 'Low', color: COLORS.SUCCESS },
     { value: 'medium', label: 'Medium', color: '#FFC107' },
-    { value: 'high', label: 'High', color: '#FF9800' },
-    { value: 'urgent', label: 'Urgent', color: '#F44336' },
+    { value: 'high', label: 'High', color: COLORS.WARNING },
+    { value: 'urgent', label: 'Urgent', color: COLORS.ERROR },
   ];
 
   useEffect(() => {
@@ -356,8 +357,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedTypeOption: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   typeOptionText: {
     fontSize: 14,
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   selectedSiteOption: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   siteOptionText: {
     fontSize: 16,
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
   },
   selectedSiteOptionText: {
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   actions: {
     flexDirection: 'row',
@@ -434,7 +435,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   submitButtonText: {
     color: '#fff',

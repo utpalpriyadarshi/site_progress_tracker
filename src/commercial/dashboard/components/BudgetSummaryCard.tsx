@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Divider, ProgressBar } from 'react-native-paper';
 import { BudgetSummary } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface BudgetSummaryCardProps {
   budgetSummary: BudgetSummary;
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
   budgetValueBold: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   divider: {
     marginVertical: 8,

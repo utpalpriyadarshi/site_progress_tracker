@@ -11,6 +11,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -43,18 +44,18 @@ export interface StatusBadgeProps {
 // ==================== Constants ====================
 
 const STATUS_COLORS: Record<StatusType, { bg: string; text: string }> = {
-  success: { bg: '#E8F5E9', text: '#2E7D32' },
-  in_stock: { bg: '#E8F5E9', text: '#2E7D32' },
-  delivered: { bg: '#E8F5E9', text: '#2E7D32' },
-  approved: { bg: '#E8F5E9', text: '#2E7D32' },
-  warning: { bg: '#FFF3E0', text: '#E65100' },
-  low_stock: { bg: '#FFF3E0', text: '#E65100' },
-  in_transit: { bg: '#FFF3E0', text: '#E65100' },
-  pending: { bg: '#FFF3E0', text: '#E65100' },
-  error: { bg: '#FFEBEE', text: '#C62828' },
-  out_of_stock: { bg: '#FFEBEE', text: '#C62828' },
-  rejected: { bg: '#FFEBEE', text: '#C62828' },
-  info: { bg: '#E3F2FD', text: '#1565C0' },
+  success: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  in_stock: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  delivered: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  approved: { bg: COLORS.SUCCESS_BG, text: '#2E7D32' },
+  warning: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  low_stock: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  in_transit: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  pending: { bg: COLORS.WARNING_BG, text: '#E65100' },
+  error: { bg: COLORS.ERROR_BG, text: '#C62828' },
+  out_of_stock: { bg: COLORS.ERROR_BG, text: '#C62828' },
+  rejected: { bg: COLORS.ERROR_BG, text: '#C62828' },
+  info: { bg: COLORS.INFO_BG, text: '#1565C0' },
   default: { bg: '#F5F5F5', text: '#616161' },
 };
 

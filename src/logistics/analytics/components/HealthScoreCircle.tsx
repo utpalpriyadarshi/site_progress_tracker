@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 interface HealthScoreCircleProps {
   score: number;
@@ -22,7 +23,7 @@ interface HealthScoreCircleProps {
 export const HealthScoreCircle: React.FC<HealthScoreCircleProps> = ({
   score,
   maxScore = 100,
-  color = '#2196F3',
+  color = COLORS.INFO,
   label = 'Health score',
 }) => {
   const scorePercentage = Math.round((score / maxScore) * 100);

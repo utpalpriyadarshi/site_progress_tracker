@@ -13,6 +13,7 @@ import {
   SnackbarType,
   SnackbarAction,
 } from './types';
+import { COLORS } from '../../theme/colors';
 
 export const SnackbarContext = createContext<SnackbarContextValue | undefined>(
   undefined
@@ -45,13 +46,13 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
   const getBackgroundColor = (type: SnackbarType): string => {
     switch (type) {
       case 'success':
-        return '#4CAF50'; // Green
+        return COLORS.SUCCESS; // Green
       case 'error':
-        return '#F44336'; // Red
+        return COLORS.ERROR; // Red
       case 'warning':
-        return '#FF9800'; // Orange
+        return COLORS.WARNING; // Orange
       case 'info':
-        return '#2196F3'; // Blue
+        return COLORS.INFO; // Blue
       default:
         return '#323232'; // Default dark gray
     }

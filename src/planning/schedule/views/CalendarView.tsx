@@ -13,6 +13,7 @@ import { Text, Card, useTheme, IconButton, Chip } from 'react-native-paper';
 import { StatusBadge } from '../../components/StatusBadge';
 import { EmptyState } from '../../../components/common/EmptyState';
 import type { ScheduleItem, ScheduleFilters } from '../UnifiedSchedule';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -358,10 +359,10 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   todayCell: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   selectedDay: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   dayText: {
     fontSize: 14,
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   todayText: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: 'bold',
   },
   selectedDayText: {
@@ -389,13 +390,13 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   criticalDot: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   delayedDot: {
-    backgroundColor: '#FF9800',
+    backgroundColor: COLORS.WARNING,
   },
   normalDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   itemCount: {
     fontSize: 8,
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
   },
   selectedItemProgress: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
 });
 

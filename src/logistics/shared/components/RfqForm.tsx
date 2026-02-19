@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * RfqForm
@@ -129,15 +130,15 @@ const RfqForm: React.FC<RfqFormProps> = ({
   const getPriorityColor = (p: RfqFormData['priority']) => {
     switch (p) {
       case 'urgent':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'high':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'normal':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'low':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -243,7 +244,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
             value={title}
             onChangeText={setTitle}
             placeholder="Enter RFQ title"
-            placeholderTextColor="#9E9E9E"
+            placeholderTextColor={COLORS.DISABLED}
           />
           {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
         </View>
@@ -256,7 +257,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
             value={description}
             onChangeText={setDescription}
             placeholder="Enter detailed description"
-            placeholderTextColor="#9E9E9E"
+            placeholderTextColor={COLORS.DISABLED}
             multiline
             numberOfLines={4}
           />
@@ -320,7 +321,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
                 handleMaterialChange(index, 'materialId', value)
               }
               placeholder="Material ID"
-              placeholderTextColor="#9E9E9E"
+              placeholderTextColor={COLORS.DISABLED}
             />
 
             <View style={styles.materialRow}>
@@ -331,7 +332,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
                   handleMaterialChange(index, 'quantity', parseFloat(value) || 0)
                 }
                 placeholder="Quantity"
-                placeholderTextColor="#9E9E9E"
+                placeholderTextColor={COLORS.DISABLED}
                 keyboardType="numeric"
               />
               <TextInput
@@ -339,7 +340,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
                 value={material.unit}
                 onChangeText={(value) => handleMaterialChange(index, 'unit', value)}
                 placeholder="Unit"
-                placeholderTextColor="#9E9E9E"
+                placeholderTextColor={COLORS.DISABLED}
               />
             </View>
 
@@ -350,7 +351,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
                 handleMaterialChange(index, 'specifications', value)
               }
               placeholder="Specifications (optional)"
-              placeholderTextColor="#9E9E9E"
+              placeholderTextColor={COLORS.DISABLED}
             />
           </View>
         ))}
@@ -402,7 +403,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
             value={deliverySite}
             onChangeText={setDeliverySite}
             placeholder="Enter delivery site"
-            placeholderTextColor="#9E9E9E"
+            placeholderTextColor={COLORS.DISABLED}
           />
           {errors.deliverySite && (
             <Text style={styles.errorText}>{errors.deliverySite}</Text>
@@ -421,7 +422,7 @@ const RfqForm: React.FC<RfqFormProps> = ({
             value={notes}
             onChangeText={setNotes}
             placeholder="Additional notes or requirements"
-            placeholderTextColor="#9E9E9E"
+            placeholderTextColor={COLORS.DISABLED}
             multiline
             numberOfLines={3}
           />
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputError: {
-    borderColor: '#F44336',
+    borderColor: COLORS.ERROR,
   },
   textarea: {
     borderWidth: 1,
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 4,
   },
   priorityRow: {
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   addButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
   },
   removeText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   materialRow: {
@@ -592,8 +593,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   supplierChipSelected: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   supplierChipText: {
     fontSize: 12,
@@ -605,7 +606,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   actionsRow: {
@@ -631,7 +632,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 6,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     alignItems: 'center',
   },
   saveButtonDisabled: {

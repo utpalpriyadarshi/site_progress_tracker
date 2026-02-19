@@ -22,6 +22,7 @@ import {
 import { AnalyticsCard } from './AnalyticsCard';
 import { Badge } from './Badge';
 import { MetricBox } from './MetricBox';
+import { COLORS } from '../../../theme/colors';
 
 interface OptimizationSectionProps {
   costOptimization: CostOptimizationResult | null;
@@ -37,9 +38,9 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
   const getEffortColor = (effort: string): string => {
     switch (effort) {
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'medium':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'high':
         return '#FF6B6B';
       default:
@@ -88,7 +89,7 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
               accessibilityLabel={`Strategic initiative: ${rec.action}. ${rec.rationale}. Expected savings $${(rec.expectedSavings / 1000).toFixed(0)}K. ${rec.effort} effort required`}
             >
               <View style={styles.recommendationHeader}>
-                <Icon name="trending-up" size={20} color="#2196F3" />
+                <Icon name="trending-up" size={20} color={COLORS.INFO} />
                 <Text style={styles.recommendationAction}>{rec.action}</Text>
               </View>
               <Text style={styles.recommendationRationale}>{rec.rationale}</Text>
@@ -126,7 +127,7 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
             <MetricBox
               label="Potential Savings"
               value={`$${(transportationOpt.savings / 1000).toFixed(0)}K (${transportationOpt.savingsPercentage.toFixed(1)}%)`}
-              valueColor="#4CAF50"
+              valueColor={COLORS.SUCCESS}
             />
           </View>
           {transportationOpt.strategies.map((strategy, index) => (
@@ -167,7 +168,7 @@ export const OptimizationSection: React.FC<OptimizationSectionProps> = ({
             <MetricBox
               label="Potential Savings"
               value={`$${(storageOpt.savings / 1000).toFixed(0)}K`}
-              valueColor="#4CAF50"
+              valueColor={COLORS.SUCCESS}
             />
           </View>
           {storageOpt.opportunities.map((opp, index) => (
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   recommendationSavings: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   recommendationTimeline: {
     fontSize: 12,
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   strategySavings: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   opportunityItem: {
     marginBottom: 12,
@@ -268,6 +269,6 @@ const styles = StyleSheet.create({
   opportunityValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
 });

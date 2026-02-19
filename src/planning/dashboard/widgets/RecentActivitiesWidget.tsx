@@ -13,6 +13,7 @@ import { Text, useTheme, Avatar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -68,15 +69,15 @@ export const RecentActivitiesWidget: React.FC<RecentActivitiesWidgetProps> = ({
   const getActivityColor = (type: ActivityType): string => {
     switch (type) {
       case 'created':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'updated':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'completed':
         return '#8BC34A';
       case 'deleted':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'status_changed':
-        return '#FF9800';
+        return COLORS.WARNING;
       default:
         return theme.colors.outline;
     }

@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { GanttChartViewProps, GanttViewMode, GanttHeaderDate } from '../types';
 import ItemModel from '../../../../models/ItemModel';
+import { COLORS } from '../../../theme/colors';
 
 dayjs.extend(isBetween);
 
@@ -38,10 +39,10 @@ const TASK_ROW_HEIGHT = 60;
 const TIMELINE_HEADER_HEIGHT = 50;
 const ITEM_NAME_COLUMN_WIDTH = 200;
 const DEFAULT_COLUMN_WIDTH = 60;
-const TODAY_MARKER_COLOR = '#2196F3';
+const TODAY_MARKER_COLOR = COLORS.INFO;
 const CRITICAL_PATH_COLOR = '#d32f2f';
-const PROGRESS_COLOR = '#4CAF50';
-const MILESTONE_COLOR = '#FF9800';
+const PROGRESS_COLOR = COLORS.SUCCESS;
+const MILESTONE_COLOR = COLORS.WARNING;
 
 /**
  * Column widths for different zoom levels
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
   },
   selectedRow: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   itemNameCell: {
     justifyContent: 'center',

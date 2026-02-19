@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * QuickStatsWidget Component
@@ -106,14 +107,14 @@ export const QuickStatsWidget: React.FC<QuickStatsWidgetProps> = ({
             value={stats.totalProjects}
             label="Projects"
             icon="📁"
-            color="#2196F3"
+            color={COLORS.INFO}
             onPress={onProjectsPress}
           />
           <StatItem
             value={stats.totalSites}
             label="Sites"
             icon="🏗️"
-            color="#4CAF50"
+            color={COLORS.SUCCESS}
           />
         </View>
         <View style={styles.statsRow}>
@@ -121,14 +122,14 @@ export const QuickStatsWidget: React.FC<QuickStatsWidgetProps> = ({
             value={stats.totalUsers}
             label="Users"
             icon="👤"
-            color="#9C27B0"
+            color={COLORS.STATUS_EVALUATED}
             onPress={onUsersPress}
           />
           <StatItem
             value={stats.totalItems}
             label="Items"
             icon="📋"
-            color="#FF9800"
+            color={COLORS.WARNING}
           />
         </View>
       </View>

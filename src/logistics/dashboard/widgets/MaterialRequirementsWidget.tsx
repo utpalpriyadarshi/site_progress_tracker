@@ -21,6 +21,7 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { useMaterialRequirementsData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Component ====================
 
@@ -80,14 +81,14 @@ export const MaterialRequirementsWidget: React.FC = () => {
                 BOM Fulfillment
               </Text>
               <Text variant="headlineMedium" style={[styles.rateValue, {
-                color: data.fulfillmentRate >= 90 ? '#4CAF50' : data.fulfillmentRate >= 70 ? '#FF9800' : '#F44336'
+                color: data.fulfillmentRate >= 90 ? COLORS.SUCCESS : data.fulfillmentRate >= 70 ? COLORS.WARNING : COLORS.ERROR
               }]}>
                 {data.fulfillmentRate}%
               </Text>
             </View>
             <ProgressBar
               progress={data.fulfillmentRate / 100}
-              color={data.fulfillmentRate >= 90 ? '#4CAF50' : data.fulfillmentRate >= 70 ? '#FF9800' : '#F44336'}
+              color={data.fulfillmentRate >= 90 ? COLORS.SUCCESS : data.fulfillmentRate >= 70 ? COLORS.WARNING : COLORS.ERROR}
               style={styles.progressBar}
             />
           </View>
@@ -95,7 +96,7 @@ export const MaterialRequirementsWidget: React.FC = () => {
           {/* Status Summary */}
           <View style={styles.statusRow}>
             <View style={styles.statusItem}>
-              <Icon name="check-circle" size={20} color="#4CAF50" />
+              <Icon name="check-circle" size={20} color={COLORS.SUCCESS} />
               <Text variant="bodyMedium" style={styles.statusValue}>
                 {data.fulfilledCount}
               </Text>
@@ -104,7 +105,7 @@ export const MaterialRequirementsWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.statusItem}>
-              <Icon name="progress-clock" size={20} color="#FF9800" />
+              <Icon name="progress-clock" size={20} color={COLORS.WARNING} />
               <Text variant="bodyMedium" style={styles.statusValue}>
                 {data.partialCount}
               </Text>
@@ -113,7 +114,7 @@ export const MaterialRequirementsWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.statusItem}>
-              <Icon name="alert-circle" size={20} color="#F44336" />
+              <Icon name="alert-circle" size={20} color={COLORS.ERROR} />
               <Text variant="bodyMedium" style={styles.statusValue}>
                 {data.shortageCount}
               </Text>
@@ -154,7 +155,7 @@ export const MaterialRequirementsWidget: React.FC = () => {
           {/* Empty state for no shortages */}
           {data.criticalShortages.length === 0 && data.shortageCount === 0 && (
             <View style={styles.noShortages}>
-              <Icon name="check-circle-outline" size={24} color="#4CAF50" />
+              <Icon name="check-circle-outline" size={24} color={COLORS.SUCCESS} />
               <Text variant="bodySmall" style={styles.noShortagesText}>
                 All materials are adequately stocked
               </Text>
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 8,
     borderRadius: 8,
   },
@@ -246,11 +247,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
     borderRadius: 8,
   },
   noShortagesText: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     fontWeight: '500',
   },
 });

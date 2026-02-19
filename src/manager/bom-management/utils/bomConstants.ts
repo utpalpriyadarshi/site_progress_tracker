@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * BOM Constants
  * Constant values used in BOM management
@@ -22,16 +23,16 @@ export const BOM_TYPES = ['estimating', 'execution'] as const;
  * BOM status colors and text colors
  */
 export const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  draft: { bg: '#9C27B0', text: '#FFFFFF' },        // Purple
-  submitted: { bg: '#2196F3', text: '#FFFFFF' },    // Blue
-  won: { bg: '#4CAF50', text: '#FFFFFF' },          // Green
-  lost: { bg: '#F44336', text: '#FFFFFF' },         // Red
-  baseline: { bg: '#FF9800', text: '#FFFFFF' },     // Orange
-  active: { bg: '#4CAF50', text: '#FFFFFF' },       // Green
+  draft: { bg: COLORS.STATUS_EVALUATED, text: '#FFFFFF' },        // Purple
+  submitted: { bg: COLORS.INFO, text: '#FFFFFF' },    // Blue
+  won: { bg: COLORS.SUCCESS, text: '#FFFFFF' },          // Green
+  lost: { bg: COLORS.ERROR, text: '#FFFFFF' },         // Red
+  baseline: { bg: COLORS.WARNING, text: '#FFFFFF' },     // Orange
+  active: { bg: COLORS.SUCCESS, text: '#FFFFFF' },       // Green
   closed: { bg: '#616161', text: '#FFFFFF' },       // Gray
 };
 
 /**
  * Default BOM status color
  */
-export const DEFAULT_STATUS_COLOR = { bg: '#9E9E9E', text: '#FFFFFF' };
+export const DEFAULT_STATUS_COLOR = { bg: COLORS.DISABLED, text: '#FFFFFF' };

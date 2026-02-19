@@ -21,6 +21,7 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { useAccessibility } from '../utils/accessibility';
+import { COLORS } from '../theme/colors';
 
 interface BaselineScreenProps {
   projects: ProjectModel[];
@@ -299,12 +300,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lockButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: COLORS.WARNING,
   },
   infoCard: {
     margin: 16,
     marginBottom: 0,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     elevation: 3,
     borderLeftWidth: 4,
     borderLeftColor: '#1976D2',
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     margin: 16,
     marginTop: 8,
     marginBottom: 0,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     elevation: 2,
   },
   warningText: {

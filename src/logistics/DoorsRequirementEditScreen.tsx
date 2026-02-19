@@ -16,6 +16,7 @@ import DoorsRequirementModel from '../../models/DoorsRequirementModel';
 import { useAuth } from '../auth/AuthContext';
 import DoorsEditService, { RequirementEditData } from '../services/DoorsEditService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 /**
  * DOORS Requirement Edit Screen
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   required: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   input: {
     backgroundColor: '#FFF',
@@ -458,8 +459,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
+    borderColor: COLORS.SUCCESS,
   },
   reviewButtonText: {
     fontSize: 11,

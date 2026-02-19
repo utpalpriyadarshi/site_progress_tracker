@@ -4,6 +4,7 @@ import { Text, IconButton } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { PhotoGalleryProps } from '../types';
 import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Memoized photo thumbnail component for performance
@@ -18,7 +19,7 @@ const PhotoThumbnail = React.memo<{
     <IconButton
       icon="close-circle"
       size={20}
-      iconColor="#F44336"
+      iconColor={COLORS.ERROR}
       style={styles.removePhotoButton}
       onPress={() => onRemove(index)}
     />

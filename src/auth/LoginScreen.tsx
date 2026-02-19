@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../components/Dialog';
 import AuthService from '../../services/auth/AuthService';
 import { checkLatestSession } from '../../scripts/testCheckSessions';
 import AutoSyncManager from '../../services/sync/AutoSyncManager';
+import { COLORS } from '../theme/colors';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   adminButton: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   demoButtonText: {
     color: 'white',

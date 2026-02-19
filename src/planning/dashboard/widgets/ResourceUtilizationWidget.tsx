@@ -13,6 +13,7 @@ import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -56,10 +57,10 @@ export const ResourceUtilizationWidget: React.FC<ResourceUtilizationWidgetProps>
   const theme = useTheme();
 
   const getAllocationColor = (allocated: number): string => {
-    if (allocated > 100) return '#F44336'; // Over-allocated
-    if (allocated >= 80) return '#4CAF50'; // Optimal
-    if (allocated >= 50) return '#FF9800'; // Under-utilized
-    return '#9E9E9E'; // Low utilization
+    if (allocated > 100) return COLORS.ERROR; // Over-allocated
+    if (allocated >= 80) return COLORS.SUCCESS; // Optimal
+    if (allocated >= 50) return COLORS.WARNING; // Under-utilized
+    return COLORS.DISABLED; // Low utilization
   };
 
   const getAllocationLabel = (allocated: number): string => {
@@ -144,32 +145,32 @@ export const ResourceUtilizationWidget: React.FC<ResourceUtilizationWidgetProps>
         {/* Summary Stats */}
         <View style={styles.summaryRow}>
           <View
-            style={[styles.summaryItem, { backgroundColor: '#FFEBEE' }]}
+            style={[styles.summaryItem, { backgroundColor: COLORS.ERROR_BG }]}
             accessible
             accessibilityLabel={`${summary.overAllocated} over-allocated resources`}
           >
-            <Icon name="arrow-up-bold" size={14} color="#F44336" />
-            <Text variant="labelSmall" style={{ color: '#F44336' }}>
+            <Icon name="arrow-up-bold" size={14} color={COLORS.ERROR} />
+            <Text variant="labelSmall" style={{ color: COLORS.ERROR }}>
               {summary.overAllocated} Over
             </Text>
           </View>
           <View
-            style={[styles.summaryItem, { backgroundColor: '#E8F5E9' }]}
+            style={[styles.summaryItem, { backgroundColor: COLORS.SUCCESS_BG }]}
             accessible
             accessibilityLabel={`${summary.optimallyAllocated} optimally allocated resources`}
           >
-            <Icon name="check" size={14} color="#4CAF50" />
-            <Text variant="labelSmall" style={{ color: '#4CAF50' }}>
+            <Icon name="check" size={14} color={COLORS.SUCCESS} />
+            <Text variant="labelSmall" style={{ color: COLORS.SUCCESS }}>
               {summary.optimallyAllocated} Optimal
             </Text>
           </View>
           <View
-            style={[styles.summaryItem, { backgroundColor: '#FFF3E0' }]}
+            style={[styles.summaryItem, { backgroundColor: COLORS.WARNING_BG }]}
             accessible
             accessibilityLabel={`${summary.underAllocated} under-allocated resources`}
           >
-            <Icon name="arrow-down-bold" size={14} color="#FF9800" />
-            <Text variant="labelSmall" style={{ color: '#FF9800' }}>
+            <Icon name="arrow-down-bold" size={14} color={COLORS.WARNING} />
+            <Text variant="labelSmall" style={{ color: COLORS.WARNING }}>
               {summary.underAllocated} Under
             </Text>
           </View>

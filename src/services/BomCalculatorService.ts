@@ -14,6 +14,7 @@
 
 import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
+import { COLORS } from '../theme/colors';
 
 export interface CostBreakdown {
   totalEstimated: number;
@@ -235,10 +236,10 @@ class BomCalculatorService {
    * Get budget status color
    */
   getBudgetStatusColor(utilization: number): string {
-    if (utilization >= 100) return '#F44336'; // Red - Over budget
-    if (utilization >= 90) return '#FF9800'; // Orange - Warning
+    if (utilization >= 100) return COLORS.ERROR; // Red - Over budget
+    if (utilization >= 90) return COLORS.WARNING; // Orange - Warning
     if (utilization >= 80) return '#FFC107'; // Yellow - Caution
-    return '#4CAF50'; // Green - On track
+    return COLORS.SUCCESS; // Green - On track
   }
 
   /**

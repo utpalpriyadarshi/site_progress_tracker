@@ -39,6 +39,7 @@ import { useDebounce } from '../hooks';
 import type { SupervisorDrawerParamList } from '../nav/SupervisorDrawerNavigator';
 import { PdfStatusChip } from '../components/PdfStatusChip';
 import { backgroundPdfQueue } from '../../services/BackgroundPdfQueue';
+import { COLORS } from '../theme/colors';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -383,13 +384,13 @@ const ReportsHistoryScreen = () => {
   const getSyncStatusColor = (status: string) => {
     switch (status) {
       case 'synced':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'pending':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'failed':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 

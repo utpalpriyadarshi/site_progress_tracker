@@ -1,28 +1,29 @@
+import { COLORS } from '../../../theme/colors';
 export const getPriorityColor = (priority: string): string => {
   switch (priority) {
     case 'high':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'medium':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'low':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
 export const getStatusColor = (status: string): string => {
   switch (status) {
     case 'open':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'in_progress':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'resolved':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'closed':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

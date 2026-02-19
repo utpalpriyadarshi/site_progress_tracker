@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView 
 import { BaseWidget } from './BaseWidget';
 import { CATEGORY_COLORS, getCategoryLabel, getCategoryColor } from '../utils/dashboardConstants';
 import { OptionsMenuItem, chartOptionMenus } from './InteractiveChart';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * CategorySpendingWidget Component
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   legendSpent: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   legendBudget: {
     backgroundColor: '#e0e0e0',

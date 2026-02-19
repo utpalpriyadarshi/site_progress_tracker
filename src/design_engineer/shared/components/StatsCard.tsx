@@ -14,7 +14,7 @@
  *   icon="file-document-outline"
  *   trend={{ value: 12, direction: 'up' }}
  *   onPress={handleViewRfqs}
- *   color="#2196F3"
+ *   color={COLORS.INFO}
  * />
  *
  * // Compact variant
@@ -22,7 +22,7 @@
  *   title="Total Packages"
  *   value={45}
  *   variant="compact"
- *   color="#4CAF50"
+ *   color={COLORS.SUCCESS}
  * />
  * ```
  */
@@ -32,6 +32,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StatsCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get trend icon based on direction
@@ -55,13 +56,13 @@ const getTrendIcon = (direction: 'up' | 'down' | 'neutral'): string => {
 const getTrendColor = (direction: 'up' | 'down' | 'neutral'): string => {
   switch (direction) {
     case 'up':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'down':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'neutral':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

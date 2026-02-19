@@ -15,6 +15,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Dialog, Portal, Button, Text, Divider, Chip } from 'react-native-paper';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
   },
   duplicateChip: {
     marginBottom: 4,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     borderColor: '#EF5350',
   },
   duplicateText: {
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
+    borderLeftColor: COLORS.INFO,
   },
   optionLabel: {
     marginBottom: 4,

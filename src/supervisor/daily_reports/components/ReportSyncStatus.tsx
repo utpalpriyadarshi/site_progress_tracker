@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface ReportSyncStatusProps {
   isOnline: boolean;
@@ -53,9 +54,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   onlineChip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   offlineChip: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
 });

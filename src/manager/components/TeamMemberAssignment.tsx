@@ -16,6 +16,7 @@ import TeamManagementService from '../../../services/team/TeamManagementService'
 import TeamModel from '../../../models/TeamModel';
 import TeamMemberModel from '../../../models/TeamMemberModel';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface TeamMemberAssignmentProps {
   visible: boolean;
@@ -32,9 +33,9 @@ interface User {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'lead', label: 'Team Lead', color: '#2196F3' },
-  { value: 'supervisor', label: 'Supervisor', color: '#4CAF50' },
-  { value: 'worker', label: 'Worker', color: '#FF9800' },
+  { value: 'lead', label: 'Team Lead', color: COLORS.INFO },
+  { value: 'supervisor', label: 'Supervisor', color: COLORS.SUCCESS },
+  { value: 'worker', label: 'Worker', color: COLORS.WARNING },
 ];
 
 export default function TeamMemberAssignment({
@@ -199,7 +200,7 @@ export default function TeamMemberAssignment({
 
         {loading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2196F3" />
+            <ActivityIndicator size="large" color={COLORS.INFO} />
           </View>
         )}
 
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   closeButtonText: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -529,7 +530,7 @@ const styles = StyleSheet.create({
   },
   userCardSelected: {
     backgroundColor: '#e3f2fd',
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     borderWidth: 2,
   },
   userInfo: {
@@ -549,7 +550,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -559,14 +560,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   assignButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   assignButtonDisabled: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
     opacity: 0.7,
   },
   assignButtonText: {

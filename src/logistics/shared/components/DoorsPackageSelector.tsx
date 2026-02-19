@@ -8,6 +8,7 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * DoorsPackageSelector
@@ -110,30 +111,30 @@ const DoorsPackageSelector: React.FC<DoorsPackageSelectorProps> = ({
   const getTypeColor = (type: DoorsPackageType) => {
     switch (type) {
       case 'standard':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'fire-rated':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'acoustic':
-        return '#9C27B0';
+        return COLORS.STATUS_EVALUATED;
       case 'security':
-        return '#FF9800';
+        return COLORS.WARNING;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
   const getStatusColor = (status: DoorsPackageStatus) => {
     switch (status) {
       case 'planned':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       case 'ordered':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'delivered':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'installed':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -216,7 +217,7 @@ const DoorsPackageSelector: React.FC<DoorsPackageSelectorProps> = ({
 
   const getSelectionIndicatorStyle = (isSelected: boolean) => {
     return {
-      backgroundColor: isSelected ? '#2196F3' : '#E0E0E0',
+      backgroundColor: isSelected ? COLORS.INFO : '#E0E0E0',
     };
   };
 
@@ -326,7 +327,7 @@ const DoorsPackageSelector: React.FC<DoorsPackageSelectorProps> = ({
         value={searchQuery}
         onChangeText={setSearchQuery}
         placeholder="Search packages by name or location..."
-        placeholderTextColor="#9E9E9E"
+        placeholderTextColor={COLORS.DISABLED}
       />
 
       {/* Type Filters */}
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     color: '#212121',
   },
   selectedCountBadge: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   },
   packageCardSelected: {
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   selectionIndicator: {
     width: 32,
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
   costText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   configureButton: {
     alignSelf: 'flex-end',
@@ -552,11 +553,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   configureButtonText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   emptyState: {
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#9E9E9E',
+    color: COLORS.DISABLED,
   },
 });
 

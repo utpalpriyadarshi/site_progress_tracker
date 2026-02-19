@@ -1,18 +1,19 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * Project status color mapping
  */
 export const getStatusColor = (status: string): string => {
   switch (status) {
     case 'active':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'completed':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'on_hold':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'cancelled':
-      return '#F44336';
+      return COLORS.ERROR;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

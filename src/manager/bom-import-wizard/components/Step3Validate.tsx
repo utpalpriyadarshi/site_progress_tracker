@@ -6,6 +6,7 @@ import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip } from 'react-native-paper';
 import { ValidationError } from '../hooks/useImportData';
+import { COLORS } from '../../../theme/colors';
 
 interface Step3ValidateProps {
   validationErrors: ValidationError[];
@@ -90,12 +91,12 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
   validChip: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     marginRight: 10,
     marginBottom: 10,
   },
   errorChip: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     marginRight: 10,
     marginBottom: 10,
   },
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   },
   errorItem: {
     padding: 10,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     borderRadius: 4,
     marginBottom: 8,
   },

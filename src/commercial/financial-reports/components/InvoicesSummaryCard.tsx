@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ReportCard } from './ReportCard';
+import { COLORS } from '../../../theme/colors';
 
 interface InvoicesSummaryCardProps {
   total: number;
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   positive: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   warning: {
     color: '#FFA500',

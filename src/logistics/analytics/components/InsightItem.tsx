@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { COLORS } from '../../../theme/colors';
 
 export type InsightSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -46,15 +47,15 @@ export const InsightItem: React.FC<InsightItemProps> = ({
 const getSeverityColor = (severity: InsightSeverity): string => {
   switch (severity) {
     case 'critical':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'high':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'medium':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'low':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'info':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     default:
       return '#999';
   }
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   },
   recommendation: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontStyle: 'italic',
   },
 });

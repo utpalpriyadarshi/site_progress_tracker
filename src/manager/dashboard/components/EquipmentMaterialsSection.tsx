@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider } from 'react-native-paper';
 import { formatCurrency } from '../utils/dashboardFormatters';
+import { COLORS } from '../../../theme/colors';
 
 interface EquipmentMaterialsData {
   pm300Progress: number;
@@ -57,10 +58,10 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
                   {
                     backgroundColor:
                       pm300Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm300Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11 }}
@@ -81,10 +82,10 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
                   {
                     backgroundColor:
                       pm400Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm400Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11 }}
@@ -129,7 +130,7 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
             </View>
             <Divider style={styles.verticalDivider} />
             <View style={styles.deliveryMetric}>
-              <Title style={[styles.deliveryValue, { color: delayedDeliveries > 0 ? '#F44336' : '#666' }]}>
+              <Title style={[styles.deliveryValue, { color: delayedDeliveries > 0 ? COLORS.ERROR : '#666' }]}>
                 {delayedDeliveries}
               </Title>
               <Paragraph style={styles.deliveryLabel}>Delayed Deliveries</Paragraph>
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
   pipelineValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   statusChip: {
     marginTop: 8,
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   poTotalValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   poTotalLabel: {
     fontSize: 11,
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 12,
     textAlign: 'center',
     fontStyle: 'italic',

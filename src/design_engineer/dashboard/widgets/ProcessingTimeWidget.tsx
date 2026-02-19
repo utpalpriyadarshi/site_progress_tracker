@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { ProcessingTimeData } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface ProcessingTimeWidgetProps {
   data: ProcessingTimeData;
@@ -35,9 +36,9 @@ export const ProcessingTimeWidget: React.FC<ProcessingTimeWidgetProps> = ({
 
   // Determine color based on average
   const getColor = () => {
-    if (average <= 7) return '#4CAF50'; // Green - Excellent
+    if (average <= 7) return COLORS.SUCCESS; // Green - Excellent
     if (average <= 14) return '#FFA500'; // Orange - Good
-    return '#F44336'; // Red - Needs improvement
+    return COLORS.ERROR; // Red - Needs improvement
   };
 
   const color = getColor();
@@ -213,10 +214,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   aboveBenchmark: {
-    color: '#F44336', // Red - slower than benchmark
+    color: COLORS.ERROR, // Red - slower than benchmark
   },
   belowBenchmark: {
-    color: '#4CAF50', // Green - faster than benchmark
+    color: COLORS.SUCCESS, // Green - faster than benchmark
   },
   infoContainer: {
     alignItems: 'center',

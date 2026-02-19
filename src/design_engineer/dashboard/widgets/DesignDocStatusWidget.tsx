@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { DesignDocStatusData } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface DesignDocStatusWidgetProps {
   data: DesignDocStatusData;
@@ -172,16 +173,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   draftSegment: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
   },
   submittedSegment: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   approvedSegment: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   rejectedSegment: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   emptyBar: {
     height: 24,
@@ -211,16 +212,16 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   draftDot: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
   },
   submittedDot: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   approvedDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   rejectedDot: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   legendTextContainer: {
     flex: 1,

@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Dialog, Portal, Button, Paragraph } from 'react-native-paper';
 import { ConfirmDialogProps } from './types';
+import { COLORS } from '../../theme/colors';
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   visible,
@@ -47,7 +48,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onPress={handleConfirm}
             loading={loading}
             disabled={loading}
-            textColor={destructive ? '#F44336' : '#2196F3'}
+            textColor={destructive ? COLORS.ERROR : COLORS.INFO}
             mode="text"
           >
             {confirmText}

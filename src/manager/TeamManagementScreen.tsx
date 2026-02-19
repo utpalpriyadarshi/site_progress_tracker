@@ -19,6 +19,7 @@ import { Q } from '@nozbe/watermelondb';
 import TeamMemberAssignment from './components/TeamMemberAssignment';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 /**
  * TeamManagementScreen
@@ -221,13 +222,13 @@ const TeamManagementScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'inactive':
         return '#FFC107';
       case 'disbanded':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -397,7 +398,7 @@ const TeamManagementScreen = () => {
         <ScrollView style={styles.teamsList}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={COLORS.INFO} />
               <Text style={styles.loadingText}>Loading teams...</Text>
             </View>
           ) : teams.length === 0 ? (
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -652,7 +653,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   activeFilterChip: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   filterChipText: {
     fontSize: 14,
@@ -701,7 +702,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -720,7 +721,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedTeamCard: {
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   teamHeader: {
     flexDirection: 'row',
@@ -792,7 +793,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   manageMembersButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
@@ -831,7 +832,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -901,7 +902,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   selectedSiteOption: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   siteOptionText: {
     fontSize: 16,
@@ -914,7 +915,7 @@ const styles = StyleSheet.create({
   },
   selectedSiteOptionText: {
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   noSitesText: {
     padding: 16,
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   createButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   createButtonText: {
     color: '#fff',

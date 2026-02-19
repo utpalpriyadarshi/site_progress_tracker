@@ -29,6 +29,7 @@ import {
   initialEquipmentManagementState,
   StatusFilter,
 } from './equipment/state';
+import { COLORS } from '../theme/colors';
 
 /**
  * EquipmentManagementScreen (Week 3)
@@ -122,36 +123,36 @@ const EquipmentManagementScreen = () => {
 
   const getStatusColor = (status: EquipmentStatus): string => {
     switch (status) {
-      case 'available': return '#4CAF50';
-      case 'in_use': return '#2196F3';
-      case 'maintenance': return '#FF9800';
-      case 'repair': return '#F44336';
-      case 'retired': return '#9E9E9E';
+      case 'available': return COLORS.SUCCESS;
+      case 'in_use': return COLORS.INFO;
+      case 'maintenance': return COLORS.WARNING;
+      case 'repair': return COLORS.ERROR;
+      case 'retired': return COLORS.DISABLED;
       default: return '#999';
     }
   };
 
   const getStatusBgColor = (status: EquipmentStatus): string => {
     switch (status) {
-      case 'available': return '#E8F5E9';
-      case 'in_use': return '#E3F2FD';
-      case 'maintenance': return '#FFF3E0';
-      case 'repair': return '#FFEBEE';
+      case 'available': return COLORS.SUCCESS_BG;
+      case 'in_use': return COLORS.INFO_BG;
+      case 'maintenance': return COLORS.WARNING_BG;
+      case 'repair': return COLORS.ERROR_BG;
       case 'retired': return '#F5F5F5';
       default: return '#F5F5F5';
     }
   };
 
   const getConditionColor = (condition: number): string => {
-    if (condition > 75) return '#4CAF50';
-    if (condition > 50) return '#FF9800';
-    return '#F44336';
+    if (condition > 75) return COLORS.SUCCESS;
+    if (condition > 50) return COLORS.WARNING;
+    return COLORS.ERROR;
   };
 
   const getHealthScoreColor = (score: number): string => {
-    if (score > 75) return '#4CAF50';
-    if (score > 50) return '#FF9800';
-    return '#F44336';
+    if (score > 75) return COLORS.SUCCESS;
+    if (score > 50) return COLORS.WARNING;
+    return COLORS.ERROR;
   };
 
   const renderStatCards = () => {
@@ -356,10 +357,10 @@ const EquipmentManagementScreen = () => {
   const renderMaintenanceScheduleItem = (schedule: MaintenanceSchedule) => {
     const getPriorityColor = (priority: string) => {
       switch (priority) {
-        case 'critical': return '#F44336';
-        case 'high': return '#FF9800';
+        case 'critical': return COLORS.ERROR;
+        case 'high': return COLORS.WARNING;
         case 'medium': return '#FFC107';
-        case 'low': return '#4CAF50';
+        case 'low': return COLORS.SUCCESS;
         default: return '#999';
       }
     };
@@ -637,7 +638,7 @@ const EquipmentManagementScreen = () => {
   if (state.ui.loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={COLORS.INFO} />
         <Text style={styles.loadingText}>Loading equipment data...</Text>
       </View>
     );
@@ -697,16 +698,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statCardSuccess: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   statCardInfo: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   statCardWarning: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   statCardCritical: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   statCardAlert: {
     backgroundColor: '#FCE4EC',
@@ -738,18 +739,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    borderBottomColor: '#2196F3',
+    borderBottomColor: COLORS.INFO,
   },
   tabText: {
     fontSize: 13,
     color: '#666',
   },
   tabTextActive: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   tabBadge: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
@@ -779,15 +780,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   filterChipActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO_BG,
+    borderColor: COLORS.INFO,
   },
   filterChipText: {
     fontSize: 12,
     color: '#666',
   },
   filterChipTextActive: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   filterDot: {
@@ -889,13 +890,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   allocationInfo: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 8,
     borderRadius: 4,
   },
   allocationText: {
     fontSize: 11,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   maintenanceCard: {
@@ -932,7 +933,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   overdueAlert: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     padding: 8,
     borderRadius: 4,
     marginBottom: 8,
@@ -940,7 +941,7 @@ const styles = StyleSheet.create({
   overdueText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   maintenanceDetails: {
     marginBottom: 12,
@@ -960,10 +961,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   overdueValue: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   scheduleButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     padding: 10,
     borderRadius: 6,
     alignItems: 'center',
@@ -1003,7 +1004,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   allocationStatusActive: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   allocationStatusText: {
     fontSize: 10,
@@ -1041,7 +1042,7 @@ const styles = StyleSheet.create({
   },
   allocationOperator: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontStyle: 'italic',
   },
   performanceContainer: {

@@ -36,6 +36,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { logger } from '../services/LoggingService';
+import { COLORS } from '../theme/colors';
 
 // ==================== Types ====================
 
@@ -380,11 +381,11 @@ export const getSyncStatusColor = (status: SyncStatus): string => {
     case 'idle':
       return '#666';
     case 'syncing':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'success':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'error':
-      return '#F44336';
+      return COLORS.ERROR;
     default:
       return '#666';
   }

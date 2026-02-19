@@ -1,4 +1,5 @@
 import { InspectionType, OverallRating } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get color code for inspection type chip
@@ -9,13 +10,13 @@ import { InspectionType, OverallRating } from '../types';
 export function getInspectionTypeColor(type: InspectionType): string {
   switch (type) {
     case 'daily':
-      return '#2196F3'; // Blue
+      return COLORS.INFO; // Blue
     case 'weekly':
-      return '#4CAF50'; // Green
+      return COLORS.SUCCESS; // Green
     case 'safety':
-      return '#FF9800'; // Orange
+      return COLORS.WARNING; // Orange
     case 'quality':
-      return '#9C27B0'; // Purple
+      return COLORS.STATUS_EVALUATED; // Purple
     default:
       return '#757575'; // Gray
   }
@@ -30,13 +31,13 @@ export function getInspectionTypeColor(type: InspectionType): string {
 export function getRatingColor(rating: OverallRating): string {
   switch (rating) {
     case 'excellent':
-      return '#4CAF50'; // Green
+      return COLORS.SUCCESS; // Green
     case 'good':
       return '#8BC34A'; // Light Green
     case 'fair':
-      return '#FF9800'; // Orange
+      return COLORS.WARNING; // Orange
     case 'poor':
-      return '#F44336'; // Red
+      return COLORS.ERROR; // Red
     default:
       return '#757575'; // Gray
   }

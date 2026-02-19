@@ -4,6 +4,7 @@ import { Card, Text, Chip, IconButton, Button } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ItemModel from '../../../models/ItemModel';
 import { database } from '../../../models/database';
+import { COLORS } from '../../theme/colors';
 
 interface ItemPlanningCardProps {
   item: ItemModel;
@@ -227,9 +228,9 @@ const styles = StyleSheet.create({
   },
   criticalPathCard: {
     borderWidth: 4,
-    borderColor: '#F44336',
+    borderColor: COLORS.ERROR,
     elevation: 6,
-    shadowColor: '#F44336',
+    shadowColor: COLORS.ERROR,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -251,17 +252,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   criticalChip: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   criticalChipText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 10,
   },
   lockedChip: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   lockedChipText: {
-    color: '#FF9800',
+    color: COLORS.WARNING,
     fontSize: 10,
   },
   infoRow: {
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     borderRadius: 4,
   },
   datesContainer: {
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 8,
     borderRadius: 4,
     marginBottom: 12,
@@ -355,10 +356,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   delayedText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   aheadText: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   dependenciesContainer: {
     flexDirection: 'row',

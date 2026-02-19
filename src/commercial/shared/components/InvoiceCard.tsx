@@ -14,6 +14,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Chip, Button, ProgressBar } from 'react-native-paper';
 import type { InvoiceCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   invoice,
@@ -36,13 +37,13 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const getStatusColor = () => {
     switch (invoice.paymentStatus) {
       case 'paid':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'overdue':
         return '#f44336';
       case 'pending':
         return '#FFA726';
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -124,14 +125,14 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               <>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Paid:</Text>
-                  <Text style={[styles.detailValue, { color: '#4CAF50' }]}>
+                  <Text style={[styles.detailValue, { color: COLORS.SUCCESS }]}>
                     {formatCurrency(paidAmount)}
                   </Text>
                 </View>
                 <View style={styles.progressContainer}>
                   <ProgressBar
                     progress={paymentProgress}
-                    color="#4CAF50"
+                    color={COLORS.SUCCESS}
                     style={styles.progressBar}
                   />
                   <Text style={styles.progressText}>{(paymentProgress * 100).toFixed(0)}% paid</Text>
@@ -169,7 +170,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
           {showActions && (
             <View style={styles.actions}>
               {!isPaid && onMarkPaid && (
-                <Button mode="text" onPress={() => onMarkPaid(invoice)} textColor="#4CAF50" compact>
+                <Button mode="text" onPress={() => onMarkPaid(invoice)} textColor={COLORS.SUCCESS} compact>
                   Mark Paid
                 </Button>
               )}
@@ -246,7 +247,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
         {showActions && (
           <View style={styles.actions}>
             {!isPaid && onMarkPaid && (
-              <Button mode="text" onPress={() => onMarkPaid(invoice)} textColor="#4CAF50" compact>
+              <Button mode="text" onPress={() => onMarkPaid(invoice)} textColor={COLORS.SUCCESS} compact>
                 Mark Paid
               </Button>
             )}

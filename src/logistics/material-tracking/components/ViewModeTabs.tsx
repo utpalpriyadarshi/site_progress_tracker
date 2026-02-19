@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { ViewMode } from '../utils/materialTrackingConstants';
+import { COLORS } from '../../../theme/colors';
 
 interface ViewModeTabsProps {
   viewMode: ViewMode;
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    borderBottomColor: '#2196F3',
+    borderBottomColor: COLORS.INFO,
   },
   tabText: {
     fontSize: 14,
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '700',
   },
   tabBadge: {
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF5722',
   },
   tabBadgeWarning: {
-    backgroundColor: '#FF9800',
+    backgroundColor: COLORS.WARNING,
   },
   tabBadgeText: {
     fontSize: 12,

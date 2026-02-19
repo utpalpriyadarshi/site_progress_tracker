@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { METRO_MATERIAL_CATEGORIES } from '../utils/materialTrackingConstants';
+import { COLORS } from '../../../theme/colors';
 
 interface SearchAndFiltersProps {
   searchQuery: string;
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   filterIcon: {
     fontSize: 14,

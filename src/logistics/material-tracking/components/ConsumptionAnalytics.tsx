@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { ConsumptionData } from '../../../services/MaterialProcurementService';
+import { COLORS } from '../../../theme/colors';
 
 interface ConsumptionAnalyticsProps {
   consumptionData: Map<string, ConsumptionData>;
@@ -24,9 +25,9 @@ export const ConsumptionAnalytics: React.FC<ConsumptionAnalyticsProps> = ({
 }) => {
   const getTrendColor = (trend: string) => {
     switch (trend) {
-      case 'increasing': return '#FF9800';
-      case 'decreasing': return '#4CAF50';
-      default: return '#2196F3';
+      case 'increasing': return COLORS.WARNING;
+      case 'decreasing': return COLORS.SUCCESS;
+      default: return COLORS.INFO;
     }
   };
 

@@ -20,6 +20,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { useRecentActivityData, ActivityItem } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Helper ====================
 
@@ -123,15 +124,15 @@ export const RecentActivityWidget: React.FC = () => {
           {/* Activity Legend */}
           <View style={styles.legend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
+              <View style={[styles.legendDot, { backgroundColor: COLORS.INFO }]} />
               <Text variant="labelSmall" style={styles.legendText}>Materials</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+              <View style={[styles.legendDot, { backgroundColor: COLORS.SUCCESS }]} />
               <Text variant="labelSmall" style={styles.legendText}>POs</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#9C27B0' }]} />
+              <View style={[styles.legendDot, { backgroundColor: COLORS.STATUS_EVALUATED }]} />
               <Text variant="labelSmall" style={styles.legendText}>RFQs</Text>
             </View>
             <View style={styles.legendItem}>

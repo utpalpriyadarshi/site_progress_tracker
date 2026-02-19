@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface SiteProgressData {
   siteId: string;
@@ -44,10 +45,10 @@ export const SiteProgressSection: React.FC<SiteProgressSectionProps> = ({ sites 
                   {
                     backgroundColor:
                       site.status === 'on_track'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : site.status === 'at_risk'
                         ? '#FFC107'
-                        : '#F44336',
+                        : COLORS.ERROR,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}
@@ -78,7 +79,7 @@ export const SiteProgressSection: React.FC<SiteProgressSectionProps> = ({ sites 
             <ProgressBar
               progress={site.overallProgress / 100}
               color={
-                site.status === 'on_track' ? '#4CAF50' : site.status === 'at_risk' ? '#FFC107' : '#F44336'
+                site.status === 'on_track' ? COLORS.SUCCESS : site.status === 'at_risk' ? '#FFC107' : COLORS.ERROR
               }
               style={styles.progressBar}
             />
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   siteProgressValue: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   siteProgressLabel: {
     fontSize: 12,
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   siteMetricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   siteMetricLabel: {
     fontSize: 11,

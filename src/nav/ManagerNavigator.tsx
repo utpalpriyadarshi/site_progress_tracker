@@ -11,6 +11,7 @@ import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import type { ManagerDrawerParamList } from './ManagerDrawerNavigator';
+import { COLORS } from '../theme/colors';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -90,11 +91,11 @@ const ManagerTabNavigator: React.FC = () => {
   const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
-    tabBarActiveTintColor: '#673AB7',
+    tabBarActiveTintColor: COLORS.PRIMARY,
     tabBarInactiveTintColor: 'gray',
     headerShown: true,
     headerStyle: {
-      backgroundColor: '#673AB7',
+      backgroundColor: COLORS.PRIMARY,
     },
     headerTintColor: '#FFF',
     headerTitleStyle: {

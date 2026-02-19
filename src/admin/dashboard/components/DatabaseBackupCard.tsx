@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Card, Title, Paragraph, Button, Text } from 'react-native-paper';
 import DatabaseBackupService from '../../../services/DatabaseBackupService';
+import { COLORS } from '../../../theme/colors';
 
 export const DatabaseBackupCard: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   card: {
     margin: 15,
     marginBottom: 10,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   description: {
     marginTop: 5,

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 // Note: You'll need to install these packages:
 // npm install react-native-document-picker
 // npm install xlsx
@@ -245,7 +246,7 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryText}>✓ Valid: {validCount}</Text>
-          <Text style={[styles.summaryText, { color: invalidCount > 0 ? '#F44336' : '#666' }]}>
+          <Text style={[styles.summaryText, { color: invalidCount > 0 ? COLORS.ERROR : '#666' }]}>
             ✗ Invalid: {invalidCount}
           </Text>
         </View>
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoCard: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   templateCard: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   selectButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exampleButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   previewList: {
     maxHeight: 400,
@@ -461,8 +462,8 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   previewItemInvalid: {
-    borderColor: '#F44336',
-    backgroundColor: '#FFEBEE',
+    borderColor: COLORS.ERROR,
+    backgroundColor: COLORS.ERROR_BG,
   },
   previewHeader: {
     flexDirection: 'row',
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
   },
   errorBadge: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   previewDescription: {
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 11,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -507,7 +508,7 @@ const styles = StyleSheet.create({
   },
   importButton: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',

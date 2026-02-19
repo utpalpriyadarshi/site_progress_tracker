@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * EquipmentCard
@@ -106,15 +107,15 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
   const getStatusColor = (status: Equipment['status']) => {
     switch (status) {
       case 'available':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'in-use':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'maintenance':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'retired':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '500',
     marginBottom: 2,
   },
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   warningBanner: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     padding: 6,
     borderRadius: 4,
     marginBottom: 4,
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cautionBanner: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 6,
     borderRadius: 4,
     marginBottom: 4,
@@ -499,15 +500,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   actionButtonPrimary: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   actionText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   actionTextPrimary: {

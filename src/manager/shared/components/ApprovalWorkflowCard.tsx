@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * ApprovalWorkflowCard
@@ -67,28 +68,28 @@ const ApprovalWorkflowCard: React.FC<ApprovalWorkflowCardProps> = ({
   const getPriorityColor = (priority: ApprovalWorkflowItem['priority']) => {
     switch (priority) {
       case 'urgent':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'high':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'medium':
         return '#FFC107';
       case 'low':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
   const getStatusColor = (status: ApprovalWorkflowItem['status']) => {
     switch (status) {
       case 'approved':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'rejected':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'pending':
         return '#FFC107';
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -316,10 +317,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   approveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   rejectButton: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   actionButtonText: {
     color: '#FFFFFF',

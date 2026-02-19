@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 interface StatCardsProps {
   stats: {
@@ -78,16 +79,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statCardCritical: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   statCardWarning: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   statCardSuccess: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   statCardInfo: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   statValue: {
     fontSize: 24,

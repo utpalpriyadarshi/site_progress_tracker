@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * TrendIndicator Component
@@ -73,10 +74,10 @@ export const TrendIndicator: React.FC<TrendIndicatorProps> = ({
 
     if (invertColors) {
       // For costs: down is green, up is red
-      return isPositive ? '#ff6b6b' : '#4CAF50';
+      return isPositive ? '#ff6b6b' : COLORS.SUCCESS;
     }
     // Standard: up is green, down is red
-    return isPositive ? '#4CAF50' : '#ff6b6b';
+    return isPositive ? COLORS.SUCCESS : '#ff6b6b';
   };
 
   const getArrow = () => {

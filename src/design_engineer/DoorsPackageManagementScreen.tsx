@@ -23,6 +23,7 @@ import { useDebounce } from '../utils/performance';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 /**
  * DoorsPackageManagementScreen (v6.0 - Sprint 1)
@@ -798,7 +799,7 @@ const DoorsPackageManagementScreen = () => {
           const avgCompliance = compliancePackages.length > 0
             ? compliancePackages.reduce((sum, p) => sum + (p.compliancePercentage || 0), 0) / compliancePackages.length
             : 0;
-          const complianceColor = avgCompliance >= 80 ? '#4CAF50' : avgCompliance >= 50 ? '#FF9800' : '#F44336';
+          const complianceColor = avgCompliance >= 80 ? COLORS.SUCCESS : avgCompliance >= 50 ? COLORS.WARNING : COLORS.ERROR;
 
           const statusCounts = packages.reduce((acc, p) => {
             acc[p.status] = (acc[p.status] || 0) + 1;
@@ -807,8 +808,8 @@ const DoorsPackageManagementScreen = () => {
 
           const statusDots: { key: string; label: string; color: string }[] = [
             { key: 'pending', label: 'Pending', color: '#FFA500' },
-            { key: 'received', label: 'Received', color: '#2196F3' },
-            { key: 'reviewed', label: 'Reviewed', color: '#4CAF50' },
+            { key: 'received', label: 'Received', color: COLORS.INFO },
+            { key: 'reviewed', label: 'Reviewed', color: COLORS.SUCCESS },
             { key: 'approved', label: 'Approved', color: '#7B1FA2' },
             { key: 'closed', label: 'Closed', color: '#616161' },
           ];
@@ -1105,7 +1106,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   fab: {
     position: 'absolute',
@@ -1181,7 +1182,7 @@ const styles = StyleSheet.create({
   bulkBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Divider, ProgressBar } from 'react-native-paper';
 import { formatCurrency } from '../utils/dashboardFormatters';
+import { COLORS } from '../../../theme/colors';
 
 interface FinancialData {
   projectBudget: number;
@@ -80,7 +81,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
             <Paragraph
               style={[
                 styles.utilizationValue,
-                { color: budgetUtilization > 100 ? '#F44336' : '#4CAF50' },
+                { color: budgetUtilization > 100 ? COLORS.ERROR : COLORS.SUCCESS },
               ]}
             >
               {budgetUtilization}%
@@ -88,7 +89,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
           </View>
           <ProgressBar
             progress={Math.min(budgetUtilization / 100, 1)}
-            color={budgetUtilization > 100 ? '#F44336' : budgetUtilization > 90 ? '#FFC107' : '#4CAF50'}
+            color={budgetUtilization > 100 ? COLORS.ERROR : budgetUtilization > 90 ? '#FFC107' : COLORS.SUCCESS}
             style={styles.progressBar}
           />
         </Card.Content>
@@ -115,14 +116,14 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
           <Divider style={styles.divider} />
           <View style={styles.marginRow}>
             <View style={styles.marginMetric}>
-              <Title style={[styles.marginValue, { color: projectedProfit >= 0 ? '#4CAF50' : '#F44336' }]}>
+              <Title style={[styles.marginValue, { color: projectedProfit >= 0 ? COLORS.SUCCESS : COLORS.ERROR }]}>
                 {formatCurrency(projectedProfit)}
               </Title>
               <Paragraph style={styles.marginLabel}>Projected Profit/Loss</Paragraph>
             </View>
             <Divider style={styles.verticalDivider} />
             <View style={styles.marginMetric}>
-              <Title style={[styles.marginValue, { color: profitMargin >= 0 ? '#4CAF50' : '#F44336' }]}>
+              <Title style={[styles.marginValue, { color: profitMargin >= 0 ? COLORS.SUCCESS : COLORS.ERROR }]}>
                 {profitMargin}%
               </Title>
               <Paragraph style={styles.marginLabel}>Profit Margin</Paragraph>
@@ -157,7 +158,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
             <Paragraph
               style={[
                 styles.varianceValue,
-                { color: bomCostVariance >= 0 ? '#4CAF50' : '#F44336' },
+                { color: bomCostVariance >= 0 ? COLORS.SUCCESS : COLORS.ERROR },
               ]}
             >
               {formatCurrency(Math.abs(bomCostVariance))} ({bomCostVariance >= 0 ? '+' : '-'}
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   budgetValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   budgetLabel: {
     fontSize: 11,
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
   profitValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   profitRight: {
     flex: 1,
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
   bomTotal: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   bomLabel: {
     fontSize: 11,

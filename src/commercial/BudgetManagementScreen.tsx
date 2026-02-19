@@ -18,6 +18,7 @@ import ErrorBoundary from '../components/common/ErrorBoundary';
 import { budgetManagementReducer, initialBudgetManagementState } from './state/budget/budgetManagementReducer';
 import { budgetManagementActions } from './state/budget/budgetManagementActions';
 import type { Budget } from './state/budget/budgetManagementReducer';
+import { COLORS } from '../theme/colors';
 
 /**
  * BudgetManagementScreen (v2.11 Phase 5 - Sprint 4)
@@ -237,10 +238,10 @@ const BudgetManagementScreen = () => {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      labor: '#2196F3',
-      material: '#4CAF50',
-      equipment: '#FF9800',
-      other: '#9C27B0',
+      labor: COLORS.INFO,
+      material: COLORS.SUCCESS,
+      equipment: COLORS.WARNING,
+      other: COLORS.STATUS_EVALUATED,
     };
     return colors[category] || '#757575';
   };
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
   varianceValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   overBudget: {
     color: '#ff6b6b',

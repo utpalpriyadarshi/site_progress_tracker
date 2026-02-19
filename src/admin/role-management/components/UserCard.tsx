@@ -6,6 +6,7 @@ import RoleModel from '../../../../models/RoleModel';
 import { RoleChip } from './RoleChip';
 import { StatusChip } from './StatusChip';
 import { getRoleName, getRoleColor, getProjectName, roleRequiresProject } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface UserCardProps {
   user: UserModel;
@@ -93,7 +94,7 @@ export const UserCard: React.FC<UserCardProps> = ({
             Reset Password
           </Button>
           <Button
-            textColor="#F44336"
+            textColor={COLORS.ERROR}
             onPress={() => onDelete(user)}
             style={styles.actionButton}
             accessibilityLabel={`Delete ${user.fullName}`}

@@ -52,6 +52,7 @@ import {
   getCategoryOptions,
 } from './utils/keyDateConstants';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Component Props ====================
 
@@ -732,7 +733,7 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={handleCloseDeleteDialog}>Cancel</Button>
-            <Button onPress={handleConfirmDelete} textColor="#F44336">
+            <Button onPress={handleConfirmDelete} textColor={COLORS.ERROR}>
               Delete
             </Button>
           </Dialog.Actions>
@@ -918,7 +919,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   targetDateDisplay: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -943,18 +944,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#388E3C',
   },
   totalWeightageContainer: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#BBDEFB',
   },
   totalWeightageError: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     borderBottomColor: '#FFCDD2',
   },
   totalWeightageComplete: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
     borderBottomColor: '#C8E6C9',
   },
   totalWeightageRow: {

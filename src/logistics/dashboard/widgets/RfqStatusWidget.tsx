@@ -21,6 +21,7 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { useRfqStatusData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Helper ====================
 
@@ -110,7 +111,7 @@ export const RfqStatusWidget: React.FC = () => {
             </View>
             <Icon name="chevron-right" size={16} color="#BDBDBD" />
             <View style={styles.statusItem}>
-              <View style={[styles.statusCircle, { backgroundColor: '#FFF3E0' }]}>
+              <View style={[styles.statusCircle, { backgroundColor: COLORS.WARNING_BG }]}>
                 <Text variant="labelLarge" style={[styles.statusCount, { color: '#E65100' }]}>
                   {data.sentCount}
                 </Text>
@@ -119,7 +120,7 @@ export const RfqStatusWidget: React.FC = () => {
             </View>
             <Icon name="chevron-right" size={16} color="#BDBDBD" />
             <View style={styles.statusItem}>
-              <View style={[styles.statusCircle, { backgroundColor: '#E3F2FD' }]}>
+              <View style={[styles.statusCircle, { backgroundColor: COLORS.INFO_BG }]}>
                 <Text variant="labelLarge" style={[styles.statusCount, { color: '#1565C0' }]}>
                   {data.respondedCount}
                 </Text>
@@ -128,7 +129,7 @@ export const RfqStatusWidget: React.FC = () => {
             </View>
             <Icon name="chevron-right" size={16} color="#BDBDBD" />
             <View style={styles.statusItem}>
-              <View style={[styles.statusCircle, { backgroundColor: '#E8F5E9' }]}>
+              <View style={[styles.statusCircle, { backgroundColor: COLORS.SUCCESS_BG }]}>
                 <Text variant="labelLarge" style={[styles.statusCount, { color: '#2E7D32' }]}>
                   {data.awardedCount}
                 </Text>
@@ -153,7 +154,7 @@ export const RfqStatusWidget: React.FC = () => {
             <View style={styles.metricDivider} />
             <View style={styles.metricItem}>
               <Text variant="labelSmall" style={styles.metricLabel}>Expired</Text>
-              <Text variant="titleMedium" style={[styles.metricValue, data.expiredCount > 0 && { color: '#F44336' }]}>
+              <Text variant="titleMedium" style={[styles.metricValue, data.expiredCount > 0 && { color: COLORS.ERROR }]}>
                 {data.expiredCount}
               </Text>
             </View>

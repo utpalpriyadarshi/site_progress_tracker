@@ -13,6 +13,7 @@ import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -60,8 +61,8 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
 
   const getProgressColor = (progress: number, delayed: number, total: number): string => {
     const delayedPercentage = total > 0 ? (delayed / total) * 100 : 0;
-    if (delayedPercentage > 20) return '#F44336';
-    if (delayedPercentage > 10) return '#FF9800';
+    if (delayedPercentage > 20) return COLORS.ERROR;
+    if (delayedPercentage > 10) return COLORS.WARNING;
     return theme.colors.primary;
   };
 
@@ -118,7 +119,7 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             accessible
             accessibilityLabel={`${overview.completedItems} completed items`}
           >
-            <Icon name="check-circle" size={20} color="#4CAF50" />
+            <Icon name="check-circle" size={20} color={COLORS.SUCCESS} />
             <Text variant="titleMedium" style={styles.statValue}>
               {overview.completedItems}
             </Text>
@@ -146,8 +147,8 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             accessible
             accessibilityLabel={`${overview.delayedItems} delayed items`}
           >
-            <Icon name="clock-alert-outline" size={20} color="#F44336" />
-            <Text variant="titleMedium" style={[styles.statValue, overview.delayedItems > 0 && { color: '#F44336' }]}>
+            <Icon name="clock-alert-outline" size={20} color={COLORS.ERROR} />
+            <Text variant="titleMedium" style={[styles.statValue, overview.delayedItems > 0 && { color: COLORS.ERROR }]}>
               {overview.delayedItems}
             </Text>
             <Text variant="labelSmall" style={styles.statLabel}>
@@ -171,7 +172,7 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             variant="labelMedium"
             style={[
               styles.daysRemaining,
-              { color: overview.daysRemaining < 30 ? '#FF9800' : theme.colors.primary },
+              { color: overview.daysRemaining < 30 ? COLORS.WARNING : theme.colors.primary },
             ]}
           >
             {overview.daysRemaining} days remaining

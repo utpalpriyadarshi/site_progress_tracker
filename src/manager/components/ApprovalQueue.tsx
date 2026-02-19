@@ -15,6 +15,7 @@ import ResourceRequestModel from '../../../models/ResourceRequestModel';
 import SiteModel from '../../../models/SiteModel';
 import ResourceRequestService from '../../../services/resource/ResourceRequestService';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface ApprovalQueueProps {
   currentUserId: string;
@@ -181,15 +182,15 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'high':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'medium':
         return '#FFC107';
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   activeFilterChip: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   filterChipText: {
     fontSize: 14,
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   urgentRequestCard: {
-    borderColor: '#F44336',
+    borderColor: COLORS.ERROR,
     borderWidth: 2,
   },
   requestHeader: {
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   urgentText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   notesSection: {
@@ -598,15 +599,15 @@ const styles = StyleSheet.create({
   rejectButton: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    borderColor: '#F44336',
+    borderColor: COLORS.ERROR,
   },
   rejectButtonText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 14,
     fontWeight: '600',
   },
   approveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   approveButtonText: {
     color: '#fff',
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalConfirmButton: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   modalConfirmButtonText: {
     color: '#fff',

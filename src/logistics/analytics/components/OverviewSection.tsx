@@ -18,6 +18,7 @@ import { AnalyticsCard } from './AnalyticsCard';
 import { Badge } from './Badge';
 import { HealthScoreCircle } from './HealthScoreCircle';
 import { InsightItem } from './InsightItem';
+import { COLORS } from '../../../theme/colors';
 
 interface OverviewSectionProps {
   analyticsSummary: AnalyticsSummary | null;
@@ -31,11 +32,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
   const getHealthColor = (rating: string): string => {
     switch (rating) {
       case 'excellent':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'good':
         return '#8BC34A';
       case 'fair':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'poor':
         return '#FF6B6B';
       default:
@@ -46,13 +47,13 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
   const getImpactColor = (impact: string): string => {
     switch (impact) {
       case 'critical':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'high':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'medium':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       default:
         return '#999';
     }
@@ -61,9 +62,9 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
   const getEffortColor = (effort: string): string => {
     switch (effort) {
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'medium':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'high':
         return '#FF6B6B';
       default:
@@ -168,7 +169,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ analyticsSumma
               accessibilityLabel={`Cost savings opportunity: $${(opp.value / 1000).toFixed(0)}K potential. ${opp.description}. Timeline: ${opp.timeline}. ${opp.effort} effort required`}
             >
               <View style={styles.opportunityHeader}>
-                <Icon name="trending-up" size={20} color="#4CAF50" />
+                <Icon name="trending-up" size={20} color={COLORS.SUCCESS} />
                 <Text style={styles.opportunityValue}>
                   ${(opp.value / 1000).toFixed(0)}K
                 </Text>
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   },
   riskMitigation: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 2,
   },
   riskTimeline: {
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   opportunityValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     marginLeft: 8,
   },
   opportunityDescription: {

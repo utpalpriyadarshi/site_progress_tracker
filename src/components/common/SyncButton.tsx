@@ -31,6 +31,7 @@ import { View, StyleSheet } from 'react-native';
 import { IconButton, Button, Text, ActivityIndicator, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SyncStatus, formatLastSyncTime, getSyncStatusColor, getSyncStatusIcon } from '../../hooks/useOfflineSync';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -93,7 +94,7 @@ export const SyncButton: React.FC<SyncButtonProps> = ({
   const isDisabled = disabled || !isOnline || syncStatus === 'syncing';
 
   // Get status color and icon - override to orange when offline
-  const statusColor = !isOnline ? '#FF9800' : getSyncStatusColor(syncStatus);
+  const statusColor = !isOnline ? COLORS.WARNING : getSyncStatusColor(syncStatus);
   const statusIcon = !isOnline ? 'cloud-off-outline' : getSyncStatusIcon(syncStatus);
 
   // Build label text

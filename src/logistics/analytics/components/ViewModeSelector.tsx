@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { ViewMode, VIEW_MODE_TABS } from '../utils/analyticsConstants';
+import { COLORS } from '../../../theme/colors';
 
 interface ViewModeSelectorProps {
   viewMode: ViewMode;
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   buttonActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   text: {
     fontSize: 14,

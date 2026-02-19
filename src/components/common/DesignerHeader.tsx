@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Appbar, Text, Menu } from 'react-native-paper';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../../auth/AuthContext';
+import { COLORS } from '../../theme/colors';
 
 export interface DesignerHeaderProps {
   title: string;
@@ -100,6 +101,6 @@ export const DesignerHeader: React.FC<DesignerHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#673AB7',
+    backgroundColor: COLORS.PRIMARY,
   },
 });

@@ -1,3 +1,4 @@
+import { COLORS } from '../../theme/colors';
 /**
  * Types for Design Document Management
  */
@@ -86,13 +87,13 @@ export const getStatusLabel = (status: DocumentStatus): string => {
 
 export const getStatusColor = (status: DocumentStatus): string => {
   const colors: Record<DocumentStatus, string> = {
-    draft: '#9E9E9E',
-    submitted: '#2196F3',
-    approved: '#4CAF50',
-    approved_with_comment: '#FF9800',
-    rejected: '#F44336',
+    draft: COLORS.DISABLED,
+    submitted: COLORS.INFO,
+    approved: COLORS.SUCCESS,
+    approved_with_comment: COLORS.WARNING,
+    rejected: COLORS.ERROR,
   };
-  return colors[status] || '#9E9E9E';
+  return colors[status] || COLORS.DISABLED;
 };
 
 /**
@@ -110,9 +111,9 @@ export const getCategorySlug = (categoryName: string): DocumentType | string => 
 
 export const getDocumentTypeColor = (type: DocumentType): string => {
   const colors: Record<DocumentType, string> = {
-    simulation_study: '#607D8B',
-    installation: '#2196F3',
-    product_equipment: '#9C27B0',
+    simulation_study: COLORS.STATUS_CLOSED,
+    installation: COLORS.INFO,
+    product_equipment: COLORS.STATUS_EVALUATED,
     as_built: '#FF5722',
   };
   return colors[type] || '#666666';

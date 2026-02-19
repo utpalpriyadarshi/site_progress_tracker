@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { DoorsPackageStatus } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface DoorsPackageStatusWidgetProps {
   data: DoorsPackageStatus;
@@ -171,10 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFA500',
   },
   receivedSegment: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   reviewedSegment: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   emptyBar: {
     height: 24,
@@ -207,10 +208,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFA500',
   },
   receivedDot: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   reviewedDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   legendTextContainer: {
     flex: 1,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface EngineeringData {
   pm200Progress: number;
@@ -58,10 +59,10 @@ export const EngineeringSection: React.FC<EngineeringSectionProps> = ({ data }) 
                   {
                     backgroundColor:
                       pm200Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm200Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 12 }}
@@ -100,7 +101,7 @@ export const EngineeringSection: React.FC<EngineeringSectionProps> = ({ data }) 
           <ProgressBar
             progress={compliancePercentage / 100}
             color={
-              compliancePercentage >= 80 ? '#4CAF50' : compliancePercentage >= 50 ? '#FFC107' : '#F44336'
+              compliancePercentage >= 80 ? COLORS.SUCCESS : compliancePercentage >= 50 ? '#FFC107' : COLORS.ERROR
             }
             style={styles.progressBar}
           />
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   metricLabel: {
     fontSize: 12,

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import { DoorsPackage, Domain } from '../types/DesignRfqTypes';
+import { COLORS } from '../../theme/colors';
 
 interface CreateDesignRfqDialogProps {
   visible: boolean;
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   packageInfo: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,

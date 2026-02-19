@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface TestingCommissioningData {
   pm500Progress: number;
@@ -58,10 +59,10 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
                   {
                     backgroundColor:
                       pm500Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm500Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11 }}
@@ -85,10 +86,10 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
                   {
                     backgroundColor:
                       pm600Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm600Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11 }}
@@ -156,7 +157,7 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
             <Paragraph
               style={[
                 styles.passRateValue,
-                { color: passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336' },
+                { color: passRate >= 90 ? COLORS.SUCCESS : passRate >= 70 ? '#FFC107' : COLORS.ERROR },
               ]}
             >
               {passRate}%
@@ -164,7 +165,7 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
           </View>
           <ProgressBar
             progress={passRate / 100}
-            color={passRate >= 90 ? '#4CAF50' : passRate >= 70 ? '#FFC107' : '#F44336'}
+            color={passRate >= 90 ? COLORS.SUCCESS : passRate >= 70 ? '#FFC107' : COLORS.ERROR}
             style={styles.progressBar}
           />
           {inspectionsFailed > 0 && (
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
   testingValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   statusChip: {
     marginTop: 8,
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
   inspectionTotal: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   inspectionLabel: {
     fontSize: 11,
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 12,
     textAlign: 'center',
     fontStyle: 'italic',

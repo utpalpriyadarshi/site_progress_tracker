@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from 'react-native-paper';
 import { InvoicesSummary } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface InvoicesSummaryCardProps {
   invoicesSummary: InvoicesSummary;
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   positiveValue: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   negativeValue: {
     color: '#ff6b6b',

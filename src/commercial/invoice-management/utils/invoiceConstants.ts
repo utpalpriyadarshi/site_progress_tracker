@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * Invoice Management Constants
  * Centralized constants for payment statuses, colors, and labels
@@ -11,7 +12,7 @@ export const PAYMENT_STATUSES = [
 
 export const STATUS_COLORS: Record<string, string> = {
   pending: '#FFA500',
-  paid: '#4CAF50',
+  paid: COLORS.SUCCESS,
   overdue: '#ff6b6b',
 };
 

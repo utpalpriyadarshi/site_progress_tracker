@@ -15,12 +15,13 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Card } from 'react-native-paper';
 import type { BudgetSummaryChartProps, CategoryBreakdown } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 const CATEGORY_COLORS: Record<string, string> = {
-  labor: '#2196F3',
-  materials: '#4CAF50',
-  equipment: '#FF9800',
-  subcontractors: '#9C27B0',
+  labor: COLORS.INFO,
+  materials: COLORS.SUCCESS,
+  equipment: COLORS.WARNING,
+  subcontractors: COLORS.STATUS_EVALUATED,
 };
 
 export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
@@ -44,12 +45,12 @@ export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
     if (percentage >= 80 && percentage < 100) {
       return '#FFA726'; // Orange - at risk
     }
-    return '#4CAF50'; // Green - under budget
+    return COLORS.SUCCESS; // Green - under budget
   };
 
   // Get category color
   const getCategoryColor = (category: string) => {
-    return CATEGORY_COLORS[category.toLowerCase()] || '#9E9E9E';
+    return CATEGORY_COLORS[category.toLowerCase()] || COLORS.DISABLED;
   };
 
   // Calculate max value for bar chart scaling
@@ -62,13 +63,13 @@ export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
     <View style={styles.summaryContainer}>
       <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>Total Budget</Text>
-        <Text style={[styles.summaryValue, { color: '#2196F3' }]}>
+        <Text style={[styles.summaryValue, { color: COLORS.INFO }]}>
           {formatCurrency(budgetSummary.totalBudget)}
         </Text>
       </View>
       <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>Total Spent</Text>
-        <Text style={[styles.summaryValue, { color: '#FF9800' }]}>
+        <Text style={[styles.summaryValue, { color: COLORS.WARNING }]}>
           {formatCurrency(budgetSummary.totalSpent)}
         </Text>
       </View>
@@ -77,7 +78,7 @@ export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
         <Text
           style={[
             styles.summaryValue,
-            { color: budgetSummary.remaining >= 0 ? '#4CAF50' : '#f44336' },
+            { color: budgetSummary.remaining >= 0 ? COLORS.SUCCESS : '#f44336' },
           ]}
         >
           {formatCurrency(budgetSummary.remaining)}
@@ -192,11 +193,11 @@ export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
     <View style={styles.legendContainer}>
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#2196F3' + '40' }]} />
+          <View style={[styles.legendDot, { backgroundColor: COLORS.INFO + '40' }]} />
           <Text style={styles.legendText}>Budget</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+          <View style={[styles.legendDot, { backgroundColor: COLORS.SUCCESS }]} />
           <Text style={styles.legendText}>Under Budget</Text>
         </View>
       </View>

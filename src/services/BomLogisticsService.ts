@@ -1,6 +1,7 @@
 import BomModel from '../../models/BomModel';
 import BomItemModel from '../../models/BomItemModel';
 import MaterialModel from '../../models/MaterialModel';
+import { COLORS } from '../theme/colors';
 
 /**
  * BomLogisticsService
@@ -363,12 +364,12 @@ class BomLogisticsService {
    */
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
-      sufficient: '#4CAF50', // Green
-      surplus: '#2196F3', // Blue
-      shortage: '#FF9800', // Orange
-      critical: '#F44336', // Red
+      sufficient: COLORS.SUCCESS, // Green
+      surplus: COLORS.INFO, // Blue
+      shortage: COLORS.WARNING, // Orange
+      critical: COLORS.ERROR, // Red
     };
-    return colors[status] || '#9E9E9E';
+    return colors[status] || COLORS.DISABLED;
   }
 
   /**
@@ -376,12 +377,12 @@ class BomLogisticsService {
    */
   getPriorityColor(priority: string): string {
     const colors: Record<string, string> = {
-      low: '#9E9E9E', // Gray
-      medium: '#2196F3', // Blue
-      high: '#FF9800', // Orange
-      critical: '#F44336', // Red
+      low: COLORS.DISABLED, // Gray
+      medium: COLORS.INFO, // Blue
+      high: COLORS.WARNING, // Orange
+      critical: COLORS.ERROR, // Red
     };
-    return colors[priority] || '#9E9E9E';
+    return colors[priority] || COLORS.DISABLED;
   }
 }
 

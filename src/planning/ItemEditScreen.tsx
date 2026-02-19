@@ -58,6 +58,7 @@ import { usePlanningContext } from './context';
 
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
@@ -417,10 +418,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   snackbarSuccess: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   snackbarError: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
 });
 

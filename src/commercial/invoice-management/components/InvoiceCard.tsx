@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Card, Chip, Button } from 'react-native-paper';
 import { Invoice } from '../hooks';
 import { StatusChip } from './StatusChip';
+import { COLORS } from '../../../theme/colors';
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -71,7 +72,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               mode="text"
               onPress={() => onMarkPaid(invoice)}
               compact
-              textColor="#4CAF50"
+              textColor={COLORS.SUCCESS}
             >
               Mark Paid
             </Button>

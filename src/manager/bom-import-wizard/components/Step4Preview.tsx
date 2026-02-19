@@ -6,6 +6,7 @@ import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Divider, DataTable } from 'react-native-paper';
 import { ParsedBomRow } from '../../../utils/BomFileParser';
+import { COLORS } from '../../../theme/colors';
 
 interface Step4PreviewProps {
   mappedData: ParsedBomRow[];
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   divider: {
     marginVertical: 15,

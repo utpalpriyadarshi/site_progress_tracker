@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Button, ActivityIndicator } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface CategoryMigrationCardProps {
   isMigrating: boolean;
@@ -12,7 +13,7 @@ export const CategoryMigrationCard: React.FC<CategoryMigrationCardProps> = ({
   onMigrate,
 }) => {
   return (
-    <Card style={[styles.card, { backgroundColor: '#E3F2FD' }]}>
+    <Card style={[styles.card, { backgroundColor: COLORS.INFO_BG }]}>
       <Card.Content>
         <Title>📋 Category Names Migration (v2.18)</Title>
         <Paragraph style={styles.cardDescription}>
@@ -31,7 +32,7 @@ export const CategoryMigrationCard: React.FC<CategoryMigrationCardProps> = ({
         <Button
           mode="contained"
           onPress={onMigrate}
-          style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+          style={[styles.actionButton, { backgroundColor: COLORS.INFO }]}
           disabled={isMigrating}
           loading={isMigrating}
         >
@@ -39,7 +40,7 @@ export const CategoryMigrationCard: React.FC<CategoryMigrationCardProps> = ({
         </Button>
         {isMigrating && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#2196F3" />
+            <ActivityIndicator size="small" color={COLORS.INFO} />
             <Paragraph style={{ marginLeft: 10 }}>Updating categories...</Paragraph>
           </View>
         )}

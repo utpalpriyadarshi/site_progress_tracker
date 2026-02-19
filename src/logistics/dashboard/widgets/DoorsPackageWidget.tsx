@@ -21,6 +21,7 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { useDoorsPackageData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Helper ====================
 
@@ -94,7 +95,7 @@ export const DoorsPackageWidget: React.FC = () => {
           {/* Summary Row */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Text variant="headlineMedium" style={[styles.summaryValue, { color: '#9E9E9E' }]}>
+              <Text variant="headlineMedium" style={[styles.summaryValue, { color: COLORS.DISABLED }]}>
                 {data.draftCount}
               </Text>
               <Text variant="labelSmall" style={styles.summaryLabel}>
@@ -102,7 +103,7 @@ export const DoorsPackageWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text variant="headlineMedium" style={[styles.summaryValue, { color: '#2196F3' }]}>
+              <Text variant="headlineMedium" style={[styles.summaryValue, { color: COLORS.INFO }]}>
                 {data.inProgressCount}
               </Text>
               <Text variant="labelSmall" style={styles.summaryLabel}>
@@ -110,7 +111,7 @@ export const DoorsPackageWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text variant="headlineMedium" style={[styles.summaryValue, { color: '#4CAF50' }]}>
+              <Text variant="headlineMedium" style={[styles.summaryValue, { color: COLORS.SUCCESS }]}>
                 {data.completedCount}
               </Text>
               <Text variant="labelSmall" style={styles.summaryLabel}>
@@ -126,14 +127,14 @@ export const DoorsPackageWidget: React.FC = () => {
                 Requirements ({data.requirementsFulfilled}/{data.requirementsTotal})
               </Text>
               <Text variant="titleMedium" style={[styles.fulfillmentValue, {
-                color: requirementsFulfillmentRate >= 80 ? '#4CAF50' : requirementsFulfillmentRate >= 50 ? '#FF9800' : '#F44336'
+                color: requirementsFulfillmentRate >= 80 ? COLORS.SUCCESS : requirementsFulfillmentRate >= 50 ? COLORS.WARNING : COLORS.ERROR
               }]}>
                 {requirementsFulfillmentRate}%
               </Text>
             </View>
             <ProgressBar
               progress={requirementsFulfillmentRate / 100}
-              color={requirementsFulfillmentRate >= 80 ? '#4CAF50' : requirementsFulfillmentRate >= 50 ? '#FF9800' : '#F44336'}
+              color={requirementsFulfillmentRate >= 80 ? COLORS.SUCCESS : requirementsFulfillmentRate >= 50 ? COLORS.WARNING : COLORS.ERROR}
               style={styles.progressBar}
             />
           </View>

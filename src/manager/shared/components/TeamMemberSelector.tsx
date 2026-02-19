@@ -8,6 +8,7 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * TeamMemberSelector
@@ -121,7 +122,7 @@ const TeamMemberSelector: React.FC<TeamMemberSelectorProps> = ({
 
   const getAvatarColor = (name: string) => {
     // Generate consistent color based on name
-    const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#00BCD4'];
+    const colors = [COLORS.INFO, COLORS.SUCCESS, COLORS.WARNING, COLORS.STATUS_EVALUATED, COLORS.ERROR, '#00BCD4'];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
   };
@@ -129,13 +130,13 @@ const TeamMemberSelector: React.FC<TeamMemberSelectorProps> = ({
   const getAvailabilityColor = (availability?: TeamMember['availability']) => {
     switch (availability) {
       case 'available':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'busy':
         return '#FFC107';
       case 'offline':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   selectedBadge: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
   },
   memberItemSelected: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   avatar: {
     width: 48,
@@ -402,8 +403,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   checkmark: {
     color: '#FFFFFF',
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 8,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     alignItems: 'center',
     marginLeft: 8,
   },

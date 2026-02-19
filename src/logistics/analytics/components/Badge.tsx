@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 export type BadgeVariant =
   | 'success'
@@ -41,17 +42,17 @@ export const Badge: React.FC<BadgeProps> = ({
 const getVariantColor = (variant: BadgeVariant): string => {
   switch (variant) {
     case 'success':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'warning':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'error':
       return '#FF6B6B';
     case 'info':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'primary':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'secondary':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     default:
       return '#999';
   }

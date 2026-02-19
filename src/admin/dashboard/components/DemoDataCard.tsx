@@ -37,6 +37,7 @@ import {
   LogisticsDemoDataResult,
   CommercialManagerDemoDataResult,
 } from '../../../services/DemoDataService';
+import { COLORS } from '../../../theme/colors';
 
 interface ProjectOption {
   id: string;
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   card: {
     margin: 15,
     marginBottom: 10,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   description: {
     marginTop: 5,
