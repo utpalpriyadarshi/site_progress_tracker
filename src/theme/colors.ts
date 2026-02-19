@@ -11,19 +11,19 @@
 
 export const COLORS = {
   // ── Brand ──────────────────────────────────────────────────────────────────
-  PRIMARY:           COLORS.PRIMARY,   // Main purple — headers, FABs, selected state
-  PRIMARY_DARK:      COLORS.PRIMARY_DARK,   // Darker purple — pressed states, borders
-  PRIMARY_LIGHT:     COLORS.PRIMARY_LIGHT,   // Light purple — chip backgrounds, highlights
+  PRIMARY:           '#673AB7',   // Main purple — headers, FABs, selected state
+  PRIMARY_DARK:      '#4527A0',   // Darker purple — pressed states, borders
+  PRIMARY_LIGHT:     '#E8D5F2',   // Light purple — chip backgrounds, highlights
 
   // ── Semantic ───────────────────────────────────────────────────────────────
-  SUCCESS:           COLORS.SUCCESS,   // Green — approved, awarded, completed
-  SUCCESS_BG:        COLORS.SUCCESS_BG,   // Light green — qualified badge background
-  WARNING:           COLORS.WARNING,   // Orange — under review, pending, quotes received
-  WARNING_BG:        COLORS.WARNING_BG,   // Light orange — warning badge background
-  ERROR:             COLORS.ERROR,   // Red — error, cancelled, disqualified
-  ERROR_BG:          COLORS.ERROR_BG,   // Light red — error badge background
-  INFO:              COLORS.INFO,   // Blue — issued, info, links
-  INFO_BG:           COLORS.INFO_BG,   // Light blue — info badge background
+  SUCCESS:           '#4CAF50',   // Green — approved, awarded, completed
+  SUCCESS_BG:        '#E8F5E9',   // Light green — qualified badge background
+  WARNING:           '#FF9800',   // Orange — under review, pending, quotes received
+  WARNING_BG:        '#FFF3E0',   // Light orange — warning badge background
+  ERROR:             '#F44336',   // Red — error, cancelled, disqualified
+  ERROR_BG:          '#FFEBEE',   // Light red — error badge background
+  INFO:              '#2196F3',   // Blue — issued, info, links
+  INFO_BG:           '#E3F2FD',   // Light blue — info badge background
 
   // ── Text (Phase 2 migration target) ───────────────────────────────────────
   TEXT_PRIMARY:      '#333333',
@@ -38,18 +38,18 @@ export const COLORS = {
   DIVIDER:           '#EEEEEE',
 
   // ── Disabled / Neutral ─────────────────────────────────────────────────────
-  DISABLED:          COLORS.DISABLED,   // Grey — disabled, inactive, draft state
+  DISABLED:          '#9E9E9E',   // Grey — disabled, inactive, draft state
 
   // ── Status palette (RFQ · DOORS · Documents · Milestones) ─────────────────
-  STATUS_DRAFT:      COLORS.DISABLED,   // Same as DISABLED — use either
-  STATUS_ISSUED:     COLORS.INFO,   // Same as INFO
-  STATUS_RECEIVED:   COLORS.WARNING,   // Same as WARNING
-  STATUS_EVALUATED:  COLORS.STATUS_EVALUATED,   // Purple — evaluated/scored
-  STATUS_AWARDED:    COLORS.SUCCESS,   // Same as SUCCESS
-  STATUS_APPROVED:   COLORS.SUCCESS,   // Same as SUCCESS
-  STATUS_CANCELLED:  COLORS.ERROR,   // Same as ERROR
-  STATUS_CLOSED:     COLORS.STATUS_CLOSED,   // Blue-grey — archived/closed
-  STATUS_ACTIVE:     COLORS.INFO,   // Same as INFO
+  STATUS_DRAFT:      '#9E9E9E',   // Grey — draft state
+  STATUS_ISSUED:     '#2196F3',   // Blue — issued
+  STATUS_RECEIVED:   '#FF9800',   // Orange — received/pending review
+  STATUS_EVALUATED:  '#9C27B0',   // Purple — evaluated/scored
+  STATUS_AWARDED:    '#4CAF50',   // Green — awarded
+  STATUS_APPROVED:   '#4CAF50',   // Green — approved
+  STATUS_CANCELLED:  '#F44336',   // Red — cancelled
+  STATUS_CLOSED:     '#607D8B',   // Blue-grey — archived/closed
+  STATUS_ACTIVE:     '#2196F3',   // Blue — active
 } as const;
 
 export type ColorKey = keyof typeof COLORS;
