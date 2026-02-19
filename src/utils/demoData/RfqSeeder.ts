@@ -402,27 +402,30 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         rfq.version = 3;
       });
 
-      // Add 3 evaluated quotes with scores and ranks
+      // IR L1 method: L1 = lowest price among technically qualified (score >= 70)
+      // Schneider: cheapest + qualified => L1
+      // ABB: mid-price + qualified => L2
+      // Siemens: highest price + qualified => L3
       await quotesCollection.create((q) => {
         q.rfqId = rfq4.id;
-        q.vendorId = vendorIds[0]; // Siemens - L1
-        q.quoteReference = 'SIE/2025/045';
-        q.quotedPrice = 8500000;
+        q.vendorId = vendorIds[2]; // Schneider - L1 (lowest price, qualified)
+        q.quoteReference = 'SCH/2025/078';
+        q.quotedPrice = 7900000; // Cheapest
         q.currency = 'INR';
-        q.leadTimeDays = 80;
-        q.validityDays = 120;
-        q.paymentTerms = 'As per RFQ';
-        q.warrantyMonths = 36;
-        q.technicalCompliancePercentage = 95;
-        q.technicalDeviations = JSON.stringify([]);
-        q.commercialDeviations = JSON.stringify([]);
-        q.notes = 'Premium quality with excellent compliance';
+        q.leadTimeDays = 100;
+        q.validityDays = 60;
+        q.paymentTerms = '40% advance';
+        q.warrantyMonths = 24;
+        q.technicalCompliancePercentage = 82;
+        q.technicalDeviations = JSON.stringify(['Alternative materials', 'Different test procedure']);
+        q.commercialDeviations = JSON.stringify(['Higher advance', 'Shorter warranty']);
+        q.notes = 'Lowest price with acceptable quality';
         q.status = 'shortlisted';
-        q.technicalScore = 95;
-        q.commercialScore = 85;
-        q.overallScore = 91; // 60% technical + 40% commercial
+        q.technicalScore = 82;
+        q.commercialScore = 0;
+        q.overallScore = 82;
         q.rank = 1; // L1
-        q.submittedAt = now - 20 * 24 * 60 * 60 * 1000;
+        q.submittedAt = now - 21 * 24 * 60 * 60 * 1000;
         q.evaluatedAt = now - 10 * 24 * 60 * 60 * 1000;
         q.evaluatedById = userId;
         q.appSyncStatus = 'pending';
@@ -433,7 +436,7 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         q.rfqId = rfq4.id;
         q.vendorId = vendorIds[1]; // ABB - L2
         q.quoteReference = 'ABB/IN/2025/123';
-        q.quotedPrice = 8200000; // Cheaper
+        q.quotedPrice = 8200000;
         q.currency = 'INR';
         q.leadTimeDays = 90;
         q.validityDays = 90;
@@ -445,8 +448,8 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         q.notes = 'Good balance of price and quality';
         q.status = 'under_review';
         q.technicalScore = 88;
-        q.commercialScore = 90; // Better price
-        q.overallScore = 88.8;
+        q.commercialScore = 0;
+        q.overallScore = 88;
         q.rank = 2; // L2
         q.submittedAt = now - 22 * 24 * 60 * 60 * 1000;
         q.evaluatedAt = now - 10 * 24 * 60 * 60 * 1000;
@@ -457,24 +460,24 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
 
       await quotesCollection.create((q) => {
         q.rfqId = rfq4.id;
-        q.vendorId = vendorIds[2]; // Schneider - L3
-        q.quoteReference = 'SCH/2025/078';
-        q.quotedPrice = 7900000; // Cheapest
+        q.vendorId = vendorIds[0]; // Siemens - L3 (highest price)
+        q.quoteReference = 'SIE/2025/045';
+        q.quotedPrice = 8500000;
         q.currency = 'INR';
-        q.leadTimeDays = 100; // Longest
-        q.validityDays = 60;
-        q.paymentTerms = '40% advance';
-        q.warrantyMonths = 24;
-        q.technicalCompliancePercentage = 82;
-        q.technicalDeviations = JSON.stringify(['Alternative materials', 'Different test procedure']);
-        q.commercialDeviations = JSON.stringify(['Higher advance', 'Shorter warranty']);
-        q.notes = 'Low cost option with acceptable quality';
+        q.leadTimeDays = 80;
+        q.validityDays = 120;
+        q.paymentTerms = 'As per RFQ';
+        q.warrantyMonths = 36;
+        q.technicalCompliancePercentage = 95;
+        q.technicalDeviations = JSON.stringify([]);
+        q.commercialDeviations = JSON.stringify([]);
+        q.notes = 'Premium quality but highest price';
         q.status = 'under_review';
-        q.technicalScore = 82;
-        q.commercialScore = 92; // Best price
-        q.overallScore = 86;
+        q.technicalScore = 95;
+        q.commercialScore = 0;
+        q.overallScore = 95;
         q.rank = 3; // L3
-        q.submittedAt = now - 21 * 24 * 60 * 60 * 1000;
+        q.submittedAt = now - 20 * 24 * 60 * 60 * 1000;
         q.evaluatedAt = now - 10 * 24 * 60 * 60 * 1000;
         q.evaluatedById = userId;
         q.appSyncStatus = 'pending';
@@ -510,10 +513,10 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         rfq.version = 4;
       });
 
-      // Winner quote
+      // Winner: KEI - lowest price among qualified (L1)
       const winningQuote = await quotesCollection.create((q) => {
         q.rfqId = rfq5.id;
-        q.vendorId = vendorIds[6]; // KEI - Winner
+        q.vendorId = vendorIds[6]; // KEI - Winner (lowest price, qualified)
         q.quoteReference = 'KEI/2025/089';
         q.quotedPrice = 3500000;
         q.currency = 'INR';
@@ -527,8 +530,8 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         q.notes = 'ISI marked cables with test certificates';
         q.status = 'awarded';
         q.technicalScore = 92;
-        q.commercialScore = 88;
-        q.overallScore = 90.4;
+        q.commercialScore = 0;
+        q.overallScore = 92;
         q.rank = 1;
         q.submittedAt = now - 35 * 24 * 60 * 60 * 1000;
         q.evaluatedAt = now - 30 * 24 * 60 * 60 * 1000;
@@ -542,12 +545,12 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         r.winningQuoteId = winningQuote.id;
       });
 
-      // Loser quote
+      // Loser: Polycab - higher price, also qualified
       await quotesCollection.create((q) => {
         q.rfqId = rfq5.id;
-        q.vendorId = vendorIds[7]; // Polycab - Lost
+        q.vendorId = vendorIds[7]; // Polycab - L2 (higher price)
         q.quoteReference = 'POL/2025/156';
-        q.quotedPrice = 3800000; // Higher
+        q.quotedPrice = 3800000;
         q.currency = 'INR';
         q.leadTimeDays = 50;
         q.validityDays = 60;
@@ -559,8 +562,8 @@ export async function createRfqsDemoData(projectId: string, userId: string): Pro
         q.notes = 'Good quality alternative';
         q.status = 'rejected';
         q.technicalScore = 88;
-        q.commercialScore = 82;
-        q.overallScore = 85.6;
+        q.commercialScore = 0;
+        q.overallScore = 88;
         q.rank = 2;
         q.submittedAt = now - 33 * 24 * 60 * 60 * 1000;
         q.evaluatedAt = now - 30 * 24 * 60 * 60 * 1000;

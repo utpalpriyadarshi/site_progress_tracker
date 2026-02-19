@@ -39,7 +39,7 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
 }) => {
   const isL1 = quote.rank === 1;
   const canEvaluate = quote.status === 'submitted' || quote.status === 'under_review';
-  const canShortlistReject = quote.overallScore !== undefined && quote.status !== 'awarded';
+  const canShortlistReject = quote.technicalScore != null && quote.status !== 'awarded';
 
   return (
     <Card style={[styles.card, isL1 && styles.l1Card]}>
@@ -97,21 +97,25 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
           </View>
         )}
 
-        {quote.overallScore != null && (
+        {quote.technicalScore != null && (
           <View style={styles.scoresSection}>
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreLabel}>Tech</Text>
-              <Text style={styles.scoreValue}>{quote.technicalScore ?? '-'}</Text>
+              <Text style={styles.scoreLabel}>Tech Score</Text>
+              <Text style={styles.scoreValue}>{quote.technicalScore}</Text>
             </View>
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreLabel}>Comm</Text>
-              <Text style={styles.scoreValue}>{quote.commercialScore ?? '-'}</Text>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreLabel}>Overall</Text>
-              <Text style={[styles.scoreValue, styles.overallScore]}>
-                {quote.overallScore.toFixed(1)}
-              </Text>
+              <View style={[
+                styles.qualificationBadge,
+                { backgroundColor: (quote.technicalScore || 0) >= 70 ? '#E8F5E9' : '#FFEBEE' },
+              ]}>
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  color: (quote.technicalScore || 0) >= 70 ? '#2E7D32' : '#C62828',
+                }}>
+                  {(quote.technicalScore || 0) >= 70 ? 'Qualified' : 'Disqualified'}
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -247,8 +251,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  overallScore: {
-    color: '#007AFF',
+  qualificationBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   actionButtons: {
     flexDirection: 'row',

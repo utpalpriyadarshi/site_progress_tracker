@@ -206,17 +206,12 @@ class RfqService {
   ): Promise<RfqVendorQuoteModel> {
     const quote = await this.quotesCollection.find(evaluation.quoteId);
 
-    // Calculate weighted overall score
-    const techWeight = evaluation.technicalWeightage || 60;
-    const commWeight = evaluation.commercialWeightage || 40;
-    const overallScore =
-      (evaluation.technicalScore * techWeight + evaluation.commercialScore * commWeight) / 100;
-
+    // IR L1 method: overallScore = technicalScore (commercial score not used in ranking)
     return await database.write(async () => {
       return await quote.update((record) => {
         record.technicalScore = evaluation.technicalScore;
         record.commercialScore = evaluation.commercialScore;
-        record.overallScore = overallScore;
+        record.overallScore = evaluation.technicalScore;
         record.status = 'under_review';
         record.evaluatedAt = Date.now();
         record.evaluatedById = userId;
@@ -226,28 +221,41 @@ class RfqService {
   }
 
   /**
-   * Rank all quotes for an RFQ based on overall scores
+   * Rank all quotes for an RFQ using Indian Railway L1 method:
+   * 1. Technical score >= 70 to qualify
+   * 2. Among qualified, L1 = lowest quoted price
+   * 3. Tie-break: higher technical score wins
    */
   async rankQuotes(rfqId: string): Promise<void> {
-    const quotes = await this.quotesCollection
-      .query(Q.where('rfq_id', rfqId), Q.where('overall_score', Q.notEq(null)))
+    const allQuotes = await this.quotesCollection
+      .query(Q.where('rfq_id', rfqId), Q.where('technical_score', Q.notEq(null)))
       .fetch();
 
-    // Sort by overall score (descending)
-    const sortedQuotes = quotes.sort((a, b) => {
-      const scoreA = a.overallScore || 0;
-      const scoreB = b.overallScore || 0;
-      return scoreB - scoreA;
+    // Separate qualified (tech >= 70) and disqualified
+    const qualified = allQuotes.filter((q) => (q.technicalScore || 0) >= 70);
+    const disqualified = allQuotes.filter((q) => (q.technicalScore || 0) < 70);
+
+    // Sort qualified by price ASC, then tech score DESC for tie-break
+    const sortedQualified = qualified.sort((a, b) => {
+      if (a.quotedPrice !== b.quotedPrice) return a.quotedPrice - b.quotedPrice;
+      return (b.technicalScore || 0) - (a.technicalScore || 0);
     });
 
-    // Assign ranks
     await database.write(async () => {
-      for (let i = 0; i < sortedQuotes.length; i++) {
-        await sortedQuotes[i].update((record) => {
+      // Assign ranks to qualified vendors
+      for (let i = 0; i < sortedQualified.length; i++) {
+        await sortedQualified[i].update((record) => {
           record.rank = i + 1; // L1, L2, L3...
           if (i === 0) {
             record.status = 'shortlisted'; // L1 vendor
           }
+        });
+      }
+
+      // Disqualified vendors get no rank, stay under_review
+      for (const q of disqualified) {
+        await q.update((record) => {
+          record.rank = null as any;
         });
       }
     });
@@ -278,16 +286,16 @@ class RfqService {
       throw new Error('RFQ must be evaluated before awarding');
     }
 
-    // Award the winning quote
-    await database.write(async () => {
+    // Award winning quote, reject others, and update RFQ in a single transaction
+    const allQuotes = await this.quotesCollection.query(Q.where('rfq_id', rfqId)).fetch();
+
+    return await database.write(async () => {
+      // Award the winning quote
       await winningQuote.update((record) => {
         record.status = 'awarded';
       });
-    });
 
-    // Reject other quotes
-    const allQuotes = await this.quotesCollection.query(Q.where('rfq_id', rfqId)).fetch();
-    await database.write(async () => {
+      // Reject other quotes
       for (const quote of allQuotes) {
         if (quote.id !== winningQuoteId && quote.status !== 'awarded') {
           await quote.update((record) => {
@@ -295,10 +303,8 @@ class RfqService {
           });
         }
       }
-    });
 
-    // Update RFQ with award details
-    return await database.write(async () => {
+      // Update RFQ with award details
       return await rfq.update((record) => {
         record.status = 'awarded';
         record.winningVendorId = winningQuote.vendorId;

@@ -323,7 +323,41 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   const handleAwardL1 = async () => {
     if (!rfq) return;
-    const l1Quote = quotes.find((q) => q.rank === 1);
+    let l1Quote = quotes.find((q) => q.rank === 1);
+
+    // If no ranked quote found, try auto-ranking evaluated quotes first
+    if (!l1Quote) {
+      const hasScores = quotes.some((q) => q.technicalScore != null);
+      if (hasScores) {
+        try {
+          await RfqService.rankQuotes(rfq.id);
+          await loadQuotes();
+          // Re-find L1 from refreshed quotes (use DB directly since state may not have updated)
+          const freshQuotes = await RfqService.getQuotesForRfq(rfq.id);
+          const ranked = freshQuotes.find((q: any) => q.rank === 1);
+          if (ranked) {
+            const vendorMap = new Map(vendors.map((v) => [v.id, v]));
+            l1Quote = {
+              id: ranked.id,
+              rfqId: (ranked as any).rfqId,
+              vendorId: (ranked as any).vendorId,
+              vendorName: vendorMap.get((ranked as any).vendorId)?.vendorName || 'Unknown Vendor',
+              quotedPrice: ranked.quotedPrice,
+              currency: ranked.currency,
+              leadTimeDays: ranked.leadTimeDays,
+              validityDays: ranked.validityDays,
+              technicalCompliancePercentage: ranked.technicalCompliancePercentage,
+              status: ranked.status,
+              overallScore: ranked.overallScore,
+              rank: ranked.rank,
+            } as VendorQuote;
+          }
+        } catch (err) {
+          logger.error('[VendorQuotes] Error auto-ranking:', err);
+        }
+      }
+    }
+
     if (!l1Quote) {
       Alert.alert('Error', 'No L1 vendor found. Please evaluate and rank quotes first.');
       return;
@@ -408,7 +442,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   if (!rfq) return null;
 
-  const hasEvaluatedQuotes = quotes.some((q) => q.overallScore !== undefined);
+  const hasEvaluatedQuotes = quotes.some((q) => q.technicalScore != null);
   const canAddQuotes = ['issued', 'quotes_received'].includes(rfq.status);
   const canAward = rfq.status === 'evaluated' && hasEvaluatedQuotes;
 
@@ -441,23 +475,31 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
             ))}
           </View>
 
-          {/* Price row */}
+          {/* Price row — highlight lowest among qualified */}
           <View style={styles.compareRow}>
             <View style={styles.compareLabel}>
               <Text style={styles.compareLabelText}>Price</Text>
             </View>
-            {comparison.quotes.map((cq) => (
-              <View
-                key={cq.quote.id}
-                style={[
-                  styles.compareCell,
-                  cq.quote.quotedPrice === comparison.lowestPrice && styles.bestCell,
-                ]}>
-                <Text style={styles.compareCellText}>
-                  {cq.quote.currency} {cq.quote.quotedPrice.toLocaleString('en-IN')}
-                </Text>
-              </View>
-            ))}
+            {(() => {
+              const qualifiedPrices = comparison.quotes
+                .filter((cq) => (cq.quote.technicalScore || 0) >= 70)
+                .map((cq) => cq.quote.quotedPrice);
+              const lowestQualifiedPrice = qualifiedPrices.length > 0 ? Math.min(...qualifiedPrices) : null;
+              return comparison.quotes.map((cq) => {
+                const isLowestQualified = lowestQualifiedPrice != null &&
+                  cq.quote.quotedPrice === lowestQualifiedPrice &&
+                  (cq.quote.technicalScore || 0) >= 70;
+                return (
+                  <View
+                    key={cq.quote.id}
+                    style={[styles.compareCell, isLowestQualified && styles.bestCell]}>
+                    <Text style={styles.compareCellText}>
+                      {cq.quote.currency} {cq.quote.quotedPrice.toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+                );
+              });
+            })()}
           </View>
 
           {/* Lead Time row */}
@@ -549,35 +591,24 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
             </View>
           )}
 
-          {/* Commercial Score row */}
+          {/* Qualification row */}
           {hasEvaluatedQuotes && (
             <View style={styles.compareRow}>
               <View style={styles.compareLabel}>
-                <Text style={styles.compareLabelText}>Comm Score</Text>
+                <Text style={styles.compareLabelText}>Qualification</Text>
               </View>
-              {comparison.quotes.map((cq) => (
-                <View key={cq.quote.id} style={styles.compareCell}>
-                  <Text style={styles.compareCellText}>{cq.quote.commercialScore ?? '-'}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Overall Score row */}
-          {hasEvaluatedQuotes && (
-            <View style={styles.compareRow}>
-              <View style={styles.compareLabel}>
-                <Text style={styles.compareLabelText}>Overall</Text>
-              </View>
-              {comparison.quotes.map((cq) => (
-                <View
-                  key={cq.quote.id}
-                  style={[styles.compareCell, cq.quote.rank === 1 && styles.bestCell]}>
-                  <Text style={[styles.compareCellText, styles.boldText]}>
-                    {cq.quote.overallScore?.toFixed(1) ?? '-'}
-                  </Text>
-                </View>
-              ))}
+              {comparison.quotes.map((cq) => {
+                const qualified = (cq.quote.technicalScore || 0) >= 70;
+                return (
+                  <View
+                    key={cq.quote.id}
+                    style={[styles.compareCell, qualified && cq.quote.rank === 1 && styles.bestCell]}>
+                    <Text style={[styles.compareCellText, styles.boldText, { color: qualified ? '#2E7D32' : '#C62828' }]}>
+                      {qualified ? 'Qualified' : 'Disqualified'}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>

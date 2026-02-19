@@ -95,11 +95,19 @@ const QuoteCard: React.FC<{ quote: RfqVendorQuoteModel; formatCurrency: (amount:
           <Text style={styles.quoteLabel}>Compliance:</Text>
           <Text style={styles.quoteValue}>{quote.technicalCompliancePercentage}%</Text>
         </View>
-        {quote.overallScore && (
+        {quote.technicalScore != null && (
           <View style={styles.quoteRow}>
-            <Text style={styles.quoteLabel}>Overall Score:</Text>
+            <Text style={styles.quoteLabel}>Tech Score:</Text>
             <Text style={[styles.quoteValue, styles.scoreValue]}>
-              {quote.overallScore.toFixed(1)}/100
+              {quote.technicalScore}/100
+            </Text>
+          </View>
+        )}
+        {quote.technicalScore != null && (
+          <View style={styles.quoteRow}>
+            <Text style={styles.quoteLabel}>Qualification:</Text>
+            <Text style={[styles.quoteValue, { color: (quote.technicalScore || 0) >= 70 ? '#10B981' : '#EF4444', fontWeight: '700' }]}>
+              {(quote.technicalScore || 0) >= 70 ? 'Qualified' : 'Disqualified'}
             </Text>
           </View>
         )}
@@ -208,7 +216,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
       return;
     }
 
-    const unevaluatedQuotes = quotes.filter((q) => !q.overallScore);
+    const unevaluatedQuotes = quotes.filter((q) => q.technicalScore == null);
     if (unevaluatedQuotes.length > 0) {
       Alert.alert('Error', `${unevaluatedQuotes.length} quote(s) are not yet evaluated`);
       return;
@@ -394,8 +402,8 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
       );
     }
 
-    const evaluatedQuotes = quotes.filter((q) => q.overallScore);
-    const pendingQuotes = quotes.filter((q) => !q.overallScore);
+    const evaluatedQuotes = quotes.filter((q) => q.technicalScore != null);
+    const pendingQuotes = quotes.filter((q) => q.technicalScore == null);
 
     return (
       <ScrollView style={styles.tabContent}>
@@ -420,13 +428,18 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
             <Text style={styles.sectionTitle}>Ranking</Text>
             {evaluatedQuotes
               .sort((a, b) => (a.rank || 999) - (b.rank || 999))
-              .map((quote) => (
-                <View key={quote.id} style={styles.rankingRow}>
-                  <Text style={styles.rankingRank}>#{quote.rank || '?'}</Text>
-                  <Text style={styles.rankingVendor}>{quote.vendorId.slice(0, 8)}...</Text>
-                  <Text style={styles.rankingScore}>{quote.overallScore?.toFixed(1)}</Text>
-                </View>
-              ))}
+              .map((quote) => {
+                const qualified = (quote.technicalScore || 0) >= 70;
+                return (
+                  <View key={quote.id} style={styles.rankingRow}>
+                    <Text style={styles.rankingRank}>{quote.rank ? `L${quote.rank}` : '-'}</Text>
+                    <Text style={styles.rankingVendor}>{quote.vendorId.slice(0, 8)}...</Text>
+                    <Text style={[styles.rankingScore, { color: qualified ? '#3B82F6' : '#EF4444' }]}>
+                      {qualified ? formatCurrency(quote.quotedPrice) : 'Disqualified'}
+                    </Text>
+                  </View>
+                );
+              })}
           </View>
         )}
 

@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState } from 'react';
+import React, { useReducer, useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
@@ -18,7 +18,7 @@ import {
 } from './state';
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import RfqService from '../services/RfqService';
@@ -61,6 +61,17 @@ const DesignRfqManagementScreen = () => {
     loadRfqs();
     loadVendors();
   }, [projectId, refreshTrigger, engineerId]);
+
+  // Reload DOORS packages and RFQs when tab gains focus (e.g., after creating packages on DOORS tab)
+  useFocusEffect(
+    useCallback(() => {
+      if (projectId) {
+        loadDomains();
+        loadDoorsPackages();
+        loadRfqs();
+      }
+    }, [projectId, engineerId])
+  );
 
   const loadDomains = async () => {
     if (!projectId) return;
