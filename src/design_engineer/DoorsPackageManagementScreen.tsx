@@ -24,6 +24,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 /**
  * DoorsPackageManagementScreen (v6.0 - Sprint 1)
@@ -49,8 +50,7 @@ const DoorsPackageManagementScreen = () => {
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [closureDialogVisible, setClosureDialogVisible] = useState(false);
   const [closureRemarks, setClosureRemarks] = useState('');
   const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
@@ -274,8 +274,7 @@ const DoorsPackageManagementScreen = () => {
         };
 
         dispatch({ type: 'UPDATE_PACKAGE', payload: { package: updatedPkg } });
-        setSnackbarMessage('DOORS package updated successfully');
-        setSnackbarVisible(true);
+        showSnackbar('DOORS package updated successfully');
       } else {
         // Create new package
         // Check for duplicate DOORS ID in project
@@ -342,8 +341,7 @@ const DoorsPackageManagementScreen = () => {
           dispatch({ type: 'ADD_PACKAGE', payload: { package: newPackage } });
         }
 
-        setSnackbarMessage('DOORS package created successfully');
-        setSnackbarVisible(true);
+        showSnackbar('DOORS package created successfully');
         announce('DOORS package created successfully');
       }
 
@@ -404,8 +402,7 @@ const DoorsPackageManagementScreen = () => {
               await record.markAsDeleted();
             });
             dispatch({ type: 'DELETE_PACKAGE', payload: { packageId } });
-            setSnackbarMessage('DOORS package deleted');
-            setSnackbarVisible(true);
+            showSnackbar('DOORS package deleted');
           } catch (error) {
             logger.error('[DoorsPackage] Error deleting package:', error);
             Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
@@ -502,8 +499,7 @@ const DoorsPackageManagementScreen = () => {
 
       dispatch({ type: 'ADD_PACKAGES', payload: { packages: newPackages } });
       dispatch({ type: 'CLOSE_COPY_DIALOG' });
-      setSnackbarMessage(`Copied ${newPackages.length} package(s) to ${targetSiteName}`);
-      setSnackbarVisible(true);
+      showSnackbar(`Copied ${newPackages.length} package(s) to ${targetSiteName}`);
     } catch (error) {
       logger.error('[DoorsPackage] Error copying packages:', error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS package copy'));
@@ -611,8 +607,7 @@ const DoorsPackageManagementScreen = () => {
         approved: 'Package approved',
         closed: 'Package closed',
       };
-      setSnackbarMessage(stageLabels[transitionStage]);
-      setSnackbarVisible(true);
+      showSnackbar(stageLabels[transitionStage]);
     } catch (error) {
       logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
@@ -664,8 +659,7 @@ const DoorsPackageManagementScreen = () => {
       }
 
       dispatch({ type: 'CLEAR_SELECTION' });
-      setSnackbarMessage(`${pendingIds.length} package(s) marked as received`);
-      setSnackbarVisible(true);
+      showSnackbar(`${pendingIds.length} package(s) marked as received`);
     } catch (error) {
       logger.error('[DoorsPackage] Error bulk marking received:', error);
       Alert.alert('Error', 'Failed to mark selected packages as received');
@@ -1046,16 +1040,10 @@ const DoorsPackageManagementScreen = () => {
         />
 
         <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
+          {...snackbarProps}
           duration={3000}
-          action={{
-            label: 'Dismiss',
-            onPress: () => setSnackbarVisible(false),
-          }}
-        >
-          {snackbarMessage}
-        </Snackbar>
+          action={{ label: 'Dismiss', onPress: snackbarProps.onDismiss }}
+        />
       </View>
     </ErrorBoundary>
   );

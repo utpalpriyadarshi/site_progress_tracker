@@ -24,6 +24,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import RfqService from '../services/RfqService';
 import { validateRfqTitle, getErrorMessage } from './utils/validation';
 import { COLORS } from '../theme/colors';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 /**
  * DesignRfqManagementScreen (v6.0 - Sprint 1)
@@ -41,8 +42,7 @@ const DesignRfqManagementScreen = () => {
   const [state, dispatch] = useReducer(designRfqManagementReducer, createDesignRfqInitialState());
   const { announce } = useAccessibility();
   const navigation = useNavigation();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [awardDialogVisible, setAwardDialogVisible] = useState(false);
   const [awardRfqId, setAwardRfqId] = useState<string | null>(null);
@@ -304,8 +304,7 @@ const DesignRfqManagementScreen = () => {
           dispatch({ type: 'UPDATE_RFQ', payload: { rfq: updatedRfq } });
         }
 
-        setSnackbarMessage('Design RFQ updated successfully');
-        setSnackbarVisible(true);
+        showSnackbar('Design RFQ updated successfully');
       } else {
         // Create new RFQ
         let newRfq: DesignRfq | null = null;
@@ -357,8 +356,7 @@ const DesignRfqManagementScreen = () => {
           dispatch({ type: 'ADD_RFQ', payload: { rfq: newRfq } });
         }
 
-        setSnackbarMessage('Design RFQ created successfully');
-        setSnackbarVisible(true);
+        showSnackbar('Design RFQ created successfully');
         announce('Design RFQ created successfully');
       }
 
@@ -413,8 +411,7 @@ const DesignRfqManagementScreen = () => {
               await record.markAsDeleted();
             });
             dispatch({ type: 'DELETE_RFQ', payload: { rfqId } });
-            setSnackbarMessage('Design RFQ deleted');
-            setSnackbarVisible(true);
+            showSnackbar('Design RFQ deleted');
           } catch (error) {
             logger.error('[DesignRfq] Error deleting RFQ:', error);
             Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
@@ -444,8 +441,7 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      setSnackbarMessage('RFQ issued successfully');
-      setSnackbarVisible(true);
+      showSnackbar('RFQ issued successfully');
     } catch (error) {
       logger.error('[DesignRfq] Error issuing RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
@@ -471,8 +467,7 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      setSnackbarMessage('Marked as quotes received');
-      setSnackbarVisible(true);
+      showSnackbar('Marked as quotes received');
     } catch (error) {
       logger.error('[DesignRfq] Error updating RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
@@ -501,8 +496,7 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      setSnackbarMessage('RFQ marked as evaluated');
-      setSnackbarVisible(true);
+      showSnackbar('RFQ marked as evaluated');
     } catch (error) {
       logger.error('[DesignRfq] Error evaluating RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
@@ -546,8 +540,7 @@ const DesignRfqManagementScreen = () => {
       }
 
       setAwardDialogVisible(false);
-      setSnackbarMessage('RFQ awarded successfully');
-      setSnackbarVisible(true);
+      showSnackbar('RFQ awarded successfully');
     } catch (error) {
       logger.error('[DesignRfq] Error awarding RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
@@ -575,8 +568,7 @@ const DesignRfqManagementScreen = () => {
       }
 
       setCancelDialogVisible(false);
-      setSnackbarMessage('RFQ cancelled');
-      setSnackbarVisible(true);
+      showSnackbar('RFQ cancelled');
     } catch (error: any) {
       logger.error('[DesignRfq] Error cancelling RFQ:', error);
       Alert.alert('Error', error.message || 'Failed to cancel RFQ');
@@ -636,8 +628,7 @@ const DesignRfqManagementScreen = () => {
       }
 
       dispatch({ type: 'CLEAR_SELECTION' });
-      setSnackbarMessage(`${draftIds.length} RFQ(s) issued successfully`);
-      setSnackbarVisible(true);
+      showSnackbar(`${draftIds.length} RFQ(s) issued successfully`);
     } catch (error) {
       logger.error('[DesignRfq] Error bulk issuing RFQs:', error);
       Alert.alert('Error', 'Failed to issue selected RFQs');
@@ -994,16 +985,10 @@ const DesignRfqManagementScreen = () => {
         />
 
         <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
+          {...snackbarProps}
           duration={3000}
-          action={{
-            label: 'Dismiss',
-            onPress: () => setSnackbarVisible(false),
-          }}
-        >
-          {snackbarMessage}
-        </Snackbar>
+          action={{ label: 'Dismiss', onPress: snackbarProps.onDismiss }}
+        />
       </View>
     </ErrorBoundary>
   );
