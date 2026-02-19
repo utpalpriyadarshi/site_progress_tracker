@@ -11,6 +11,7 @@ import ItemsManagementScreen from '../supervisor/ItemsManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import type { SupervisorDrawerParamList } from './SupervisorDrawerNavigator';
+import { COLORS } from '../theme/colors';
 
 /**
  * SupervisorTabNavigator
@@ -86,7 +87,7 @@ const SupervisorTabNavigator: React.FC = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false, // All screens use custom SupervisorHeader
-        tabBarActiveTintColor: '#673AB7',
+        tabBarActiveTintColor: COLORS.PRIMARY,
         tabBarInactiveTintColor: 'gray',
       }}
     >

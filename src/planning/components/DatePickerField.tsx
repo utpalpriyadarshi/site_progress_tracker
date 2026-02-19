@@ -10,6 +10,7 @@ import { View, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { TextInput, HelperText } from 'react-native-paper';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
+import { COLORS } from '../../theme/colors';
 
 interface DatePickerFieldProps {
   label: string;
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
   iosButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     borderRadius: 4,
   },
   iosButtonText: {

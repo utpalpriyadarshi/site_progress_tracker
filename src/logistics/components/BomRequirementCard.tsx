@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BomRequirement } from '../../shared/hooks/useBomData';
 import BomLogisticsService from '../../services/BomLogisticsService';
+import { COLORS } from '../../theme/colors';
 
 /**
  * BomRequirementCard
@@ -90,16 +91,16 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
         </View>
         {shortage > 0 && (
           <View style={styles.quantityRow}>
-            <Text style={[styles.quantityLabel, { color: '#F44336' }]}>Shortage:</Text>
-            <Text style={[styles.quantityValue, { color: '#F44336', fontWeight: '600' }]}>
+            <Text style={[styles.quantityLabel, { color: COLORS.ERROR }]}>Shortage:</Text>
+            <Text style={[styles.quantityValue, { color: COLORS.ERROR, fontWeight: '600' }]}>
               {shortage} {requirement.unit}
             </Text>
           </View>
         )}
         {surplus > 0 && (
           <View style={styles.quantityRow}>
-            <Text style={[styles.quantityLabel, { color: '#2196F3' }]}>Surplus:</Text>
-            <Text style={[styles.quantityValue, { color: '#2196F3' }]}>
+            <Text style={[styles.quantityLabel, { color: COLORS.INFO }]}>Surplus:</Text>
+            <Text style={[styles.quantityValue, { color: COLORS.INFO }]}>
               {surplus} {requirement.unit}
             </Text>
           </View>
@@ -159,8 +160,8 @@ const BomRequirementCard: React.FC<BomRequirementCardProps> = ({
               <Text style={[
                 styles.doorsComplianceText,
                 {
-                  color: doorsCompliance >= 95 ? '#4CAF50' :
-                         doorsCompliance >= 80 ? '#FF9800' : '#F44336'
+                  color: doorsCompliance >= 95 ? COLORS.SUCCESS :
+                         doorsCompliance >= 80 ? COLORS.WARNING : COLORS.ERROR
                 }
               ]}>
                 {doorsCompliance.toFixed(1)}%
@@ -209,9 +210,9 @@ function getStatus(
 
 function getTypeBadgeStyle(type: string) {
   if (type === 'estimating') {
-    return { backgroundColor: '#E3F2FD', borderColor: '#2196F3' };
+    return { backgroundColor: COLORS.INFO_BG, borderColor: COLORS.INFO };
   }
-  return { backgroundColor: '#FFF3E0', borderColor: '#FF9800' };
+  return { backgroundColor: COLORS.WARNING_BG, borderColor: COLORS.WARNING };
 }
 
 const styles = StyleSheet.create({
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     marginHorizontal: -16,
     marginBottom: -16,
     paddingHorizontal: 16,

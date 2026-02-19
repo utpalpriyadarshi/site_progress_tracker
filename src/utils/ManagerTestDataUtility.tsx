@@ -15,6 +15,7 @@ import { Button, Card, Title, Paragraph, Divider, Chip } from 'react-native-pape
 import { database } from '../../models/database';
 import { useAuth } from '../auth/AuthContext';
 import { Q } from '@nozbe/watermelondb';
+import { COLORS } from '../theme/colors';
 
 export const ManagerTestDataUtility = () => {
   const { user } = useAuth();
@@ -888,10 +889,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   primaryButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   debugButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   debugInfo: {
     fontSize: 12,
@@ -928,6 +929,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   errorCard: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
 });

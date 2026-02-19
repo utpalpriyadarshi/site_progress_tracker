@@ -16,6 +16,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Card, Switch, Button, Chip, Divider, List } from 'react-native-paper';
 import type { PermissionEditorProps, Permission, PermissionGroup } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   roleId,
@@ -94,26 +95,26 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   // Get action icon and color
   const getActionStyle = (action: string) => {
     const styles: Record<string, { icon: string; color: string }> = {
-      create: { icon: 'plus', color: '#4CAF50' },
-      read: { icon: 'eye', color: '#2196F3' },
-      update: { icon: 'pencil', color: '#FF9800' },
+      create: { icon: 'plus', color: COLORS.SUCCESS },
+      read: { icon: 'eye', color: COLORS.INFO },
+      update: { icon: 'pencil', color: COLORS.WARNING },
       delete: { icon: 'delete', color: '#f44336' },
-      execute: { icon: 'play', color: '#9C27B0' },
+      execute: { icon: 'play', color: COLORS.STATUS_EVALUATED },
     };
-    return styles[action] || { icon: 'help', color: '#9E9E9E' };
+    return styles[action] || { icon: 'help', color: COLORS.DISABLED };
   };
 
   // Get category color
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      admin: '#F44336',
-      manager: '#2196F3',
-      logistics: '#FF9800',
-      commercial: '#4CAF50',
-      planning: '#9C27B0',
+      admin: COLORS.ERROR,
+      manager: COLORS.INFO,
+      logistics: COLORS.WARNING,
+      commercial: COLORS.SUCCESS,
+      planning: COLORS.STATUS_EVALUATED,
       design: '#00BCD4',
     };
-    return colors[category] || '#9E9E9E';
+    return colors[category] || COLORS.DISABLED;
   };
 
   // Render permission item
@@ -153,7 +154,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
     const isExpanded = expandedGroups.has(group.name);
     const allEnabled = group.enabledCount === group.totalCount;
     const someEnabled = group.enabledCount > 0 && group.enabledCount < group.totalCount;
-    const categoryColor = groupBy === 'category' ? getCategoryColor(group.name) : '#2196F3';
+    const categoryColor = groupBy === 'category' ? getCategoryColor(group.name) : COLORS.INFO;
 
     return (
       <Card key={group.name} style={styles.groupCard}>
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   summaryCount: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   summaryLabel: {
     fontSize: 12,
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   },
   dirtyText: {
     fontSize: 12,
-    color: '#FF9800',
+    color: COLORS.WARNING,
     fontWeight: '600',
   },
   readOnlyChip: {
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9E9E9E20',
   },
   readOnlyText: {
-    color: '#9E9E9E',
+    color: COLORS.DISABLED,
     fontSize: 11,
     fontWeight: '600',
   },

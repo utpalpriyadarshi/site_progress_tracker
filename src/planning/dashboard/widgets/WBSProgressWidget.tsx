@@ -13,6 +13,7 @@ import { Text, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   progressLabel: {
     opacity: 0.7,
@@ -262,10 +263,10 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   completedSegment: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   inProgressSegment: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   notStartedSegment: {
     backgroundColor: '#E0E0E0',

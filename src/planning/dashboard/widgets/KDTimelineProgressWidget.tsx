@@ -15,6 +15,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
 import type { TimelineDataPoint } from '../hooks';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -103,11 +104,11 @@ export const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> =
       <View>
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
+            <View style={[styles.legendDot, { backgroundColor: COLORS.INFO }]} />
             <Text variant="bodySmall">Expected</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+            <View style={[styles.legendDot, { backgroundColor: COLORS.SUCCESS }]} />
             <Text variant="bodySmall">Actual</Text>
           </View>
         </View>

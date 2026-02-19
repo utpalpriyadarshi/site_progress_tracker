@@ -27,6 +27,7 @@ import DatePickerField from '../../components/DatePickerField';
 import { WBSCodeGenerator } from '../../../../services/planning/WBSCodeGenerator';
 import { ItemFormFieldsProps } from '../types';
 import { ProjectPhase, DependencyRisk } from '../../../../models/ItemModel';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Shared form fields for item creation and editing
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e3f2fd',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     alignItems: 'center',
   },
   codeText: {

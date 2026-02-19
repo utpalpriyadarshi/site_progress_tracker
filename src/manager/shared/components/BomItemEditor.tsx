@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * BomItemEditor
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   required: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   input: {
     borderWidth: 1,
@@ -490,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   inputError: {
-    borderColor: '#F44336',
+    borderColor: COLORS.ERROR,
   },
   textArea: {
     height: 80,
@@ -538,14 +539,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 4,
   },
   totalCostContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 8,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     alignItems: 'center',
     marginLeft: 8,
   },

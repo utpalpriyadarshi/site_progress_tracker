@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * InvoiceStatusWidget Component
@@ -55,8 +56,8 @@ export interface InvoiceStatusWidgetProps {
 }
 
 const STATUS_COLORS = {
-  pending: '#FF9800',
-  paid: '#4CAF50',
+  pending: COLORS.WARNING,
+  paid: COLORS.SUCCESS,
   overdue: '#ff6b6b',
 };
 

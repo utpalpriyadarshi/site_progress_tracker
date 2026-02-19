@@ -4,6 +4,7 @@ import { Card, Title, Text, Chip, Divider, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { HindranceWithDetails } from '../types';
 import { getPriorityColor, getStatusColor, getStatusLabel, parsePhotos } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface HindranceCardProps {
   hindranceWithDetails: HindranceWithDetails;
@@ -86,7 +87,7 @@ export const HindranceCard: React.FC<HindranceCardProps> = ({
         </Button>
         <Button
           icon="delete"
-          textColor="#F44336"
+          textColor={COLORS.ERROR}
           onPress={() => onDelete(hindrance.id)}
         >
           Delete
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   syncChipContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

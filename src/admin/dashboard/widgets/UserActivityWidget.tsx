@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * UserActivityWidget Component
@@ -38,14 +39,14 @@ export interface UserActivityWidgetProps {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: '#9C27B0',
-  manager: '#2196F3',
-  supervisor: '#4CAF50',
-  commercial: '#FF9800',
+  admin: COLORS.STATUS_EVALUATED,
+  manager: COLORS.INFO,
+  supervisor: COLORS.SUCCESS,
+  commercial: COLORS.WARNING,
   logistics: '#00BCD4',
   planning: '#E91E63',
   design_engineer: '#795548',
-  default: '#9E9E9E',
+  default: COLORS.DISABLED,
 };
 
 export const UserActivityWidget: React.FC<UserActivityWidgetProps> = ({
@@ -143,7 +144,7 @@ export const UserActivityWidget: React.FC<UserActivityWidgetProps> = ({
           </View>
           <View style={styles.metricDivider} />
           <View style={styles.metric}>
-            <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
+            <Text style={[styles.metricValue, { color: COLORS.SUCCESS }]}>
               {activePercentage}%
             </Text>
             <Text style={styles.metricLabel}>Active</Text>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * InventoryItemCard
@@ -93,15 +94,15 @@ const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
   const getStatusColor = (status: InventoryItem['status']) => {
     switch (status) {
       case 'available':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'reserved':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'in-transit':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'damaged':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -136,13 +137,13 @@ const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
   const getMovementColor = (type: 'in' | 'out' | 'transfer') => {
     switch (type) {
       case 'in':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'out':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'transfer':
-        return '#2196F3';
+        return COLORS.INFO;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -378,7 +379,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   locationContainer: {
     marginBottom: 8,
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '500',
   },
   locationSeparator: {
@@ -448,15 +449,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   actionButtonPrimary: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   actionText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   actionTextPrimary: {

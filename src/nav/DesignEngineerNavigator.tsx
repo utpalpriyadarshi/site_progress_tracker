@@ -33,6 +33,7 @@ import DesignDocumentManagementScreen from '../design_engineer/DesignDocumentMan
 import { useAuth } from '../auth/AuthContext';
 import { DesignEngineerProvider } from '../design_engineer/context/DesignEngineerContext';
 import TutorialService from '../services/TutorialService';
+import { COLORS } from '../theme/colors';
 
 // ==================== Types ====================
 
@@ -147,7 +148,7 @@ const DesignEngineerTabs: React.FC = memo(() => {
   const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
-    tabBarActiveTintColor: '#673AB7',
+    tabBarActiveTintColor: COLORS.PRIMARY,
     tabBarInactiveTintColor: 'gray',
     headerShown: false,
     tabBarStyle: {

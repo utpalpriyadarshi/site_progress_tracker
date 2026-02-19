@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Menu, Button } from 'react-native-paper';
 import { ProjectPhase } from '../../../models/ItemModel';
+import { COLORS } from '../../theme/colors';
 
 interface PhaseOption {
   value: ProjectPhase;
@@ -20,14 +21,14 @@ const PHASE_OPTIONS: PhaseOption[] = [
     value: 'design',
     label: 'Design & Engineering',
     icon: '✏️',
-    color: '#2196F3',
+    color: COLORS.INFO,
     description: 'Design drawings, calculations, and specifications',
   },
   {
     value: 'approvals',
     label: 'Statutory Approvals',
     icon: '📋',
-    color: '#9C27B0',
+    color: COLORS.STATUS_EVALUATED,
     description: 'Regulatory and utility clearances',
   },
   {
@@ -41,7 +42,7 @@ const PHASE_OPTIONS: PhaseOption[] = [
     value: 'procurement',
     label: 'Procurement',
     icon: '🛒',
-    color: '#FF9800',
+    color: COLORS.WARNING,
     description: 'Equipment and material procurement',
   },
   {
@@ -62,14 +63,14 @@ const PHASE_OPTIONS: PhaseOption[] = [
     value: 'construction',
     label: 'Construction',
     icon: '🔨',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     description: 'Main installation and construction work',
   },
   {
     value: 'testing',
     label: 'Testing & Pre-commissioning',
     icon: '🧪',
-    color: '#F44336',
+    color: COLORS.ERROR,
     description: 'Testing and quality checks',
   },
   {
@@ -90,7 +91,7 @@ const PHASE_OPTIONS: PhaseOption[] = [
     value: 'handover',
     label: 'Handover & Documentation',
     icon: '📦',
-    color: '#607D8B',
+    color: COLORS.STATUS_CLOSED,
     description: 'Project closure and documentation',
   },
 ];

@@ -16,6 +16,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Button, Checkbox, RadioButton, ActivityIndicator, Divider } from 'react-native-paper';
 import type { FinancialReportExporterProps, ReportFormat, ReportExportOptions } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = ({
   reportData,
@@ -153,7 +154,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
           style={[
             styles.summaryValue,
             {
-              color: reportData.profitability.remaining >= 0 ? '#4CAF50' : '#f44336',
+              color: reportData.profitability.remaining >= 0 ? COLORS.SUCCESS : '#f44336',
             },
           ]}
         >
@@ -172,7 +173,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
           style={[
             styles.summaryValue,
             {
-              color: reportData.cashFlow.netCashFlow >= 0 ? '#4CAF50' : '#f44336',
+              color: reportData.cashFlow.netCashFlow >= 0 ? COLORS.SUCCESS : '#f44336',
             },
           ]}
         >
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   touchableOptionSelected: {
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     borderWidth: 2,
     backgroundColor: '#e3f2fd',
   },
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   exportButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   exportingContainer: {
     flexDirection: 'row',

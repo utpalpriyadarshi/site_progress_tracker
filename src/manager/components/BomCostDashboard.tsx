@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import BomCalculatorService from '../../services/BomCalculatorService';
 import BomModel from '../../../models/BomModel';
 import BomItemModel from '../../../models/BomItemModel';
+import { COLORS } from '../../theme/colors';
 
 /**
  * BomCostDashboard
@@ -30,7 +31,7 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
     title: string,
     value: string,
     subtitle?: string,
-    color: string = '#2196F3'
+    color: string = COLORS.INFO
   ) => (
     <View style={[styles.kpiCard, { borderLeftColor: color, borderLeftWidth: 4 }]}>
       <Text style={styles.kpiTitle}>{title}</Text>
@@ -70,10 +71,10 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
   );
 
   const categoryColors: Record<string, string> = {
-    material: '#2196F3',
-    labor: '#4CAF50',
-    equipment: '#FF9800',
-    subcontractor: '#9C27B0',
+    material: COLORS.INFO,
+    labor: COLORS.SUCCESS,
+    equipment: COLORS.WARNING,
+    subcontractor: COLORS.STATUS_EVALUATED,
   };
 
   return (
@@ -84,7 +85,7 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
           'Total Estimated',
           BomCalculatorService.formatCurrency(summary.breakdown.totalEstimated),
           `${items.length} items`,
-          '#2196F3'
+          COLORS.INFO
         )}
         {bom.type === 'execution' && (
           renderKPICard(
@@ -93,14 +94,14 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
             summary.costPerformance
               ? `Variance: ${BomCalculatorService.formatCurrency(summary.costPerformance.costVariance)}`
               : undefined,
-            summary.breakdown.totalActual > summary.breakdown.totalEstimated ? '#F44336' : '#4CAF50'
+            summary.breakdown.totalActual > summary.breakdown.totalEstimated ? COLORS.ERROR : COLORS.SUCCESS
           )
         )}
         {renderKPICard(
           'Grand Total',
           BomCalculatorService.formatCurrency(summary.breakdown.grandTotal),
           `Inc. ${bom.contingency}% contingency + ${bom.profitMargin}% profit`,
-          '#FF9800'
+          COLORS.WARNING
         )}
       </View>
 
@@ -148,7 +149,7 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
               </View>
               <View style={styles.budgetDetailRow}>
                 <Text style={styles.budgetDetailLabel}>Spent:</Text>
-                <Text style={[styles.budgetDetailValue, { color: '#F44336' }]}>
+                <Text style={[styles.budgetDetailValue, { color: COLORS.ERROR }]}>
                   {BomCalculatorService.formatCurrency(summary.budgetUtilization.spent)}
                 </Text>
               </View>
@@ -157,7 +158,7 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
                 <Text
                   style={[
                     styles.budgetDetailValue,
-                    { color: summary.budgetUtilization.remaining >= 0 ? '#4CAF50' : '#F44336' },
+                    { color: summary.budgetUtilization.remaining >= 0 ? COLORS.SUCCESS : COLORS.ERROR },
                   ]}
                 >
                   {BomCalculatorService.formatCurrency(summary.budgetUtilization.remaining)}
@@ -181,10 +182,10 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
                   {
                     color:
                       summary.costPerformance.costPerformanceIndex >= 1
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : summary.costPerformance.costPerformanceIndex >= 0.9
-                        ? '#FF9800'
-                        : '#F44336',
+                        ? COLORS.WARNING
+                        : COLORS.ERROR,
                   },
                 ]}
               >
@@ -211,7 +212,7 @@ const BomCostDashboard: React.FC<BomCostDashboardProps> = ({ bom, items }) => {
                 style={[
                   styles.performanceValue,
                   {
-                    color: summary.costPerformance.varianceAtCompletion >= 0 ? '#4CAF50' : '#F44336',
+                    color: summary.costPerformance.varianceAtCompletion >= 0 ? COLORS.SUCCESS : COLORS.ERROR,
                   },
                 ]}
               >
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
   phasePercentage: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   summaryTable: {
     backgroundColor: '#fff',
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
   summaryValueGrand: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   summaryDivider: {
     height: 1,

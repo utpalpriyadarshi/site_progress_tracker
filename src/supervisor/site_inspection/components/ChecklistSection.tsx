@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, List, RadioButton, TextInput } from 'react-native-paper';
 import { ChecklistSectionProps } from '../types';
 import { ChecklistItem } from '../../../hooks/useChecklist';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Accordion left icon
@@ -87,11 +88,11 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
                     >
                       <View style={styles.radioRow}>
                         <View style={styles.radioItem}>
-                          <RadioButton.Android value="pass" color="#4CAF50" />
+                          <RadioButton.Android value="pass" color={COLORS.SUCCESS} />
                           <Text style={styles.radioLabel}>Pass</Text>
                         </View>
                         <View style={styles.radioItem}>
-                          <RadioButton.Android value="fail" color="#F44336" />
+                          <RadioButton.Android value="fail" color={COLORS.ERROR} />
                           <Text style={styles.radioLabel}>Fail</Text>
                         </View>
                         <View style={styles.radioItem}>

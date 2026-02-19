@@ -11,6 +11,7 @@ import {
 } from 'react-native-paper';
 import ItemModel from '../../../../models/ItemModel';
 import { PhotoPickerDialog } from '../../../components/dialogs/PhotoPickerDialog';
+import { COLORS } from '../../../theme/colors';
 
 interface ProgressReportFormProps {
   visible: boolean;
@@ -146,7 +147,7 @@ export const ProgressReportForm: React.FC<ProgressReportFormProps> = ({
                         <IconButton
                           icon="close-circle"
                           size={20}
-                          iconColor="#F44336"
+                          iconColor={COLORS.ERROR}
                           style={styles.removePhotoButton}
                           onPress={() => onRemovePhoto(index)}
                         />

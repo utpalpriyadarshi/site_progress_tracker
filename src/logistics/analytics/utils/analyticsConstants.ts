@@ -13,6 +13,7 @@ import {
   VolumeDiscount,
   CostBreakdown,
 } from '../../../services/CostOptimizationService';
+import { COLORS } from '../../../theme/colors';
 
 // ============================================================================
 // TYPES
@@ -134,14 +135,14 @@ export const mockSupplierLeadTimes = {
  * Color palette for charts and indicators
  */
 export const ANALYTICS_COLORS = {
-  primary: '#2196F3',
-  success: '#4CAF50',
-  warning: '#FF9800',
-  danger: '#F44336',
+  primary: COLORS.INFO,
+  success: COLORS.SUCCESS,
+  warning: COLORS.WARNING,
+  danger: COLORS.ERROR,
   info: '#00BCD4',
-  purple: '#9C27B0',
+  purple: COLORS.STATUS_EVALUATED,
   teal: '#009688',
-  grey: '#9E9E9E',
+  grey: COLORS.DISABLED,
 };
 
 /**

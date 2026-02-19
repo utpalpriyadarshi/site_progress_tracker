@@ -30,6 +30,7 @@ import {
   KEY_DATE_CATEGORY_COLORS,
   KEY_DATE_STATUS_COLORS,
 } from '../utils/keyDateConstants';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -428,8 +429,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedItem: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: COLORS.INFO,
+    backgroundColor: COLORS.INFO_BG,
   },
   keyDateInfo: {
     flex: 1,

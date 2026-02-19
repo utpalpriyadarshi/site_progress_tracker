@@ -20,6 +20,7 @@ import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from './StatusBadge';
 import { useDeliveryStatusData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Helper ====================
 
@@ -86,7 +87,7 @@ export const DeliveryStatusWidget: React.FC = () => {
           {/* Status Summary */}
           <View style={styles.statusRow}>
             <View style={styles.statusItem}>
-              <Text variant="headlineMedium" style={[styles.statusValue, { color: '#FF9800' }]}>
+              <Text variant="headlineMedium" style={[styles.statusValue, { color: COLORS.WARNING }]}>
                 {data.pendingCount}
               </Text>
               <Text variant="labelSmall" style={styles.statusLabel}>
@@ -94,7 +95,7 @@ export const DeliveryStatusWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.statusItem}>
-              <Text variant="headlineMedium" style={[styles.statusValue, { color: '#2196F3' }]}>
+              <Text variant="headlineMedium" style={[styles.statusValue, { color: COLORS.INFO }]}>
                 {data.inTransitCount}
               </Text>
               <Text variant="labelSmall" style={styles.statusLabel}>
@@ -102,7 +103,7 @@ export const DeliveryStatusWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.statusItem}>
-              <Text variant="headlineMedium" style={[styles.statusValue, { color: '#4CAF50' }]}>
+              <Text variant="headlineMedium" style={[styles.statusValue, { color: COLORS.SUCCESS }]}>
                 {data.deliveredCount}
               </Text>
               <Text variant="labelSmall" style={styles.statusLabel}>
@@ -118,14 +119,14 @@ export const DeliveryStatusWidget: React.FC = () => {
                 On-Time Delivery Rate
               </Text>
               <Text variant="titleMedium" style={[styles.rateValue, {
-                color: data.onTimeRate >= 90 ? '#4CAF50' : data.onTimeRate >= 70 ? '#FF9800' : '#F44336'
+                color: data.onTimeRate >= 90 ? COLORS.SUCCESS : data.onTimeRate >= 70 ? COLORS.WARNING : COLORS.ERROR
               }]}>
                 {data.onTimeRate}%
               </Text>
             </View>
             <ProgressBar
               progress={data.onTimeRate / 100}
-              color={data.onTimeRate >= 90 ? '#4CAF50' : data.onTimeRate >= 70 ? '#FF9800' : '#F44336'}
+              color={data.onTimeRate >= 90 ? COLORS.SUCCESS : data.onTimeRate >= 70 ? COLORS.WARNING : COLORS.ERROR}
               style={styles.progressBar}
             />
           </View>

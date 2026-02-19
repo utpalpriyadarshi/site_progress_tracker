@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { PurchaseSuggestion } from '../../../services/MaterialProcurementService';
 import MaterialModel from '../../../../models/MaterialModel';
+import { COLORS } from '../../../theme/colors';
 
 interface ProcurementSuggestionCardProps {
   suggestion: PurchaseSuggestion;
@@ -30,20 +31,20 @@ export const ProcurementSuggestionCard: React.FC<ProcurementSuggestionCardProps>
 }) => {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'critical': return '#F44336';
-      case 'high': return '#FF9800';
+      case 'critical': return COLORS.ERROR;
+      case 'high': return COLORS.WARNING;
       case 'medium': return '#FFC107';
-      case 'low': return '#4CAF50';
+      case 'low': return COLORS.SUCCESS;
       default: return '#999';
     }
   };
 
   const getUrgencyBg = (urgency: string) => {
     switch (urgency) {
-      case 'critical': return '#FFEBEE';
-      case 'high': return '#FFF3E0';
+      case 'critical': return COLORS.ERROR_BG;
+      case 'high': return COLORS.WARNING_BG;
       case 'medium': return '#FFF8E1';
-      case 'low': return '#E8F5E9';
+      case 'low': return COLORS.SUCCESS_BG;
       default: return '#F5F5F5';
     }
   };
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   highlight: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: 'bold',
   },
   supplierSection: {
@@ -238,18 +239,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     backgroundColor: '#fff',
     alignItems: 'center',
   },
   buttonPrimary: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   buttonTextPrimary: {
     fontSize: 14,

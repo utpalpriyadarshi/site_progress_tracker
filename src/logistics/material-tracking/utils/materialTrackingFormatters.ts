@@ -5,6 +5,7 @@
  */
 
 import { formatCurrency } from '../../../utils/currencyFormatter';
+import { COLORS } from '../../../theme/colors';
 
 // Re-export centralized currency formatter
 export { formatCurrency };
@@ -43,9 +44,9 @@ export const getStockStatusColor = (
   required: number
 ): string => {
   const ratio = available / required;
-  if (ratio >= 1) return '#4CAF50'; // Available
-  if (ratio >= 0.3) return '#FF9800'; // Low stock
-  return '#F44336'; // Out of stock
+  if (ratio >= 1) return COLORS.SUCCESS; // Available
+  if (ratio >= 0.3) return COLORS.WARNING; // Low stock
+  return COLORS.ERROR; // Out of stock
 };
 
 /**
@@ -54,14 +55,14 @@ export const getStockStatusColor = (
 export const getPriorityColor = (priority: string): string => {
   switch (priority.toLowerCase()) {
     case 'critical':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'high':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'medium':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'low':
     default:
-      return '#4CAF50';
+      return COLORS.SUCCESS;
   }
 };
 

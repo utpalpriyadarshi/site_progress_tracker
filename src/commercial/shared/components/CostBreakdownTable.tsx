@@ -17,6 +17,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Card, DataTable } from 'react-native-paper';
 import type { CostBreakdownTableProps, Cost } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 type SortField = 'category' | 'description' | 'amount' | 'costDate';
 type SortOrder = 'asc' | 'desc';
@@ -51,12 +52,12 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
   // Get category color
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      labor: '#2196F3',
-      materials: '#4CAF50',
-      equipment: '#FF9800',
-      subcontractors: '#9C27B0',
+      labor: COLORS.INFO,
+      materials: COLORS.SUCCESS,
+      equipment: COLORS.WARNING,
+      subcontractors: COLORS.STATUS_EVALUATED,
     };
-    return colors[category.toLowerCase()] || '#9E9E9E';
+    return colors[category.toLowerCase()] || COLORS.DISABLED;
   };
 
   // Sort costs
@@ -291,7 +292,7 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
                           style={[
                             styles.budgetComparisonValue,
                             {
-                              color: categoryBudget - subtotal >= 0 ? '#4CAF50' : '#f44336',
+                              color: categoryBudget - subtotal >= 0 ? COLORS.SUCCESS : '#f44336',
                             },
                           ]}
                         >

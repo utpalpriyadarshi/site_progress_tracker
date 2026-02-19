@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import { TrendIndicator } from './TrendIndicator';
 import { formatCurrencySmart, getCurrencySymbol } from '../../../utils/currencyFormatter';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * BudgetHealthWidget Component
@@ -54,9 +55,9 @@ type BudgetStatus = 'good' | 'warning' | 'danger';
 const getStatusColor = (status: BudgetStatus): string => {
   switch (status) {
     case 'good':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'warning':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'danger':
       return '#ff6b6b';
   }
@@ -196,7 +197,7 @@ export const BudgetHealthWidget: React.FC<BudgetHealthWidgetProps> = ({
               style={[
                 styles.detailValue,
                 styles.remainingValue,
-                { color: remaining >= 0 ? '#4CAF50' : '#ff6b6b' },
+                { color: remaining >= 0 ? COLORS.SUCCESS : '#ff6b6b' },
               ]}
             >
               {remaining >= 0 ? formatCurrency(remaining) : `-${formatCurrency(Math.abs(remaining))}`}

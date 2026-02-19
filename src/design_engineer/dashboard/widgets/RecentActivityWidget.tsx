@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { RecentActivity } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface RecentActivityWidgetProps {
   data: RecentActivity[];
@@ -40,15 +41,15 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
   const getStatusColor = (status: string) => {
     const statusColors: Record<string, string> = {
       pending: '#FFA500',
-      received: '#2196F3',
-      reviewed: '#4CAF50',
-      draft: '#9E9E9E',
-      submitted: '#2196F3',
-      approved: '#4CAF50',
-      approved_with_comment: '#FF9800',
-      rejected: '#F44336',
-      issued: '#2196F3',
-      awarded: '#4CAF50',
+      received: COLORS.INFO,
+      reviewed: COLORS.SUCCESS,
+      draft: COLORS.DISABLED,
+      submitted: COLORS.INFO,
+      approved: COLORS.SUCCESS,
+      approved_with_comment: COLORS.WARNING,
+      rejected: COLORS.ERROR,
+      issued: COLORS.INFO,
+      awarded: COLORS.SUCCESS,
     };
     return statusColors[status.toLowerCase()] || '#666';
   };

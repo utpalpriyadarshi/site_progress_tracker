@@ -4,6 +4,7 @@ import { Card, Title, Paragraph, Button } from 'react-native-paper';
 import ProjectModel from '../../../../models/ProjectModel';
 import { StatusChip } from './StatusChip';
 import { formatCurrency, formatDate } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface ProjectCardProps {
   project: ProjectModel;
@@ -40,7 +41,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDel
           Edit
         </Button>
         <Button
-          textColor="#F44336"
+          textColor={COLORS.ERROR}
           onPress={() => onDelete(project)}
           accessibilityLabel={`Delete ${project.name}`}
           accessibilityHint="Permanently removes this project"
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   budget: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     marginBottom: 5,
   },
   dates: {

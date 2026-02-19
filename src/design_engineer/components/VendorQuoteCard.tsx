@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Button, Chip } from 'react-native-paper';
 import { VendorQuote } from '../types/VendorQuoteTypes';
+import { COLORS } from '../../theme/colors';
 
 interface VendorQuoteCardProps {
   quote: VendorQuote;
@@ -13,17 +14,17 @@ interface VendorQuoteCardProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'submitted':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'under_review':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'shortlisted':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'rejected':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'awarded':
       return '#7B1FA2';
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
@@ -56,7 +57,7 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
               <Chip
                 mode="flat"
                 compact
-                style={{ backgroundColor: isL1 ? '#4CAF50' : '#9E9E9E' }}
+                style={{ backgroundColor: isL1 ? COLORS.SUCCESS : COLORS.DISABLED }}
                 textStyle={styles.rankChipText}>
                 {getRankLabel(quote.rank)}
               </Chip>
@@ -106,7 +107,7 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
             <View style={styles.scoreItem}>
               <View style={[
                 styles.qualificationBadge,
-                { backgroundColor: (quote.technicalScore || 0) >= 70 ? '#E8F5E9' : '#FFEBEE' },
+                { backgroundColor: (quote.technicalScore || 0) >= 70 ? COLORS.SUCCESS_BG : COLORS.ERROR_BG },
               ]}>
                 <Text style={{
                   fontSize: 12,
@@ -143,7 +144,7 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
             <Button
               mode="outlined"
               compact
-              textColor="#F44336"
+              textColor={COLORS.ERROR}
               onPress={() => onReject(quote.id)}
               style={styles.actionButton}>
               Reject
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   },
   l1Card: {
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: COLORS.SUCCESS,
   },
   cardHeader: {
     flexDirection: 'row',

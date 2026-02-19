@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Divider } from 'react-native-paper';
 import { ReportCard } from './ReportCard';
+import { COLORS } from '../../../theme/colors';
 
 interface ProfitabilityCardProps {
   totalBudget: number;
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
   valueBold: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   divider: {
     marginVertical: 12,

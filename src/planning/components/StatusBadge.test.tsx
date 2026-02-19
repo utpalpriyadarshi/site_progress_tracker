@@ -8,6 +8,7 @@ import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { StatusBadge } from './StatusBadge';
+import { COLORS } from '../../theme/colors';
 
 /**
  * StatusBadgeShowcase
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   warningText: {
-    color: '#FF9800',
+    color: COLORS.WARNING,
     marginBottom: 12,
     fontStyle: 'italic',
   },

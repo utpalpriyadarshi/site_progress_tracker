@@ -24,6 +24,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { SupervisorHeader, EmptyState } from '../components/common';
 import { useDebounce } from '../hooks';
+import { COLORS } from '../theme/colors';
 
 // Activity filter options
 const ACTIVITY_FILTERS: FilterOption[] = [
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 8,
     elevation: 3,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   projectHeader: {
     flexDirection: 'row',

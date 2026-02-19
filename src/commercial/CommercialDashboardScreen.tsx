@@ -42,6 +42,7 @@ import TutorialModal from '../tutorial/TutorialModal';
 import TutorialService from '../services/TutorialService';
 import commercialManagerTutorialSteps from '../tutorial/commercialManagerTutorialSteps';
 import type { CommercialTabParamList } from '../nav/CommercialNavigator';
+import { COLORS } from '../theme/colors';
 
 /**
  * CommercialDashboardScreen (v3.0 Phase 3)
@@ -328,8 +329,8 @@ const CommercialDashboardScreen = () => {
           <RefreshControl
             refreshing={state.ui.refreshing}
             onRefresh={handleRefresh}
-            colors={['#673AB7']}
-            tintColor="#673AB7"
+            colors={[COLORS.PRIMARY]}
+            tintColor={COLORS.PRIMARY}
           />
         }
       >

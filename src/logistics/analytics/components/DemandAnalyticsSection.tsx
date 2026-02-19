@@ -22,6 +22,7 @@ import { AnalyticsCard } from './AnalyticsCard';
 import { Badge } from './Badge';
 import { MetricBox } from './MetricBox';
 import { TrendIndicator } from './TrendIndicator';
+import { COLORS } from '../../../theme/colors';
 
 interface DemandAnalyticsSectionProps {
   demandForecasts: DemandForecast[];
@@ -38,18 +39,18 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
 }) => {
   const getRiskColor = (riskScore: number): string => {
     if (riskScore > 70) return '#FF6B6B';
-    if (riskScore > 40) return '#FF9800';
-    return '#4CAF50';
+    if (riskScore > 40) return COLORS.WARNING;
+    return COLORS.SUCCESS;
   };
 
   const getPatternColor = (patternType: string): string => {
     switch (patternType) {
       case 'steady':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'seasonal':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'project_based':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'irregular':
         return '#FF6B6B';
       default:
@@ -123,9 +124,9 @@ export const DemandAnalyticsSection: React.FC<DemandAnalyticsSectionProps> = ({
                 text={`${prediction.reliability.toFixed(0)}% reliable`}
                 backgroundColor={
                   prediction.reliability > 80
-                    ? '#4CAF50'
+                    ? COLORS.SUCCESS
                     : prediction.reliability > 60
-                    ? '#FF9800'
+                    ? COLORS.WARNING
                     : '#FF6B6B'
                 }
               />
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
   },
   forecastRecommendation: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontStyle: 'italic',
   },
   predictionItem: {
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   },
   predictionRecommendation: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontStyle: 'italic',
   },
   patternItem: {

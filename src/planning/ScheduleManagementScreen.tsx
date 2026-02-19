@@ -17,6 +17,7 @@ import SiteModel from '../../models/SiteModel';
 import CategoryModel from '../../models/CategoryModel';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 /**
  * ScheduleManagementScreen (v2.11 Phase 4)
@@ -185,7 +186,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
             <Switch
               value={showCriticalPathOnly}
               onValueChange={setShowCriticalPathOnly}
-              color="#F44336"
+              color={COLORS.ERROR}
             />
           </View>
         </Card.Content>
@@ -236,7 +237,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
                   </Text>
                   <ProgressBar
                     progress={progress}
-                    color={item.isCriticalPath ? '#F44336' : '#2196F3'}
+                    color={item.isCriticalPath ? COLORS.ERROR : COLORS.INFO}
                     style={styles.progressBar}
                   />
                 </View>
@@ -288,7 +289,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
                     mode={item.isCriticalPath ? 'contained' : 'outlined'}
                     onPress={() => handleToggleCriticalPath(item)}
                     style={styles.actionButton}
-                    buttonColor={item.isCriticalPath ? '#F44336' : undefined}
+                    buttonColor={item.isCriticalPath ? COLORS.ERROR : undefined}
                   >
                     {item.isCriticalPath ? 'Remove from Critical Path' : 'Mark as Critical Path'}
                   </Button>
@@ -369,10 +370,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   criticalPathBadge: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   criticalPathBadgeText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
   },
   criticalPathCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
+    borderLeftColor: COLORS.ERROR,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   criticalBadge: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     marginBottom: 4,
   },
   criticalBadgeText: {
@@ -424,7 +425,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   delayedBadge: {
-    backgroundColor: '#FF9800',
+    backgroundColor: COLORS.WARNING,
   },
   delayedBadgeText: {
     color: 'white',
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
   detailsSection: {
     marginBottom: 12,
     padding: 8,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     borderRadius: 4,
   },
   detailText: {
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   criticalFloat: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: 'bold',
   },
   actions: {

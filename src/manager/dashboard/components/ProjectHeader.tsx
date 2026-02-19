@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface ProjectHeaderProps {
   projectName: string;
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
   progressValue: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 12,
   },
   progressBar: {

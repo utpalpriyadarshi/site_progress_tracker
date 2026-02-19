@@ -34,6 +34,7 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Dialog, Portal, Button, Paragraph, useTheme } from 'react-native-paper';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -112,7 +113,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
    */
   const getConfirmColor = (): string => {
     if (confirmColor) return confirmColor;
-    if (destructive) return '#F44336'; // Red for destructive
+    if (destructive) return COLORS.ERROR; // Red for destructive
     return theme.colors.primary;
   };
 

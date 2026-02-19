@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { ComplianceData } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface ComplianceMetricWidgetProps {
   data: ComplianceData;
@@ -35,9 +36,9 @@ export const ComplianceMetricWidget: React.FC<ComplianceMetricWidgetProps> = ({
 
   // Determine color based on rate
   const getColor = () => {
-    if (rate >= 80) return '#4CAF50'; // Green
+    if (rate >= 80) return COLORS.SUCCESS; // Green
     if (rate >= 50) return '#FFA500'; // Orange
-    return '#F44336'; // Red
+    return COLORS.ERROR; // Red
   };
 
   const color = getColor();
@@ -179,9 +180,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   targetMet: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   targetNotMet: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
 });

@@ -16,6 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Dialog, Portal, Button, Checkbox, Text, Divider, Chip } from 'react-native-paper';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoBanner: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,

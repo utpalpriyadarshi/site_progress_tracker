@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AutoSyncManager, { SyncState } from '../../services/sync/AutoSyncManager';
 import NetworkMonitor from '../../services/network/NetworkMonitor';
 import { useSnackbar } from './Snackbar';
+import { COLORS } from '../theme/colors';
 
 interface SyncIndicatorProps {
   showDetails?: boolean; // Show last sync time and error details
@@ -108,9 +109,9 @@ export const SyncIndicator: React.FC<SyncIndicatorProps> = ({
 
   const getSyncColor = (): string => {
     if (!isConnected) return '#999';
-    if (syncState.isSyncing) return '#2196F3';
-    if (!syncState.lastSyncSuccess) return '#F44336';
-    return '#4CAF50';
+    if (syncState.isSyncing) return COLORS.INFO;
+    if (!syncState.lastSyncSuccess) return COLORS.ERROR;
+    return COLORS.SUCCESS;
   };
 
   const getSyncText = (): string => {
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 4,
   },
 });

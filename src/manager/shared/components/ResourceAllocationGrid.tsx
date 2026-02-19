@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * ResourceAllocationGrid
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
   },
   rowOverallocated: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
   },
   cell: {
     padding: 12,

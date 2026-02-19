@@ -18,6 +18,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Chip, Button, ProgressBar, IconButton } from 'react-native-paper';
 import type { ProjectCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
@@ -60,13 +61,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const getStatusColor = () => {
     switch (project.status) {
       case 'active':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'completed':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'on-hold':
-        return '#FF9800';
+        return COLORS.WARNING;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -178,7 +179,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           <View style={styles.progressSection}>
             <ProgressBar
               progress={progress}
-              color={overdue ? '#f44336' : '#2196F3'}
+              color={overdue ? '#f44336' : COLORS.INFO}
               style={styles.progressBar}
             />
             <Text style={[styles.progressText, overdue && styles.overdueProgressText]}>
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   budgetCompact: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     marginBottom: 4,
   },
 
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   budgetValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
 
   // Metrics section
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   metricLabel: {
     fontSize: 11,

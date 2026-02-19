@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Surface, HelperText, ActivityIndicator } from 'react-native-paper';
 import { WBSCodeGenerator } from '../../../../services/planning/WBSCodeGenerator';
+import { COLORS } from '../../../theme/colors';
 
 interface WBSCodeDisplayProps {
   generatedWbsCode: string;
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e3f2fd',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     alignItems: 'center',
   },
   codeText: {

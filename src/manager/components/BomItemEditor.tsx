@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import BomCalculatorService from '../../services/BomCalculatorService';
+import { COLORS } from '../../theme/colors';
 
 /**
  * BomItemEditor
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   required: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   input: {
     borderWidth: 1,
@@ -406,8 +407,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   categoryButtonActive: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: COLORS.INFO,
+    backgroundColor: COLORS.INFO_BG,
   },
   categoryIcon: {
     fontSize: 24,
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   categoryLabelActive: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '600',
   },
   quickUnits: {
@@ -458,16 +459,16 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   totalCostContainer: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   totalCostValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 4,
   },
   totalCostFormula: {
@@ -494,7 +495,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',

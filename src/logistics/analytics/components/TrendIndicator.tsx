@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { COLORS } from '../../../theme/colors';
 
 export type TrendDirection = 'increasing' | 'decreasing' | 'stable' | 'volatile';
 
@@ -42,11 +43,11 @@ const getTrendColor = (direction: TrendDirection): string => {
     case 'increasing':
       return '#FF6B6B';
     case 'decreasing':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'stable':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'volatile':
-      return '#FF9800';
+      return COLORS.WARNING;
     default:
       return '#999';
   }

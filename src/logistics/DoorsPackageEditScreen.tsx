@@ -19,6 +19,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 // DOORS Package state management
 import { doorsPackageFormReducer, initialDoorsPackageFormState } from './doors-package/state';
+import { COLORS } from '../theme/colors';
 
 /**
  * DOORS Package Edit Screen
@@ -584,10 +585,10 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   complianceHigh: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   complianceLow: {
-    color: '#FF9800',
+    color: COLORS.WARNING,
   },
   complianceNote: {
     fontSize: 12,

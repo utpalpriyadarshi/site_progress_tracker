@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 import StatusTimeline, { DOORS_STATUS_STEPS } from './StatusTimeline';
+import { COLORS } from '../../theme/colors';
 
 interface DoorsPackageCardProps {
   package: DoorsPackage;
@@ -24,35 +25,35 @@ const getStatusColor = (status: string) => {
     case 'pending':
       return '#FFA500';
     case 'received':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'reviewed':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'approved':
       return '#7B1FA2';
     case 'closed':
       return '#616161';
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
     case 'high':
-      return '#F44336';
+      return COLORS.ERROR;
     case 'medium':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'low':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
 const getComplianceColor = (percentage: number) => {
-  if (percentage >= 80) return '#4CAF50';
-  if (percentage >= 50) return '#FF9800';
-  return '#F44336';
+  if (percentage >= 80) return COLORS.SUCCESS;
+  if (percentage >= 50) return COLORS.WARNING;
+  return COLORS.ERROR;
 };
 
 const ComplianceMiniBar: React.FC<{ label: string; value: number }> = ({ label, value }) => (
@@ -298,7 +299,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
             <IconButton
               icon="delete"
               size={20}
-              iconColor="#F44336"
+              iconColor={COLORS.ERROR}
               onPress={() => onDelete(pkg.id)}
               accessibilityLabel="Delete package"
             />
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   selectedCard: {
     borderWidth: 2,
     borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   checkboxRow: {
     position: 'absolute',

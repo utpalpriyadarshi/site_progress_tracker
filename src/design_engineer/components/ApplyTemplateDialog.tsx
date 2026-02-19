@@ -7,6 +7,7 @@ import { useDesignEngineerContext } from '../context/DesignEngineerContext';
 import { DOCUMENT_TEMPLATES, DOCUMENT_TYPE_PREFIXES, DocumentTemplate } from '../data/documentTemplates';
 import { getDocumentTypeLabel } from '../types/DesignDocumentTypes';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface Site {
   id: string;
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   warningBanner: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     borderRadius: 6,
     padding: 10,
     marginHorizontal: 24,

@@ -30,6 +30,7 @@ import { TeamPerformanceSkeleton } from './shared';
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 interface SupervisorPerformance {
   userId: string;
@@ -283,9 +284,9 @@ const TeamPerformanceScreen = () => {
   };
 
   const getPerformanceColor = (percentage: number) => {
-    if (percentage >= 75) return '#4CAF50'; // Green
+    if (percentage >= 75) return COLORS.SUCCESS; // Green
     if (percentage >= 50) return '#FFC107'; // Yellow
-    return '#F44336'; // Red
+    return COLORS.ERROR; // Red
   };
 
   const renderSearchBar = () => {
@@ -620,7 +621,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   summaryLabel: {
     fontSize: 12,

@@ -46,6 +46,7 @@ import {
   createInitialState,
   selectIsEditing,
 } from './state/siteManagementReducer';
+import { COLORS } from '../theme/colors';
 
 // ==================== Types ====================
 
@@ -805,10 +806,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   assignedChip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   unassignedChip: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
   },
   actions: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ import {
   chartOptionMenus,
   OptionsMenuItem,
 } from './InteractiveChart';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * CashFlowWidget Component
@@ -201,7 +202,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
               ? '#007AFF'
               : isLastPoint
                 ? isUpTrend
-                  ? '#4CAF50'
+                  ? COLORS.SUCCESS
                   : '#ff6b6b'
                 : '#E0E0E0';
 
@@ -245,7 +246,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
             <Text style={styles.tooltipClose}>×</Text>
           </TouchableOpacity>
         </View>
-        <Text style={[styles.tooltipValue, { color: item.value >= 0 ? '#4CAF50' : '#ff6b6b' }]}>
+        <Text style={[styles.tooltipValue, { color: item.value >= 0 ? COLORS.SUCCESS : '#ff6b6b' }]}>
           {item.value >= 0 ? '' : '-'}{formatCurrency(item.value)}
         </Text>
       </View>
@@ -312,7 +313,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
                     backgroundColor:
                       index === sparklinePoints.length - 1
                         ? isUpTrend
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : '#ff6b6b'
                         : '#E0E0E0',
                   },
@@ -343,7 +344,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
         <View style={styles.netSection}>
           <Text style={styles.netLabel}>Net Cash Flow</Text>
           <View style={styles.netValueRow}>
-            <Text style={[styles.netValue, { color: isPositive ? '#4CAF50' : '#ff6b6b' }]}>
+            <Text style={[styles.netValue, { color: isPositive ? COLORS.SUCCESS : '#ff6b6b' }]}>
               {isPositive ? '' : '-'}
               {formatCurrency(netCashFlow)}
             </Text>
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   inflowIndicator: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   outflowIndicator: {
     backgroundColor: '#ff6b6b',

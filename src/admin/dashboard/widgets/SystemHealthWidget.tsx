@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BaseWidget } from './BaseWidget';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * SystemHealthWidget Component
@@ -32,18 +33,18 @@ export interface SystemHealthWidgetProps {
 
 const STATUS_CONFIG = {
   database: {
-    healthy: { color: '#4CAF50', label: 'Healthy', icon: '✓' },
-    degraded: { color: '#FF9800', label: 'Degraded', icon: '!' },
-    offline: { color: '#F44336', label: 'Offline', icon: '✗' },
+    healthy: { color: COLORS.SUCCESS, label: 'Healthy', icon: '✓' },
+    degraded: { color: COLORS.WARNING, label: 'Degraded', icon: '!' },
+    offline: { color: COLORS.ERROR, label: 'Offline', icon: '✗' },
   },
   sync: {
-    active: { color: '#4CAF50', label: 'Active', icon: '↻' },
-    paused: { color: '#FF9800', label: 'Paused', icon: '⏸' },
-    error: { color: '#F44336', label: 'Error', icon: '✗' },
+    active: { color: COLORS.SUCCESS, label: 'Active', icon: '↻' },
+    paused: { color: COLORS.WARNING, label: 'Paused', icon: '⏸' },
+    error: { color: COLORS.ERROR, label: 'Error', icon: '✗' },
   },
   network: {
-    online: { color: '#4CAF50', label: 'Online', icon: '●' },
-    offline: { color: '#F44336', label: 'Offline', icon: '○' },
+    online: { color: COLORS.SUCCESS, label: 'Online', icon: '●' },
+    offline: { color: COLORS.ERROR, label: 'Offline', icon: '○' },
   },
 };
 
@@ -67,12 +68,12 @@ export const SystemHealthWidget: React.FC<SystemHealthWidgetProps> = ({
 
   const overallStatus = useMemo(() => {
     if (health.database === 'offline' || health.sync === 'error' || health.network === 'offline') {
-      return { color: '#F44336', label: 'Critical' };
+      return { color: COLORS.ERROR, label: 'Critical' };
     }
     if (health.database === 'degraded' || health.sync === 'paused') {
-      return { color: '#FF9800', label: 'Warning' };
+      return { color: COLORS.WARNING, label: 'Warning' };
     }
-    return { color: '#4CAF50', label: 'All Systems Operational' };
+    return { color: COLORS.SUCCESS, label: 'All Systems Operational' };
   }, [health]);
 
   const accessibilityLabel = useMemo(() => {

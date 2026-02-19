@@ -25,6 +25,7 @@ import {
   createWBSManagementInitialState,
   type SortBy,
 } from './state/wbs-management';
+import { COLORS } from '../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<PlanningStackParamList>;
 
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   criticalPathChipActive: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   criticalPathChipText: {
     color: '#fff',

@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
 import type { KDBreakdownItem } from '../hooks';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -32,19 +33,19 @@ export interface ProjectProgressWidgetProps {
 
 const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    not_started: '#9E9E9E',
-    in_progress: '#2196F3',
-    completed: '#4CAF50',
-    delayed: '#F44336',
+    not_started: COLORS.DISABLED,
+    in_progress: COLORS.INFO,
+    completed: COLORS.SUCCESS,
+    delayed: COLORS.ERROR,
   };
-  return colors[status] || '#9E9E9E';
+  return colors[status] || COLORS.DISABLED;
 };
 
 const getProgressBarColor = (progress: number): string => {
-  if (progress >= 100) return '#4CAF50';
-  if (progress >= 50) return '#2196F3';
-  if (progress > 0) return '#FF9800';
-  return '#9E9E9E';
+  if (progress >= 100) return COLORS.SUCCESS;
+  if (progress >= 50) return COLORS.INFO;
+  if (progress > 0) return COLORS.WARNING;
+  return COLORS.DISABLED;
 };
 
 // ==================== Component ====================

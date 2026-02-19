@@ -14,6 +14,7 @@ import { useChecklist } from '../../../hooks';
 import { PhotoGallery } from './PhotoGallery';
 import { ChecklistSection } from './ChecklistSection';
 import { InspectionFormProps, InspectionType, OverallRating } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 // Default safety checklist template
 const DEFAULT_CHECKLIST = [
@@ -249,8 +250,8 @@ export const InspectionForm: React.FC<InspectionFormProps> = ({
                   mode={safetyFlagged ? 'contained' : 'outlined'}
                   icon={safetyFlagged ? 'alert' : 'alert-outline'}
                   onPress={() => setSafetyFlagged(!safetyFlagged)}
-                  buttonColor={safetyFlagged ? '#F44336' : undefined}
-                  textColor={safetyFlagged ? 'white' : '#F44336'}
+                  buttonColor={safetyFlagged ? COLORS.ERROR : undefined}
+                  textColor={safetyFlagged ? 'white' : COLORS.ERROR}
                   style={styles.safetyButton}
                 >
                   {safetyFlagged ? 'Yes - Flagged' : 'No Issues'}
@@ -300,7 +301,7 @@ export const InspectionForm: React.FC<InspectionFormProps> = ({
                     icon={followUpRequired ? 'calendar-check' : 'calendar-plus'}
                     onPress={() => setFollowUpRequired(!followUpRequired)}
                     compact
-                    buttonColor={followUpRequired ? '#FF9800' : undefined}
+                    buttonColor={followUpRequired ? COLORS.WARNING : undefined}
                     style={styles.followUpToggleButton}
                   >
                     {followUpRequired ? 'Scheduled' : 'Schedule'}

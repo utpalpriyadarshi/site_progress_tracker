@@ -15,6 +15,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { useAccessibility } from '../../../utils/accessibility';
 import type { ScheduleItem, ScheduleFilters } from '../UnifiedSchedule';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -182,7 +183,7 @@ export const ListView: React.FC<ListViewProps> = ({
         {/* Critical Path Indicator */}
         {item.isCriticalPath && (
           <View style={styles.criticalIndicator}>
-            <Icon name="alert-circle" size={16} color="#F44336" />
+            <Icon name="alert-circle" size={16} color={COLORS.ERROR} />
           </View>
         )}
       </View>
@@ -276,7 +277,7 @@ export const ListView: React.FC<ListViewProps> = ({
             onPress={onCriticalPathToggle}
             style={styles.filterChip}
             textStyle={filters.showCriticalPathOnly ? { color: 'white' } : undefined}
-            selectedColor={filters.showCriticalPathOnly ? '#F44336' : undefined}
+            selectedColor={filters.showCriticalPathOnly ? COLORS.ERROR : undefined}
           >
             Critical Only
           </Chip>
@@ -444,14 +445,14 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 2,
   },
   completedProgress: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   delayedProgress: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   progressBar: {
     width: 40,
@@ -462,11 +463,11 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     borderRadius: 2,
   },
   criticalProgressFill: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   criticalIndicator: {
     width: 24,

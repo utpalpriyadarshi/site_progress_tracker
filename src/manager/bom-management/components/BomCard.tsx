@@ -19,6 +19,7 @@ import {
   getBaselineBom,
   calculateVariance,
 } from '../utils/bomCalculations';
+import { COLORS } from '../../../theme/colors';
 
 interface BomCardProps {
   bom: BomModel;
@@ -189,7 +190,7 @@ export const BomCard: React.FC<BomCardProps> = ({
                       variant="bodyMedium"
                       style={[
                         styles.varianceText,
-                        { color: variance > 0 ? '#F44336' : variance < 0 ? '#4CAF50' : '#666' }
+                        { color: variance > 0 ? COLORS.ERROR : variance < 0 ? COLORS.SUCCESS : '#666' }
                       ]}
                     >
                       {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
@@ -198,7 +199,7 @@ export const BomCard: React.FC<BomCardProps> = ({
                       variant="bodySmall"
                       style={[
                         styles.varianceAmount,
-                        { color: variance > 0 ? '#F44336' : variance < 0 ? '#4CAF50' : '#666' }
+                        { color: variance > 0 ? COLORS.ERROR : variance < 0 ? COLORS.SUCCESS : '#666' }
                       ]}
                     >
                       ({variance > 0 ? '+' : ''}{formatCurrency(totalCost - baselineTotalCost)})
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     alignSelf: 'flex-start',
     marginTop: 4,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   categoryChipText: {
     fontSize: 12,
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   totalAmount: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: 'bold',
   },
   varianceSection: {
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
   },
   baselineLink: {
     paddingVertical: 8,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     borderRadius: 4,
     paddingHorizontal: 12,
     marginTop: 8,

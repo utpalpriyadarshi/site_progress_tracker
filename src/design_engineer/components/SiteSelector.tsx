@@ -6,6 +6,7 @@ import { Q } from '@nozbe/watermelondb';
 import SiteModel from '../../../models/SiteModel';
 import { useDesignEngineerContext } from '../context/DesignEngineerContext';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface SiteSelectorProps {
   style?: any;
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   },
   selectedItem: {
     fontWeight: 'bold',
-    color: '#673AB7',
+    color: COLORS.PRIMARY,
   },
   disabledItem: {
     color: '#999',

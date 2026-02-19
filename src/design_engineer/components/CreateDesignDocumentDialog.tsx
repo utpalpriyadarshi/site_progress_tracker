@@ -11,6 +11,7 @@ import {
   getCategorySlug,
 } from '../types/DesignDocumentTypes';
 import { DocumentFormData } from '../state/design-document-management';
+import { COLORS } from '../../theme/colors';
 
 const DOCUMENT_TYPE_PREFIXES: Record<string, string> = {
   simulation_study: 'SIM',
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   keyDatePickerHighlight: {
-    borderColor: '#FF9800',
+    borderColor: COLORS.WARNING,
     borderWidth: 1.5,
     backgroundColor: '#FFF8E1',
   },

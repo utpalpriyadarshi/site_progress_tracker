@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SupplierQuote } from '../../../services/MaterialProcurementService';
 import MaterialModel from '../../../../models/MaterialModel';
+import { COLORS } from '../../../theme/colors';
 
 interface SupplierQuotesModalProps {
   visible: boolean;
@@ -158,15 +159,15 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   quoteCardRecommended: {
-    borderColor: '#4CAF50',
+    borderColor: COLORS.SUCCESS,
     borderWidth: 2,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   recommendedBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   notes: {
     fontSize: 12,
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 6,

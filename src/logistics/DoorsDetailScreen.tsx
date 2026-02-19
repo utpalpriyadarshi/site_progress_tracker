@@ -25,6 +25,7 @@ import type {
   ReviewStatus,
 } from '../../types/doors';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 /**
  * DOORS Detail Screen
@@ -149,14 +150,14 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
   const getStatusColor = (status: ComplianceStatus): string => {
     switch (status) {
       case 'compliant':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'partial':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'non_compliant':
-        return '#F44336';
+        return COLORS.ERROR;
       case 'not_verified':
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -229,7 +230,7 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
     percentage: number;
   }) => {
     const progressColor =
-      stat.percentage >= 95 ? '#4CAF50' : stat.percentage >= 80 ? '#FF9800' : '#F44336';
+      stat.percentage >= 95 ? COLORS.SUCCESS : stat.percentage >= 80 ? COLORS.WARNING : COLORS.ERROR;
 
     return (
       <View key={stat.category} style={styles.complianceCard}>
@@ -259,21 +260,21 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
           </View>
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Compliant</Text>
-            <Text style={[styles.breakdownValue, { color: '#4CAF50' }]}>{stat.compliant}</Text>
+            <Text style={[styles.breakdownValue, { color: COLORS.SUCCESS }]}>{stat.compliant}</Text>
           </View>
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Partial</Text>
-            <Text style={[styles.breakdownValue, { color: '#FF9800' }]}>{stat.partial}</Text>
+            <Text style={[styles.breakdownValue, { color: COLORS.WARNING }]}>{stat.partial}</Text>
           </View>
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Non-Compliant</Text>
-            <Text style={[styles.breakdownValue, { color: '#F44336' }]}>
+            <Text style={[styles.breakdownValue, { color: COLORS.ERROR }]}>
               {stat.nonCompliant}
             </Text>
           </View>
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Pending</Text>
-            <Text style={[styles.breakdownValue, { color: '#9E9E9E' }]}>{stat.pending}</Text>
+            <Text style={[styles.breakdownValue, { color: COLORS.DISABLED }]}>{stat.pending}</Text>
           </View>
         </View>
       </View>
@@ -663,7 +664,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -674,7 +675,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   priorityBadge: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -848,7 +849,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -862,7 +863,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,

@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { EmptyState } from '../../../components/common/EmptyState';
 import type { SiteProgressItem } from '../hooks/useSiteProgressData';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -31,10 +32,10 @@ export interface SiteProgressWidgetProps {
 // ==================== Helpers ====================
 
 const getProgressColor = (progress: number): string => {
-  if (progress >= 100) return '#4CAF50';
-  if (progress >= 50) return '#2196F3';
-  if (progress > 0) return '#FF9800';
-  return '#9E9E9E';
+  if (progress >= 100) return COLORS.SUCCESS;
+  if (progress >= 50) return COLORS.INFO;
+  if (progress > 0) return COLORS.WARNING;
+  return COLORS.DISABLED;
 };
 
 // ==================== Component ====================

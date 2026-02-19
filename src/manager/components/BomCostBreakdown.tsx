@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import BomCalculatorService from '../../services/BomCalculatorService';
+import { COLORS } from '../../theme/colors';
 
 /**
  * BomCostBreakdown
@@ -33,25 +34,25 @@ const BomCostBreakdown: React.FC<BomCostBreakdownProps> = ({
     {
       name: 'Material',
       cost: materialCost,
-      color: '#2196F3',
+      color: COLORS.INFO,
       percentage: totalCost > 0 ? (materialCost / totalCost) * 100 : 0,
     },
     {
       name: 'Labor',
       cost: laborCost,
-      color: '#4CAF50',
+      color: COLORS.SUCCESS,
       percentage: totalCost > 0 ? (laborCost / totalCost) * 100 : 0,
     },
     {
       name: 'Equipment',
       cost: equipmentCost,
-      color: '#FF9800',
+      color: COLORS.WARNING,
       percentage: totalCost > 0 ? (equipmentCost / totalCost) * 100 : 0,
     },
     {
       name: 'Subcontractor',
       cost: subcontractorCost,
-      color: '#9C27B0',
+      color: COLORS.STATUS_EVALUATED,
       percentage: totalCost > 0 ? (subcontractorCost / totalCost) * 100 : 0,
     },
   ].filter((cat) => cat.cost > 0); // Only show categories with cost
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
 });
 

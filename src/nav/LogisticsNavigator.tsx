@@ -50,6 +50,7 @@ import DoorsRequirementEditScreen from '../logistics/DoorsRequirementEditScreen'
 import RfqListScreen from '../logistics/RfqListScreen';
 import RfqCreateScreen from '../logistics/RfqCreateScreen';
 import RfqDetailScreen from '../logistics/RfqDetailScreen';
+import { COLORS } from '../theme/colors';
 
 // ==================== Type Definitions ====================
 
@@ -152,11 +153,11 @@ const LogisticsTabs = memo(() => {
   const screenOptions = useMemo(() => ({ route }: { route: { name: string } }) => ({
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
-    tabBarActiveTintColor: '#673AB7',
+    tabBarActiveTintColor: COLORS.PRIMARY,
     tabBarInactiveTintColor: '#8E8E93',
     headerShown: true,
     headerStyle: {
-      backgroundColor: '#673AB7',
+      backgroundColor: COLORS.PRIMARY,
     },
     headerTintColor: '#FFF',
     headerTitleStyle: {
@@ -252,7 +253,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
 
       {/* Project Header */}
       <View style={styles.drawerHeader}>
-        <Icon name="truck-fast" size={32} color="#673AB7" />
+        <Icon name="truck-fast" size={32} color={COLORS.PRIMARY} />
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>Logistics</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
@@ -269,7 +270,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="view-dashboard" color={color} size={size} />}
           onPress={() => handleNavigation('MainTabs')}
           focused={state.index === 0}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to Dashboard"
         />
       </View>
@@ -282,7 +283,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="chart-line" color={color} size={size} />}
           onPress={() => handleNavigation('Analytics')}
           focused={state.index === 1}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to Analytics Reports"
         />
         <DrawerItem
@@ -290,7 +291,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="hammer-wrench" color={color} size={size} />}
           onPress={() => handleNavigation('Equipment')}
           focused={state.index === 2}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to Equipment Management"
         />
         <DrawerItem
@@ -298,7 +299,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="clipboard-list" color={color} size={size} />}
           onPress={() => handleNavigation('PurchaseOrders')}
           focused={state.index === 3}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to Purchase Orders"
         />
         <DrawerItem
@@ -306,7 +307,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="door" color={color} size={size} />}
           onPress={() => handleNavigation('DoorsRegister')}
           focused={state.index === 4}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to DOORS Register"
         />
         <DrawerItem
@@ -314,7 +315,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           icon={({ color, size }) => <Icon name="file-document-outline" color={color} size={size} />}
           onPress={() => handleNavigation('RfqList')}
           focused={state.index === 5}
-          activeTintColor="#673AB7"
+          activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to RFQ Management"
         />
       </View>
@@ -326,8 +327,8 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
         onPress={handleTutorialRestart}
         accessibilityLabel="Restart tutorial walkthrough"
       >
-        <Icon name="school" size={22} color="#673AB7" />
-        <Text style={[styles.tutorialButtonText, { color: '#673AB7' }]}>
+        <Icon name="school" size={22} color={COLORS.PRIMARY} />
+        <Text style={[styles.tutorialButtonText, { color: COLORS.PRIMARY }]}>
           Tutorial
         </Text>
       </TouchableOpacity>
@@ -350,7 +351,7 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         swipeEdgeWidth: 50,
         lazy: true,
         drawerStyle: styles.drawer,
-        drawerActiveTintColor: '#673AB7',
+        drawerActiveTintColor: COLORS.PRIMARY,
         drawerInactiveTintColor: '#8E8E93',
       }}
       drawerContent={(props) => (

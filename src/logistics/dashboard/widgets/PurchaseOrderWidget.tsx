@@ -21,6 +21,7 @@ import { StatusBadge } from './StatusBadge';
 import { usePurchaseOrderData } from '../hooks';
 import { useAccessibility } from '../../../utils/accessibility';
 import { formatCurrency as formatCurrencyCentral } from '../../../utils/currencyFormatter';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Helper ====================
 
@@ -109,7 +110,7 @@ export const PurchaseOrderWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text variant="headlineMedium" style={[styles.summaryValue, { color: '#FF9800' }]}>
+              <Text variant="headlineMedium" style={[styles.summaryValue, { color: COLORS.WARNING }]}>
                 {data.approvalPendingCount}
               </Text>
               <Text variant="labelSmall" style={styles.summaryLabel}>
@@ -117,7 +118,7 @@ export const PurchaseOrderWidget: React.FC = () => {
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text variant="headlineMedium" style={[styles.summaryValue, { color: '#4CAF50' }]}>
+              <Text variant="headlineMedium" style={[styles.summaryValue, { color: COLORS.SUCCESS }]}>
                 {data.completedCount}
               </Text>
               <Text variant="labelSmall" style={styles.summaryLabel}>

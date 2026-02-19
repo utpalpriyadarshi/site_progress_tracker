@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Appbar, Text } from 'react-native-paper';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../../auth/AuthContext';
+import { COLORS } from '../../theme/colors';
 
 export interface SupervisorHeaderProps {
   title: string;
@@ -56,7 +57,7 @@ export const SupervisorHeader: React.FC<SupervisorHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#673AB7',
+    backgroundColor: COLORS.PRIMARY,
   },
   logoutButton: {
     marginRight: 12,

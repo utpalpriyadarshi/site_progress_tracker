@@ -30,6 +30,7 @@ import {
   formatDelayDamages,
   formatDaysRemaining,
 } from '../utils/keyDateConstants';
+import { COLORS } from '../../../theme/colors';
 
 interface SiteItemProgress {
   siteId: string;
@@ -210,7 +211,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
               <Icon
                 name={daysDelayed > 0 ? 'alert-circle' : 'clock-outline'}
                 size={16}
-                color={daysDelayed > 0 ? '#F44336' : '#666'}
+                color={daysDelayed > 0 ? COLORS.ERROR : '#666'}
               />
               <Text
                 style={[
@@ -225,7 +226,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
 
           {keyDate.actualDate && (
             <View style={styles.scheduleRow}>
-              <Icon name="check-circle" size={16} color="#4CAF50" />
+              <Icon name="check-circle" size={16} color={COLORS.SUCCESS} />
               <Text style={styles.scheduleText}>
                 Completed: {new Date(keyDate.actualDate).toLocaleDateString()}
               </Text>
@@ -236,7 +237,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
         {/* Delay Damages Warning */}
         {daysDelayed > 0 && (
           <View style={styles.damagesSection}>
-            <Icon name="currency-inr" size={16} color="#F44336" />
+            <Icon name="currency-inr" size={16} color={COLORS.ERROR} />
             <Text style={styles.damagesText}>
               Est. Delay Damages: {formatDelayDamages(estimatedDamages)}
             </Text>
@@ -265,7 +266,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
               style={styles.actionButton}
               compact
               icon="delete-outline"
-              textColor="#F44336"
+              textColor={COLORS.ERROR}
               accessibilityLabel="Delete key date"
             >
               Delete
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
   },
   criticalCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
+    borderLeftColor: COLORS.ERROR,
   },
   categoryBar: {
     height: 4,
@@ -371,14 +372,14 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   delayedText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   damagesSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     borderRadius: 6,
     padding: 8,
     marginTop: 8,

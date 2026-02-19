@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Chip, Divider } from 'react-native-paper';
 import { ReportCard } from './ReportCard';
 import { getCategoryLabel, getCategoryColor } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface BudgetVarianceCardProps {
   budgetByCategory: Array<{
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
   valueBold: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   negative: {
     color: '#ff6b6b',

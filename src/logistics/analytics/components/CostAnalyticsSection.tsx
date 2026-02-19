@@ -22,6 +22,7 @@ import { AnalyticsCard } from './AnalyticsCard';
 import { Badge } from './Badge';
 import { MetricBox } from './MetricBox';
 import { TrendIndicator } from './TrendIndicator';
+import { COLORS } from '../../../theme/colors';
 
 interface CostAnalyticsSectionProps {
   costOptimization: CostOptimizationResult | null;
@@ -39,9 +40,9 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
   const getVolatilityColor = (volatility: string): string => {
     switch (volatility) {
       case 'low':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'medium':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'high':
         return '#FF6B6B';
       default:
@@ -68,7 +69,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
                     styles.costBarFill,
                     {
                       width: `${costOptimization.currentCosts.costPercentages.materials}%`,
-                      backgroundColor: '#2196F3',
+                      backgroundColor: COLORS.INFO,
                     },
                   ]}
                 />
@@ -86,7 +87,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
                     styles.costBarFill,
                     {
                       width: `${costOptimization.currentCosts.costPercentages.transportation}%`,
-                      backgroundColor: '#FF9800',
+                      backgroundColor: COLORS.WARNING,
                     },
                   ]}
                 />
@@ -104,7 +105,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
                     styles.costBarFill,
                     {
                       width: `${costOptimization.currentCosts.costPercentages.storage}%`,
-                      backgroundColor: '#4CAF50',
+                      backgroundColor: COLORS.SUCCESS,
                     },
                   ]}
                 />
@@ -149,7 +150,7 @@ export const CostAnalyticsSection: React.FC<CostAnalyticsSectionProps> = ({
               <MetricBox
                 label="Budget Impact"
                 value={`${trend.budgetImpact.projectedCostIncrease > 0 ? '+' : ''}${trend.budgetImpact.projectedCostIncrease.toFixed(1)}%`}
-                valueColor={trend.budgetImpact.projectedCostIncrease > 0 ? '#FF6B6B' : '#4CAF50'}
+                valueColor={trend.budgetImpact.projectedCostIncrease > 0 ? '#FF6B6B' : COLORS.SUCCESS}
               />
             </View>
           </TouchableOpacity>
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
   bundleSavings: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   bundleMaterials: {
     fontSize: 12,

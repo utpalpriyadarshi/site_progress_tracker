@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import ProjectModel from '../../../../models/ProjectModel';
+import { COLORS } from '../../../theme/colors';
 
 interface ProjectSelectorProps {
   projects: ProjectModel[];
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   projectChipActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   projectText: {
     fontSize: 13,

@@ -14,6 +14,7 @@ import {
   calculatePasswordStrength,
   getPasswordRequirements,
 } from '../../../../utils/passwordValidator';
+import { COLORS } from '../../../theme/colors';
 
 interface PasswordResetDialogProps {
   visible: boolean;
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 12,
     marginTop: -10,
     marginBottom: 10,

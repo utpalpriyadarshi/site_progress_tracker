@@ -17,6 +17,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Chip, Button, Avatar, IconButton } from 'react-native-paper';
 import type { UserRoleCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const UserRoleCard: React.FC<UserRoleCardProps> = ({
   user,
@@ -41,19 +42,19 @@ export const UserRoleCard: React.FC<UserRoleCardProps> = ({
 
   // Get role badge color
   const getRoleColor = () => {
-    if (!role) return '#9E9E9E';
+    if (!role) return COLORS.DISABLED;
 
     const roleColors: Record<string, string> = {
-      admin: '#F44336',
-      manager: '#2196F3',
-      logistics: '#FF9800',
-      commercial: '#4CAF50',
-      planner: '#9C27B0',
+      admin: COLORS.ERROR,
+      manager: COLORS.INFO,
+      logistics: COLORS.WARNING,
+      commercial: COLORS.SUCCESS,
+      planner: COLORS.STATUS_EVALUATED,
       designer: '#00BCD4',
       supervisor: '#795548',
     };
 
-    return roleColors[role.name.toLowerCase()] || '#9E9E9E';
+    return roleColors[role.name.toLowerCase()] || COLORS.DISABLED;
   };
 
   // Format date
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   activeDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
 
   // Chips
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeChip: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   activeText: {
     color: '#fff',
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   inactiveChip: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
   },
   inactiveText: {
     color: '#fff',

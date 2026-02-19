@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text as RNText } from 'react-native';
 import { Card, Text, Chip, IconButton, Menu } from 'react-native-paper';
 import ItemModel from '../../../models/ItemModel';
+import { COLORS } from '../../theme/colors';
 
 interface WBSItemCardProps {
   item: ItemModel;
@@ -156,9 +157,9 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               styles.statusBadge,
               {
                 backgroundColor:
-                  item.status === 'completed' ? '#4CAF50' :
-                  item.status === 'in_progress' ? '#FF9800' :
-                  '#9E9E9E',
+                  item.status === 'completed' ? COLORS.SUCCESS :
+                  item.status === 'in_progress' ? COLORS.WARNING :
+                  COLORS.DISABLED,
               },
             ]}
           >

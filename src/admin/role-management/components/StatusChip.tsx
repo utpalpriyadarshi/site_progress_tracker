@@ -1,6 +1,7 @@
 import React from 'react';
 import { Chip } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 interface StatusChipProps {
   isActive: boolean;
@@ -11,7 +12,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ isActive }) => {
     <Chip
       style={[
         styles.statusChip,
-        { backgroundColor: isActive ? '#4CAF50' : '#F44336' },
+        { backgroundColor: isActive ? COLORS.SUCCESS : COLORS.ERROR },
       ]}
       textStyle={styles.statusChipText}
     >

@@ -19,6 +19,7 @@ import { createDoorsDemoData } from '../utils/demoData/DoorsSeeder';
 import { linkBomItemsToDoors } from '../services/BomDoorsLinkingService';
 import type { DoorsPackage, DoorsPackageStatus, DoorsPriority } from '../../types/doors';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 
 /**
@@ -168,21 +169,21 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
   // Render package card
   const renderPackageCard = ({ item }: { item: DoorsPackageModel }) => {
     const statusColors = {
-      draft: '#9E9E9E',
-      under_review: '#FF9800',
-      approved: '#4CAF50',
-      closed: '#2196F3',
+      draft: COLORS.DISABLED,
+      under_review: COLORS.WARNING,
+      approved: COLORS.SUCCESS,
+      closed: COLORS.INFO,
     };
 
     const priorityColors = {
-      high: '#F44336',
-      medium: '#FF9800',
-      low: '#4CAF50',
+      high: COLORS.ERROR,
+      medium: COLORS.WARNING,
+      low: COLORS.SUCCESS,
     };
 
     const complianceColor =
-      item.compliancePercentage >= 95 ? '#4CAF50' :
-      item.compliancePercentage >= 80 ? '#FF9800' : '#F44336';
+      item.compliancePercentage >= 95 ? COLORS.SUCCESS :
+      item.compliancePercentage >= 80 ? COLORS.WARNING : COLORS.ERROR;
 
     return (
       <TouchableOpacity
@@ -292,7 +293,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
             <Text style={styles.kpiLabel}>Total</Text>
           </View>
           <View style={styles.kpiItem}>
-            <Text style={[styles.kpiValue, { color: '#4CAF50' }]}>
+            <Text style={[styles.kpiValue, { color: COLORS.SUCCESS }]}>
               {stats.avgCompliance.toFixed(1)}%
             </Text>
             <Text style={styles.kpiLabel}>Avg Compliance</Text>
@@ -303,7 +304,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
           </View>
           {stats.critical > 0 && (
             <View style={styles.kpiItem}>
-              <Text style={[styles.kpiValue, { color: '#F44336' }]}>{stats.critical}</Text>
+              <Text style={[styles.kpiValue, { color: COLORS.ERROR }]}>{stats.critical}</Text>
               <Text style={styles.kpiLabel}>Critical</Text>
             </View>
           )}
@@ -545,7 +546,7 @@ const styles = StyleSheet.create({
   doorsId: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 6,
   },
   badges: {
@@ -655,7 +656,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   loadDemoButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -666,7 +667,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   clearDataButton: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,

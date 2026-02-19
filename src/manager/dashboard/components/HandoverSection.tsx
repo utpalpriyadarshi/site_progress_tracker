@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip, Divider, ProgressBar } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 interface HandoverData {
   pm700Progress: number;
@@ -55,10 +56,10 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
                   {
                     backgroundColor:
                       pm700Status === 'completed'
-                        ? '#4CAF50'
+                        ? COLORS.SUCCESS
                         : pm700Status === 'in_progress'
-                        ? '#2196F3'
-                        : '#9E9E9E',
+                        ? COLORS.INFO
+                        : COLORS.DISABLED,
                   },
                 ]}
                 textStyle={{ color: '#fff', fontSize: 11 }}
@@ -110,10 +111,10 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
             progress={documentationPercentage / 100}
             color={
               documentationPercentage >= 90
-                ? '#4CAF50'
+                ? COLORS.SUCCESS
                 : documentationPercentage >= 70
                 ? '#FFC107'
-                : '#F44336'
+                : COLORS.ERROR
             }
             style={styles.progressBar}
           />
@@ -156,10 +157,10 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
                 {
                   color:
                     punchListCompletion >= 90
-                      ? '#4CAF50'
+                      ? COLORS.SUCCESS
                       : punchListCompletion >= 70
                       ? '#FFC107'
-                      : '#F44336',
+                      : COLORS.ERROR,
                 },
               ]}
             >
@@ -170,10 +171,10 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
             progress={punchListCompletion / 100}
             color={
               punchListCompletion >= 90
-                ? '#4CAF50'
+                ? COLORS.SUCCESS
                 : punchListCompletion >= 70
                 ? '#FFC107'
-                : '#F44336'
+                : COLORS.ERROR
             }
             style={styles.progressBar}
           />
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
   handoverProgress: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   handoverLabel: {
     fontSize: 11,
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
   documentationTotal: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   documentationLabel: {
     fontSize: 11,
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   documentationPercentageValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   divider: {
     marginVertical: 12,
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   },
   punchListCritical: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
     marginVertical: 2,
   },
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginTop: 12,
     textAlign: 'center',
     fontStyle: 'italic',

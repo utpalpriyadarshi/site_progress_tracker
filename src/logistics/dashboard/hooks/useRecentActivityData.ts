@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../../../../models/database';
 import { useLogisticsContext } from '../../context/LogisticsContext';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -63,19 +64,19 @@ function getActivityIcon(type: ActivityType): string {
 function getActivityColor(type: ActivityType): string {
   switch (type) {
     case 'material':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'purchase_order':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'delivery':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'rfq':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     case 'doors':
       return '#00BCD4';
     case 'inventory':
       return '#795548';
     default:
-      return '#607D8B';
+      return COLORS.STATUS_CLOSED;
   }
 }
 

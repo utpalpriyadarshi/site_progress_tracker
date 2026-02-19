@@ -12,6 +12,7 @@ import { useAuth } from '../auth/AuthContext';
 import SnackbarTestScreen from '../test/SnackbarTestScreen';
 import { Phase1TestUtility } from '../utils/Phase1TestUtility';
 import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
+import { COLORS } from '../theme/colors';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -76,13 +77,13 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
           },
           headerStyle: {
-            backgroundColor: '#673AB7',
+            backgroundColor: COLORS.PRIMARY,
           },
           headerTintColor: '#FFF',
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          tabBarActiveTintColor: '#673AB7',
+          tabBarActiveTintColor: COLORS.PRIMARY,
           tabBarInactiveTintColor: 'gray',
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>

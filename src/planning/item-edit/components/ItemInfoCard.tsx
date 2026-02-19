@@ -8,6 +8,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Surface } from 'react-native-paper';
 import ItemModel from '../../../../models/ItemModel';
+import { COLORS } from '../../../theme/colors';
 
 interface ItemInfoCardProps {
   item: ItemModel;
@@ -57,7 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e3f2fd',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
   },
   infoText: {
     marginVertical: 2,

@@ -17,6 +17,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import TutorialModal from '../tutorial/TutorialModal';
 import designerTutorialSteps from '../tutorial/designerTutorialSteps';
 import TutorialService from '../services/TutorialService';
+import { COLORS } from '../theme/colors';
 
 /**
  * DesignEngineerDashboardScreen (v6.0 - Dual-Scope Dashboard)
@@ -160,7 +161,7 @@ const DesignEngineerDashboardScreen = () => {
                 title="Total Documents"
                 value={myMetrics?.totalDesignDocs || 0}
                 icon="description"
-                color="#2196F3"
+                color={COLORS.INFO}
                 loading={loading}
                 onPress={() => navigation.navigate('DesignDocuments' as never)}
               />
@@ -168,7 +169,7 @@ const DesignEngineerDashboardScreen = () => {
                 title="Draft"
                 value={myMetrics?.draftDocs || 0}
                 icon="edit"
-                color="#9E9E9E"
+                color={COLORS.DISABLED}
                 loading={loading}
               />
             </View>
@@ -177,14 +178,14 @@ const DesignEngineerDashboardScreen = () => {
                 title="Submitted"
                 value={myMetrics?.submittedDocs || 0}
                 icon="send"
-                color="#2196F3"
+                color={COLORS.INFO}
                 loading={loading}
               />
               <MetricCard
                 title="Approved"
                 value={myMetrics?.approvedDocs || 0}
                 icon="check-circle"
-                color="#4CAF50"
+                color={COLORS.SUCCESS}
                 loading={loading}
               />
             </View>
@@ -193,14 +194,14 @@ const DesignEngineerDashboardScreen = () => {
                 title="Rejected"
                 value={myMetrics?.rejectedDocs || 0}
                 icon="cancel"
-                color="#F44336"
+                color={COLORS.ERROR}
                 loading={loading}
               />
               <MetricCard
                 title="Revised"
                 value={myMetrics?.revisedDocs || 0}
                 icon="refresh"
-                color="#FF9800"
+                color={COLORS.WARNING}
                 loading={loading}
               />
             </View>
@@ -211,7 +212,7 @@ const DesignEngineerDashboardScreen = () => {
                 title="DOORS Packages"
                 value={myMetrics?.doorsPackages || 0}
                 icon="folder-open"
-                color="#673AB7"
+                color={COLORS.PRIMARY}
                 loading={loading}
                 onPress={() => navigation.navigate('DoorsPackages' as never)}
               />
@@ -219,7 +220,7 @@ const DesignEngineerDashboardScreen = () => {
                 title="Design RFQs"
                 value={myMetrics?.designRfqs || 0}
                 icon="request-quote"
-                color="#FF9800"
+                color={COLORS.WARNING}
                 loading={loading}
                 onPress={() => navigation.navigate('DesignRfqs' as never)}
               />
@@ -231,8 +232,8 @@ const DesignEngineerDashboardScreen = () => {
                 icon="verified"
                 color={
                   (myMetrics?.complianceRate || 0) >= (myMetrics?.complianceTarget || 80)
-                    ? '#4CAF50'
-                    : '#F44336'
+                    ? COLORS.SUCCESS
+                    : COLORS.ERROR
                 }
                 loading={loading}
                 onPress={() => navigation.navigate('DoorsPackages' as never)}
@@ -272,14 +273,14 @@ const DesignEngineerDashboardScreen = () => {
                         </View>
                         <Text style={[
                           styles.kdProgressValue,
-                          { color: kd.docProgress >= 100 ? '#4CAF50' : kd.docProgress > 0 ? '#2196F3' : '#999' },
+                          { color: kd.docProgress >= 100 ? COLORS.SUCCESS : kd.docProgress > 0 ? COLORS.INFO : '#999' },
                         ]}>
                           {Math.round(kd.docProgress)}%
                         </Text>
                       </View>
                       <ProgressBar
                         progress={kd.docProgress / 100}
-                        color={kd.docProgress >= 100 ? '#4CAF50' : '#2196F3'}
+                        color={kd.docProgress >= 100 ? COLORS.SUCCESS : COLORS.INFO}
                         style={styles.kdProgressBar}
                       />
                       <Text style={styles.kdProgressDetail}>
@@ -371,25 +372,25 @@ const DesignEngineerDashboardScreen = () => {
                 <QuickActionButton
                   icon="description"
                   label="Design Docs"
-                  color="#2196F3"
+                  color={COLORS.INFO}
                   onPress={() => navigation.navigate('DesignDocuments' as never)}
                 />
                 <QuickActionButton
                   icon="folder-open"
                   label="DOORS Packages"
-                  color="#673AB7"
+                  color={COLORS.PRIMARY}
                   onPress={() => navigation.navigate('DoorsPackages' as never)}
                 />
                 <QuickActionButton
                   icon="request-quote"
                   label="Design RFQs"
-                  color="#FF9800"
+                  color={COLORS.WARNING}
                   onPress={() => navigation.navigate('DesignRfqs' as never)}
                 />
                 <QuickActionButton
                   icon="location-on"
                   label="My Sites"
-                  color="#4CAF50"
+                  color={COLORS.SUCCESS}
                   onPress={() => navigation.navigate('Sites' as never)}
                 />
               </ScrollView>
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
   kdCode: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   kdDescription: {
     fontSize: 12,
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   errorText: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginBottom: 8,
     textAlign: 'center',
   },

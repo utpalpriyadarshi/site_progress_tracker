@@ -8,6 +8,7 @@ import {
 import ResourceRequestForm from './components/ResourceRequestForm';
 import ApprovalQueue from './components/ApprovalQueue';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 /**
  * ResourceRequestsScreen
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#2196F3',
+    borderBottomColor: COLORS.INFO,
   },
   tabText: {
     fontSize: 16,
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '700',
   },
   content: {

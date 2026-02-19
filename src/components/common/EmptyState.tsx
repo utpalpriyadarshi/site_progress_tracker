@@ -40,6 +40,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import { Text, Button, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -310,9 +311,9 @@ function getIconColor(variant: EmptyStateVariant, theme: any): string {
 function getIconBackgroundColor(variant: EmptyStateVariant, theme: any): string {
   switch (variant) {
     case 'error':
-      return theme.colors.errorContainer || '#FFEBEE';
+      return theme.colors.errorContainer || COLORS.ERROR_BG;
     case 'search':
-      return theme.colors.primaryContainer || '#E3F2FD';
+      return theme.colors.primaryContainer || COLORS.INFO_BG;
     default:
       return theme.colors.surfaceVariant || '#F5F5F5';
   }

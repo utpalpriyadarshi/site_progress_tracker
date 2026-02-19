@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
+import { COLORS } from '../theme/colors';
 
 export interface FilterOption {
   id: string;
@@ -119,8 +120,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   chipSelected: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   chipText: {
     fontSize: 12,

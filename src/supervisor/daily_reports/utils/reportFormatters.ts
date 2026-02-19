@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * Format item status for display
  */
@@ -16,12 +17,12 @@ export const formatStatus = (status: string): string => {
  */
 export const getStatusColor = (status: string): string => {
   const colorMap: Record<string, string> = {
-    completed: '#4CAF50',    // Green
-    in_progress: '#2196F3',  // Blue
-    not_started: '#9E9E9E',  // Gray
+    completed: COLORS.SUCCESS,    // Green
+    in_progress: COLORS.INFO,  // Blue
+    not_started: COLORS.DISABLED,  // Gray
   };
 
-  return colorMap[status] || '#9E9E9E';
+  return colorMap[status] || COLORS.DISABLED;
 };
 
 /**

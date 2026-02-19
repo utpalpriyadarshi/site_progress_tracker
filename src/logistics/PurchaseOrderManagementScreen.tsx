@@ -24,6 +24,7 @@ import {
   initialPOManagementState,
   type PurchaseOrder,
 } from './purchase-order/state';
+import { COLORS } from '../theme/colors';
 
 
 /**
@@ -272,17 +273,17 @@ const PurchaseOrderManagementScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       case 'sent':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'acknowledged':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'delivered':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'cancelled':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -627,7 +628,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   fab: {
     position: 'absolute',

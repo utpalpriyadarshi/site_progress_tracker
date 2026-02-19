@@ -47,6 +47,7 @@ import {
 } from './dashboard/components';
 import { formatCurrency } from './dashboard/utils/dashboardFormatters';
 import { DashboardSkeleton } from './shared';
+import { COLORS } from '../theme/colors';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -608,11 +609,11 @@ const ManagerDashboardScreen = () => {
   };
 
   const getHealthStatus = () => {
-    if (stats.overallCompletion >= 90) return { label: 'Excellent', color: '#4CAF50' };
+    if (stats.overallCompletion >= 90) return { label: 'Excellent', color: COLORS.SUCCESS };
     if (stats.overallCompletion >= 70) return { label: 'Good', color: '#8BC34A' };
     if (stats.overallCompletion >= 50) return { label: 'On Track', color: '#FFC107' };
-    if (stats.overallCompletion >= 30) return { label: 'At Risk', color: '#FF9800' };
-    return { label: 'Delayed', color: '#F44336' };
+    if (stats.overallCompletion >= 30) return { label: 'At Risk', color: COLORS.WARNING };
+    return { label: 'Delayed', color: COLORS.ERROR };
   };
 
   const formatDate = (timestamp: number) => {
@@ -1504,10 +1505,10 @@ const ManagerDashboardScreen = () => {
                     {
                       backgroundColor:
                         stats.sitesDelayed === 0
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : stats.sitesDelayed <= 2
                           ? '#FFC107'
-                          : '#F44336',
+                          : COLORS.ERROR,
                     },
                   ]}
                 />
@@ -1530,10 +1531,10 @@ const ManagerDashboardScreen = () => {
                     {
                       backgroundColor:
                         stats.budgetUtilization <= 100
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : stats.budgetUtilization <= 110
                           ? '#FFC107'
-                          : '#F44336',
+                          : COLORS.ERROR,
                     },
                   ]}
                 />
@@ -1559,10 +1560,10 @@ const ManagerDashboardScreen = () => {
                     {
                       backgroundColor:
                         stats.openHindrances === 0
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : stats.openHindrances <= 5
                           ? '#FFC107'
-                          : '#F44336',
+                          : COLORS.ERROR,
                     },
                   ]}
                 />
@@ -1585,10 +1586,10 @@ const ManagerDashboardScreen = () => {
                     {
                       backgroundColor:
                         stats.criticalPathItemsAtRisk === 0
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : stats.criticalPathItemsAtRisk <= 3
                           ? '#FFC107'
-                          : '#F44336',
+                          : COLORS.ERROR,
                     },
                   ]}
                 />
@@ -1616,10 +1617,10 @@ const ManagerDashboardScreen = () => {
                     {
                       backgroundColor:
                         stats.deliveryDelayed === 0
-                          ? '#4CAF50'
+                          ? COLORS.SUCCESS
                           : stats.deliveryDelayed <= 2
                           ? '#FFC107'
-                          : '#F44336',
+                          : COLORS.ERROR,
                     },
                   ]}
                 />
@@ -1639,7 +1640,7 @@ const ManagerDashboardScreen = () => {
                 <View
                   style={[
                     styles.kpiDot,
-                    { backgroundColor: stats.upcomingMilestones > 0 ? '#2196F3' : '#9E9E9E' },
+                    { backgroundColor: stats.upcomingMilestones > 0 ? COLORS.INFO : COLORS.DISABLED },
                   ]}
                 />
               </View>
@@ -1656,7 +1657,7 @@ const ManagerDashboardScreen = () => {
               <Title style={styles.kpiValue}>{stats.pendingApprovals}</Title>
               <Paragraph style={styles.kpiSubtext}>Coming soon</Paragraph>
               <View style={styles.kpiIndicator}>
-                <View style={[styles.kpiDot, { backgroundColor: '#9E9E9E' }]} />
+                <View style={[styles.kpiDot, { backgroundColor: COLORS.DISABLED }]} />
               </View>
             </Card.Content>
           </Card>
@@ -1669,7 +1670,7 @@ const ManagerDashboardScreen = () => {
               <Paragraph style={styles.kpiSubtext}>Total supervisors</Paragraph>
               <View style={styles.kpiIndicator}>
                 <View style={[styles.kpiDot, {
-                  backgroundColor: stats.activeSupervisors > 0 ? '#4CAF50' : '#9E9E9E'
+                  backgroundColor: stats.activeSupervisors > 0 ? COLORS.SUCCESS : COLORS.DISABLED
                 }]} />
               </View>
             </Card.Content>
@@ -2038,7 +2039,7 @@ const styles = StyleSheet.create({
   siteMetricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   siteMetricLabel: {
     fontSize: 11,
@@ -2076,7 +2077,7 @@ const styles = StyleSheet.create({
   poTotalValue: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 5,
   },
   poTotalLabel: {
@@ -2116,7 +2117,7 @@ const styles = StyleSheet.create({
   warningText: {
     marginTop: 15,
     fontSize: 13,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '500',
   },
   // Section 5: Financial Summary styles
@@ -2131,7 +2132,7 @@ const styles = StyleSheet.create({
   budgetValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 5,
   },
   budgetLabel: {
@@ -2174,7 +2175,7 @@ const styles = StyleSheet.create({
   profitValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   profitRight: {
     flex: 1,
@@ -2234,7 +2235,7 @@ const styles = StyleSheet.create({
   bomCostValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 10,
   },
   bomActual: {
@@ -2407,7 +2408,7 @@ const styles = StyleSheet.create({
   documentationPercentageValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   documentationNote: {
     fontSize: 11,
@@ -2442,7 +2443,7 @@ const styles = StyleSheet.create({
   punchListCritical: {
     fontSize: 14,
     marginVertical: 3,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '500',
   },
   punchCompletionRow: {

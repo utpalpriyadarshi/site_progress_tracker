@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
 import { DesignRfq } from '../types/DesignRfqTypes';
 import StatusTimeline, { RFQ_STATUS_STEPS } from './StatusTimeline';
+import { COLORS } from '../../theme/colors';
 
 interface DesignRfqCardProps {
   rfq: DesignRfq;
@@ -24,19 +25,19 @@ interface DesignRfqCardProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'draft':
-      return '#9E9E9E';
+      return COLORS.DISABLED;
     case 'issued':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'quotes_received':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'evaluated':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     case 'awarded':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'cancelled':
-      return '#F44336';
+      return COLORS.ERROR;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
@@ -186,7 +187,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
             <IconButton
               icon="delete"
               size={20}
-              iconColor="#F44336"
+              iconColor={COLORS.ERROR}
               onPress={() => onDelete(rfq.id)}
               accessibilityLabel="Delete RFQ"
             />
@@ -195,7 +196,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
             <IconButton
               icon="cancel"
               size={20}
-              iconColor="#F44336"
+              iconColor={COLORS.ERROR}
               onPress={() => onCancel(rfq.id)}
               accessibilityLabel="Cancel RFQ"
             />
@@ -223,7 +224,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
             <Button
               mode="contained"
               onPress={() => onEvaluate(rfq.id)}
-              style={[styles.actionButton, { backgroundColor: '#9C27B0' }]}>
+              style={[styles.actionButton, { backgroundColor: COLORS.STATUS_EVALUATED }]}>
               Evaluate
             </Button>
           )}
@@ -231,7 +232,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
             <Button
               mode="contained"
               onPress={() => onAward(rfq.id)}
-              style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}>
+              style={[styles.actionButton, { backgroundColor: COLORS.SUCCESS }]}>
               Award
             </Button>
           )}
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
   selectedCard: {
     borderWidth: 2,
     borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   checkboxRow: {
     position: 'absolute',

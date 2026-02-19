@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Portal, Dialog, Button, TextInput, IconButton } from 'react-native-paper';
 import { DesignDocumentCategory, TOP_LEVEL_CATEGORY_TYPE, getCategorySlug } from '../types/DesignDocumentTypes';
+import { COLORS } from '../../theme/colors';
 
 interface ManageCategoriesDialogProps {
   visible: boolean;
@@ -86,7 +87,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
             <IconButton
               icon="check"
               size={20}
-              iconColor="#4CAF50"
+              iconColor={COLORS.SUCCESS}
               onPress={saveEditing}
               disabled={!editingName.trim()}
             />
@@ -161,7 +162,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
                           <IconButton
                             icon="check"
                             size={20}
-                            iconColor="#4CAF50"
+                            iconColor={COLORS.SUCCESS}
                             onPress={saveEditing}
                             disabled={!editingName.trim()}
                           />

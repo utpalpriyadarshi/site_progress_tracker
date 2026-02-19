@@ -47,6 +47,7 @@ import { database } from '../../models/database';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
 import { usePlanningContext } from './context';
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemCreation'>;
 
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     marginTop: 8,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontStyle: 'italic',
   },
   saveButton: {

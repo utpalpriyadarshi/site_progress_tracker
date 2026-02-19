@@ -23,6 +23,7 @@ import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import RfqService from '../services/RfqService';
 import { validateRfqTitle, getErrorMessage } from './utils/validation';
+import { COLORS } from '../theme/colors';
 
 /**
  * DesignRfqManagementScreen (v6.0 - Sprint 1)
@@ -774,12 +775,12 @@ const DesignRfqManagementScreen = () => {
             .reduce((sum, r) => sum + (r.awardedValue || 0), 0);
 
           const statusDots: { key: string; label: string; color: string }[] = [
-            { key: 'draft', label: 'Draft', color: '#9E9E9E' },
-            { key: 'issued', label: 'Issued', color: '#2196F3' },
-            { key: 'quotes_received', label: 'Quotes Recd', color: '#FF9800' },
-            { key: 'evaluated', label: 'Evaluated', color: '#9C27B0' },
-            { key: 'awarded', label: 'Awarded', color: '#4CAF50' },
-            { key: 'cancelled', label: 'Cancelled', color: '#F44336' },
+            { key: 'draft', label: 'Draft', color: COLORS.DISABLED },
+            { key: 'issued', label: 'Issued', color: COLORS.INFO },
+            { key: 'quotes_received', label: 'Quotes Recd', color: COLORS.WARNING },
+            { key: 'evaluated', label: 'Evaluated', color: COLORS.STATUS_EVALUATED },
+            { key: 'awarded', label: 'Awarded', color: COLORS.SUCCESS },
+            { key: 'cancelled', label: 'Cancelled', color: COLORS.ERROR },
           ];
 
           return (
@@ -972,7 +973,7 @@ const DesignRfqManagementScreen = () => {
             </Dialog.Content>
             <Dialog.Actions>
               <Button onPress={() => setCancelDialogVisible(false)}>Back</Button>
-              <Button onPress={confirmCancelRfq} textColor="#F44336">Cancel RFQ</Button>
+              <Button onPress={confirmCancelRfq} textColor={COLORS.ERROR}>Cancel RFQ</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
@@ -1053,7 +1054,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   fab: {
     position: 'absolute',
@@ -1088,7 +1089,7 @@ const styles = StyleSheet.create({
   summaryAwarded: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   summaryStatusRow: {
     flexDirection: 'row',
@@ -1112,7 +1113,7 @@ const styles = StyleSheet.create({
   bulkBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,

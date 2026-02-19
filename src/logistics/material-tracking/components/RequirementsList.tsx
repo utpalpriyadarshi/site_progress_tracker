@@ -11,6 +11,7 @@ import { MaterialRequirement } from '../../../services/BomLogisticsService';
 import BomRequirementCard from '../../components/BomRequirementCard';
 import BomModel from '../../../../models/BomModel';
 import { useAccessibility } from '../../../utils/accessibility';
+import { COLORS } from '../../../theme/colors';
 
 interface RequirementsListProps {
   boms: BomModel[];
@@ -89,7 +90,7 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
         accessibilityRole="progressbar"
         accessibilityLabel="Loading BOM requirements"
       >
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={COLORS.INFO} />
         <Text style={styles.loadingText}>Loading BOM requirements...</Text>
       </View>
     );
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -391,7 +392,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   criticalBadge: {
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,

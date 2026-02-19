@@ -16,6 +16,7 @@ import { PerformanceBenchmark } from '../../../services/PredictiveAnalyticsServi
 import { AnalyticsCard } from './AnalyticsCard';
 import { Badge } from './Badge';
 import { MetricBox } from './MetricBox';
+import { COLORS } from '../../../theme/colors';
 
 interface PerformanceSectionProps {
   performanceBenchmarks: PerformanceBenchmark[];
@@ -29,15 +30,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   const getRatingColor = (rating: string): string => {
     switch (rating) {
       case 'excellent':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'good':
         return '#8BC34A';
       case 'average':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'below_average':
         return '#FF6B6B';
       case 'poor':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
         return '#999';
     }

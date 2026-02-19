@@ -17,6 +17,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { COLORS } from '../../theme/colors';
 
 interface StatusBadgeProps {
   /**
@@ -50,17 +51,17 @@ const getStatusColor = (status: string): string => {
 
   switch (normalizedStatus) {
     case 'completed':
-      return '#4CAF50'; // Green
+      return COLORS.SUCCESS; // Green
     case 'in_progress':
     case 'in progress':
-      return '#2196F3'; // Blue
+      return COLORS.INFO; // Blue
     case 'planned':
     case 'not_started':
     case 'not started':
-      return '#9E9E9E'; // Grey
+      return COLORS.DISABLED; // Grey
     case 'delayed':
     case 'overdue':
-      return '#F44336'; // Red
+      return COLORS.ERROR; // Red
     case 'critical':
       return '#FF5722'; // Deep Orange
     case 'on_hold':
@@ -68,7 +69,7 @@ const getStatusColor = (status: string): string => {
     case 'paused':
       return '#FFC107'; // Amber
     case 'pending':
-      return '#FF9800'; // Orange
+      return COLORS.WARNING; // Orange
     case 'approved':
       return '#8BC34A'; // Light Green
     case 'rejected':

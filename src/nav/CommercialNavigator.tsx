@@ -13,6 +13,7 @@ import CostTrackingScreen from '../commercial/CostTrackingScreen';
 import InvoiceManagementScreen from '../commercial/InvoiceManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import type { CommercialDrawerParamList } from './CommercialDrawerNavigator';
+import { COLORS } from '../theme/colors';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -72,7 +73,7 @@ const CommercialTabNavigator: React.FC = memo(() => {
 
   const screenOptions = useMemo(() => ({
     headerStyle: {
-      backgroundColor: '#673AB7',
+      backgroundColor: COLORS.PRIMARY,
     },
     headerTintColor: '#FFF',
     headerTitleStyle: {
@@ -80,7 +81,7 @@ const CommercialTabNavigator: React.FC = memo(() => {
     },
     headerLeft: HeaderLeft,
     headerRight: HeaderRight,
-    tabBarActiveTintColor: '#673AB7',
+    tabBarActiveTintColor: COLORS.PRIMARY,
     tabBarInactiveTintColor: 'gray',
   }), [HeaderLeft, HeaderRight]);
 

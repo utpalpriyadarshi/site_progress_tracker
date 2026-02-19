@@ -23,6 +23,7 @@ import {
   KEY_DATE_STATUS_COLORS,
 } from '../../key-dates/utils/keyDateConstants';
 import dayjs from 'dayjs';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -112,7 +113,7 @@ const MilestoneMarker: React.FC<MilestoneMarkerProps> = ({
           {
             left: position - 10, // Center the 20px diamond
             backgroundColor: statusColor,
-            borderColor: isCritical ? '#F44336' : categoryColor,
+            borderColor: isCritical ? COLORS.ERROR : categoryColor,
             borderWidth: isCritical ? 2 : 1,
           },
         ]}

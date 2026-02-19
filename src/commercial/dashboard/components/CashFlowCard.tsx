@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from 'react-native-paper';
 import { CashFlow } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface CashFlowCardProps {
   cashFlow: CashFlow;
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   positiveValue: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   negativeValue: {
     color: '#ff6b6b',

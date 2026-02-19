@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import type { RfqStatusData } from '../types/dashboard';
+import { COLORS } from '../../../theme/colors';
 
 export interface RfqStatusWidgetProps {
   data: RfqStatusData;
@@ -155,13 +156,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   draftSegment: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
   },
   issuedSegment: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   awardedSegment: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   donutCenter: {
     position: 'absolute',
@@ -203,13 +204,13 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   draftDot: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: COLORS.DISABLED,
   },
   issuedDot: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   awardedDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   legendTextContainer: {
     flex: 1,

@@ -3,6 +3,7 @@
  */
 
 import { Dimensions } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 // Types
 export type ZoomLevel = 'day' | 'week' | 'month';
@@ -22,9 +23,9 @@ export const COLUMN_WIDTHS: Record<ZoomLevel, number> = {
 
 // Colors
 export const GANTT_COLORS = {
-  progress: '#4CAF50',
+  progress: COLORS.SUCCESS,
   critical: '#d32f2f',
-  today: '#2196F3',
+  today: COLORS.INFO,
   weekendBg: '#f0f0f0',
   headerBg: '#e0e0e0',
   borderColor: '#999',

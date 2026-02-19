@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Card, Text, IconButton, Chip } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { InspectionCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get color for inspection type chip
@@ -10,13 +11,13 @@ import { InspectionCardProps } from '../types';
 const getInspectionTypeColor = (type: string): string => {
   switch (type) {
     case 'daily':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'weekly':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'safety':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'quality':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     default:
       return '#757575';
   }
@@ -28,13 +29,13 @@ const getInspectionTypeColor = (type: string): string => {
 const getRatingColor = (rating: string): string => {
   switch (rating) {
     case 'excellent':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     case 'good':
       return '#8BC34A';
     case 'fair':
-      return '#FF9800';
+      return COLORS.WARNING;
     case 'poor':
-      return '#F44336';
+      return COLORS.ERROR;
     default:
       return '#757575';
   }
@@ -75,7 +76,7 @@ export const InspectionCard: React.FC<InspectionCardProps> = React.memo(
     // Sync status
     const isLocal = inspection.id.includes('local_');
     const syncStatusText = isLocal ? 'Local Only' : 'Synced';
-    const syncStatusColor = isLocal ? '#FF9800' : '#4CAF50';
+    const syncStatusColor = isLocal ? COLORS.WARNING : COLORS.SUCCESS;
 
     return (
       <Card style={styles.card}>
@@ -145,7 +146,7 @@ export const InspectionCard: React.FC<InspectionCardProps> = React.memo(
               <MaterialCommunityIcons
                 name="checkbox-marked-circle-outline"
                 size={16}
-                color={failCount > 0 ? '#F44336' : '#666'}
+                color={failCount > 0 ? COLORS.ERROR : '#666'}
               />
               <Text
                 style={[styles.checklistText, failCount > 0 && styles.checklistTextFailed]}
@@ -183,7 +184,7 @@ export const InspectionCard: React.FC<InspectionCardProps> = React.memo(
           {/* Follow-up Indicator */}
           {inspection.followUpDate > 0 && (
             <View style={styles.followUpBanner}>
-              <MaterialCommunityIcons name="flag" size={16} color="#FF9800" />
+              <MaterialCommunityIcons name="flag" size={16} color={COLORS.WARNING} />
               <Text style={styles.followUpText}>
                 Follow-up required by {formatDate(inspection.followUpDate)}
               </Text>
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
   },
   safetyChip: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
   },
   ratingChip: {
     alignSelf: 'flex-start',
@@ -293,34 +294,34 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   checklistSummaryWithFails: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     padding: 8,
     borderRadius: 4,
     borderLeftWidth: 3,
-    borderLeftColor: '#F44336',
+    borderLeftColor: COLORS.ERROR,
   },
   checklistText: {
     fontSize: 12,
     color: '#666',
   },
   checklistTextFailed: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   failedItemsContainer: {
     marginTop: 8,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 10,
     borderRadius: 4,
     borderLeftWidth: 3,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: COLORS.WARNING,
   },
   failedItem: {
     marginBottom: 8,
   },
   failedItemText: {
     fontSize: 13,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 8,
     borderRadius: 4,
     marginTop: 8,
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   },
   followUpText: {
     fontSize: 12,
-    color: '#FF9800',
+    color: COLORS.WARNING,
     fontWeight: 'bold',
   },
   statusRow: {

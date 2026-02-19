@@ -6,6 +6,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Paragraph } from 'react-native-paper';
 import { StepStatus } from '../utils/wizardHelpers';
+import { COLORS } from '../../../theme/colors';
 
 interface StepIndicatorProps {
   stepNumber: number;
@@ -84,10 +85,10 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   stepCircleCompleted: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
   stepCircleActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
   },
   stepNumber: {
     fontSize: 16,
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   },
   stepTitleActive: {
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   stepDescription: {
     fontSize: 12,
@@ -126,6 +127,6 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   stepConnectorCompleted: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
   },
 });

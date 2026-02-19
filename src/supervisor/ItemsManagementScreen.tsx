@@ -32,6 +32,7 @@ import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
 import { useDebounce } from '../hooks';
 import { sortCategoriesByOrder } from '../utils/categoryOrder';
+import { COLORS } from '../theme/colors';
 
 // Status filter options
 const STATUS_FILTERS: FilterOption[] = [
@@ -46,10 +47,10 @@ const STATUS_FILTERS: FilterOption[] = [
 const PHASE_FILTERS: FilterOption[] = [
   { id: 'all', label: 'All Phases' },
   { id: 'site_prep', label: 'Site Prep', icon: 'bulldozer', color: '#8BC34A' },
-  { id: 'construction', label: 'Construction', icon: 'hammer', color: '#4CAF50' },
-  { id: 'testing', label: 'Testing', icon: 'test-tube', color: '#2196F3' },
+  { id: 'construction', label: 'Construction', icon: 'hammer', color: COLORS.SUCCESS },
+  { id: 'testing', label: 'Testing', icon: 'test-tube', color: COLORS.INFO },
   { id: 'commissioning', label: 'Commissioning', icon: 'power-plug', color: '#3F51B5' },
-  { id: 'sat', label: 'SAT', icon: 'clipboard-check', color: '#673AB7' },
+  { id: 'sat', label: 'SAT', icon: 'clipboard-check', color: COLORS.PRIMARY },
   { id: 'handover', label: 'Handover', icon: 'handshake', color: '#009688' },
 ];
 
@@ -405,13 +406,13 @@ const ItemsManagementScreenComponent = ({
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'completed':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'in_progress':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'not_started':
-        return '#9E9E9E';
+        return COLORS.DISABLED;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -846,7 +847,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginBottom: 4,
   },
   quantityText: {

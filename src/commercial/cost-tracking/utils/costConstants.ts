@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 export const COST_CATEGORIES = [
   { value: 'labor', label: 'Labor' },
   { value: 'material', label: 'Materials' },
@@ -6,10 +7,10 @@ export const COST_CATEGORIES = [
 ];
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  labor: '#2196F3',
-  material: '#4CAF50',
-  equipment: '#FF9800',
-  other: '#9C27B0',
+  labor: COLORS.INFO,
+  material: COLORS.SUCCESS,
+  equipment: COLORS.WARNING,
+  other: COLORS.STATUS_EVALUATED,
 };
 
 export const getCategoryLabel = (category: string): string => {

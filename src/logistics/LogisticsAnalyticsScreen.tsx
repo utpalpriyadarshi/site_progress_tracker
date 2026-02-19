@@ -51,6 +51,7 @@ import {
 
 // Analytics state management
 import { analyticsReducer, initialAnalyticsState } from './analytics/state';
+import { COLORS } from '../theme/colors';
 
 // ============================================================================
 // MOCK DATA
@@ -394,7 +395,7 @@ const LogisticsAnalyticsScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Advanced Analytics</Text>
         <TouchableOpacity onPress={handleRefresh}>
-          <Icon name="refresh" size={24} color="#2196F3" />
+          <Icon name="refresh" size={24} color={COLORS.INFO} />
         </TouchableOpacity>
       </View>
 

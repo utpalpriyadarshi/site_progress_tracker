@@ -24,6 +24,7 @@ import SiteModel from '../../../models/SiteModel';
 import { useDesignEngineerContext } from '../context/DesignEngineerContext';
 import { countSiteDocuments, detectDuplicates, copyDocuments } from '../../services/DesignDocumentCopyService';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -464,7 +465,7 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   warningBox: {
     backgroundColor: '#FFF3CD',
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   resetNotice: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     padding: 12,
     borderRadius: 8,
     marginTop: 12,

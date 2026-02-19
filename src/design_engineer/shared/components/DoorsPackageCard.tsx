@@ -29,6 +29,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Chip, Button, IconButton } from 'react-native-paper';
 import { DoorsPackageCardProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Get status color based on package status
@@ -38,11 +39,11 @@ const getStatusColor = (status: string): string => {
     case 'pending':
       return '#FFA500';
     case 'received':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'reviewed':
-      return '#4CAF50';
+      return COLORS.SUCCESS;
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 
@@ -52,11 +53,11 @@ const getStatusColor = (status: string): string => {
 const getCategoryColor = (category: string): string => {
   switch (category) {
     case 'equipment':
-      return '#2196F3';
+      return COLORS.INFO;
     case 'material':
-      return '#9C27B0';
+      return COLORS.STATUS_EVALUATED;
     default:
-      return '#607D8B';
+      return COLORS.STATUS_CLOSED;
   }
 };
 

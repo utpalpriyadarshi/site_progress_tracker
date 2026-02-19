@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Divider } from 'react-native-paper';
 import { ReportCard } from './ReportCard';
+import { COLORS } from '../../../theme/colors';
 
 interface CashFlowCardProps {
   totalRevenue: number;
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   positive: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   negative: {
     color: '#ff6b6b',

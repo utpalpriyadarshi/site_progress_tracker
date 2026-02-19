@@ -26,6 +26,7 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAccessibility } from '../utils/accessibility';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 interface FinancialData {
   // Budget Metrics
@@ -290,9 +291,9 @@ const FinancialReportsScreen = () => {
   };
 
   const getUtilizationColor = (utilization: number): string => {
-    if (utilization <= 90) return '#4CAF50';
+    if (utilization <= 90) return COLORS.SUCCESS;
     if (utilization <= 100) return '#FFC107';
-    return '#F44336';
+    return COLORS.ERROR;
   };
 
   const exportToExcel = async () => {
@@ -501,7 +502,7 @@ const FinancialReportsScreen = () => {
             <Divider style={styles.verticalDivider} />
             <View style={styles.budgetMetric}>
               <Paragraph style={styles.metricLabel}>Remaining</Paragraph>
-              <Title style={[styles.metricValue, { color: financialData.budgetRemaining >= 0 ? '#4CAF50' : '#F44336' }]}>
+              <Title style={[styles.metricValue, { color: financialData.budgetRemaining >= 0 ? COLORS.SUCCESS : COLORS.ERROR }]}>
                 {formatCurrency(financialData.budgetRemaining)}
               </Title>
             </View>
@@ -551,7 +552,7 @@ const FinancialReportsScreen = () => {
             <Divider style={styles.verticalDivider} />
             <View style={styles.profitMetric}>
               <Paragraph style={styles.metricLabel}>Projected Profit</Paragraph>
-              <Title style={[styles.metricValue, { color: financialData.projectedProfit >= 0 ? '#4CAF50' : '#F44336' }]}>
+              <Title style={[styles.metricValue, { color: financialData.projectedProfit >= 0 ? COLORS.SUCCESS : COLORS.ERROR }]}>
                 {formatCurrency(financialData.projectedProfit)}
               </Title>
             </View>
@@ -577,7 +578,7 @@ const FinancialReportsScreen = () => {
             <Chip
               style={[
                 styles.marginChip,
-                { backgroundColor: financialData.profitMargin >= 0 ? '#4CAF50' : '#F44336' },
+                { backgroundColor: financialData.profitMargin >= 0 ? COLORS.SUCCESS : COLORS.ERROR },
               ]}
               textStyle={{ color: '#fff', fontWeight: 'bold' }}
             >
@@ -682,8 +683,8 @@ const FinancialReportsScreen = () => {
                 {
                   color:
                     financialData.bomActualCost - financialData.bomTotalCost <= 0
-                      ? '#4CAF50'
-                      : '#F44336',
+                      ? COLORS.SUCCESS
+                      : COLORS.ERROR,
                 },
               ]}
             >
@@ -819,7 +820,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     marginTop: 8,
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -880,7 +881,7 @@ const styles = StyleSheet.create({
   },
   categoryPercent: {
     fontSize: 12,
-    color: '#2196F3',
+    color: COLORS.INFO,
     marginTop: 2,
   },
   totalRow: {
@@ -897,7 +898,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   bomRow: {
     flexDirection: 'row',
@@ -911,7 +912,7 @@ const styles = StyleSheet.create({
   bomCount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   bomLabel: {
     fontSize: 12,
@@ -966,7 +967,7 @@ const styles = StyleSheet.create({
   poCount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   poLabel: {
     fontSize: 12,

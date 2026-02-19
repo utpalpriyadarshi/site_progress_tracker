@@ -7,6 +7,7 @@ import { View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Button, Chip } from 'react-native-paper';
 import { formatFileSize } from '../../../utils/BomFileParser';
 import { FILE_INFO } from '../utils/wizardConstants';
+import { COLORS } from '../../../theme/colors';
 
 interface Step1UploadFileProps {
   fileName: string;
@@ -95,12 +96,12 @@ const styles = StyleSheet.create({
   },
   dropZone: {
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: COLORS.INFO,
     borderStyle: 'dashed',
     borderRadius: 8,
     padding: 40,
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   dropZoneText: {
     fontSize: 16,
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   infoBox: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: COLORS.WARNING_BG,
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
@@ -129,11 +130,11 @@ const styles = StyleSheet.create({
   },
   fileInfoContainer: {
     padding: 15,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
     borderRadius: 8,
   },
   successChip: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.SUCCESS,
     alignSelf: 'flex-start',
     marginBottom: 15,
   },

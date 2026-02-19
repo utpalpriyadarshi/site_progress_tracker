@@ -24,11 +24,12 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Text, IconButton, ProgressBar, Surface, Chip } from 'react-native-paper';
 import { WBSTreeViewProps, WBSTreeNode } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 const INDENT_SIZE = 20; // pixels per level
 const NODE_HEIGHT = 70; // height of each tree node
 const CRITICAL_PATH_COLOR = '#d32f2f';
-const PROGRESS_COLOR = '#4CAF50';
+const PROGRESS_COLOR = COLORS.SUCCESS;
 
 /**
  * Flatten tree structure for FlatList rendering
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   selectedNode: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   nodeContent: {
     flex: 1,

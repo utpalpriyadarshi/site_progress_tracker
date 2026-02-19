@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * CostBreakdownChart
@@ -57,10 +58,10 @@ interface CategoryConfig {
 }
 
 const CATEGORIES: CategoryConfig[] = [
-  { key: 'material', label: 'Material', color: '#2196F3' },
-  { key: 'labor', label: 'Labor', color: '#4CAF50' },
-  { key: 'equipment', label: 'Equipment', color: '#FF9800' },
-  { key: 'subcontractor', label: 'Subcontractor', color: '#9C27B0' },
+  { key: 'material', label: 'Material', color: COLORS.INFO },
+  { key: 'labor', label: 'Labor', color: COLORS.SUCCESS },
+  { key: 'equipment', label: 'Equipment', color: COLORS.WARNING },
+  { key: 'subcontractor', label: 'Subcontractor', color: COLORS.STATUS_EVALUATED },
 ];
 
 const CostBreakdownChart: React.FC<CostBreakdownChartProps> = ({
@@ -244,10 +245,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   varianceOver: {
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   varianceUnder: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
   },
   barContainer: {
     flexDirection: 'row',

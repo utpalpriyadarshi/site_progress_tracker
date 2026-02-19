@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * Status Calculations
  *
@@ -52,13 +53,13 @@ export const formatStatus = (status: ItemStatus): string => {
 export const getStatusColor = (status: ItemStatus): string => {
   switch (status) {
     case 'completed':
-      return '#4CAF50'; // Green
+      return COLORS.SUCCESS; // Green
     case 'in_progress':
-      return '#FF9800'; // Orange
+      return COLORS.WARNING; // Orange
     case 'not_started':
-      return '#9E9E9E'; // Gray
+      return COLORS.DISABLED; // Gray
     default:
-      return '#9E9E9E';
+      return COLORS.DISABLED;
   }
 };
 

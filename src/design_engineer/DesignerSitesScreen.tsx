@@ -27,6 +27,7 @@ import { SearchBar } from '../components';
 import { useDebounce } from '../hooks';
 import { useSnackbar } from '../components/Snackbar';
 import { logger } from '../services/LoggingService';
+import { COLORS } from '../theme/colors';
 
 interface DesignerSitesScreenProps {
   sites: SiteModel[];
@@ -317,7 +318,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
             <IconButton
               icon="plus-circle"
               size={22}
-              iconColor="#673AB7"
+              iconColor={COLORS.PRIMARY}
               onPress={openAddDomainDialog}
               accessibilityLabel="Add domain"
             />
@@ -441,14 +442,14 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
                         <IconButton
                           icon="pencil"
                           size={20}
-                          iconColor="#673AB7"
+                          iconColor={COLORS.PRIMARY}
                           onPress={() => openEditDialog(site)}
                           accessibilityLabel={`Edit ${site.name}`}
                         />
                         <IconButton
                           icon="delete"
                           size={20}
-                          iconColor="#F44336"
+                          iconColor={COLORS.ERROR}
                           onPress={() => handleDelete(site)}
                           accessibilityLabel={`Delete ${site.name}`}
                         />
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#673AB7',
+    backgroundColor: COLORS.PRIMARY,
     paddingTop: 12,
     paddingBottom: 8,
     paddingHorizontal: 16,
@@ -712,7 +713,7 @@ const styles = StyleSheet.create({
   },
   domainBadgeText: {
     fontSize: 12,
-    color: '#673AB7',
+    color: COLORS.PRIMARY,
   },
   projectNameText: {
     fontSize: 12,

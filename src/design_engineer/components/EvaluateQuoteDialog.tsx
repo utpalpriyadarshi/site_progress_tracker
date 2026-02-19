@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput } from 'react-native-paper';
 import { VendorQuote } from '../types/VendorQuoteTypes';
+import { COLORS } from '../../theme/colors';
 
 interface EvaluateQuoteDialogProps {
   visible: boolean;
@@ -81,10 +82,10 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
                     dense
                   />
                 </View>
-                <ScoreBar value={techVal} color={isQualified ? '#2196F3' : '#F44336'} />
+                <ScoreBar value={techVal} color={isQualified ? COLORS.INFO : COLORS.ERROR} />
               </View>
 
-              <View style={[styles.qualificationBox, { backgroundColor: isQualified ? '#E8F5E9' : '#FFEBEE' }]}>
+              <View style={[styles.qualificationBox, { backgroundColor: isQualified ? COLORS.SUCCESS_BG : COLORS.ERROR_BG }]}>
                 <Text style={[styles.qualificationLabel, { color: isQualified ? '#2E7D32' : '#C62828' }]}>
                   {isQualified ? 'Qualified' : 'Below Threshold'}
                 </Text>

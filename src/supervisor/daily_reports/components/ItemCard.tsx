@@ -8,6 +8,7 @@ import {
   calculateProgress,
   formatQuantity,
 } from '../utils';
+import { COLORS } from '../../../theme/colors';
 
 interface ItemCardProps {
   item: ItemModel;
@@ -65,7 +66,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       {/* Progress Bar */}
       <ProgressBar
         progress={progress / 100}
-        color="#2196F3"
+        color={COLORS.INFO}
         style={styles.progressBar}
       />
       <Text style={styles.progressText}>{progress.toFixed(1)}% Complete</Text>
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   photoChip: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
     height: 32,
   },
   photoChipText: {

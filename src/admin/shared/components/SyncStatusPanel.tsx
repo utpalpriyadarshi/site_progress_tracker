@@ -19,6 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, Button, ProgressBar, Chip, Divider } from 'react-native-paper';
 import type { SyncStatusPanelProps } from '../types';
+import { COLORS } from '../../../theme/colors';
 
 export const SyncStatusPanel: React.FC<SyncStatusPanelProps> = ({
   syncStatus,
@@ -74,10 +75,10 @@ export const SyncStatusPanel: React.FC<SyncStatusPanelProps> = ({
 
   // Get status color
   const getStatusColor = () => {
-    if (!syncStatus.isOnline) return '#9E9E9E';
+    if (!syncStatus.isOnline) return COLORS.DISABLED;
     if (syncStatus.syncErrors > 0) return '#f44336';
-    if (syncStatus.pendingChanges > 0) return '#FF9800';
-    return '#4CAF50';
+    if (syncStatus.pendingChanges > 0) return COLORS.WARNING;
+    return COLORS.SUCCESS;
   };
 
   // Get status label
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pendingChip: {
-    backgroundColor: '#FF9800',
+    backgroundColor: COLORS.WARNING,
   },
   pendingText: {
     color: '#fff',
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   statLabel: {
     fontSize: 12,
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2196F3',
+    color: COLORS.INFO,
   },
   detailLabel: {
     fontSize: 11,

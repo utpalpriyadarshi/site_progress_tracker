@@ -31,6 +31,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -69,25 +70,25 @@ const STATUS_CONFIG: Record<
 > = {
   pending: {
     icon: 'clock-outline',
-    color: '#FF9800',
+    color: COLORS.WARNING,
     textColor: '#F57C00',
     defaultLabel: 'Pending',
   },
   synced: {
     icon: 'check-circle',
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     textColor: '#388E3C',
     defaultLabel: 'Synced',
   },
   error: {
     icon: 'alert-circle',
-    color: '#F44336',
+    color: COLORS.ERROR,
     textColor: '#D32F2F',
     defaultLabel: 'Error',
   },
   syncing: {
     icon: 'sync',
-    color: '#2196F3',
+    color: COLORS.INFO,
     textColor: '#1976D2',
     defaultLabel: 'Syncing',
   },

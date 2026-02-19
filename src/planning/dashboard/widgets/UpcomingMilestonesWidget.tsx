@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
 import { StatusBadge } from '../../components/StatusBadge';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { COLORS } from '../../../theme/colors';
 
 // ==================== Types ====================
 
@@ -55,7 +56,7 @@ export const UpcomingMilestonesWidget: React.FC<UpcomingMilestonesWidgetProps> =
 
   const getDaysRemainingColor = (days: number): string => {
     if (days < 0) return theme.colors.error;
-    if (days <= 7) return '#FF9800';
+    if (days <= 7) return COLORS.WARNING;
     if (days <= 14) return '#FFC107';
     return theme.colors.primary;
   };

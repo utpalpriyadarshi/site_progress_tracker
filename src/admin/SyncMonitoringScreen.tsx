@@ -30,6 +30,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { COLORS } from '../theme/colors';
 
 export const SyncMonitoringScreen: React.FC = () => {
   const [syncState, setSyncState] = useState<SyncState>(AutoSyncManager.getSyncState());
@@ -132,9 +133,9 @@ export const SyncMonitoringScreen: React.FC = () => {
 
   const getSyncStatusColor = (): string => {
     if (!isConnected) return '#999';
-    if (syncState.isSyncing) return '#2196F3';
-    if (!syncState.lastSyncSuccess) return '#F44336';
-    return '#4CAF50';
+    if (syncState.isSyncing) return COLORS.INFO;
+    if (!syncState.lastSyncSuccess) return COLORS.ERROR;
+    return COLORS.SUCCESS;
   };
 
   return (
@@ -148,12 +149,12 @@ export const SyncMonitoringScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <Icon name={isConnected ? 'wifi' : 'wifi-off'} size={24} color={isConnected ? '#4CAF50' : '#999'} />
+            <Icon name={isConnected ? 'wifi' : 'wifi-off'} size={24} color={isConnected ? COLORS.SUCCESS : '#999'} />
             <Text style={styles.cardTitle}>Network Status</Text>
           </View>
 
           <View style={styles.statusRow}>
-            <Chip mode="flat" style={{ backgroundColor: isConnected ? '#E8F5E9' : '#F5F5F5' }}>
+            <Chip mode="flat" style={{ backgroundColor: isConnected ? COLORS.SUCCESS_BG : '#F5F5F5' }}>
               {isConnected ? 'Online' : 'Offline'}
             </Chip>
           </View>
@@ -187,7 +188,7 @@ export const SyncMonitoringScreen: React.FC = () => {
 
           {syncState.lastSyncError && (
             <View style={styles.errorRow}>
-              <Icon name="alert-circle" size={16} color="#F44336" />
+              <Icon name="alert-circle" size={16} color={COLORS.ERROR} />
               <Text style={styles.errorText}>{syncState.lastSyncError}</Text>
             </View>
           )}
@@ -198,13 +199,13 @@ export const SyncMonitoringScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <Icon name="format-list-bulleted" size={24} color="#2196F3" />
+            <Icon name="format-list-bulleted" size={24} color={COLORS.INFO} />
             <Text style={styles.cardTitle}>Sync Queue</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Pending Items:</Text>
-            <Chip mode="flat" style={{ backgroundColor: queueCount > 0 ? '#FFF3E0' : '#E8F5E9' }}>
+            <Chip mode="flat" style={{ backgroundColor: queueCount > 0 ? COLORS.WARNING_BG : COLORS.SUCCESS_BG }}>
               {queueCount}
             </Chip>
           </View>
@@ -225,13 +226,13 @@ export const SyncMonitoringScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <Icon name="skull" size={24} color="#F44336" />
+            <Icon name="skull" size={24} color={COLORS.ERROR} />
             <Text style={styles.cardTitle}>Dead Letter Queue</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Failed Items:</Text>
-            <Chip mode="flat" style={{ backgroundColor: deadLetterCount > 0 ? '#FFEBEE' : '#E8F5E9' }}>
+            <Chip mode="flat" style={{ backgroundColor: deadLetterCount > 0 ? COLORS.ERROR_BG : COLORS.SUCCESS_BG }}>
               {deadLetterCount}
             </Chip>
           </View>
@@ -246,7 +247,7 @@ export const SyncMonitoringScreen: React.FC = () => {
             disabled={deadLetterCount === 0}
             icon="delete"
             style={styles.button}
-            textColor="#F44336"
+            textColor={COLORS.ERROR}
           >
             Clear Dead Letter Queue
           </Button>
@@ -257,7 +258,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <Icon name="cog" size={24} color="#673AB7" />
+            <Icon name="cog" size={24} color={COLORS.PRIMARY} />
             <Text style={styles.cardTitle}>Manual Controls</Text>
           </View>
 
@@ -347,12 +348,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
     padding: 8,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.ERROR_BG,
     borderRadius: 4,
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginLeft: 8,
     flex: 1,
   },

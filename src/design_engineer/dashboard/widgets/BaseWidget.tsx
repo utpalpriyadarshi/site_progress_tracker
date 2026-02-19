@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Card } from 'react-native-paper';
+import { COLORS } from '../../../theme/colors';
 
 export interface BaseWidgetProps {
   id: string;
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#F44336',
+    color: COLORS.ERROR,
     marginBottom: 4,
   },
   errorMessage: {

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * DeliveryScheduleCalendar
@@ -75,15 +76,15 @@ const DeliveryScheduleCalendar: React.FC<DeliveryScheduleCalendarProps> = ({
   const getStatusColor = (status: DeliverySchedule['status']) => {
     switch (status) {
       case 'scheduled':
-        return '#2196F3';
+        return COLORS.INFO;
       case 'in-transit':
-        return '#FF9800';
+        return COLORS.WARNING;
       case 'delivered':
-        return '#4CAF50';
+        return COLORS.SUCCESS;
       case 'delayed':
-        return '#F44336';
+        return COLORS.ERROR;
       default:
-        return '#9E9E9E';
+        return COLORS.DISABLED;
     }
   };
 
@@ -377,11 +378,11 @@ const styles = StyleSheet.create({
     borderColor: '#F0F0F0',
   },
   todayCell: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.INFO_BG,
   },
   selectedCell: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
   },
   dayNumber: {
     fontSize: 14,
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   todayText: {
-    color: '#2196F3',
+    color: COLORS.INFO,
     fontWeight: '700',
   },
   selectedText: {
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
     color: '#212121',
   },
   addButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.INFO,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
@@ -494,7 +495,7 @@ const styles = StyleSheet.create({
   },
   deliveryPO: {
     fontSize: 11,
-    color: '#9E9E9E',
+    color: COLORS.DISABLED,
   },
 });
 

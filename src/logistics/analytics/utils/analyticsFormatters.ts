@@ -10,6 +10,7 @@ import {
   formatCurrencyK as formatCurrencyKCentral,
   formatCurrencyM as formatCurrencyMCentral,
 } from '../../../utils/currencyFormatter';
+import { COLORS } from '../../../theme/colors';
 
 /**
  * Format currency value
@@ -143,10 +144,10 @@ export const getTrendIcon = (trend: 'up' | 'down' | 'stable'): string => {
  * @param inverse - If true, down is good and up is bad (default: false)
  */
 export const getTrendColor = (trend: 'up' | 'down' | 'stable', inverse: boolean = false): string => {
-  if (trend === 'stable') return '#2196F3';
+  if (trend === 'stable') return COLORS.INFO;
 
   const isGood = inverse ? trend === 'down' : trend === 'up';
-  return isGood ? '#4CAF50' : '#F44336';
+  return isGood ? COLORS.SUCCESS : COLORS.ERROR;
 };
 
 /**

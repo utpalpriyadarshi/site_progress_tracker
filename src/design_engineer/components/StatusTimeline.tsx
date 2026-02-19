@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../../theme/colors';
 
 interface StatusStep {
   key: string;
@@ -13,10 +14,10 @@ interface StatusTimelineProps {
 }
 
 const COLORS = {
-  completed: '#4CAF50',
-  current: '#2196F3',
+  completed: COLORS.SUCCESS,
+  current: COLORS.INFO,
   pending: '#BDBDBD',
-  cancelled: '#F44336',
+  cancelled: COLORS.ERROR,
 };
 
 const StatusTimeline: React.FC<StatusTimelineProps> = ({ steps, currentStatus, cancelledStatus }) => {
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   },
   cancelledBadge: {
     marginLeft: 8,
-    backgroundColor: '#F44336',
+    backgroundColor: COLORS.ERROR,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,

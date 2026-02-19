@@ -10,6 +10,7 @@ import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import RfqService from '../../services/RfqService';
 import { logger } from '../../services/LoggingService';
+import { COLORS } from '../../theme/colors';
 
 interface VendorQuotesSheetProps {
   visible: boolean;
@@ -685,7 +686,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               mode="contained"
               onPress={handleAwardL1}
               style={styles.awardButton}
-              buttonColor="#4CAF50">
+              buttonColor={COLORS.SUCCESS}>
               Award to L1
             </Button>
           )}
@@ -811,7 +812,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bestCell: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.SUCCESS_BG,
   },
   compareVendor: {
     fontSize: 12,
@@ -824,7 +825,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   l1Rank: {
-    color: '#4CAF50',
+    color: COLORS.SUCCESS,
     fontWeight: 'bold',
   },
   compareCellText: {

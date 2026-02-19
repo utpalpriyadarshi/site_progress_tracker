@@ -36,6 +36,7 @@ import { useDebounce } from '../utils/performance';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 /**
  * DesignDocumentManagementScreen
@@ -1011,7 +1012,7 @@ const DesignDocumentManagementScreen = () => {
             const siteDocuments = state.data.documents.filter(d => d.siteId === selectedSiteId);
             const totalWeightage = siteDocuments.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
             const remaining = Math.max(0, 100 - totalWeightage);
-            const barColor = totalWeightage > 100 ? '#F44336' : totalWeightage > 80 ? '#FF9800' : '#4CAF50';
+            const barColor = totalWeightage > 100 ? COLORS.ERROR : totalWeightage > 80 ? COLORS.WARNING : COLORS.SUCCESS;
             const barWidth = Math.min(totalWeightage, 100);
 
             if (siteDocuments.length === 0) return null;
@@ -1362,7 +1363,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#F44336',
+    color: COLORS.ERROR,
   },
   fabGroup: {
     position: 'absolute',
@@ -1396,7 +1397,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   weightageWarning: {
-    color: '#F44336',
+    color: COLORS.ERROR,
     fontWeight: '600',
   },
   weightageHint: {

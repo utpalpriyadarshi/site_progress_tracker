@@ -1,3 +1,4 @@
+import { COLORS } from '../../../theme/colors';
 /**
  * Dashboard Constants
  * Categories, colors, and alert configurations
@@ -13,10 +14,10 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  labor: '#2196F3',
-  material: '#4CAF50',
-  equipment: '#FF9800',
-  other: '#9C27B0',
+  labor: COLORS.INFO,
+  material: COLORS.SUCCESS,
+  equipment: COLORS.WARNING,
+  other: COLORS.STATUS_EVALUATED,
 };
 
 export const ALERT_ICONS: Record<string, string> = {
@@ -28,7 +29,7 @@ export const ALERT_ICONS: Record<string, string> = {
 export const ALERT_COLORS: Record<string, string> = {
   danger: '#ff6b6b',
   warning: '#FFA500',
-  info: '#4CAF50',
+  info: COLORS.SUCCESS,
 };
 
 export const OVERDUE_DAYS = 30;
