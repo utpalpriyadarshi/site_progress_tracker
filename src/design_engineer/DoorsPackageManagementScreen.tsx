@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState } from 'react';
+import React, { useReducer, useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Button } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
@@ -40,6 +40,14 @@ import { useSnackbar } from '../hooks/useSnackbar';
  * - Header compaction
  */
 
+const DOORS_STATUS_DOTS: { key: string; label: string; color: string }[] = [
+  { key: 'pending', label: 'Pending', color: '#FFA500' },
+  { key: 'received', label: 'Received', color: COLORS.INFO },
+  { key: 'reviewed', label: 'Reviewed', color: COLORS.SUCCESS },
+  { key: 'approved', label: 'Approved', color: '#7B1FA2' },
+  { key: 'closed', label: 'Closed', color: '#616161' },
+];
+
 interface DomainItem {
   id: string;
   name: string;
@@ -51,6 +59,29 @@ const DoorsPackageManagementScreen = () => {
   const { announce } = useAccessibility();
   const navigation = useNavigation();
   const { show: showSnackbar, snackbarProps } = useSnackbar();
+
+  const doorsStatusCounts = useMemo(
+    () => state.data.packages.reduce((acc, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+    [state.data.packages]
+  );
+
+  const { avgCompliance, complianceColor, hasCompliance } = useMemo(() => {
+    const compliancePackages = state.data.packages.filter(
+      p => p.compliancePercentage !== undefined && p.compliancePercentage > 0
+    );
+    const avg = compliancePackages.length > 0
+      ? compliancePackages.reduce((sum, p) => sum + (p.compliancePercentage || 0), 0) / compliancePackages.length
+      : 0;
+    return {
+      avgCompliance: avg,
+      complianceColor: avg >= 80 ? COLORS.SUCCESS : avg >= 50 ? COLORS.WARNING : COLORS.ERROR,
+      hasCompliance: compliancePackages.length > 0,
+    };
+  }, [state.data.packages]);
+
   const [closureDialogVisible, setClosureDialogVisible] = useState(false);
   const [closureRemarks, setClosureRemarks] = useState('');
   const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
@@ -354,7 +385,7 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
-  const handleEditPackage = (pkg: DoorsPackage) => {
+  const handleEditPackage = useCallback((pkg: DoorsPackage) => {
     dispatch({
       type: 'SET_FORM',
       payload: {
@@ -368,9 +399,9 @@ const DoorsPackageManagementScreen = () => {
       },
     });
     dispatch({ type: 'OPEN_DIALOG', payload: { editingPackageId: pkg.id } });
-  };
+  }, [dispatch]);
 
-  const handleDeletePackage = async (packageId: string) => {
+  const handleDeletePackage = useCallback(async (packageId: string) => {
     // Check if any RFQs reference this package
     try {
       const rfqCount = await database.collections
@@ -410,9 +441,9 @@ const DoorsPackageManagementScreen = () => {
         },
       },
     ]);
-  };
+  }, [dispatch, showSnackbar]);
 
-  const handleDuplicatePackage = (pkg: DoorsPackage) => {
+  const handleDuplicatePackage = useCallback((pkg: DoorsPackage) => {
     dispatch({
       type: 'SET_FORM',
       payload: {
@@ -426,7 +457,7 @@ const DoorsPackageManagementScreen = () => {
       },
     });
     dispatch({ type: 'OPEN_DIALOG' });
-  };
+  }, [dispatch]);
 
   const handleSelectTemplate = (template: typeof DOORS_PACKAGE_TEMPLATES[number]) => {
     dispatch({
@@ -506,27 +537,27 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
-  const openTransitionDialog = (packageId: string, stage: TransitionStage) => {
+  const openTransitionDialog = useCallback((packageId: string, stage: TransitionStage) => {
     setTransitionPackageId(packageId);
     setTransitionStage(stage);
     setTransitionDialogVisible(true);
-  };
+  }, []);
 
-  const markAsReceived = (packageId: string) => {
+  const markAsReceived = useCallback((packageId: string) => {
     openTransitionDialog(packageId, 'received');
-  };
+  }, [openTransitionDialog]);
 
-  const markAsReviewed = (packageId: string) => {
+  const markAsReviewed = useCallback((packageId: string) => {
     openTransitionDialog(packageId, 'reviewed');
-  };
+  }, [openTransitionDialog]);
 
-  const markAsApproved = (packageId: string) => {
+  const markAsApproved = useCallback((packageId: string) => {
     openTransitionDialog(packageId, 'approved');
-  };
+  }, [openTransitionDialog]);
 
-  const handleClosePackage = (packageId: string) => {
+  const handleClosePackage = useCallback((packageId: string) => {
     openTransitionDialog(packageId, 'closed');
-  };
+  }, [openTransitionDialog]);
 
   const handleTransitionConfirm = async (data: { remarks: string }) => {
     if (!transitionPackageId) return;
@@ -614,13 +645,18 @@ const DoorsPackageManagementScreen = () => {
     }
   };
 
+  const handleSelectPackage = useCallback(
+    (id: string) => dispatch({ type: 'TOGGLE_PACKAGE_SELECTION', payload: { packageId: id } }),
+    [dispatch]
+  );
+
   // Bulk operations
-  const handleLongPress = (packageId: string) => {
+  const handleLongPress = useCallback((packageId: string) => {
     if (!state.ui.bulkSelectMode) {
       dispatch({ type: 'TOGGLE_BULK_MODE' });
       dispatch({ type: 'TOGGLE_PACKAGE_SELECTION', payload: { packageId } });
     }
-  };
+  }, [state.ui.bulkSelectMode, dispatch]);
 
   const handleBulkMarkReceived = async () => {
     const selectedIds = state.ui.selectedPackageIds;
@@ -669,6 +705,23 @@ const DoorsPackageManagementScreen = () => {
   const handleDismissDialog = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
+
+  const renderItem = useCallback(({ item }: { item: DoorsPackage }) => (
+    <DoorsPackageCard
+      package={item}
+      onMarkReceived={markAsReceived}
+      onMarkReviewed={markAsReviewed}
+      onApprove={markAsApproved}
+      onClose={handleClosePackage}
+      onEdit={handleEditPackage}
+      onDelete={handleDeletePackage}
+      onDuplicate={handleDuplicatePackage}
+      bulkSelectMode={state.ui.bulkSelectMode}
+      isSelected={state.ui.selectedPackageIds.includes(item.id)}
+      onSelect={handleSelectPackage}
+      onLongPress={handleLongPress}
+    />
+  ), [markAsReceived, markAsReviewed, markAsApproved, handleClosePackage, handleEditPackage, handleDeletePackage, handleDuplicatePackage, handleSelectPackage, handleLongPress, state.ui.bulkSelectMode, state.ui.selectedPackageIds]);
 
   // Render appropriate empty state
   const renderEmptyState = () => {
@@ -792,53 +845,31 @@ const DoorsPackageManagementScreen = () => {
         </View>
 
         {/* Summary Bar */}
-        {!state.ui.loading && state.data.packages.length > 0 && (() => {
-          const packages = state.data.packages;
-          const compliancePackages = packages.filter(p => p.compliancePercentage !== undefined && p.compliancePercentage > 0);
-          const avgCompliance = compliancePackages.length > 0
-            ? compliancePackages.reduce((sum, p) => sum + (p.compliancePercentage || 0), 0) / compliancePackages.length
-            : 0;
-          const complianceColor = avgCompliance >= 80 ? COLORS.SUCCESS : avgCompliance >= 50 ? COLORS.WARNING : COLORS.ERROR;
-
-          const statusCounts = packages.reduce((acc, p) => {
-            acc[p.status] = (acc[p.status] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-
-          const statusDots: { key: string; label: string; color: string }[] = [
-            { key: 'pending', label: 'Pending', color: '#FFA500' },
-            { key: 'received', label: 'Received', color: COLORS.INFO },
-            { key: 'reviewed', label: 'Reviewed', color: COLORS.SUCCESS },
-            { key: 'approved', label: 'Approved', color: '#7B1FA2' },
-            { key: 'closed', label: 'Closed', color: '#616161' },
-          ];
-
-          return (
-            <View style={styles.summaryBar}>
-              <View style={styles.summaryTopRow}>
-                <Text style={styles.summaryCount}>{packages.length} package{packages.length !== 1 ? 's' : ''}</Text>
-                {compliancePackages.length > 0 && (
-                  <Text style={[styles.summaryCompliance, { color: complianceColor }]}>
-                    Avg Compliance: {avgCompliance.toFixed(0)}%
-                  </Text>
-                )}
-              </View>
-              {compliancePackages.length > 0 && (
-                <View style={styles.summaryBarBg}>
-                  <View style={[styles.summaryBarFill, { width: `${Math.min(avgCompliance, 100)}%`, backgroundColor: complianceColor }]} />
-                </View>
+        {!state.ui.loading && state.data.packages.length > 0 && (
+          <View style={styles.summaryBar}>
+            <View style={styles.summaryTopRow}>
+              <Text style={styles.summaryCount}>{state.data.packages.length} package{state.data.packages.length !== 1 ? 's' : ''}</Text>
+              {hasCompliance && (
+                <Text style={[styles.summaryCompliance, { color: complianceColor }]}>
+                  Avg Compliance: {avgCompliance.toFixed(0)}%
+                </Text>
               )}
-              <View style={styles.summaryStatusRow}>
-                {statusDots.filter(s => statusCounts[s.key]).map(s => (
-                  <View key={s.key} style={styles.summaryStatusItem}>
-                    <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
-                    <Text style={styles.summaryStatusText}>{statusCounts[s.key]} {s.label}</Text>
-                  </View>
-                ))}
-              </View>
             </View>
-          );
-        })()}
+            {hasCompliance && (
+              <View style={styles.summaryBarBg}>
+                <View style={[styles.summaryBarFill, { width: `${Math.min(avgCompliance, 100)}%`, backgroundColor: complianceColor }]} />
+              </View>
+            )}
+            <View style={styles.summaryStatusRow}>
+              {DOORS_STATUS_DOTS.filter(s => doorsStatusCounts[s.key]).map(s => (
+                <View key={s.key} style={styles.summaryStatusItem}>
+                  <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
+                  <Text style={styles.summaryStatusText}>{doorsStatusCounts[s.key]} {s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {state.ui.bulkSelectMode && (
           <View style={styles.bulkBar}>
@@ -872,22 +903,7 @@ const DoorsPackageManagementScreen = () => {
         ) : (
           <FlatList
             data={state.data.filteredPackages}
-            renderItem={({ item }) => (
-              <DoorsPackageCard
-                package={item}
-                onMarkReceived={markAsReceived}
-                onMarkReviewed={markAsReviewed}
-                onApprove={markAsApproved}
-                onClose={handleClosePackage}
-                onEdit={handleEditPackage}
-                onDelete={handleDeletePackage}
-                onDuplicate={handleDuplicatePackage}
-                bulkSelectMode={state.ui.bulkSelectMode}
-                isSelected={state.ui.selectedPackageIds.includes(item.id)}
-                onSelect={(id) => dispatch({ type: 'TOGGLE_PACKAGE_SELECTION', payload: { packageId: id } })}
-                onLongPress={handleLongPress}
-              />
-            )}
+            renderItem={renderItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             accessible
