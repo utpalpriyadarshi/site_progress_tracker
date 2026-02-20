@@ -11,6 +11,7 @@ import { Q } from '@nozbe/watermelondb';
 import RfqService from '../../services/RfqService';
 import { logger } from '../../services/LoggingService';
 import { COLORS } from '../../theme/colors';
+import { useFlatListProps } from '../../hooks/useFlatListProps';
 
 interface VendorQuotesSheetProps {
   visible: boolean;
@@ -32,6 +33,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
   onRfqUpdated,
 }) => {
   const [quotes, setQuotes] = useState<VendorQuote[]>([]);
+  const flatListProps = useFlatListProps<VendorQuote>();
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [addDialogVisible, setAddDialogVisible] = useState(false);
@@ -663,6 +665,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
             </View>
           ) : viewMode === 'list' ? (
             <FlatList
+              {...flatListProps}
               data={quotes}
               renderItem={({ item }) => (
                 <VendorQuoteCard
@@ -672,7 +675,6 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
                   onReject={handleReject}
                 />
               )}
-              keyExtractor={(item) => item.id}
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>

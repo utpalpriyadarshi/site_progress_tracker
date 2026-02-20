@@ -26,6 +26,7 @@ import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
 import { useLogistics } from './context/LogisticsContext';
+import { useFlatListProps } from '../hooks/useFlatListProps';
 
 /**
  * RFQ List Screen
@@ -51,6 +52,7 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
   const [selectedStatus, setSelectedStatus] = useState<'all' | RfqStatus>('all');
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const flatListProps = useFlatListProps<RfqModel>();
 
   // Debounce search for performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -381,9 +383,9 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
 
       {/* RFQ List */}
       <FlatList
+        {...flatListProps}
         data={filteredRfqs}
         renderItem={renderRfqCard}
-        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
         refreshing={loading}

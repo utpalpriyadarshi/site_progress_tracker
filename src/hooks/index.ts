@@ -76,3 +76,6 @@ export type {
 
 // Snackbar hook
 export { useSnackbar } from './useSnackbar';
+
+// FlatList performance hook
+export { useFlatListProps } from './useFlatListProps';

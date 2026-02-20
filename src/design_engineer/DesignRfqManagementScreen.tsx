@@ -25,6 +25,7 @@ import RfqService from '../services/RfqService';
 import { validateRfqTitle, getErrorMessage } from './utils/validation';
 import { COLORS } from '../theme/colors';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { useFlatListProps } from '../hooks/useFlatListProps';
 
 const RFQ_STATUS_DOTS: { key: string; label: string; color: string }[] = [
   { key: 'draft', label: 'Draft', color: COLORS.DISABLED },
@@ -68,6 +69,7 @@ const DesignRfqManagementScreen = () => {
     [state.data.rfqs]
   );
 
+  const flatListProps = useFlatListProps<DesignRfq>();
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [awardDialogVisible, setAwardDialogVisible] = useState(false);
   const [awardRfqId, setAwardRfqId] = useState<string | null>(null);
@@ -860,9 +862,9 @@ const DesignRfqManagementScreen = () => {
           </View>
         ) : (
           <FlatList
+            {...flatListProps}
             data={state.data.filteredRfqs}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             accessible
             accessibilityRole="list"
