@@ -59,6 +59,7 @@ const HindranceReportScreen = () => {
   const {
     hindrances,
     siteItems,
+    isLoading: hindrancesLoading,
     refreshing,
     loadHindrances,
     onRefresh,
@@ -151,6 +152,7 @@ const HindranceReportScreen = () => {
       {/* Hindrances List */}
       <HindranceList
         hindrances={hindrances}
+        loading={hindrancesLoading}
         selectedSiteId={selectedSiteId}
         refreshing={refreshing}
         onRefresh={onRefresh}

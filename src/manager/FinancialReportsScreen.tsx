@@ -15,7 +15,6 @@ import {
   Chip,
   Divider,
   ProgressBar,
-  ActivityIndicator,
 } from 'react-native-paper';
 import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
@@ -26,6 +25,8 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAccessibility } from '../utils/accessibility';
 import { EmptyState } from '../components/common/EmptyState';
+import { SkeletonList } from '../components/common/LoadingState';
+import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
 
 interface FinancialData {
@@ -73,6 +74,7 @@ const FinancialReportsScreen = () => {
   const previousBudgetUtilRef = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [projectInfo, setProjectInfo] = useState<any>(null);
@@ -120,6 +122,7 @@ const FinancialReportsScreen = () => {
 
     try {
       setLoading(true);
+      setLoadError(null);
 
       // Fetch project info from database
       const project = await database.collections.get('projects').find(projectId);
@@ -272,7 +275,7 @@ const FinancialReportsScreen = () => {
       }
     } catch (error) {
       logger.error('[FinancialReports] Error loading financial data', error as Error);
-      Alert.alert('Error', 'Failed to load financial data');
+      setLoadError('Failed to load financial data. Check your connection and try again.');
       announce('Failed to load financial data');
     } finally {
       setLoading(false);
@@ -425,12 +428,11 @@ const FinancialReportsScreen = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Paragraph style={styles.loadingText}>Loading financial data...</Paragraph>
-      </View>
-    );
+    return <SkeletonList count={3} style={styles.skeletonContainer} />;
+  }
+
+  if (loadError) {
+    return <ErrorDisplay message={loadError} onRetry={loadFinancialData} />;
   }
 
   // No project assigned
@@ -580,7 +582,7 @@ const FinancialReportsScreen = () => {
                 styles.marginChip,
                 { backgroundColor: financialData.profitMargin >= 0 ? COLORS.SUCCESS : COLORS.ERROR },
               ]}
-              textStyle={{ color: '#fff', fontWeight: 'bold' }}
+              textStyle={styles.chipTextBold}
             >
               {financialData.profitMargin >= 0 ? '+' : ''}{financialData.profitMargin}%
             </Chip>
@@ -732,15 +734,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+  skeletonContainer: {
+    padding: 16,
+    backgroundColor: COLORS.BACKGROUND,
   },
-  loadingText: {
-    marginTop: 10,
-    color: '#666',
+  chipTextBold: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   header: {
     backgroundColor: '#fff',

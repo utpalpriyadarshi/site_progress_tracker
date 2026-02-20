@@ -6,7 +6,6 @@ import {
   StyleSheet,
   FlatList,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput } from 'react-native-paper';
 import { database } from '../../models/database';
@@ -15,6 +14,8 @@ import { Q } from '@nozbe/watermelondb';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { OfflineIndicator } from '../components/common/OfflineIndicator';
+import { SkeletonList } from '../components/common/LoadingState';
+import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
 
@@ -54,6 +55,8 @@ const PurchaseOrderManagementScreen = () => {
 
   // Centralized state management with useReducer (replaces 13 useState hooks)
   const [state, dispatch] = useReducer(poManagementReducer, initialPOManagementState);
+
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Local search state for debouncing
   const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -119,6 +122,7 @@ const PurchaseOrderManagementScreen = () => {
 
     try {
       dispatch({ type: 'START_LOADING' });
+      setLoadError(null);
       logger.info('[PO] Loading purchase orders for project:', selectedProjectId);
 
       const poCollection = database.collections.get('purchase_orders');
@@ -162,7 +166,7 @@ const PurchaseOrderManagementScreen = () => {
       dispatch({ type: 'SET_PURCHASE_ORDERS', payload: posWithVendors });
     } catch (error) {
       logger.error('[PO] Error loading purchase orders:', error);
-      Alert.alert('Error', 'Failed to load purchase orders');
+      setLoadError('Failed to load purchase orders. Check your connection and try again.');
     } finally {
       dispatch({ type: 'STOP_LOADING' });
     }
@@ -381,6 +385,10 @@ const PurchaseOrderManagementScreen = () => {
     );
   }
 
+  if (loadError) {
+    return <ErrorDisplay message={loadError} onRetry={loadPurchaseOrders} />;
+  }
+
   return (
     <View style={styles.container}>
       {/* Offline Indicator */}
@@ -415,9 +423,7 @@ const PurchaseOrderManagementScreen = () => {
       </View>
 
       {state.ui.loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
+        <SkeletonList count={4} style={styles.listContainer} />
       ) : (
         <FlatList
           data={state.data.filteredPOs}

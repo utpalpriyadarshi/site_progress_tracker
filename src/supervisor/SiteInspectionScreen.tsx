@@ -69,6 +69,7 @@ const SiteInspectionScreen = () => {
   // Data loading hook
   const {
     inspections,
+    loading: inspectionsLoading,
     refreshing,
     reload,
     onRefresh,
@@ -262,6 +263,7 @@ const SiteInspectionScreen = () => {
       {/* Inspection List */}
       <InspectionList
         inspections={inspections}
+        loading={inspectionsLoading}
         refreshing={refreshing}
         onRefresh={onRefresh}
         onEdit={handleEdit}

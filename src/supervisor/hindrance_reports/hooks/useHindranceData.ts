@@ -22,10 +22,12 @@ export const useHindranceData = ({
 }: UseHindranceDataProps) => {
   const [hindrances, setHindrances] = useState<HindranceWithDetails[]>([]);
   const [siteItems, setSiteItems] = useState<ItemModel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Load hindrances for the selected site
   const loadHindrances = async () => {
+    setIsLoading(true);
     try {
       const hindrancesCollection = database.collections.get<HindranceModel>('hindrances');
       const sitesCollection = database.collections.get<SiteModel>('sites');
@@ -75,6 +77,8 @@ export const useHindranceData = ({
         supervisorId,
       });
       onError('Failed to load hindrances');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -151,12 +155,12 @@ export const useHindranceData = ({
     if (selectedSiteId && selectedSiteId !== 'all') {
       loadSiteItems(selectedSiteId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSiteId]);
 
   return {
     hindrances,
     siteItems,
+    isLoading,
     refreshing,
     loadHindrances,
     onRefresh,
