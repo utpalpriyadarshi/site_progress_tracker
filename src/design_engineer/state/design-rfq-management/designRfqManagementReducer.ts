@@ -34,6 +34,9 @@ export interface DesignRfqManagementState {
     selectedRfqIdForQuotes: string | null;
     bulkSelectMode: boolean;
     selectedRfqIds: string[];
+    filterMenuVisible: boolean;
+    award: { visible: boolean; rfqId: string | null; value: string };
+    cancel: { visible: boolean; rfqId: string | null; reason: string };
   };
   data: {
     rfqs: DesignRfq[];
@@ -86,7 +89,21 @@ export type DesignRfqManagementAction =
   // Filter management
   | { type: 'SET_SEARCH_QUERY'; payload: { query: string } }
   | { type: 'SET_FILTER_STATUS'; payload: { status: string | null } }
-  | { type: 'APPLY_FILTERS' };
+  | { type: 'APPLY_FILTERS' }
+
+  // Filter menu
+  | { type: 'OPEN_FILTER_MENU' }
+  | { type: 'CLOSE_FILTER_MENU' }
+
+  // Award dialog
+  | { type: 'OPEN_AWARD_DIALOG'; payload: { rfqId: string } }
+  | { type: 'SET_AWARD_VALUE'; payload: { value: string } }
+  | { type: 'CLOSE_AWARD_DIALOG' }
+
+  // Cancel dialog
+  | { type: 'OPEN_CANCEL_DIALOG'; payload: { rfqId: string } }
+  | { type: 'SET_CANCEL_REASON'; payload: { reason: string } }
+  | { type: 'CLOSE_CANCEL_DIALOG' };
 
 /**
  * Create initial state
@@ -100,6 +117,9 @@ export const createInitialState = (): DesignRfqManagementState => ({
     selectedRfqIdForQuotes: null,
     bulkSelectMode: false,
     selectedRfqIds: [],
+    filterMenuVisible: false,
+    award: { visible: false, rfqId: null, value: '' },
+    cancel: { visible: false, rfqId: null, reason: '' },
   },
   data: {
     rfqs: [],
@@ -430,6 +450,51 @@ export const designRfqManagementReducer = (
           bulkSelectMode: false,
           selectedRfqIds: [],
         },
+      };
+
+    // Filter menu
+    case 'OPEN_FILTER_MENU':
+      return { ...state, ui: { ...state.ui, filterMenuVisible: true } };
+
+    case 'CLOSE_FILTER_MENU':
+      return { ...state, ui: { ...state.ui, filterMenuVisible: false } };
+
+    // Award dialog
+    case 'OPEN_AWARD_DIALOG':
+      return {
+        ...state,
+        ui: { ...state.ui, award: { visible: true, rfqId: action.payload.rfqId, value: '' } },
+      };
+
+    case 'SET_AWARD_VALUE':
+      return {
+        ...state,
+        ui: { ...state.ui, award: { ...state.ui.award, value: action.payload.value } },
+      };
+
+    case 'CLOSE_AWARD_DIALOG':
+      return {
+        ...state,
+        ui: { ...state.ui, award: { visible: false, rfqId: null, value: '' } },
+      };
+
+    // Cancel dialog
+    case 'OPEN_CANCEL_DIALOG':
+      return {
+        ...state,
+        ui: { ...state.ui, cancel: { visible: true, rfqId: action.payload.rfqId, reason: '' } },
+      };
+
+    case 'SET_CANCEL_REASON':
+      return {
+        ...state,
+        ui: { ...state.ui, cancel: { ...state.ui.cancel, reason: action.payload.reason } },
+      };
+
+    case 'CLOSE_CANCEL_DIALOG':
+      return {
+        ...state,
+        ui: { ...state.ui, cancel: { visible: false, rfqId: null, reason: '' } },
       };
 
     default:

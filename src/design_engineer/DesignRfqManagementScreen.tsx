@@ -75,13 +75,6 @@ const DesignRfqManagementScreen = () => {
   );
 
   const flatListProps = useFlatListProps<DesignRfq>();
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-  const [awardDialogVisible, setAwardDialogVisible] = useState(false);
-  const [awardRfqId, setAwardRfqId] = useState<string | null>(null);
-  const [awardedValue, setAwardedValue] = useState('');
-  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
-  const [cancelRfqId, setCancelRfqId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -536,12 +529,11 @@ const DesignRfqManagementScreen = () => {
   }, [state.data.rfqs, engineerId, dispatch, showSnackbar]);
 
   const handleAwardRfq = useCallback((rfqId: string) => {
-    setAwardRfqId(rfqId);
-    setAwardedValue('');
-    setAwardDialogVisible(true);
-  }, []);
+    dispatch({ type: 'OPEN_AWARD_DIALOG', payload: { rfqId } });
+  }, [dispatch]);
 
   const confirmAwardRfq = async () => {
+    const { rfqId: awardRfqId, value: awardedValue } = state.ui.award;
     if (!awardRfqId) return;
 
     const value = parseFloat(awardedValue);
@@ -571,7 +563,7 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      setAwardDialogVisible(false);
+      dispatch({ type: 'CLOSE_AWARD_DIALOG' });
       showSnackbar('RFQ awarded successfully');
     } catch (error) {
       logger.error('[DesignRfq] Error awarding RFQ:', error);
@@ -580,12 +572,11 @@ const DesignRfqManagementScreen = () => {
   };
 
   const handleCancelRfq = useCallback((rfqId: string) => {
-    setCancelRfqId(rfqId);
-    setCancelReason('');
-    setCancelDialogVisible(true);
-  }, []);
+    dispatch({ type: 'OPEN_CANCEL_DIALOG', payload: { rfqId } });
+  }, [dispatch]);
 
   const confirmCancelRfq = async () => {
+    const { rfqId: cancelRfqId, reason: cancelReason } = state.ui.cancel;
     if (!cancelRfqId) return;
 
     try {
@@ -599,7 +590,7 @@ const DesignRfqManagementScreen = () => {
         });
       }
 
-      setCancelDialogVisible(false);
+      dispatch({ type: 'CLOSE_CANCEL_DIALOG' });
       showSnackbar('RFQ cancelled');
     } catch (error: any) {
       logger.error('[DesignRfq] Error cancelling RFQ:', error);
@@ -789,7 +780,7 @@ const DesignRfqManagementScreen = () => {
             <Chip
               mode={state.filters.status ? 'flat' : 'outlined'}
               selected={state.filters.status !== null}
-              onPress={() => setFilterMenuVisible(true)}
+              onPress={() => dispatch({ type: 'OPEN_FILTER_MENU' })}
               style={styles.filterChip}
               accessible
               accessibilityRole="button"
@@ -925,8 +916,8 @@ const DesignRfqManagementScreen = () => {
 
         <Portal>
           <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
+            visible={state.ui.filterMenuVisible}
+            onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
             anchor={{ x: 0, y: 0 }}
             accessibilityLabel="Status filter menu"
           >
@@ -942,7 +933,7 @@ const DesignRfqManagementScreen = () => {
                 key={item.key}
                 onPress={() => {
                   dispatch({ type: 'SET_FILTER_STATUS', payload: { status: item.key } });
-                  setFilterMenuVisible(false);
+                  dispatch({ type: 'CLOSE_FILTER_MENU' });
                 }}
                 title={item.title}
               />
@@ -951,35 +942,35 @@ const DesignRfqManagementScreen = () => {
         </Portal>
 
         <Portal>
-          <Dialog visible={awardDialogVisible} onDismiss={() => setAwardDialogVisible(false)}>
+          <Dialog visible={state.ui.award.visible} onDismiss={() => dispatch({ type: 'CLOSE_AWARD_DIALOG' })}>
             <Dialog.Title>Award RFQ</Dialog.Title>
             <Dialog.Content>
               <Paragraph>Enter the awarded value for this RFQ.</Paragraph>
               <TextInput
                 label="Awarded Value"
-                value={awardedValue}
-                onChangeText={setAwardedValue}
+                value={state.ui.award.value}
+                onChangeText={(v) => dispatch({ type: 'SET_AWARD_VALUE', payload: { value: v } })}
                 mode="outlined"
                 keyboardType="numeric"
                 style={{ marginTop: 8 }}
               />
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setAwardDialogVisible(false)}>Cancel</Button>
+              <Button onPress={() => dispatch({ type: 'CLOSE_AWARD_DIALOG' })}>Cancel</Button>
               <Button onPress={confirmAwardRfq}>Award</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
 
         <Portal>
-          <Dialog visible={cancelDialogVisible} onDismiss={() => setCancelDialogVisible(false)}>
+          <Dialog visible={state.ui.cancel.visible} onDismiss={() => dispatch({ type: 'CLOSE_CANCEL_DIALOG' })}>
             <Dialog.Title>Cancel RFQ</Dialog.Title>
             <Dialog.Content>
               <Paragraph>Are you sure you want to cancel this RFQ?</Paragraph>
               <TextInput
                 label="Reason (optional)"
-                value={cancelReason}
-                onChangeText={setCancelReason}
+                value={state.ui.cancel.reason}
+                onChangeText={(v) => dispatch({ type: 'SET_CANCEL_REASON', payload: { reason: v } })}
                 mode="outlined"
                 multiline
                 numberOfLines={3}
@@ -987,7 +978,7 @@ const DesignRfqManagementScreen = () => {
               />
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setCancelDialogVisible(false)}>Back</Button>
+              <Button onPress={() => dispatch({ type: 'CLOSE_CANCEL_DIALOG' })}>Back</Button>
               <Button onPress={confirmCancelRfq} textColor={COLORS.ERROR}>Cancel RFQ</Button>
             </Dialog.Actions>
           </Dialog>
