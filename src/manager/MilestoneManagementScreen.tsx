@@ -18,7 +18,6 @@ import {
   Portal,
   TextInput,
   ProgressBar,
-  ActivityIndicator,
   DataTable,
   Checkbox,
   Text,
@@ -30,6 +29,8 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAccessibility } from '../utils/accessibility';
 import { EmptyState } from '../components/common/EmptyState';
+import { SkeletonList } from '../components/common/LoadingState';
+import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
 
 interface Milestone {
@@ -72,6 +73,7 @@ const MilestoneManagementScreen = () => {
   const previousMilestoneCountRef = useRef<number>(0);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [projectInfo, setProjectInfo] = useState<any>(null);
 
@@ -98,7 +100,7 @@ const MilestoneManagementScreen = () => {
   const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
 
   // Batch Approval State
-  const [batchApprovalMode, setBatchApprovalMode] = useState(false);
+  const [_batchApprovalMode, _setBatchApprovalMode] = useState(false);
   const [batchApprovalDialogVisible, setBatchApprovalDialogVisible] = useState(false);
   const [batchSelectedMilestone, setBatchSelectedMilestone] = useState<MilestoneWithProgress | null>(null);
   const [selectedSitesForApproval, setSelectedSitesForApproval] = useState<Set<string>>(new Set());
@@ -117,6 +119,7 @@ const MilestoneManagementScreen = () => {
 
     try {
       setLoading(true);
+      setLoadError(null);
 
       // Fetch project info from database
       const project = await database.collections.get('projects').find(projectId);
@@ -222,7 +225,7 @@ const MilestoneManagementScreen = () => {
       }
     } catch (error) {
       logger.error('[MilestoneManagement] Error loading data', error as Error);
-      Alert.alert('Error', 'Failed to load milestone data');
+      setLoadError('Failed to load milestone data. Check your connection and try again.');
       announce('Failed to load milestone data');
     } finally {
       setLoading(false);
@@ -528,7 +531,7 @@ const MilestoneManagementScreen = () => {
                   styles.milestoneCodeChip,
                   { backgroundColor: milestone.isCustom ? COLORS.STATUS_EVALUATED : COLORS.INFO },
                 ]}
-                textStyle={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}
+                textStyle={styles.chipCodeText}
               >
                 {milestone.milestoneCode}
               </Chip>
@@ -536,7 +539,7 @@ const MilestoneManagementScreen = () => {
             </View>
             <Chip
               style={styles.weightageChip}
-              textStyle={{ color: '#666', fontSize: 11 }}
+              textStyle={styles.chipWeightText}
             >
               {milestone.weightage}%
             </Chip>
@@ -651,7 +654,7 @@ const MilestoneManagementScreen = () => {
                         styles.timelineItemStatus,
                         { backgroundColor: getStatusColor(sp.status) },
                       ]}
-                      textStyle={{ color: '#fff', fontSize: 10 }}
+                      textStyle={styles.chipSmallText}
                     >
                       {sp.status.replace('_', ' ').toUpperCase()}
                     </Chip>
@@ -683,12 +686,11 @@ const MilestoneManagementScreen = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Paragraph style={styles.loadingText}>Loading milestones...</Paragraph>
-      </View>
-    );
+    return <SkeletonList count={4} style={styles.skeletonContainer} />;
+  }
+
+  if (loadError) {
+    return <ErrorDisplay message={loadError} onRetry={loadData} />;
   }
 
   return (
@@ -862,7 +864,7 @@ const MilestoneManagementScreen = () => {
                           styles.statusChip,
                           { backgroundColor: getStatusColor(sp.status) },
                         ]}
-                        textStyle={{ color: '#fff', fontSize: 10 }}
+                        textStyle={styles.chipSmallText}
                       >
                         {sp.status.replace('_', ' ').toUpperCase()}
                       </Chip>
@@ -985,15 +987,22 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+  skeletonContainer: {
+    padding: 16,
+    backgroundColor: COLORS.BACKGROUND,
   },
-  loadingText: {
-    marginTop: 10,
+  chipCodeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  chipWeightText: {
     color: '#666',
+    fontSize: 11,
+  },
+  chipSmallText: {
+    color: '#fff',
+    fontSize: 10,
   },
   header: {
     backgroundColor: '#fff',

@@ -9,14 +9,12 @@ import {
 import {
   Card,
   Title,
-  Paragraph,
   Button,
   Chip,
   Portal,
   Dialog,
   Divider,
   Text,
-  IconButton,
   Searchbar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -35,6 +33,8 @@ import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
+import { SkeletonList } from '../components/common/LoadingState';
+import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { useDebounce } from '../hooks';
 import type { SupervisorDrawerParamList } from '../nav/SupervisorDrawerNavigator';
 import { PdfStatusChip } from '../components/PdfStatusChip';
@@ -52,6 +52,8 @@ const ReportsHistoryScreen = () => {
   const { selectedSiteId, supervisorId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
   const navigation = useNavigation<DrawerNavigationProp<SupervisorDrawerParamList>>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [filteredReports, setFilteredReports] = useState<ReportWithDetails[]>([]);
@@ -63,6 +65,7 @@ const ReportsHistoryScreen = () => {
 
   // Load reports
   const loadReports = async () => {
+    setLoadError(null);
     try {
       const reportsCollection = database.collections.get<DailyReportModel>('daily_reports');
       const sitesCollection = database.collections.get<SiteModel>('sites');
@@ -131,7 +134,10 @@ const ReportsHistoryScreen = () => {
         supervisorId,
         selectedSiteId,
       });
-      showSnackbar('Failed to load reports', 'error');
+      setLoadError('Failed to load reports. Check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -195,6 +201,7 @@ const ReportsHistoryScreen = () => {
 
   useEffect(() => {
     loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supervisorId, selectedSiteId]);
 
   // Phase B: Subscribe to report updates to refresh UI when PDF status changes
@@ -210,11 +217,13 @@ const ReportsHistoryScreen = () => {
       });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supervisorId, selectedSiteId]);
 
   // Apply filters when date filter or debounced search changes (optimized for performance)
   useEffect(() => {
     applyFilters(reports, dateFilter, debouncedSearchQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter, debouncedSearchQuery]);
 
   const onRefresh = async () => {
@@ -417,6 +426,14 @@ const ReportsHistoryScreen = () => {
     } as any);
   };
 
+  if (isLoading) {
+    return <SkeletonList count={5} style={styles.skeletonContainer} />;
+  }
+
+  if (loadError) {
+    return <ErrorDisplay message={loadError} onRetry={loadReports} />;
+  }
+
   return (
     <View style={styles.container}>
       <SupervisorHeader title="Reports History" />
@@ -541,11 +558,8 @@ const ReportsHistoryScreen = () => {
                     />
                     <Chip
                       icon={getSyncStatusIcon(report.appSyncStatus)}
-                      style={{
-                        backgroundColor: getSyncStatusColor(report.appSyncStatus),
-                        marginLeft: 8,
-                      }}
-                      textStyle={{ color: 'white' }}
+                      style={[styles.syncChip, { backgroundColor: getSyncStatusColor(report.appSyncStatus) }]}
+                      textStyle={styles.syncChipText}
                     >
                       {report.appSyncStatus}
                     </Chip>
@@ -728,7 +742,7 @@ const ReportsHistoryScreen = () => {
                 </Button>
               </>
             ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+              <View style={styles.pdfStatusRow}>
                 {selectedReport?.report && (
                   <PdfStatusChip
                     status={selectedReport.report.pdfGenerationStatus}
@@ -738,7 +752,7 @@ const ReportsHistoryScreen = () => {
                   />
                 )}
                 {selectedReport?.report.pdfGenerationStatus === 'failed' && (
-                  <Text style={{ color: '#999', fontSize: 11, marginLeft: 8 }}>
+                  <Text style={styles.pdfHintText}>
                     Tap chip to retry
                   </Text>
                 )}
@@ -756,6 +770,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  skeletonContainer: {
+    padding: 16,
+    backgroundColor: COLORS.BACKGROUND,
+  },
+  syncChip: {
+    marginLeft: 8,
+  },
+  syncChipText: {
+    color: 'white',
+  },
+  pdfStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  pdfHintText: {
+    color: '#999',
+    fontSize: 11,
+    marginLeft: 8,
   },
   searchBar: {
     margin: 16,
