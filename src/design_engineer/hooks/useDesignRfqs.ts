@@ -4,6 +4,8 @@ import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { DesignRfq, DoorsPackage } from '../types/DesignRfqTypes';
+import DoorsPackageModel from '../../../models/DoorsPackageModel';
+import RfqModel from '../../../models/RfqModel';
 
 export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
   const [rfqs, setRfqs] = useState<DesignRfq[]>([]);
@@ -19,12 +21,16 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
     if (!projectId) return;
 
     try {
-      const doorsCollection = database.collections.get('doors_packages');
+      const doorsCollection = database.collections.get<DoorsPackageModel>('doors_packages');
       const packagesData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
 
-      const packagesList = packagesData.map((pkg: any) => ({
+      const packagesList = packagesData.map((pkg: DoorsPackageModel) => ({
         id: pkg.id,
         doorsId: pkg.doorsId,
+        equipmentType: pkg.equipmentType,
+        category: pkg.category,
+        totalRequirements: pkg.totalRequirements,
+        siteName: '',
       }));
 
       setDoorsPackages(packagesList);
@@ -43,12 +49,12 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       setLoading(true);
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqsData = await rfqCollection
         .query(Q.where('project_id', projectId), Q.where('rfq_type', 'design'))
         .fetch();
 
-      const rfqsList = rfqsData.map((rfq: any) => ({
+      const rfqsList = rfqsData.map((rfq: RfqModel) => ({
         id: rfq.id,
         rfqNumber: rfq.rfqNumber,
         doorsId: rfq.doorsId,
@@ -98,7 +104,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
     }
 
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const selectedPackage = doorsPackages.find((p) => p.id === doorsPackageId);
 
       if (!selectedPackage) {
@@ -137,7 +143,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
 
   const issueRfq = async (rfqId: string) => {
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
 
       await database.write(async () => {
@@ -157,7 +163,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
 
   const markQuotesReceived = async (rfqId: string) => {
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
 
       await database.write(async () => {

@@ -7,6 +7,9 @@ import EvaluateQuoteDialog from './EvaluateQuoteDialog';
 import { VendorQuote, Vendor, QuoteComparison } from '../types/VendorQuoteTypes';
 import { DesignRfq } from '../types/DesignRfqTypes';
 import { database } from '../../../models/database';
+import RfqVendorQuoteModel from '../../../models/RfqVendorQuoteModel';
+import VendorModel from '../../../models/VendorModel';
+import DoorsPackageModel from '../../../models/DoorsPackageModel';
 import { Q } from '@nozbe/watermelondb';
 import RfqService from '../../services/RfqService';
 import { logger } from '../../services/LoggingService';
@@ -58,10 +61,10 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     if (!rfq) return;
     setLoading(true);
     try {
-      const quotesData = await RfqService.getQuotesForRfq(rfq.id);
+      const quotesData: RfqVendorQuoteModel[] = await RfqService.getQuotesForRfq(rfq.id);
       const vendorMap = new Map(vendors.map((v) => [v.id, v]));
 
-      const quotesList: VendorQuote[] = quotesData.map((q: any) => ({
+      const quotesList: VendorQuote[] = quotesData.map((q: RfqVendorQuoteModel) => ({
         id: q.id,
         rfqId: q.rfqId,
         vendorId: q.vendorId,
@@ -121,9 +124,9 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         quotes: analysis.quotes.map((a) => ({
           quote: {
             id: a.quote.id,
-            rfqId: (a.quote as any).rfqId,
-            vendorId: (a.quote as any).vendorId,
-            vendorName: vendorMap.get((a.quote as any).vendorId)?.vendorName || 'Unknown',
+            rfqId: a.quote.rfqId,
+            vendorId: a.quote.vendorId,
+            vendorName: vendorMap.get(a.quote.vendorId)?.vendorName || 'Unknown',
             quotedPrice: a.quote.quotedPrice,
             currency: a.quote.currency,
             leadTimeDays: a.quote.leadTimeDays,
@@ -183,7 +186,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       let resolvedVendorId = data.vendorId;
       if (!resolvedVendorId && data.vendorName) {
         const newVendor = await database.write(async () => {
-          return await database.collections.get('vendors').create((rec: any) => {
+          return await database.collections.get<VendorModel>('vendors').create((rec: any) => {
             rec.vendorName = data.vendorName;
             rec.category = 'General';
             rec.contactPerson = '';
@@ -211,7 +214,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       });
 
       // Update the latest quote with compliance breakup fields
-      const latestQuotes = await database.collections.get('rfq_vendor_quotes')
+      const latestQuotes = await database.collections.get<RfqVendorQuoteModel>('rfq_vendor_quotes')
         .query(Q.where('rfq_id', rfq.id), Q.where('vendor_id', resolvedVendorId))
         .fetch();
       if (latestQuotes.length > 0) {
@@ -304,7 +307,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   const handleShortlist = async (quoteId: string) => {
     try {
-      const quotesCollection = database.collections.get('rfq_vendor_quotes');
+      const quotesCollection = database.collections.get<RfqVendorQuoteModel>('rfq_vendor_quotes');
       const quoteRecord = await quotesCollection.find(quoteId);
       await database.write(async () => {
         await quoteRecord.update((record: any) => {
@@ -320,7 +323,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   const handleReject = async (quoteId: string) => {
     try {
-      const quotesCollection = database.collections.get('rfq_vendor_quotes');
+      const quotesCollection = database.collections.get<RfqVendorQuoteModel>('rfq_vendor_quotes');
       const quoteRecord = await quotesCollection.find(quoteId);
       await database.write(async () => {
         await quoteRecord.update((record: any) => {
@@ -346,15 +349,15 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
           await RfqService.rankQuotes(rfq.id);
           await loadQuotes();
           // Re-find L1 from refreshed quotes (use DB directly since state may not have updated)
-          const freshQuotes = await RfqService.getQuotesForRfq(rfq.id);
-          const ranked = freshQuotes.find((q: any) => q.rank === 1);
+          const freshQuotes: RfqVendorQuoteModel[] = await RfqService.getQuotesForRfq(rfq.id);
+          const ranked = freshQuotes.find(q => q.rank === 1);
           if (ranked) {
             const vendorMap = new Map(vendors.map((v) => [v.id, v]));
             l1Quote = {
               id: ranked.id,
-              rfqId: (ranked as any).rfqId,
-              vendorId: (ranked as any).vendorId,
-              vendorName: vendorMap.get((ranked as any).vendorId)?.vendorName || 'Unknown Vendor',
+              rfqId: ranked.rfqId,
+              vendorId: ranked.vendorId,
+              vendorName: vendorMap.get(ranked.vendorId)?.vendorName || 'Unknown Vendor',
               quotedPrice: ranked.quotedPrice,
               currency: ranked.currency,
               leadTimeDays: ranked.leadTimeDays,
@@ -390,7 +393,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               // Write compliance breakup back to DOORS package
               if (rfq.doorsPackageId) {
                 try {
-                  const doorsCollection = database.collections.get('doors_packages');
+                  const doorsCollection = database.collections.get<DoorsPackageModel>('doors_packages');
                   const doorsPkg = await doorsCollection.find(rfq.doorsPackageId);
 
                   // Calculate per-category percentages from winning quote
@@ -559,7 +562,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               { c: 'siteReqComplied', wc: 'siteReqCompliedWithComments', nc: 'siteReqNotComplied' },
             ][idx];
             const hasData = comparison.quotes.some((cq) => {
-              const q = cq.quote as any;
+              const q = cq.quote as unknown as Record<string, number | undefined>;
               return q[catKeys.c] !== undefined || q[catKeys.wc] !== undefined || q[catKeys.nc] !== undefined;
             });
             if (!hasData) return null;
@@ -569,7 +572,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
                   <Text style={styles.compareLabelText}>{catLabel}</Text>
                 </View>
                 {comparison.quotes.map((cq) => {
-                  const q = cq.quote as any;
+                  const q = cq.quote as unknown as Record<string, number | undefined>;
                   const c = q[catKeys.c] || 0;
                   const wc = q[catKeys.wc] || 0;
                   const nc = q[catKeys.nc] || 0;

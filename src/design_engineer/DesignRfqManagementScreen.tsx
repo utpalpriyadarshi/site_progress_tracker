@@ -12,6 +12,11 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { DesignRfq, DoorsPackage, Domain } from './types/DesignRfqTypes';
+import DomainModel from '../../models/DomainModel';
+import DoorsPackageModel from '../../models/DoorsPackageModel';
+import SiteModel from '../../models/SiteModel';
+import VendorModel from '../../models/VendorModel';
+import RfqModel from '../../models/RfqModel';
 import {
   designRfqManagementReducer,
   createDesignRfqInitialState,
@@ -105,9 +110,9 @@ const DesignRfqManagementScreen = () => {
   const loadDomains = async () => {
     if (!projectId) return;
     try {
-      const domainsCollection = database.collections.get('domains');
+      const domainsCollection = database.collections.get<DomainModel>('domains');
       const domainsData = await domainsCollection.query(Q.where('project_id', projectId)).fetch();
-      const domainsList: Domain[] = domainsData.map((d: any) => ({ id: d.id, name: d.name }));
+      const domainsList: Domain[] = domainsData.map((d: DomainModel) => ({ id: d.id, name: d.name }));
       dispatch({ type: 'SET_DOMAINS', payload: { domains: domainsList } });
     } catch (error) {
       logger.error('[DesignRfq] Error loading domains:', error);
@@ -118,23 +123,23 @@ const DesignRfqManagementScreen = () => {
     if (!projectId) return;
 
     try {
-      const doorsCollection = database.collections.get('doors_packages');
+      const doorsCollection = database.collections.get<DoorsPackageModel>('doors_packages');
       const packagesData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
 
       const packagesList: DoorsPackage[] = await Promise.all(
-        packagesData.map(async (pkg: any) => {
+        packagesData.map(async (pkg: DoorsPackageModel) => {
           let siteName = '';
           if (pkg.siteId) {
             try {
-              const site = await database.collections.get('sites').find(pkg.siteId);
-              siteName = (site as any).name;
+              const site = await database.collections.get<SiteModel>('sites').find(pkg.siteId);
+              siteName = site.name;
             } catch (e) { /* site not found */ }
           }
           let domainName = '';
           if (pkg.domainId) {
             try {
-              const domain = await database.collections.get('domains').find(pkg.domainId);
-              domainName = (domain as any).name;
+              const domain = await database.collections.get<DomainModel>('domains').find(pkg.domainId);
+              domainName = domain.name;
             } catch (e) { /* domain not found */ }
           }
           return {
@@ -160,9 +165,9 @@ const DesignRfqManagementScreen = () => {
 
   const loadVendors = async () => {
     try {
-      const vendorsCollection = database.collections.get('vendors');
+      const vendorsCollection = database.collections.get<VendorModel>('vendors');
       const vendorsData = await vendorsCollection.query().fetch();
-      const vendorsList: Vendor[] = vendorsData.map((v: any) => ({
+      const vendorsList: Vendor[] = vendorsData.map((v: VendorModel) => ({
         id: v.id,
         vendorCode: v.vendorCode,
         vendorName: v.vendorName,
@@ -190,13 +195,13 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'START_LOADING' });
       logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
 
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqsData = await rfqCollection.query(
         Q.where('project_id', projectId),
         Q.where('rfq_type', 'design')
       ).fetch();
 
-      const rfqsList: DesignRfq[] = rfqsData.map((rfq: any) => ({
+      const rfqsList: DesignRfq[] = rfqsData.map((rfq: RfqModel) => ({
         id: rfq.id,
         rfqNumber: rfq.rfqNumber,
         doorsId: rfq.doorsId,
@@ -276,7 +281,7 @@ const DesignRfqManagementScreen = () => {
     }
 
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const selectedPackage = state.data.doorsPackages.find((p) => p.id === doorsPackageId);
       const isEditing = !!state.ui.editingRfqId;
 
@@ -356,26 +361,26 @@ const DesignRfqManagementScreen = () => {
           });
 
           newRfq = {
-            id: (record as any).id,
-            rfqNumber: (record as any).rfqNumber,
-            doorsId: (record as any).doorsId,
-            doorsPackageId: (record as any).doorsPackageId,
-            projectId: (record as any).projectId,
-            title: (record as any).title,
-            description: (record as any).description,
-            status: (record as any).status,
-            rfqType: (record as any).rfqType,
-            issueDate: (record as any).issueDate,
-            closingDate: (record as any).closingDate,
-            evaluationDate: (record as any).evaluationDate,
-            awardDate: (record as any).awardDate,
-            expectedDeliveryDays: (record as any).expectedDeliveryDays,
-            totalVendorsInvited: (record as any).totalVendorsInvited,
-            totalQuotesReceived: (record as any).totalQuotesReceived,
-            winningVendorId: (record as any).winningVendorId,
-            awardedValue: (record as any).awardedValue,
-            createdById: (record as any).createdById,
-            createdAt: (record as any).createdAt,
+            id: record.id,
+            rfqNumber: record.rfqNumber,
+            doorsId: record.doorsId,
+            doorsPackageId: record.doorsPackageId,
+            projectId: record.projectId,
+            title: record.title,
+            description: record.description,
+            status: record.status,
+            rfqType: record.rfqType,
+            issueDate: record.issueDate,
+            closingDate: record.closingDate,
+            evaluationDate: record.evaluationDate,
+            awardDate: record.awardDate,
+            expectedDeliveryDays: record.expectedDeliveryDays,
+            totalVendorsInvited: record.totalVendorsInvited,
+            totalQuotesReceived: record.totalQuotesReceived,
+            winningVendorId: record.winningVendorId,
+            awardedValue: record.awardedValue,
+            createdById: record.createdById,
+            createdAt: record.createdAt,
           };
         });
 
@@ -432,7 +437,7 @@ const DesignRfqManagementScreen = () => {
         style: 'destructive',
         onPress: async () => {
           try {
-            const rfqCollection = database.collections.get('rfqs');
+            const rfqCollection = database.collections.get<RfqModel>('rfqs');
             const record = await rfqCollection.find(rfqId);
             await database.write(async () => {
               await record.markAsDeleted();
@@ -450,7 +455,7 @@ const DesignRfqManagementScreen = () => {
 
   const issueRfq = useCallback(async (rfqId: string) => {
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
 
       await database.write(async () => {
@@ -477,7 +482,7 @@ const DesignRfqManagementScreen = () => {
 
   const markQuotesReceived = useCallback(async (rfqId: string) => {
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
 
       await database.write(async () => {
@@ -503,7 +508,7 @@ const DesignRfqManagementScreen = () => {
 
   const evaluateRfq = useCallback(async (rfqId: string) => {
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
       const now = Date.now();
 
@@ -546,7 +551,7 @@ const DesignRfqManagementScreen = () => {
     }
 
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqRecord = await rfqCollection.find(awardRfqId);
       const now = Date.now();
 
@@ -635,7 +640,7 @@ const DesignRfqManagementScreen = () => {
     }
 
     try {
-      const rfqCollection = database.collections.get('rfqs');
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const now = Date.now();
 
       await database.write(async () => {
