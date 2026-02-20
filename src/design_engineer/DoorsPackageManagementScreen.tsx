@@ -25,6 +25,7 @@ import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { useFlatListProps } from '../hooks/useFlatListProps';
 
 /**
  * DoorsPackageManagementScreen (v6.0 - Sprint 1)
@@ -82,6 +83,7 @@ const DoorsPackageManagementScreen = () => {
     };
   }, [state.data.packages]);
 
+  const flatListProps = useFlatListProps<DoorsPackage>();
   const [closureDialogVisible, setClosureDialogVisible] = useState(false);
   const [closureRemarks, setClosureRemarks] = useState('');
   const [closurePackageId, setClosurePackageId] = useState<string | null>(null);
@@ -902,9 +904,9 @@ const DoorsPackageManagementScreen = () => {
           </View>
         ) : (
           <FlatList
+            {...flatListProps}
             data={state.data.filteredPackages}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             accessible
             accessibilityRole="list"

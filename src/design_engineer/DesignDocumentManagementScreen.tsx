@@ -38,6 +38,7 @@ import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { useFlatListProps } from '../hooks/useFlatListProps';
 
 /**
  * DesignDocumentManagementScreen
@@ -63,6 +64,7 @@ const DesignDocumentManagementScreen = () => {
     ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
   >(null);
   const { show: showSnackbar, snackbarProps } = useSnackbar();
+  const flatListProps = useFlatListProps<DesignDocument>();
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
   const [moveDialogVisible, setMoveDialogVisible] = useState(false);
   const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
@@ -1151,6 +1153,7 @@ const DesignDocumentManagementScreen = () => {
           </View>
         ) : (
           <FlatList
+            {...flatListProps}
             data={state.data.filteredDocuments}
             renderItem={({ item }) => (
               <DesignDocumentCard
@@ -1173,7 +1176,6 @@ const DesignDocumentManagementScreen = () => {
                 onMove={handleMoveDocument}
               />
             )}
-            keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             accessible
             accessibilityRole="list"
