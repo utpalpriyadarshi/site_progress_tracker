@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState, useCallback } from 'react';
+import React, { useReducer, useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
@@ -26,6 +26,15 @@ import { validateRfqTitle, getErrorMessage } from './utils/validation';
 import { COLORS } from '../theme/colors';
 import { useSnackbar } from '../hooks/useSnackbar';
 
+const RFQ_STATUS_DOTS: { key: string; label: string; color: string }[] = [
+  { key: 'draft', label: 'Draft', color: COLORS.DISABLED },
+  { key: 'issued', label: 'Issued', color: COLORS.INFO },
+  { key: 'quotes_received', label: 'Quotes Recd', color: COLORS.WARNING },
+  { key: 'evaluated', label: 'Evaluated', color: COLORS.STATUS_EVALUATED },
+  { key: 'awarded', label: 'Awarded', color: COLORS.SUCCESS },
+  { key: 'cancelled', label: 'Cancelled', color: COLORS.ERROR },
+];
+
 /**
  * DesignRfqManagementScreen (v6.0 - Sprint 1)
  *
@@ -43,6 +52,22 @@ const DesignRfqManagementScreen = () => {
   const { announce } = useAccessibility();
   const navigation = useNavigation();
   const { show: showSnackbar, snackbarProps } = useSnackbar();
+
+  const rfqStatusCounts = useMemo(
+    () => state.data.rfqs.reduce((acc, r) => {
+      acc[r.status] = (acc[r.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+    [state.data.rfqs]
+  );
+
+  const totalAwardedValue = useMemo(
+    () => state.data.rfqs
+      .filter(r => r.status === 'awarded' && r.awardedValue)
+      .reduce((sum, r) => sum + (r.awardedValue || 0), 0),
+    [state.data.rfqs]
+  );
+
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [awardDialogVisible, setAwardDialogVisible] = useState(false);
   const [awardRfqId, setAwardRfqId] = useState<string | null>(null);
@@ -369,7 +394,7 @@ const DesignRfqManagementScreen = () => {
     }
   };
 
-  const handleEditRfq = (rfq: DesignRfq) => {
+  const handleEditRfq = useCallback((rfq: DesignRfq) => {
     dispatch({
       type: 'SET_FORM',
       payload: {
@@ -381,9 +406,9 @@ const DesignRfqManagementScreen = () => {
       },
     });
     dispatch({ type: 'OPEN_DIALOG', payload: { editingRfqId: rfq.id } });
-  };
+  }, [dispatch]);
 
-  const handleDuplicateRfq = (rfq: DesignRfq) => {
+  const handleDuplicateRfq = useCallback((rfq: DesignRfq) => {
     dispatch({
       type: 'SET_FORM',
       payload: {
@@ -395,9 +420,9 @@ const DesignRfqManagementScreen = () => {
       },
     });
     dispatch({ type: 'OPEN_DIALOG' });
-  };
+  }, [dispatch]);
 
-  const handleDeleteRfq = async (rfqId: string) => {
+  const handleDeleteRfq = useCallback(async (rfqId: string) => {
     Alert.alert('Confirm Delete', 'Are you sure you want to delete this Design RFQ?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -419,9 +444,9 @@ const DesignRfqManagementScreen = () => {
         },
       },
     ]);
-  };
+  }, [dispatch, showSnackbar]);
 
-  const issueRfq = async (rfqId: string) => {
+  const issueRfq = useCallback(async (rfqId: string) => {
     try {
       const rfqCollection = database.collections.get('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
@@ -446,9 +471,9 @@ const DesignRfqManagementScreen = () => {
       logger.error('[DesignRfq] Error issuing RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
-  };
+  }, [state.data.rfqs, dispatch, showSnackbar]);
 
-  const markQuotesReceived = async (rfqId: string) => {
+  const markQuotesReceived = useCallback(async (rfqId: string) => {
     try {
       const rfqCollection = database.collections.get('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
@@ -472,9 +497,9 @@ const DesignRfqManagementScreen = () => {
       logger.error('[DesignRfq] Error updating RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
-  };
+  }, [state.data.rfqs, dispatch, showSnackbar]);
 
-  const evaluateRfq = async (rfqId: string) => {
+  const evaluateRfq = useCallback(async (rfqId: string) => {
     try {
       const rfqCollection = database.collections.get('rfqs');
       const rfqRecord = await rfqCollection.find(rfqId);
@@ -501,13 +526,13 @@ const DesignRfqManagementScreen = () => {
       logger.error('[DesignRfq] Error evaluating RFQ:', error);
       Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
     }
-  };
+  }, [state.data.rfqs, engineerId, dispatch, showSnackbar]);
 
-  const handleAwardRfq = (rfqId: string) => {
+  const handleAwardRfq = useCallback((rfqId: string) => {
     setAwardRfqId(rfqId);
     setAwardedValue('');
     setAwardDialogVisible(true);
-  };
+  }, []);
 
   const confirmAwardRfq = async () => {
     if (!awardRfqId) return;
@@ -547,11 +572,11 @@ const DesignRfqManagementScreen = () => {
     }
   };
 
-  const handleCancelRfq = (rfqId: string) => {
+  const handleCancelRfq = useCallback((rfqId: string) => {
     setCancelRfqId(rfqId);
     setCancelReason('');
     setCancelDialogVisible(true);
-  };
+  }, []);
 
   const confirmCancelRfq = async () => {
     if (!cancelRfqId) return;
@@ -575,21 +600,26 @@ const DesignRfqManagementScreen = () => {
     }
   };
 
-  const handleViewQuotes = (rfqId: string) => {
+  const handleViewQuotes = useCallback((rfqId: string) => {
     dispatch({ type: 'OPEN_QUOTES_SHEET', payload: { rfqId } });
-  };
+  }, [dispatch]);
 
   const handleQuotesRfqUpdated = (updatedRfq: DesignRfq) => {
     dispatch({ type: 'UPDATE_RFQ', payload: { rfq: updatedRfq } });
   };
 
+  const handleSelectRfq = useCallback(
+    (id: string) => dispatch({ type: 'TOGGLE_RFQ_SELECTION', payload: { rfqId: id } }),
+    [dispatch]
+  );
+
   // Bulk operations
-  const handleLongPress = (rfqId: string) => {
+  const handleLongPress = useCallback((rfqId: string) => {
     if (!state.ui.bulkSelectMode) {
       dispatch({ type: 'TOGGLE_BULK_MODE' });
       dispatch({ type: 'TOGGLE_RFQ_SELECTION', payload: { rfqId } });
     }
-  };
+  }, [state.ui.bulkSelectMode, dispatch]);
 
   const handleBulkIssue = async () => {
     const selectedIds = state.ui.selectedRfqIds;
@@ -638,6 +668,25 @@ const DesignRfqManagementScreen = () => {
   const handleDismissDialog = () => {
     dispatch({ type: 'CLOSE_DIALOG' });
   };
+
+  const renderItem = useCallback(({ item }: { item: DesignRfq }) => (
+    <DesignRfqCard
+      rfq={item}
+      onIssue={issueRfq}
+      onMarkQuotesReceived={markQuotesReceived}
+      onEvaluate={evaluateRfq}
+      onAward={handleAwardRfq}
+      onCancel={handleCancelRfq}
+      onEdit={handleEditRfq}
+      onDelete={handleDeleteRfq}
+      onDuplicate={handleDuplicateRfq}
+      onViewQuotes={handleViewQuotes}
+      bulkSelectMode={state.ui.bulkSelectMode}
+      isSelected={state.ui.selectedRfqIds.includes(item.id)}
+      onSelect={handleSelectRfq}
+      onLongPress={handleLongPress}
+    />
+  ), [issueRfq, markQuotesReceived, evaluateRfq, handleAwardRfq, handleCancelRfq, handleEditRfq, handleDeleteRfq, handleDuplicateRfq, handleViewQuotes, handleSelectRfq, handleLongPress, state.ui.bulkSelectMode, state.ui.selectedRfqIds]);
 
   // Render appropriate empty state
   const renderEmptyState = () => {
@@ -759,47 +808,26 @@ const DesignRfqManagementScreen = () => {
         </View>
 
         {/* Summary Bar */}
-        {!state.ui.loading && state.data.rfqs.length > 0 && (() => {
-          const rfqs = state.data.rfqs;
-          const statusCounts = rfqs.reduce((acc, r) => {
-            acc[r.status] = (acc[r.status] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-
-          const totalAwarded = rfqs
-            .filter(r => r.status === 'awarded' && r.awardedValue)
-            .reduce((sum, r) => sum + (r.awardedValue || 0), 0);
-
-          const statusDots: { key: string; label: string; color: string }[] = [
-            { key: 'draft', label: 'Draft', color: COLORS.DISABLED },
-            { key: 'issued', label: 'Issued', color: COLORS.INFO },
-            { key: 'quotes_received', label: 'Quotes Recd', color: COLORS.WARNING },
-            { key: 'evaluated', label: 'Evaluated', color: COLORS.STATUS_EVALUATED },
-            { key: 'awarded', label: 'Awarded', color: COLORS.SUCCESS },
-            { key: 'cancelled', label: 'Cancelled', color: COLORS.ERROR },
-          ];
-
-          return (
-            <View style={styles.summaryBar}>
-              <View style={styles.summaryTopRow}>
-                <Text style={styles.summaryCount}>{rfqs.length} RFQ{rfqs.length !== 1 ? 's' : ''}</Text>
-                {totalAwarded > 0 && (
-                  <Text style={styles.summaryAwarded}>
-                    Awarded: {'\u20B9'}{totalAwarded.toLocaleString('en-IN')}
-                  </Text>
-                )}
-              </View>
-              <View style={styles.summaryStatusRow}>
-                {statusDots.filter(s => statusCounts[s.key]).map(s => (
-                  <View key={s.key} style={styles.summaryStatusItem}>
-                    <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
-                    <Text style={styles.summaryStatusText}>{statusCounts[s.key]} {s.label}</Text>
-                  </View>
-                ))}
-              </View>
+        {!state.ui.loading && state.data.rfqs.length > 0 && (
+          <View style={styles.summaryBar}>
+            <View style={styles.summaryTopRow}>
+              <Text style={styles.summaryCount}>{state.data.rfqs.length} RFQ{state.data.rfqs.length !== 1 ? 's' : ''}</Text>
+              {totalAwardedValue > 0 && (
+                <Text style={styles.summaryAwarded}>
+                  Awarded: {'\u20B9'}{totalAwardedValue.toLocaleString('en-IN')}
+                </Text>
+              )}
             </View>
-          );
-        })()}
+            <View style={styles.summaryStatusRow}>
+              {RFQ_STATUS_DOTS.filter(s => rfqStatusCounts[s.key]).map(s => (
+                <View key={s.key} style={styles.summaryStatusItem}>
+                  <View style={[styles.summaryDot, { backgroundColor: s.color }]} />
+                  <Text style={styles.summaryStatusText}>{rfqStatusCounts[s.key]} {s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {state.ui.bulkSelectMode && (
           <View style={styles.bulkBar}>
@@ -833,24 +861,7 @@ const DesignRfqManagementScreen = () => {
         ) : (
           <FlatList
             data={state.data.filteredRfqs}
-            renderItem={({ item }) => (
-              <DesignRfqCard
-                rfq={item}
-                onIssue={issueRfq}
-                onMarkQuotesReceived={markQuotesReceived}
-                onEvaluate={evaluateRfq}
-                onAward={handleAwardRfq}
-                onCancel={handleCancelRfq}
-                onEdit={handleEditRfq}
-                onDelete={handleDeleteRfq}
-                onDuplicate={handleDuplicateRfq}
-                onViewQuotes={handleViewQuotes}
-                bulkSelectMode={state.ui.bulkSelectMode}
-                isSelected={state.ui.selectedRfqIds.includes(item.id)}
-                onSelect={(id) => dispatch({ type: 'TOGGLE_RFQ_SELECTION', payload: { rfqId: id } })}
-                onLongPress={handleLongPress}
-              />
-            )}
+            renderItem={renderItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             accessible
