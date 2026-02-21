@@ -259,12 +259,16 @@ const MaterialTrackingScreenComponent = ({
             size={20}
             iconColor="#007AFF"
             onPress={() => openEditDialog(item)}
+            accessibilityLabel="Edit material"
+            accessibilityHint="Double tap to open the edit form"
           />
           <IconButton
             icon="delete"
             size={20}
             iconColor="#FF3B30"
             onPress={() => handleDeleteMaterial(item)}
+            accessibilityLabel="Delete material"
+            accessibilityHint="Double tap to permanently delete this material"
           />
         </View>
       </View>
@@ -329,6 +333,7 @@ const MaterialTrackingScreenComponent = ({
           renderItem={renderMaterial}
           keyExtractor={item => item.id}
           style={styles.list}
+          accessibilityLabel="Materials list"
         />
       )}
 

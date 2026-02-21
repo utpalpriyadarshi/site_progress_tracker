@@ -29,6 +29,7 @@ export const HindranceCard: React.FC<HindranceCardProps> = ({
         <Chip
           style={[styles.priorityChip, { backgroundColor: getPriorityColor(hindrance.priority) }]}
           textStyle={styles.chipText}
+          accessibilityLabel={`Priority: ${hindrance.priority}`}
         >
           {hindrance.priority.toUpperCase()}
         </Chip>
@@ -44,6 +45,7 @@ export const HindranceCard: React.FC<HindranceCardProps> = ({
         <Chip
           style={[styles.statusChip, { backgroundColor: getStatusColor(hindrance.status) }]}
           textStyle={styles.chipText}
+          accessibilityLabel={`Status: ${getStatusLabel(hindrance.status)}`}
         >
           {getStatusLabel(hindrance.status)}
         </Chip>
@@ -60,7 +62,11 @@ export const HindranceCard: React.FC<HindranceCardProps> = ({
         )}
 
         {photos.length > 0 && (
-          <Chip icon="camera" style={styles.photoChip}>
+          <Chip
+            icon="camera"
+            style={styles.photoChip}
+            accessibilityLabel={`${photos.length} photo${photos.length === 1 ? '' : 's'} attached`}
+          >
             {photos.length}
           </Chip>
         )}
