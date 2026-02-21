@@ -31,6 +31,8 @@ export const GANTT_COLORS = {
   borderColor: '#999',
   lightBorder: '#ccc',
   emptyBorder: '#e0e0e0',
+  baseline: '#9E9E9E',        // grey bar for baseline overlay
+  baselineBg: '#9E9E9E33',    // faded fill
 } as const;
 
 // Padding

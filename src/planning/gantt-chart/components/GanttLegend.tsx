@@ -9,9 +9,10 @@ import { GANTT_COLORS } from '../utils/ganttConstants';
 
 interface GanttLegendProps {
   showTodayMarker: boolean;
+  showBaseline?: boolean;
 }
 
-export const GanttLegend: React.FC<GanttLegendProps> = ({ showTodayMarker }) => {
+export const GanttLegend: React.FC<GanttLegendProps> = ({ showTodayMarker, showBaseline = false }) => {
   return (
     <Card style={styles.card}>
       <Card.Content>
@@ -31,6 +32,12 @@ export const GanttLegend: React.FC<GanttLegendProps> = ({ showTodayMarker }) => 
             <View style={styles.legendItem}>
               <View style={[styles.legendBox, { backgroundColor: GANTT_COLORS.today }]} />
               <Text style={styles.legendText}>Today</Text>
+            </View>
+          )}
+          {showBaseline && (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendBox, { backgroundColor: GANTT_COLORS.baseline, opacity: 0.5 }]} />
+              <Text style={styles.legendText}>Baseline</Text>
             </View>
           )}
         </View>

@@ -139,6 +139,43 @@ export const calculateTaskBarLayout = (
 };
 
 /**
+ * Calculate baseline bar position and width (uses baselineStartDate / baselineEndDate)
+ * Returns null if the item has no locked baseline.
+ */
+export const calculateBaselineBarLayout = (
+  item: ItemModel,
+  timelineStart: dayjs.Dayjs,
+  zoomLevel: ZoomLevel
+): TaskBarLayout | null => {
+  if (!item.baselineStartDate || !item.baselineEndDate) return null;
+
+  const baselineStart = dayjs(item.baselineStartDate);
+  const baselineEnd = dayjs(item.baselineEndDate);
+  const columnWidth = COLUMN_WIDTHS[zoomLevel];
+
+  let left = 0;
+  if (zoomLevel === 'day') {
+    left = baselineStart.diff(timelineStart, 'day') * columnWidth;
+  } else if (zoomLevel === 'week') {
+    left = baselineStart.diff(timelineStart, 'week', true) * columnWidth;
+  } else {
+    left = baselineStart.diff(timelineStart, 'month', true) * columnWidth;
+  }
+
+  let width = 0;
+  if (zoomLevel === 'day') {
+    width = baselineEnd.diff(baselineStart, 'day') * columnWidth;
+  } else if (zoomLevel === 'week') {
+    width = baselineEnd.diff(baselineStart, 'week', true) * columnWidth;
+  } else {
+    width = baselineEnd.diff(baselineStart, 'month', true) * columnWidth;
+  }
+
+  width = Math.max(width, MIN_BAR_WIDTH);
+  return { left, width };
+};
+
+/**
  * Calculate today marker position
  */
 export const calculateTodayPosition = (
