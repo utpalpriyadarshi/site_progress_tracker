@@ -68,6 +68,7 @@ interface ProjectStats {
   budgetUtilization: number;
   openHindrances: number;
   pendingApprovals: number;
+  pendingChanges: number;
   deliveryOnTrack: number;
   deliveryDelayed: number;
   criticalPathItemsAtRisk: number;
@@ -197,6 +198,7 @@ const ManagerDashboardScreen = () => {
     budgetUtilization: 0,
     openHindrances: 0,
     pendingApprovals: 0,
+    pendingChanges: 0,
     deliveryOnTrack: 0,
     deliveryDelayed: 0,
     criticalPathItemsAtRisk: 0,
@@ -481,6 +483,18 @@ const ManagerDashboardScreen = () => {
         activeSupervisors = supervisors.length;
       }
 
+      // Count submitted (pending approval) change orders
+      let pendingChanges = 0;
+      try {
+        const changeOrdersCol = database.collections.get('change_orders');
+        const submitted = await changeOrdersCol
+          .query(Q.where('project_id', projectId), Q.where('status', 'submitted'))
+          .fetch();
+        pendingChanges = submitted.length;
+      } catch {
+        // change_orders table may not exist yet on older installs
+      }
+
       setStats({
         overallCompletion,
         sitesOnSchedule,
@@ -488,7 +502,8 @@ const ManagerDashboardScreen = () => {
         totalSites,
         budgetUtilization,
         openHindrances,
-        pendingApprovals: 0, // Placeholder for future implementation
+        pendingApprovals: 0,
+        pendingChanges,
         deliveryOnTrack,
         deliveryDelayed,
         criticalPathItemsAtRisk,
@@ -1650,14 +1665,28 @@ const ManagerDashboardScreen = () => {
 
         {/* Row 4 - Placeholder for future */}
         <View style={styles.kpiRow}>
-          {/* KPI 7: Pending Approvals (Future) */}
+          {/* KPI 7: Pending Change Orders */}
           <Card style={styles.kpiCard}>
             <Card.Content>
-              <Paragraph style={styles.kpiLabel}>Pending Approvals</Paragraph>
-              <Title style={styles.kpiValue}>{stats.pendingApprovals}</Title>
-              <Paragraph style={styles.kpiSubtext}>Coming soon</Paragraph>
+              <Paragraph style={styles.kpiLabel}>Pending Changes</Paragraph>
+              <Title style={styles.kpiValue}>{stats.pendingChanges}</Title>
+              <Paragraph style={styles.kpiSubtext}>
+                {stats.pendingChanges === 0 ? 'None pending' : 'Awaiting approval'}
+              </Paragraph>
               <View style={styles.kpiIndicator}>
-                <View style={[styles.kpiDot, { backgroundColor: COLORS.DISABLED }]} />
+                <View
+                  style={[
+                    styles.kpiDot,
+                    {
+                      backgroundColor:
+                        stats.pendingChanges === 0
+                          ? COLORS.SUCCESS
+                          : stats.pendingChanges <= 3
+                          ? COLORS.WARNING
+                          : COLORS.ERROR,
+                    },
+                  ]}
+                />
               </View>
             </Card.Content>
           </Card>

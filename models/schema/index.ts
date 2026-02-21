@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 48, // Add doors_package_id to design_documents for Doc-DOORS linking
+  version: 49, // Add change_orders table for Manager change order tracking
   tables: [
     tableSchema({
       name: 'projects',
@@ -828,6 +828,26 @@ export default appSchema({
         { name: 'changed_by_id', type: 'string', isIndexed: true },
         { name: 'changed_at', type: 'number', isIndexed: true },
         { name: 'change_summary', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'change_orders',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'impact_cost', type: 'number' },
+        { name: 'impact_days', type: 'number' },
+        { name: 'status', type: 'string', isIndexed: true },
+        { name: 'submitted_by_id', type: 'string', isOptional: true },
+        { name: 'approved_by_id', type: 'string', isOptional: true },
+        { name: 'submitted_at', type: 'number', isOptional: true },
+        { name: 'approved_at', type: 'number', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
       ],
     }),
   ],
