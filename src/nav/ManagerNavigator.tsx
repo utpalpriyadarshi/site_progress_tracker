@@ -9,6 +9,7 @@ import ManagerDashboardScreen from '../manager/ManagerDashboardScreen';
 import TeamPerformanceScreen from '../manager/TeamPerformanceScreen';
 import FinancialReportsScreen from '../manager/FinancialReportsScreen';
 import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
+import ChangeOrdersScreen from '../manager/ChangeOrdersScreen';
 import { useAuth } from '../auth/AuthContext';
 import type { ManagerDrawerParamList } from './ManagerDrawerNavigator';
 import { COLORS } from '../theme/colors';
@@ -29,6 +30,7 @@ export type ManagerTabParamList = {
   TeamPerformance: undefined;
   FinancialReports: undefined;
   Milestones: undefined;
+  ChangeOrders: undefined;
 };
 
 const Tab = createBottomTabNavigator<ManagerTabParamList>();
@@ -81,6 +83,9 @@ const ManagerTabNavigator: React.FC = () => {
         break;
       case 'Milestones':
         iconName = focused ? 'flag-checkered' : 'flag-outline';
+        break;
+      case 'ChangeOrders':
+        iconName = focused ? 'file-document-edit' : 'file-document-edit-outline';
         break;
     }
 
@@ -150,6 +155,15 @@ const ManagerTabNavigator: React.FC = () => {
           title: 'Milestones',
           headerTitle: 'Manager',
           tabBarAccessibilityLabel: 'Milestone Management tab',
+        }}
+      />
+      <Tab.Screen
+        name="ChangeOrders"
+        component={ChangeOrdersScreen}
+        options={{
+          title: 'Changes',
+          headerTitle: 'Manager',
+          tabBarAccessibilityLabel: 'Change Orders tab',
         }}
       />
     </Tab.Navigator>
