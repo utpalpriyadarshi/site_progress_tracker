@@ -6,7 +6,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import ItemModel from '../../../../models/ItemModel';
-import { calculateTaskBarLayout } from '../utils/ganttCalculations';
+import { calculateTaskBarLayout, calculateBaselineBarLayout } from '../utils/ganttCalculations';
 import { ZoomLevel, GANTT_COLORS, TASK_HEIGHT } from '../utils/ganttConstants';
 import dayjs from 'dayjs';
 
@@ -16,6 +16,7 @@ interface TaskBarProps {
   zoomLevel: ZoomLevel;
   totalWidth: number;
   todayPosition: number | null;
+  showBaseline?: boolean;
 }
 
 export const TaskBar: React.FC<TaskBarProps> = ({
@@ -24,8 +25,12 @@ export const TaskBar: React.FC<TaskBarProps> = ({
   zoomLevel,
   totalWidth,
   todayPosition,
+  showBaseline = false,
 }) => {
   const { left, width } = calculateTaskBarLayout(item, timelineStart, zoomLevel);
+  const baselineLayout = showBaseline
+    ? calculateBaselineBarLayout(item, timelineStart, zoomLevel)
+    : null;
   const progress = item.getProgressPercentage();
   const isCritical = item.isOnCriticalPath();
   const phaseColor = item.getPhaseColor();
@@ -35,6 +40,19 @@ export const TaskBar: React.FC<TaskBarProps> = ({
       {/* Today marker */}
       {todayPosition !== null && (
         <View style={[styles.todayMarker, { left: todayPosition }]} />
+      )}
+
+      {/* Baseline bar (rendered first = appears behind current bar) */}
+      {baselineLayout && (
+        <View
+          style={[
+            styles.baselineBar,
+            {
+              left: baselineLayout.left,
+              width: baselineLayout.width,
+            },
+          ]}
+        />
       )}
 
       {/* Task bar */}
@@ -76,6 +94,14 @@ const styles = StyleSheet.create({
   container: {
     height: TASK_HEIGHT,
     position: 'relative',
+  },
+  baselineBar: {
+    position: 'absolute',
+    height: 8,
+    top: 26,
+    borderRadius: 2,
+    backgroundColor: GANTT_COLORS.baseline,
+    opacity: 0.5,
   },
   bar: {
     position: 'absolute',

@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { Text, Card, ActivityIndicator } from 'react-native-paper';
+import { Text, Card, ActivityIndicator, Chip } from 'react-native-paper';
 import SiteModel from '../../models/SiteModel';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -54,6 +54,9 @@ const GanttChartScreen: React.FC = () => {
 
   // State for key dates
   const [keyDates, setKeyDates] = React.useState<KeyDateModel[]>([]);
+
+  // Baseline overlay toggle
+  const [showBaseline, setShowBaseline] = React.useState(false);
 
   // Load items when site changes
   useEffect(() => {
@@ -146,11 +149,22 @@ const GanttChartScreen: React.FC = () => {
 
       {state.selection.selectedSite && (
         <>
-          {/* Zoom Controls */}
-          <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
+          {/* Zoom Controls + Baseline Toggle */}
+          <View style={styles.controlsRow}>
+            <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
+            <Chip
+              selected={showBaseline}
+              icon="chart-timeline-variant"
+              onPress={() => setShowBaseline(v => !v)}
+              style={styles.baselineChip}
+              accessibilityLabel={showBaseline ? 'Hide baseline overlay' : 'Show baseline overlay'}
+            >
+              Baseline
+            </Chip>
+          </View>
 
           {/* Legend */}
-          <GanttLegend showTodayMarker={todayPosition !== null} />
+          <GanttLegend showTodayMarker={todayPosition !== null} showBaseline={showBaseline} />
 
           {/* Gantt Chart */}
           {state.ui.loading ? (
@@ -188,6 +202,7 @@ const GanttChartScreen: React.FC = () => {
                   zoomLevel={state.selection.zoomLevel}
                   totalTimelineWidth={totalTimelineWidth}
                   todayPosition={todayPosition}
+                  showBaseline={showBaseline}
                 />
               ))}
 
@@ -256,6 +271,14 @@ const styles = StyleSheet.create({
   },
   ganttContainer: {
     flex: 1,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
+  baselineChip: {
+    marginLeft: 8,
   },
   keyDateSectionHeader: {
     backgroundColor: '#FFF8E1',

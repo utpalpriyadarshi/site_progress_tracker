@@ -16,6 +16,7 @@ interface TaskRowProps {
   zoomLevel: ZoomLevel;
   totalTimelineWidth: number;
   todayPosition: number | null;
+  showBaseline?: boolean;
 }
 
 export const TaskRow: React.FC<TaskRowProps> = ({
@@ -24,6 +25,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
   zoomLevel,
   totalTimelineWidth,
   todayPosition,
+  showBaseline = false,
 }) => {
   return (
     <View style={styles.wrapper}>
@@ -40,6 +42,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
           zoomLevel={zoomLevel}
           totalWidth={totalTimelineWidth}
           todayPosition={todayPosition}
+          showBaseline={showBaseline}
         />
       </ScrollView>
     </View>
