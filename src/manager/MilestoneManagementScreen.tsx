@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import {
@@ -21,6 +20,7 @@ import {
   DataTable,
   Checkbox,
   Text,
+  Snackbar,
 } from 'react-native-paper';
 import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
@@ -32,6 +32,8 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonList } from '../components/common/LoadingState';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
+import { useSnackbar } from '../hooks/useSnackbar';
+import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 
 interface Milestone {
   id: string;
@@ -105,6 +107,8 @@ const MilestoneManagementScreen = () => {
   const [batchSelectedMilestone, setBatchSelectedMilestone] = useState<MilestoneWithProgress | null>(null);
   const [selectedSitesForApproval, setSelectedSitesForApproval] = useState<Set<string>>(new Set());
   const [batchApproving, setBatchApproving] = useState(false);
+  const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<MilestoneWithProgress | null>(null);
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   useEffect(() => {
     loadData();
@@ -243,13 +247,13 @@ const MilestoneManagementScreen = () => {
     if (!projectId || !projectInfo) return;
 
     if (!newMilestoneName.trim()) {
-      Alert.alert('Validation Error', 'Please enter a milestone name');
+      showSnackbar('Please enter a milestone name');
       return;
     }
 
     const weightage = parseInt(newMilestoneWeightage, 10);
     if (isNaN(weightage) || weightage < 1 || weightage > 100) {
-      Alert.alert('Validation Error', 'Weightage must be between 1 and 100');
+      showSnackbar('Weightage must be between 1 and 100');
       return;
     }
 
@@ -277,7 +281,7 @@ const MilestoneManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Custom milestone added successfully');
+      showSnackbar('Custom milestone added');
       setAddDialogVisible(false);
       setNewMilestoneName('');
       setNewMilestoneDescription('');
@@ -285,16 +289,13 @@ const MilestoneManagementScreen = () => {
       loadData();
     } catch (error) {
       logger.error('[MilestoneManagement] Error adding milestone', error as Error);
-      Alert.alert('Error', 'Failed to add custom milestone');
+      showSnackbar('Failed to add custom milestone');
     }
   };
 
   const handleEditMilestone = (milestone: Milestone) => {
     if (!milestone.isCustom) {
-      Alert.alert(
-        'Cannot Edit',
-        'Standard milestones (PM100-PM700) cannot be edited. Only custom milestones can be modified.'
-      );
+      showSnackbar('Standard milestones cannot be edited. Only custom milestones can be modified.');
       return;
     }
 
@@ -309,13 +310,13 @@ const MilestoneManagementScreen = () => {
     if (!editingMilestone) return;
 
     if (!editMilestoneName.trim()) {
-      Alert.alert('Validation Error', 'Please enter a milestone name');
+      showSnackbar('Please enter a milestone name');
       return;
     }
 
     const weightage = parseInt(editMilestoneWeightage, 10);
     if (isNaN(weightage) || weightage < 1 || weightage < 100) {
-      Alert.alert('Validation Error', 'Weightage must be between 1 and 100');
+      showSnackbar('Weightage must be between 1 and 100');
       return;
     }
 
@@ -334,53 +335,41 @@ const MilestoneManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Milestone updated successfully');
+      showSnackbar('Milestone updated');
       setEditDialogVisible(false);
       setEditingMilestone(null);
       loadData();
     } catch (error) {
       logger.error('[MilestoneManagement] Error updating milestone', error as Error);
-      Alert.alert('Error', 'Failed to update milestone');
+      showSnackbar('Failed to update milestone');
     }
   };
 
-  const handleDeleteMilestone = (milestone: Milestone) => {
+  const handleDeleteMilestone = (milestone: MilestoneWithProgress) => {
     if (!milestone.isCustom) {
-      Alert.alert(
-        'Cannot Delete',
-        'Standard milestones (PM100-PM700) cannot be deleted. Only custom milestones can be removed.'
-      );
+      showSnackbar('Standard milestones (PM100-PM700) cannot be deleted.');
       return;
     }
+    setPendingDeleteMilestone(milestone);
+  };
 
-    Alert.alert(
-      'Delete Milestone',
-      `Are you sure you want to delete "${milestone.milestoneName}"? This will remove all progress data for this milestone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const milestoneRecord = await database.collections
-                .get('milestones')
-                .find(milestone.id);
-
-              await database.write(async () => {
-                await milestoneRecord.markAsDeleted();
-              });
-
-              Alert.alert('Success', 'Milestone deleted successfully');
-              loadData();
-            } catch (error) {
-              logger.error('[MilestoneManagement] Error deleting milestone', error as Error);
-              Alert.alert('Error', 'Failed to delete milestone');
-            }
-          },
-        },
-      ]
-    );
+  const handleConfirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestone) return;
+    const milestone = pendingDeleteMilestone;
+    setPendingDeleteMilestone(null);
+    try {
+      const milestoneRecord = await database.collections
+        .get('milestones')
+        .find(milestone.id);
+      await database.write(async () => {
+        await milestoneRecord.markAsDeleted();
+      });
+      showSnackbar('Milestone deleted');
+      loadData();
+    } catch (error) {
+      logger.error('[MilestoneManagement] Error deleting milestone', error as Error);
+      showSnackbar('Failed to delete milestone');
+    }
   };
 
   const handleViewProgress = (milestone: MilestoneWithProgress) => {
@@ -431,7 +420,7 @@ const MilestoneManagementScreen = () => {
 
   const handleBatchApproval = async () => {
     if (!batchSelectedMilestone || selectedSitesForApproval.size === 0) {
-      Alert.alert('No Sites Selected', 'Please select at least one site to approve.');
+      showSnackbar('Please select at least one site to approve.');
       return;
     }
 
@@ -476,16 +465,13 @@ const MilestoneManagementScreen = () => {
 
       const count = selectedSitesForApproval.size;
       announce(`Batch approval completed: ${count} site${count === 1 ? '' : 's'} marked as completed for ${batchSelectedMilestone.milestoneName}`);
-      Alert.alert(
-        'Batch Approval Complete',
-        `Successfully marked ${count} site${count === 1 ? '' : 's'} as completed for "${batchSelectedMilestone.milestoneName}".`
-      );
+      showSnackbar(`${count} site${count === 1 ? '' : 's'} marked as completed for "${batchSelectedMilestone.milestoneName}".`);
 
       closeBatchApprovalDialog();
       loadData(); // Refresh data
     } catch (error) {
       logger.error('[MilestoneManagement] Error in batch approval', error as Error);
-      Alert.alert('Error', 'Failed to process batch approval. Please try again.');
+      showSnackbar('Failed to process batch approval. Please try again.');
       announce('Batch approval failed');
     } finally {
       setBatchApproving(false);
@@ -975,6 +961,22 @@ const MilestoneManagementScreen = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={!!pendingDeleteMilestone}
+        title="Delete Milestone"
+        message={`Are you sure you want to delete "${pendingDeleteMilestone?.milestoneName}"? This will remove all progress data for this milestone.`}
+        confirmText="Delete"
+        destructive
+        onConfirm={handleConfirmDeleteMilestone}
+        onCancel={() => setPendingDeleteMilestone(null)}
+      />
+
+      <Snackbar
+        {...snackbarProps}
+        duration={3000}
+        action={{ label: 'Dismiss', onPress: snackbarProps.onDismiss }}
+      />
     </View>
   );
 };
