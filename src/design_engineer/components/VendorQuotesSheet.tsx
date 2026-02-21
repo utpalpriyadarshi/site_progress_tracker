@@ -21,8 +21,10 @@ interface VendorQuotesSheetProps {
   onDismiss: () => void;
   rfq: DesignRfq | null;
   vendors: Vendor[];
-  engineerId: string;
-  onRfqUpdated: (rfq: DesignRfq) => void;
+  engineerId?: string;
+  onRfqUpdated?: (rfq: DesignRfq) => void;
+  /** When true, hides Add Quote, Evaluate, Shortlist, Reject, and Award actions */
+  readOnly?: boolean;
 }
 
 type ViewMode = 'list' | 'compare';
@@ -32,8 +34,9 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
   onDismiss,
   rfq,
   vendors,
-  engineerId,
+  engineerId = '',
   onRfqUpdated,
+  readOnly = false,
 }) => {
   const [quotes, setQuotes] = useState<VendorQuote[]>([]);
   const flatListProps = useFlatListProps<VendorQuote>();
@@ -244,7 +247,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       await loadQuotes();
 
       // Update RFQ quote count
-      onRfqUpdated({
+      onRfqUpdated?.({
         ...rfq,
         totalQuotesReceived: rfq.totalQuotesReceived + 1,
         status: rfq.status === 'issued' ? 'quotes_received' : rfq.status,
@@ -291,7 +294,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       setSelectedQuote(null);
       await loadQuotes();
 
-      onRfqUpdated({
+      onRfqUpdated?.({
         ...rfq,
         status: 'evaluated',
         evaluationDate: Date.now(),
@@ -426,7 +429,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               }
 
               await loadQuotes();
-              onRfqUpdated({
+              onRfqUpdated?.({
                 ...rfq,
                 status: 'awarded',
                 awardDate: Date.now(),
@@ -669,9 +672,9 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               renderItem={({ item }) => (
                 <VendorQuoteCard
                   quote={item}
-                  onEvaluate={handleEvaluate}
-                  onShortlist={handleShortlist}
-                  onReject={handleReject}
+                  onEvaluate={readOnly ? undefined : handleEvaluate}
+                  onShortlist={readOnly ? undefined : handleShortlist}
+                  onReject={readOnly ? undefined : handleReject}
                 />
               )}
               contentContainerStyle={styles.listContent}
@@ -691,25 +694,27 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
           )}
         </Dialog.ScrollArea>
 
-        <Dialog.Actions style={styles.sheetActions}>
-          {canAward && (
-            <Button
-              mode="contained"
-              onPress={handleAwardL1}
-              style={styles.awardButton}
-              buttonColor={COLORS.SUCCESS}>
-              Award to L1
-            </Button>
-          )}
-          {canAddQuotes && (
-            <Button
-              mode="contained"
-              onPress={() => setAddDialogVisible(true)}
-              icon="plus">
-              Add Quote
-            </Button>
-          )}
-        </Dialog.Actions>
+        {!readOnly && (
+          <Dialog.Actions style={styles.sheetActions}>
+            {canAward && (
+              <Button
+                mode="contained"
+                onPress={handleAwardL1}
+                style={styles.awardButton}
+                buttonColor={COLORS.SUCCESS}>
+                Award to L1
+              </Button>
+            )}
+            {canAddQuotes && (
+              <Button
+                mode="contained"
+                onPress={() => setAddDialogVisible(true)}
+                icon="plus">
+                Add Quote
+              </Button>
+            )}
+          </Dialog.Actions>
+        )}
       </Dialog>
 
       <AddVendorQuoteDialog
