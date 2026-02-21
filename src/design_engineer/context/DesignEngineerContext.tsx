@@ -34,14 +34,6 @@ interface DesignEngineerContextType {
   setSelectedSiteId: (siteId: string | 'all') => void;
   selectedSite: any | null;
   setSelectedSite: (site: any | null) => void;
-  selectedDoorsId: string | null;
-  setSelectedDoorsId: (id: string | null) => void;
-  filterStatus: string | null;
-  setFilterStatus: (status: string | null) => void;
-  filterCategory: string | null;
-  setFilterCategory: (category: string | null) => void;
-  filterDomain: string | null;
-  setFilterDomain: (domain: string | null) => void;
   refreshTrigger: number;
   triggerRefresh: () => void;
 }
@@ -60,10 +52,6 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
   const [projectName, setProjectNameState] = useState<string>('');
   const [selectedSiteId, setSelectedSiteIdState] = useState<string | 'all'>('all');
   const [selectedSite, setSelectedSite] = useState<any | null>(null);
-  const [selectedDoorsId, setSelectedDoorsId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const [filterDomain, setFilterDomain] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load design engineer's project from database when user logs in OR when role switching
@@ -234,14 +222,6 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
         setSelectedSiteId,
         selectedSite,
         setSelectedSite,
-        selectedDoorsId,
-        setSelectedDoorsId,
-        filterStatus,
-        setFilterStatus,
-        filterCategory,
-        setFilterCategory,
-        filterDomain,
-        setFilterDomain,
         refreshTrigger,
         triggerRefresh,
       }}
