@@ -16,6 +16,7 @@ interface UseReportSyncParams {
   sites: SiteModel[];
   items: ItemModel[];
   isOnline: boolean;
+  sitePhotos: string[];
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   onWarning: (message: string) => void;
@@ -43,6 +44,7 @@ export const useReportSync = ({
   sites,
   items,
   isOnline,
+  sitePhotos,
   onSuccess,
   onError,
   onWarning,
@@ -140,6 +142,8 @@ export const useReportSync = ({
             report.pdfErrorMessage = null;
             report.pdfErrorTimestamp = null;
             report.pdfPhotoCount = null;
+            // v47: Site overview photos
+            report.images = sitePhotos.length > 0 ? JSON.stringify(sitePhotos) : null;
             report.appSyncStatus = isOnline ? 'synced' : 'pending';
           });
 
@@ -221,7 +225,7 @@ export const useReportSync = ({
     } finally {
       setIsSyncing(false);
     }
-  }, [supervisorId, sites, items, isOnline, onSuccess, onError, onWarning]);
+  }, [supervisorId, sites, items, isOnline, sitePhotos, onSuccess, onError, onWarning]);
 
   /**
    * Handle submit all reports button click

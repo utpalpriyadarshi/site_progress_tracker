@@ -39,6 +39,9 @@ export default class DailyReportModel extends Model {
   @field('pdf_generation_attempts') pdfGenerationAttempts!: number; // number of attempts made
   @field('pdf_last_attempt_timestamp') pdfLastAttemptTimestamp?: number; // last attempt timestamp
 
+  // v47: Site overview photos
+  @field('images') images?: string; // JSON array of local file paths
+
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
   @field('_version') version!: number; // conflict resolution version tracking
 

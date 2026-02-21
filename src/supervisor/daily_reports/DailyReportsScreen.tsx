@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Image } from 'react-native';
+import { Button, Text, IconButton } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
@@ -19,6 +19,8 @@ import { ReportSyncStatus } from './components/ReportSyncStatus';
 import { ItemsList } from './components/ItemsList';
 import { ProgressReportForm } from './components/ProgressReportForm';
 import { LoadingOverlay, SupervisorHeader } from '../../components/common';
+import { PhotoPickerDialog } from '../../components/dialogs/PhotoPickerDialog';
+import { COLORS } from '../../theme/colors';
 import { commonStyles } from '../../styles/common';
 
 interface DailyReportsScreenComponentProps {
@@ -49,7 +51,7 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
     return () => unsubscribe();
   }, []);
 
-  // Photo upload hook (shared)
+  // Per-item photo upload hook (used inside the progress dialog)
   const {
     photos,
     photoMenuVisible,
@@ -62,6 +64,21 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
     maxPhotos: 10,
     quality: 0.8,
     onPhotoAdded: count => showSnackbar(`${count} photo(s) added`, 'success'),
+    onError: error => showSnackbar(error, 'error'),
+  });
+
+  // Site-level photo upload hook (attached to the overall daily report)
+  const {
+    photos: sitePhotos,
+    handleTakePhoto: handleTakeSitePhoto,
+    handleSelectPhotos: handleChooseSitePhotos,
+    handleRemovePhoto: removeSitePhoto,
+    setPhotoMenuVisible: setSitePhotoMenuVisible,
+    photoMenuVisible: sitePhotoMenuVisible,
+  } = usePhotoUpload({
+    maxPhotos: 10,
+    quality: 0.8,
+    onPhotoAdded: count => showSnackbar(`${count} site photo(s) added`, 'success'),
     onError: error => showSnackbar(error, 'error'),
   });
 
@@ -116,6 +133,7 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
     sites,
     items,
     isOnline,
+    sitePhotos,
     onSuccess: message => showSnackbar(message, 'success'),
     onError: message => showSnackbar(message, 'error'),
     onWarning: message => showSnackbar(message, 'warning'),
@@ -150,6 +168,54 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
         onRefresh={onRefresh}
         onUpdateItem={openUpdateDialog}
       />
+
+      {/* Site Overview Photos */}
+      <View style={styles.sitePhotosSection}>
+        <View style={styles.sitePhotosHeader}>
+          <Text style={styles.sitePhotosTitle}>
+            Site Photos ({sitePhotos.length})
+          </Text>
+          <Button
+            mode="outlined"
+            icon="camera"
+            compact
+            onPress={() => setSitePhotoMenuVisible(true)}
+            disabled={isSyncing}>
+            Add
+          </Button>
+        </View>
+        {sitePhotos.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.sitePhotoGallery}>
+            {sitePhotos.map((uri, index) => (
+              <View key={index} style={styles.sitePhotoContainer}>
+                <Image source={{ uri }} style={styles.sitePhotoThumbnail} />
+                <IconButton
+                  icon="close-circle"
+                  size={18}
+                  iconColor={COLORS.ERROR}
+                  style={styles.removeSitePhotoButton}
+                  onPress={() => removeSitePhoto(index)}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        )}
+        <PhotoPickerDialog
+          visible={sitePhotoMenuVisible}
+          onDismiss={() => setSitePhotoMenuVisible(false)}
+          onTakePhoto={() => {
+            setSitePhotoMenuVisible(false);
+            handleTakeSitePhoto();
+          }}
+          onChooseFromGallery={() => {
+            setSitePhotoMenuVisible(false);
+            handleChooseSitePhotos();
+          }}
+        />
+      </View>
 
       {/* Submit Button */}
       {items.length > 0 && (
@@ -263,6 +329,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     elevation: 1,
+  },
+  sitePhotosSection: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.BORDER,
+  },
+  sitePhotosHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sitePhotosTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.TEXT_SECONDARY,
+  },
+  sitePhotoGallery: {
+    marginTop: 8,
+  },
+  sitePhotoContainer: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  sitePhotoThumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    backgroundColor: COLORS.BORDER,
+  },
+  removeSitePhotoButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    margin: 0,
+    backgroundColor: 'white',
+    borderRadius: 10,
   },
   footer: {
     padding: 16,
