@@ -387,6 +387,35 @@ class RfqService {
   }
 
   /**
+   * Return the rank-1 quote for an RFQ, auto-ranking evaluated quotes if none
+   * is ranked yet. Returns null if no quotes have technical scores to rank.
+   */
+  async getOrRankL1Quote(rfqId: string): Promise<RfqVendorQuoteModel | null> {
+    // Fast path: already ranked
+    const ranked = await this.quotesCollection
+      .query(Q.where('rfq_id', rfqId), Q.where('rank', 1))
+      .fetch();
+    if (ranked.length > 0) {
+      return ranked[0];
+    }
+
+    // No L1 yet — auto-rank if evaluated quotes exist
+    const scored = await this.quotesCollection
+      .query(Q.where('rfq_id', rfqId), Q.where('technical_score', Q.notEq(null)))
+      .fetch();
+    if (scored.length === 0) {
+      return null;
+    }
+
+    await this.rankQuotes(rfqId);
+
+    const afterRanking = await this.quotesCollection
+      .query(Q.where('rfq_id', rfqId), Q.where('rank', 1))
+      .fetch();
+    return afterRanking[0] ?? null;
+  }
+
+  /**
    * Get RFQ statistics
    */
   async getRfqStatistics(projectId?: string): Promise<RfqStatistics> {

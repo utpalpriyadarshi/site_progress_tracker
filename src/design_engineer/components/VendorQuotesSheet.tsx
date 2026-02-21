@@ -339,38 +339,34 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
 
   const handleAwardL1 = async () => {
     if (!rfq) return;
+
+    // Check local state first (fast path — avoids a DB round-trip when already ranked)
     let l1Quote = quotes.find((q) => q.rank === 1);
 
-    // If no ranked quote found, try auto-ranking evaluated quotes first
+    // Delegate to service if not in local state: it will auto-rank evaluated quotes if needed
     if (!l1Quote) {
-      const hasScores = quotes.some((q) => q.technicalScore != null);
-      if (hasScores) {
-        try {
-          await RfqService.rankQuotes(rfq.id);
-          await loadQuotes();
-          // Re-find L1 from refreshed quotes (use DB directly since state may not have updated)
-          const freshQuotes: RfqVendorQuoteModel[] = await RfqService.getQuotesForRfq(rfq.id);
-          const ranked = freshQuotes.find(q => q.rank === 1);
-          if (ranked) {
-            const vendorMap = new Map(vendors.map((v) => [v.id, v]));
-            l1Quote = {
-              id: ranked.id,
-              rfqId: ranked.rfqId,
-              vendorId: ranked.vendorId,
-              vendorName: vendorMap.get(ranked.vendorId)?.vendorName || 'Unknown Vendor',
-              quotedPrice: ranked.quotedPrice,
-              currency: ranked.currency,
-              leadTimeDays: ranked.leadTimeDays,
-              validityDays: ranked.validityDays,
-              technicalCompliancePercentage: ranked.technicalCompliancePercentage,
-              status: ranked.status,
-              overallScore: ranked.overallScore,
-              rank: ranked.rank,
-            } as VendorQuote;
-          }
-        } catch (err) {
-          logger.error('[VendorQuotes] Error auto-ranking:', err);
+      try {
+        const l1Model = await RfqService.getOrRankL1Quote(rfq.id);
+        if (l1Model) {
+          await loadQuotes(); // refresh UI state after potential auto-ranking
+          const vendorMap = new Map(vendors.map((v) => [v.id, v]));
+          l1Quote = {
+            id: l1Model.id,
+            rfqId: l1Model.rfqId,
+            vendorId: l1Model.vendorId,
+            vendorName: vendorMap.get(l1Model.vendorId)?.vendorName || 'Unknown Vendor',
+            quotedPrice: l1Model.quotedPrice,
+            currency: l1Model.currency,
+            leadTimeDays: l1Model.leadTimeDays,
+            validityDays: l1Model.validityDays,
+            technicalCompliancePercentage: l1Model.technicalCompliancePercentage,
+            status: l1Model.status,
+            overallScore: l1Model.overallScore,
+            rank: l1Model.rank,
+          } as VendorQuote;
         }
+      } catch (err) {
+        logger.error('[VendorQuotes] Error auto-ranking:', err);
       }
     }
 
