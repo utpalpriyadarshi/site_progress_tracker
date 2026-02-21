@@ -30,22 +30,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Chip, Button, IconButton } from 'react-native-paper';
 import { DoorsPackageCardProps } from '../types';
 import { COLORS } from '../../../theme/colors';
-
-/**
- * Get status color based on package status
- */
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'pending':
-      return '#FFA500';
-    case 'received':
-      return COLORS.INFO;
-    case 'reviewed':
-      return COLORS.SUCCESS;
-    default:
-      return COLORS.DISABLED;
-  }
-};
+import { STATUS_CONFIG } from '../../../utils/statusConfig';
 
 /**
  * Get category color badge
@@ -99,10 +84,11 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
           </Chip>
           <Chip
             mode="flat"
-            style={[styles.statusChip, { backgroundColor: getStatusColor(pkg.status) }]}
-            textStyle={styles.chipText}
+            icon={(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).icon}
+            style={[styles.statusChip, { backgroundColor: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color + '20' }]}
+            textStyle={[styles.chipText, { color: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color }]}
           >
-            {pkg.status.toUpperCase()}
+            {(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).label}
           </Chip>
         </View>
       </View>
