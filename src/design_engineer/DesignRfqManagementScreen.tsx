@@ -941,7 +941,7 @@ const DesignRfqManagementScreen = () => {
             </Dialog.Content>
             <Dialog.Actions>
               <Button onPress={() => dispatch({ type: 'CLOSE_CANCEL_DIALOG' })}>Back</Button>
-              <Button onPress={confirmCancelRfq} textColor={COLORS.ERROR}>Cancel RFQ</Button>
+              <Button onPress={confirmCancelRfq} textColor={COLORS.ERROR}>Mark as Cancelled</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
