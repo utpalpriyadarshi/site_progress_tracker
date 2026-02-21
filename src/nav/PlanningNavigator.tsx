@@ -49,6 +49,7 @@ import { PlanningStackParamList } from './types';
 import { PlanningProvider } from '../planning/context';
 import TutorialService from '../services/TutorialService';
 import { COLORS } from '../theme/colors';
+import SyncHeaderButton from './SyncHeaderButton';
 
 // ==================== Types ====================
 
@@ -237,11 +238,14 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
     );
   }, [logout, parentNavigation]);
 
-  // Logout button component for header
+  // Header right: sync button + logout
   const LogoutButton = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   ), [handleLogout]);
 
   // Memoize drawer icon getter
@@ -402,8 +406,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+  },
   headerLogoutButton: {
-    marginRight: 15,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

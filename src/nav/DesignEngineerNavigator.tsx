@@ -34,6 +34,7 @@ import { useAuth } from '../auth/AuthContext';
 import { DesignEngineerProvider } from '../design_engineer/context/DesignEngineerContext';
 import TutorialService from '../services/TutorialService';
 import { COLORS } from '../theme/colors';
+import SyncHeaderButton from './SyncHeaderButton';
 
 // ==================== Types ====================
 
@@ -224,10 +225,13 @@ const DesignEngineerDrawer: React.FC<DesignEngineerNavigatorProps> = memo(({ nav
     );
   }, [logout, parentNavigation]);
 
-  const LogoutButton = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
+  const HeaderRight = useCallback(() => (
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   ), [handleLogout]);
 
   const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
@@ -259,11 +263,11 @@ const DesignEngineerDrawer: React.FC<DesignEngineerNavigatorProps> = memo(({ nav
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
-    headerRight: LogoutButton,
+    headerRight: HeaderRight,
     lazy: true,
     swipeEdgeWidth: 50,
     drawerType: 'front' as const,
-  }), [theme.colors.primary, getDrawerIcon, LogoutButton]);
+  }), [theme.colors.primary, getDrawerIcon, HeaderRight]);
 
   return (
     <Drawer.Navigator
@@ -310,8 +314,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+  },
   headerLogoutButton: {
-    marginRight: 15,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
