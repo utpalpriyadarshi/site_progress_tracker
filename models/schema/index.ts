@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 45, // RFQ compliance breakup + DOORS status transition fields
+  version: 46, // Add doors_revisions table for package revision history
   tables: [
     tableSchema({
       name: 'projects',
@@ -814,6 +814,17 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'doors_revisions',
+      columns: [
+        { name: 'doors_package_id', type: 'string', isIndexed: true },
+        { name: 'version_number', type: 'number' },
+        { name: 'snapshot_json', type: 'string' },
+        { name: 'changed_by_id', type: 'string', isIndexed: true },
+        { name: 'changed_at', type: 'number', isIndexed: true },
+        { name: 'change_summary', type: 'string' },
       ],
     }),
   ],

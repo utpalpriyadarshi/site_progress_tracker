@@ -16,6 +16,7 @@ interface DoorsPackageCardProps {
   onEdit?: (pkg: DoorsPackage) => void;
   onDelete?: (packageId: string) => void;
   onDuplicate?: (pkg: DoorsPackage) => void;
+  onViewHistory?: (pkg: DoorsPackage) => void;
   bulkSelectMode?: boolean;
   isSelected?: boolean;
   onSelect?: (packageId: string) => void;
@@ -60,6 +61,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  onViewHistory,
   bulkSelectMode = false,
   isSelected = false,
   onSelect,
@@ -193,6 +195,14 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
             size={20}
             onPress={() => onDuplicate(pkg)}
             accessibilityLabel="Duplicate package"
+          />
+        )}
+        {onViewHistory && (
+          <IconButton
+            icon="history"
+            size={20}
+            onPress={() => onViewHistory(pkg)}
+            accessibilityLabel="View revision history"
           />
         )}
         <View style={styles.actionSpacer} />
