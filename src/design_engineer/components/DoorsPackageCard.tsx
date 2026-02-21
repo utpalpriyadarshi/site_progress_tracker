@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
+import { View, Text, StyleSheet } from 'react-native';
+import { Button, Chip, IconButton } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 import StatusTimeline, { DOORS_STATUS_STEPS } from './StatusTimeline';
 import { COLORS } from '../../theme/colors';
 import { STATUS_CONFIG } from '../../utils/statusConfig';
+import { BaseCard, DetailRow } from '../../components/cards/BaseCard';
 
 interface DoorsPackageCardProps {
   package: DoorsPackage;
@@ -21,17 +22,11 @@ interface DoorsPackageCardProps {
   onLongPress?: (packageId: string) => void;
 }
 
-
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'high':
-      return COLORS.ERROR;
-    case 'medium':
-      return COLORS.WARNING;
-    case 'low':
-      return COLORS.DISABLED;
-    default:
-      return COLORS.DISABLED;
+    case 'high':   return COLORS.ERROR;
+    case 'medium': return COLORS.WARNING;
+    default:       return COLORS.DISABLED;
   }
 };
 
@@ -74,303 +69,169 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   const canDelete = pkg.status === 'pending';
   const hasCompliance = pkg.compliancePercentage !== undefined && pkg.compliancePercentage > 0;
 
-  const handlePress = () => {
-    if (bulkSelectMode && onSelect) {
-      onSelect(pkg.id);
-    }
-  };
+  const statusConfig = STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending;
 
-  const handleLongPress = () => {
-    if (onLongPress) {
-      onLongPress(pkg.id);
-    }
-  };
+  const details: DetailRow[] = [
+    { label: 'Site', value: pkg.siteName || 'N/A' },
+    { label: 'Category', value: pkg.category },
+    { label: 'Equipment', value: pkg.equipmentType },
+    ...(pkg.materialType ? [{ label: 'Material', value: pkg.materialType }] : []),
+    ...(pkg.quantity !== undefined && pkg.quantity > 0
+      ? [{ label: 'Quantity', value: `${pkg.quantity} ${pkg.unit || ''}` }]
+      : []),
+    ...(pkg.specificationRef ? [{ label: 'Spec Ref', value: pkg.specificationRef }] : []),
+    {
+      label: 'Requirements',
+      value: pkg.compliantRequirements !== undefined
+        ? `${pkg.compliantRequirements} / ${pkg.totalRequirements} compliant`
+        : String(pkg.totalRequirements),
+    },
+    ...(pkg.receivedDate ? [{ label: 'Received', value: new Date(pkg.receivedDate).toLocaleDateString() }] : []),
+    ...(pkg.receivedRemarks ? [{ label: 'Recv Remarks', value: pkg.receivedRemarks }] : []),
+    ...(pkg.reviewedDate ? [{ label: 'Reviewed', value: new Date(pkg.reviewedDate).toLocaleDateString() }] : []),
+    ...(pkg.reviewObservations ? [{ label: 'Observations', value: pkg.reviewObservations }] : []),
+    ...(pkg.approvedDate ? [{ label: 'Approved', value: new Date(pkg.approvedDate).toLocaleDateString() }] : []),
+    ...(pkg.approvalRemarks ? [{ label: 'Appr Remarks', value: pkg.approvalRemarks }] : []),
+    ...(pkg.closureDate ? [{ label: 'Closed', value: new Date(pkg.closureDate).toLocaleDateString() }] : []),
+    ...(pkg.closureRemarks ? [{ label: 'Remarks', value: pkg.closureRemarks }] : []),
+  ];
+
+  const headerRight = (
+    <View style={styles.headerRightColumn}>
+      {pkg.priority ? (
+        <Chip
+          mode="flat"
+          compact
+          style={{ backgroundColor: getPriorityColor(pkg.priority) }}
+          textStyle={styles.priorityChipText}>
+          {pkg.priority.toUpperCase()}
+        </Chip>
+      ) : null}
+      <Chip
+        mode="flat"
+        icon={statusConfig.icon}
+        style={{ backgroundColor: statusConfig.color + '20' }}
+        textStyle={[styles.statusChipText, { color: statusConfig.color }]}>
+        {statusConfig.label}
+      </Chip>
+    </View>
+  );
 
   return (
-    <Pressable onPress={bulkSelectMode ? handlePress : undefined} onLongPress={handleLongPress}>
-    <Card style={[styles.card, isSelected && styles.selectedCard]}>
-      <Card.Content>
-        {bulkSelectMode && (
-          <View style={styles.checkboxRow}>
-            <Checkbox
-              status={isSelected ? 'checked' : 'unchecked'}
-              onPress={() => onSelect?.(pkg.id)}
+    <BaseCard
+      title={pkg.doorsId}
+      subtitle={pkg.equipmentName}
+      headerRight={headerRight}
+      details={details}
+      isSelected={isSelected}
+      bulkSelectMode={bulkSelectMode}
+      onSelect={onSelect ? () => onSelect(pkg.id) : undefined}
+      onLongPress={onLongPress ? () => onLongPress(pkg.id) : undefined}
+    >
+      <StatusTimeline steps={DOORS_STATUS_STEPS} currentStatus={pkg.status} />
+
+      {hasCompliance && (
+        <View style={styles.complianceSection}>
+          <View style={styles.overallComplianceRow}>
+            <Text style={styles.complianceLabel}>Compliance</Text>
+            <Text style={[styles.compliancePercent, { color: getComplianceColor(pkg.compliancePercentage!) }]}>
+              {pkg.compliancePercentage}%
+            </Text>
+          </View>
+          <View style={styles.complianceBarBg}>
+            <View
+              style={[
+                styles.complianceBarFill,
+                {
+                  width: `${Math.min(pkg.compliancePercentage!, 100)}%`,
+                  backgroundColor: getComplianceColor(pkg.compliancePercentage!),
+                },
+              ]}
             />
           </View>
-        )}
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.doorsId}>{pkg.doorsId}</Text>
-            {pkg.equipmentName ? (
-              <Text style={styles.equipmentName} numberOfLines={1} ellipsizeMode="tail">
-                {pkg.equipmentName}
-              </Text>
-            ) : null}
-          </View>
-          <View style={styles.headerRight}>
-            {pkg.priority ? (
-              <Chip
-                mode="flat"
-                compact
-                style={{ backgroundColor: getPriorityColor(pkg.priority) }}
-                textStyle={styles.priorityChipText}>
-                {pkg.priority.toUpperCase()}
-              </Chip>
-            ) : null}
-            <Chip
-              mode="flat"
-              icon={(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).icon}
-              style={{
-                backgroundColor: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color + '20',
-              }}
-              textStyle={[styles.statusChipText, { color: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color }]}>
-              {(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).label}
-            </Chip>
+          <View style={styles.categoryBreakdown}>
+            {pkg.technicalReqCompliance !== undefined && (
+              <ComplianceMiniBar label="Tech" value={pkg.technicalReqCompliance} />
+            )}
+            {pkg.datasheetCompliance !== undefined && (
+              <ComplianceMiniBar label="Data" value={pkg.datasheetCompliance} />
+            )}
+            {pkg.typeTestCompliance !== undefined && (
+              <ComplianceMiniBar label="Type" value={pkg.typeTestCompliance} />
+            )}
+            {pkg.routineTestCompliance !== undefined && (
+              <ComplianceMiniBar label="Routine" value={pkg.routineTestCompliance} />
+            )}
+            {pkg.siteReqCompliance !== undefined && (
+              <ComplianceMiniBar label="Site" value={pkg.siteReqCompliance} />
+            )}
           </View>
         </View>
+      )}
 
-        <StatusTimeline steps={DOORS_STATUS_STEPS} currentStatus={pkg.status} />
-
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Site:</Text>
-          <Text style={styles.value}>{pkg.siteName || 'N/A'}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Category:</Text>
-          <Text style={styles.value}>{pkg.category}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Equipment:</Text>
-          <Text style={styles.value}>{pkg.equipmentType}</Text>
-        </View>
-
-        {pkg.materialType && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Material:</Text>
-            <Text style={styles.value}>{pkg.materialType}</Text>
-          </View>
+      <View style={styles.actionButtons}>
+        {canEdit && onEdit && (
+          <IconButton
+            icon="pencil"
+            size={20}
+            onPress={() => onEdit(pkg)}
+            accessibilityLabel="Edit package"
+          />
         )}
-
-        {(pkg.quantity !== undefined && pkg.quantity > 0) && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Quantity:</Text>
-            <Text style={styles.value}>{pkg.quantity} {pkg.unit || ''}</Text>
-          </View>
+        {canDelete && onDelete && (
+          <IconButton
+            icon="delete"
+            size={20}
+            iconColor={COLORS.ERROR}
+            onPress={() => onDelete(pkg.id)}
+            accessibilityLabel="Delete package"
+          />
         )}
-
-        {pkg.specificationRef ? (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Spec Ref:</Text>
-            <Text style={styles.value}>{pkg.specificationRef}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Requirements:</Text>
-          <Text style={styles.value}>
-            {pkg.compliantRequirements !== undefined
-              ? `${pkg.compliantRequirements} / ${pkg.totalRequirements} compliant`
-              : pkg.totalRequirements}
-          </Text>
-        </View>
-
-        {pkg.receivedDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Received:</Text>
-            <Text style={styles.value}>{new Date(pkg.receivedDate).toLocaleDateString()}</Text>
-          </View>
+        {onDuplicate && (
+          <IconButton
+            icon="content-copy"
+            size={20}
+            onPress={() => onDuplicate(pkg)}
+            accessibilityLabel="Duplicate package"
+          />
         )}
-
-        {pkg.receivedRemarks && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Recv Remarks:</Text>
-            <Text style={styles.value}>{pkg.receivedRemarks}</Text>
-          </View>
+        <View style={styles.actionSpacer} />
+        {pkg.status === 'pending' && (
+          <Button mode="contained" onPress={() => onMarkReceived(pkg.id)} style={styles.actionButton}>
+            Mark Received
+          </Button>
         )}
-
-        {pkg.reviewedDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Reviewed:</Text>
-            <Text style={styles.value}>{new Date(pkg.reviewedDate).toLocaleDateString()}</Text>
-          </View>
+        {pkg.status === 'received' && (
+          <Button mode="contained" onPress={() => onMarkReviewed(pkg.id)} style={styles.actionButton}>
+            Mark Reviewed
+          </Button>
         )}
-
-        {pkg.reviewObservations && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Observations:</Text>
-            <Text style={styles.value}>{pkg.reviewObservations}</Text>
-          </View>
+        {pkg.status === 'reviewed' && onApprove && (
+          <Button
+            mode="contained"
+            onPress={() => onApprove(pkg.id)}
+            style={[styles.actionButton, styles.approveButton]}>
+            Approve
+          </Button>
         )}
-
-        {pkg.approvedDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Approved:</Text>
-            <Text style={styles.value}>{new Date(pkg.approvedDate).toLocaleDateString()}</Text>
-          </View>
+        {pkg.status === 'approved' && onClose && (
+          <Button
+            mode="contained"
+            onPress={() => onClose(pkg.id)}
+            style={[styles.actionButton, styles.closeButton]}>
+            Close
+          </Button>
         )}
-
-        {pkg.approvalRemarks && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Appr Remarks:</Text>
-            <Text style={styles.value}>{pkg.approvalRemarks}</Text>
-          </View>
-        )}
-
-        {pkg.closureDate && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Closed:</Text>
-            <Text style={styles.value}>{new Date(pkg.closureDate).toLocaleDateString()}</Text>
-          </View>
-        )}
-
-        {pkg.closureRemarks && (
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Remarks:</Text>
-            <Text style={styles.value}>{pkg.closureRemarks}</Text>
-          </View>
-        )}
-
-        {hasCompliance && (
-          <View style={styles.complianceSection}>
-            <View style={styles.overallComplianceRow}>
-              <Text style={styles.complianceLabel}>Compliance</Text>
-              <Text style={[styles.compliancePercent, { color: getComplianceColor(pkg.compliancePercentage!) }]}>
-                {pkg.compliancePercentage}%
-              </Text>
-            </View>
-            <View style={styles.complianceBarBg}>
-              <View
-                style={[
-                  styles.complianceBarFill,
-                  {
-                    width: `${Math.min(pkg.compliancePercentage!, 100)}%`,
-                    backgroundColor: getComplianceColor(pkg.compliancePercentage!),
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.categoryBreakdown}>
-              {pkg.technicalReqCompliance !== undefined && (
-                <ComplianceMiniBar label="Tech" value={pkg.technicalReqCompliance} />
-              )}
-              {pkg.datasheetCompliance !== undefined && (
-                <ComplianceMiniBar label="Data" value={pkg.datasheetCompliance} />
-              )}
-              {pkg.typeTestCompliance !== undefined && (
-                <ComplianceMiniBar label="Type" value={pkg.typeTestCompliance} />
-              )}
-              {pkg.routineTestCompliance !== undefined && (
-                <ComplianceMiniBar label="Routine" value={pkg.routineTestCompliance} />
-              )}
-              {pkg.siteReqCompliance !== undefined && (
-                <ComplianceMiniBar label="Site" value={pkg.siteReqCompliance} />
-              )}
-            </View>
-          </View>
-        )}
-
-        <View style={styles.actionButtons}>
-          {canEdit && onEdit && (
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => onEdit(pkg)}
-              accessibilityLabel="Edit package"
-            />
-          )}
-          {canDelete && onDelete && (
-            <IconButton
-              icon="delete"
-              size={20}
-              iconColor={COLORS.ERROR}
-              onPress={() => onDelete(pkg.id)}
-              accessibilityLabel="Delete package"
-            />
-          )}
-          {onDuplicate && (
-            <IconButton
-              icon="content-copy"
-              size={20}
-              onPress={() => onDuplicate(pkg)}
-              accessibilityLabel="Duplicate package"
-            />
-          )}
-          <View style={styles.actionSpacer} />
-          {pkg.status === 'pending' && (
-            <Button mode="contained" onPress={() => onMarkReceived(pkg.id)} style={styles.actionButton}>
-              Mark Received
-            </Button>
-          )}
-          {pkg.status === 'received' && (
-            <Button mode="contained" onPress={() => onMarkReviewed(pkg.id)} style={styles.actionButton}>
-              Mark Reviewed
-            </Button>
-          )}
-          {pkg.status === 'reviewed' && onApprove && (
-            <Button
-              mode="contained"
-              onPress={() => onApprove(pkg.id)}
-              style={[styles.actionButton, { backgroundColor: '#7B1FA2' }]}>
-              Approve
-            </Button>
-          )}
-          {pkg.status === 'approved' && onClose && (
-            <Button
-              mode="contained"
-              onPress={() => onClose(pkg.id)}
-              style={[styles.actionButton, { backgroundColor: '#616161' }]}>
-              Close
-            </Button>
-          )}
-        </View>
-      </Card.Content>
-    </Card>
-    </Pressable>
+      </View>
+    </BaseCard>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: 16,
-  },
-  selectedCard: {
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    backgroundColor: COLORS.INFO_BG,
-  },
-  checkboxRow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    zIndex: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  headerRight: {
+  headerRightColumn: {
     flexDirection: 'column',
     alignItems: 'flex-end',
     gap: 4,
-  },
-  doorsId: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  equipmentName: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 2,
   },
   statusChipText: {
     fontSize: 12,
@@ -380,21 +241,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    width: 115,
-    fontWeight: '600',
-  },
-  value: {
-    fontSize: 14,
-    color: '#000',
-    flex: 1,
   },
   complianceSection: {
     marginTop: 8,
@@ -470,6 +316,12 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginLeft: 8,
+  },
+  approveButton: {
+    backgroundColor: '#7B1FA2',
+  },
+  closeButton: {
+    backgroundColor: '#616161',
   },
 });
 
