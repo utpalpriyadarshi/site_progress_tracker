@@ -235,21 +235,6 @@ const DesignRfqManagementScreen = () => {
     return `DRFQ-${timestamp}`;
   };
 
-  const handlePackageSelected = (pkg: DoorsPackage) => {
-    const domainName = pkg.domainName || '';
-    const autoTitle = `Design RFQ - ${pkg.equipmentType}${domainName ? ` - ${domainName}` : ''}`;
-    const autoDesc = `${pkg.equipmentType}${pkg.materialType ? ` (${pkg.materialType})` : ''} - ${pkg.totalRequirements} requirements`;
-    dispatch({
-      type: 'SET_FORM',
-      payload: {
-        title: autoTitle,
-        description: autoDesc,
-        doorsPackageId: pkg.id,
-        domainId: pkg.domainId || '',
-      },
-    });
-  };
-
   const handleCreateOrUpdateRfq = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -885,33 +870,13 @@ const DesignRfqManagementScreen = () => {
         <CreateDesignRfqDialog
           visible={state.ui.dialogVisible}
           onDismiss={handleDismissDialog}
-          onCreate={handleCreateOrUpdateRfq}
+          onSubmit={handleCreateOrUpdateRfq}
           isEditing={!!state.ui.editingRfqId}
           isSubmitting={isSubmitting}
+          formState={state.form}
+          dispatch={dispatch}
           domains={state.data.domains}
           doorsPackages={state.data.doorsPackages}
-          newTitle={state.form.title}
-          setNewTitle={(title) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'title', value: title } })}
-          newDescription={state.form.description}
-          setNewDescription={(description) =>
-            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'description', value: description } })
-          }
-          newDomainId={state.form.domainId}
-          setNewDomainId={(domainId) =>
-            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'domainId', value: domainId } })
-          }
-          newDoorsPackageId={state.form.doorsPackageId}
-          setNewDoorsPackageId={(doorsPackageId) =>
-            dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'doorsPackageId', value: doorsPackageId } })
-          }
-          newExpectedDeliveryDays={state.form.expectedDeliveryDays}
-          setNewExpectedDeliveryDays={(expectedDeliveryDays) =>
-            dispatch({
-              type: 'UPDATE_FORM_FIELD',
-              payload: { field: 'expectedDeliveryDays', value: expectedDeliveryDays },
-            })
-          }
-          onPackageSelected={handlePackageSelected}
         />
 
         <Portal>

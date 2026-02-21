@@ -1,69 +1,64 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, Dispatch } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import { DoorsPackage, Domain } from '../types/DesignRfqTypes';
 import { COLORS } from '../../theme/colors';
+import { RfqFormData, DesignRfqManagementAction } from '../state/design-rfq-management/designRfqManagementReducer';
 
 interface CreateDesignRfqDialogProps {
   visible: boolean;
   onDismiss: () => void;
-  onCreate: () => void;
+  onSubmit: () => void;
   isEditing?: boolean;
   isSubmitting?: boolean;
+  formState: RfqFormData;
+  dispatch: Dispatch<DesignRfqManagementAction>;
   domains: Domain[];
   doorsPackages: DoorsPackage[];
-  newTitle: string;
-  setNewTitle: (value: string) => void;
-  newDescription: string;
-  setNewDescription: (value: string) => void;
-  newDomainId: string;
-  setNewDomainId: (value: string) => void;
-  newDoorsPackageId: string;
-  setNewDoorsPackageId: (value: string) => void;
-  newExpectedDeliveryDays: string;
-  setNewExpectedDeliveryDays: (value: string) => void;
-  onPackageSelected: (pkg: DoorsPackage) => void;
 }
 
 const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
   visible,
   onDismiss,
-  onCreate,
+  onSubmit,
   isEditing = false,
   isSubmitting = false,
+  formState,
+  dispatch,
   domains,
   doorsPackages,
-  newTitle,
-  setNewTitle,
-  newDescription,
-  setNewDescription,
-  newDomainId,
-  setNewDomainId,
-  newDoorsPackageId,
-  setNewDoorsPackageId,
-  newExpectedDeliveryDays,
-  setNewExpectedDeliveryDays,
-  onPackageSelected,
 }) => {
+  const { title, description, domainId, doorsPackageId, expectedDeliveryDays } = formState;
+
   // Filter packages by selected domain
   const filteredPackages = useMemo(() => {
-    if (!newDomainId) return doorsPackages;
-    return doorsPackages.filter((pkg) => pkg.domainId === newDomainId);
-  }, [doorsPackages, newDomainId]);
+    if (!domainId) return doorsPackages;
+    return doorsPackages.filter((pkg) => pkg.domainId === domainId);
+  }, [doorsPackages, domainId]);
 
-  const selectedPackage = doorsPackages.find((pkg) => pkg.id === newDoorsPackageId);
+  const selectedPackage = doorsPackages.find((pkg) => pkg.id === doorsPackageId);
 
-  const handleDomainSelect = (domainId: string) => {
-    setNewDomainId(domainId === newDomainId ? '' : domainId);
-    // Clear package selection when domain changes
-    if (domainId !== newDomainId) {
-      setNewDoorsPackageId('');
+  const handleDomainSelect = (selectedId: string) => {
+    const newDomainId = selectedId === domainId ? '' : selectedId;
+    dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'domainId', value: newDomainId } });
+    if (selectedId !== domainId) {
+      dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'doorsPackageId', value: '' } });
     }
   };
 
   const handlePackageSelect = (pkg: DoorsPackage) => {
-    setNewDoorsPackageId(pkg.id);
-    onPackageSelected(pkg);
+    const domainName = pkg.domainName || '';
+    const autoTitle = `Design RFQ - ${pkg.equipmentType}${domainName ? ` - ${domainName}` : ''}`;
+    const autoDesc = `${pkg.equipmentType}${pkg.materialType ? ` (${pkg.materialType})` : ''} - ${pkg.totalRequirements} requirements`;
+    dispatch({
+      type: 'SET_FORM',
+      payload: {
+        title: autoTitle,
+        description: autoDesc,
+        doorsPackageId: pkg.id,
+        domainId: pkg.domainId || '',
+      },
+    });
   };
 
   return (
@@ -81,8 +76,8 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
                     {domains.map((domain) => (
                       <Chip
                         key={domain.id}
-                        mode={newDomainId === domain.id ? 'flat' : 'outlined'}
-                        selected={newDomainId === domain.id}
+                        mode={domainId === domain.id ? 'flat' : 'outlined'}
+                        selected={domainId === domain.id}
                         onPress={() => handleDomainSelect(domain.id)}
                         style={styles.chip}
                       >
@@ -101,8 +96,8 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
                     {filteredPackages.map((pkg) => (
                       <Chip
                         key={pkg.id}
-                        mode={newDoorsPackageId === pkg.id ? 'flat' : 'outlined'}
-                        selected={newDoorsPackageId === pkg.id}
+                        mode={doorsPackageId === pkg.id ? 'flat' : 'outlined'}
+                        selected={doorsPackageId === pkg.id}
                         onPress={() => handlePackageSelect(pkg)}
                         style={styles.chip}
                       >
@@ -112,7 +107,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
                   </ScrollView>
                 ) : (
                   <Text style={styles.emptyText}>
-                    {newDomainId ? 'No packages in this domain' : 'No DOORS packages available'}
+                    {domainId ? 'No packages in this domain' : 'No DOORS packages available'}
                   </Text>
                 )}
               </View>
@@ -139,8 +134,8 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
               {/* Step 3: Title (auto-populated, editable) */}
               <TextInput
                 label="RFQ Title *"
-                value={newTitle}
-                onChangeText={setNewTitle}
+                value={title}
+                onChangeText={(v) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'title', value: v } })}
                 style={styles.input}
                 mode="outlined"
                 placeholder="e.g., Design review for equipment X"
@@ -149,8 +144,8 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
               {/* Step 4: Description (auto-populated, editable) */}
               <TextInput
                 label="Description"
-                value={newDescription}
-                onChangeText={setNewDescription}
+                value={description}
+                onChangeText={(v) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'description', value: v } })}
                 style={styles.input}
                 mode="outlined"
                 multiline
@@ -161,8 +156,8 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
               {/* Step 5: Expected delivery days */}
               <TextInput
                 label="Expected Delivery Days"
-                value={newExpectedDeliveryDays}
-                onChangeText={setNewExpectedDeliveryDays}
+                value={expectedDeliveryDays}
+                onChangeText={(v) => dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'expectedDeliveryDays', value: v } })}
                 style={styles.input}
                 mode="outlined"
                 keyboardType="numeric"
@@ -178,7 +173,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
-          <Button onPress={onCreate} loading={isSubmitting} disabled={isSubmitting}>
+          <Button onPress={onSubmit} loading={isSubmitting} disabled={isSubmitting}>
             {isEditing ? 'Save' : 'Create'}
           </Button>
         </Dialog.Actions>
