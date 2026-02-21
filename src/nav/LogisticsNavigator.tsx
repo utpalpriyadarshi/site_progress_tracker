@@ -51,6 +51,7 @@ import RfqListScreen from '../logistics/RfqListScreen';
 import RfqCreateScreen from '../logistics/RfqCreateScreen';
 import RfqDetailScreen from '../logistics/RfqDetailScreen';
 import { COLORS } from '../theme/colors';
+import SyncHeaderButton from './SyncHeaderButton';
 
 // ==================== Type Definitions ====================
 
@@ -136,11 +137,14 @@ const LogisticsTabs = memo(() => {
     </TouchableOpacity>
   ), [handleDrawerToggle]);
 
-  // Logout button
+  // Header right: sync button + logout
   const HeaderRight = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   ), [handleLogout]);
 
   // Icon getter for tabs
@@ -525,8 +529,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+  },
   headerLogoutButton: {
-    marginRight: 15,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
