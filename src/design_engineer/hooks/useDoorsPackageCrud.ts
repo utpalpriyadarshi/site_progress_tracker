@@ -4,6 +4,7 @@ import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
+import DoorsRevisionModel from '../../../models/DoorsRevisionModel';
 import { validateDoorsId, getErrorMessage } from '../utils/validation';
 import DOORS_PACKAGE_TEMPLATES from '../data/doorsPackageTemplates';
 import { TransitionStage } from '../components/StatusTransitionDialog';
@@ -210,7 +211,26 @@ export const useDoorsPackageCrud = ({
           siteName = (site as any).name;
         } catch (e) { /* ignored */ }
 
+        const nextVersion = ((record as any).version || 0) + 1;
         await database.write(async () => {
+          // Snapshot current state before overwriting
+          await database.collections.get<DoorsRevisionModel>('doors_revisions').create((rev: any) => {
+            rev.doorsPackageId = record.id;
+            rev.versionNumber = nextVersion;
+            rev.snapshotJson = JSON.stringify({
+              doorsId: (record as any).doorsId,
+              siteId: (record as any).siteId,
+              domainId: (record as any).domainId,
+              equipmentType: (record as any).equipmentType,
+              materialType: (record as any).materialType,
+              category: (record as any).category,
+              totalRequirements: (record as any).totalRequirements,
+              status: (record as any).status,
+            });
+            rev.changedById = engineerId;
+            rev.changedAt = Date.now();
+            rev.changeSummary = 'Package fields updated';
+          });
           await record.update((rec: any) => {
             rec.doorsId = doorsId;
             rec.siteId = siteId;
@@ -527,8 +547,31 @@ export const useDoorsPackageCrud = ({
         const doorsCollection = database.collections.get('doors_packages');
         const packageRecord = await doorsCollection.find(transitionPackageId);
         const now = Date.now();
+        const nextVersion = ((packageRecord as any).version || 0) + 1;
+
+        const stageLabels: Record<TransitionStage, string> = {
+          received: 'Package marked as received',
+          reviewed: 'Package marked as reviewed',
+          approved: 'Package approved',
+          closed: 'Package closed',
+        };
 
         await database.write(async () => {
+          // Snapshot current state before transition
+          await database.collections.get<DoorsRevisionModel>('doors_revisions').create((rev: any) => {
+            rev.doorsPackageId = packageRecord.id;
+            rev.versionNumber = nextVersion;
+            rev.snapshotJson = JSON.stringify({
+              status: (packageRecord as any).status,
+              receivedDate: (packageRecord as any).receivedDate,
+              reviewedDate: (packageRecord as any).reviewedDate,
+              approvedDate: (packageRecord as any).approvedDate,
+              closureDate: (packageRecord as any).closureDate,
+            });
+            rev.changedById = engineerId;
+            rev.changedAt = now;
+            rev.changeSummary = stageLabels[transitionStage];
+          });
           await packageRecord.update((record: any) => {
             record.updatedAt = now;
 
@@ -592,13 +635,6 @@ export const useDoorsPackageCrud = ({
         }
 
         setTransitionDialogVisible(false);
-
-        const stageLabels: Record<TransitionStage, string> = {
-          received: 'Package marked as received',
-          reviewed: 'Package marked as reviewed',
-          approved: 'Package approved',
-          closed: 'Package closed',
-        };
         showSnackbar(stageLabels[transitionStage]);
       } catch (error) {
         logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error);

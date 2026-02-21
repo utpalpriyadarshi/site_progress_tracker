@@ -25,6 +25,7 @@ import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useFlatListProps } from '../hooks/useFlatListProps';
 import { useDoorsPackageCrud } from './hooks/useDoorsPackageCrud';
+import DoorsRevisionHistorySheet from './components/DoorsRevisionHistorySheet';
 
 /**
  * DoorsPackageManagementScreen (v6.0 - Sprint 1)
@@ -53,6 +54,7 @@ const DoorsPackageManagementScreen = () => {
   const [state, dispatch] = useReducer(doorsPackageManagementReducer, createDoorsPackageInitialState());
   const { announce } = useAccessibility();
   const { show: showSnackbar, snackbarProps } = useSnackbar();
+  const [historyPkg, setHistoryPkg] = React.useState<DoorsPackage | null>(null);
 
   const doorsStatusCounts = useMemo(
     () =>
@@ -129,6 +131,7 @@ const DoorsPackageManagementScreen = () => {
         onEdit={handleEditPackage}
         onDelete={handleDeletePackage}
         onDuplicate={handleDuplicatePackage}
+        onViewHistory={setHistoryPkg}
         bulkSelectMode={state.ui.bulkSelectMode}
         isSelected={state.ui.selectedPackageIds.includes(item.id)}
         onSelect={handleSelectPackage}
@@ -143,6 +146,7 @@ const DoorsPackageManagementScreen = () => {
       handleEditPackage,
       handleDeletePackage,
       handleDuplicatePackage,
+      setHistoryPkg,
       handleSelectPackage,
       handleLongPress,
       state.ui.bulkSelectMode,
@@ -492,6 +496,13 @@ const DoorsPackageManagementScreen = () => {
           packages={state.data.packages}
           sites={state.data.sites}
           currentSiteId={selectedSiteId && selectedSiteId !== 'all' ? selectedSiteId : undefined}
+        />
+
+        <DoorsRevisionHistorySheet
+          visible={historyPkg !== null}
+          onDismiss={() => setHistoryPkg(null)}
+          doorsPackageId={historyPkg?.id ?? ''}
+          doorsId={historyPkg?.doorsId ?? ''}
         />
 
         <Snackbar

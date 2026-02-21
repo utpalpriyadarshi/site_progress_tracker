@@ -15,6 +15,7 @@ import { v42Migration } from './v42_add_progress_mode';
 import { v43Migration } from './v43_add_doors_package_fields';
 import { v44Migration } from './v44_add_domains';
 import { v45Migration } from './v45_rfq_compliance_status';
+import { v46Migration } from './v46_doors_revisions';
 
 export default schemaMigrations({
   migrations: [
@@ -604,5 +605,7 @@ export default schemaMigrations({
     v44Migration,
     // v45: Add RFQ compliance breakup + DOORS status transition fields
     v45Migration,
+    // v46: Add doors_revisions table for DOORS package revision history
+    v46Migration,
   ],
 });
