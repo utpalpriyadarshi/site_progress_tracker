@@ -779,7 +779,7 @@ const MilestoneManagementScreen = () => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setAddDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleAddMilestone}>Add</Button>
+            <Button onPress={handleAddMilestone}>Create Milestone</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -816,7 +816,7 @@ const MilestoneManagementScreen = () => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleUpdateMilestone}>Update</Button>
+            <Button onPress={handleUpdateMilestone}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -861,7 +861,7 @@ const MilestoneManagementScreen = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setProgressDialogVisible(false)}>Close</Button>
+            <Button onPress={() => setProgressDialogVisible(false)}>Cancel</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

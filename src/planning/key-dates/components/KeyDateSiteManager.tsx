@@ -454,7 +454,7 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
           >
             Add Site
           </Button>
-          <Button onPress={onDismiss}>Close</Button>
+          <Button onPress={onDismiss}>Cancel</Button>
         </Dialog.Actions>
       </Dialog>
 

@@ -252,7 +252,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Close</Button>
+          <Button onPress={onDismiss}>Cancel</Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

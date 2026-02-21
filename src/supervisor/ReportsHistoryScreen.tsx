@@ -758,7 +758,7 @@ const ReportsHistoryScreen = () => {
                 )}
               </View>
             )}
-            <Button onPress={handleCloseDialog}>Close</Button>
+            <Button onPress={handleCloseDialog}>Cancel</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
