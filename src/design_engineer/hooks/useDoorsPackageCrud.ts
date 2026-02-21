@@ -110,6 +110,17 @@ export const useDoorsPackageCrud = ({
             }
           }
 
+          let linkedDocumentsCount = 0;
+          try {
+            const docsCollection = database.collections.get('design_documents');
+            const linkedDocs = await docsCollection
+              .query(Q.where('doors_package_id', pkg.id))
+              .fetch();
+            linkedDocumentsCount = linkedDocs.length;
+          } catch (e) {
+            // ignore — count stays 0
+          }
+
           return {
             id: pkg.id,
             doorsId: pkg.doorsId,
@@ -149,6 +160,7 @@ export const useDoorsPackageCrud = ({
             typeTestCompliance: pkg.typeTestCompliance,
             routineTestCompliance: pkg.routineTestCompliance,
             siteReqCompliance: pkg.siteReqCompliance,
+            linkedDocumentsCount,
           };
         }),
       );

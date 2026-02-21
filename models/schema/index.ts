@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 47, // Add images field to daily_reports for site overview photos
+  version: 48, // Add doors_package_id to design_documents for Doc-DOORS linking
   tables: [
     tableSchema({
       name: 'projects',
@@ -816,6 +816,7 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
+        { name: 'doors_package_id', type: 'string', isOptional: true }, // v48: link to DOORS package
       ],
     }),
     tableSchema({

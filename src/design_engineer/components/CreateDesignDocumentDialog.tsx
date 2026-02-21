@@ -27,6 +27,12 @@ interface KeyDate {
   category: string;
 }
 
+interface DoorsPackageItem {
+  id: string;
+  doorsId: string;
+  equipmentType: string;
+}
+
 interface CreateDesignDocumentDialogProps {
   visible: boolean;
   onDismiss: () => void;
@@ -39,6 +45,7 @@ interface CreateDesignDocumentDialogProps {
   sites: Site[];
   documents: DesignDocument[];
   keyDates: KeyDate[];
+  doorsPackages?: DoorsPackageItem[];
 }
 
 const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
@@ -53,11 +60,13 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   sites,
   documents,
   keyDates,
+  doorsPackages = [],
 }) => {
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [docTypeMenuVisible, setDocTypeMenuVisible] = useState(false);
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
   const [keyDateMenuVisible, setKeyDateMenuVisible] = useState(false);
+  const [doorsMenuVisible, setDoorsMenuVisible] = useState(false);
   const [docNumberManuallyEdited, setDocNumberManuallyEdited] = useState(false);
 
   // Top-level categories (documentType === '_category')
@@ -77,6 +86,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   const selectedSubCategory = categories.find((c) => c.id === form.categoryId);
   const selectedSite = sites.find((s) => s.id === form.siteId);
   const selectedKeyDate = keyDates.find((kd) => kd.id === form.keyDateId);
+  const selectedDoorsPackage = doorsPackages.find((p) => p.id === form.doorsPackageId);
   const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
 
   // Reset manual edit flag when dialog opens
@@ -329,6 +339,46 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
                   : 'Leave empty for project-wide documents'
               }
             />
+
+            {/* DOORS Package Link */}
+            {doorsPackages.length > 0 && (
+              <Menu
+                visible={doorsMenuVisible}
+                onDismiss={() => setDoorsMenuVisible(false)}
+                anchor={
+                  <TouchableOpacity
+                    onPress={() => setDoorsMenuVisible(true)}
+                    style={styles.pickerButton}
+                  >
+                    <Text style={styles.pickerLabel}>Link to DOORS Package</Text>
+                    <Text style={[styles.pickerValue, !form.doorsPackageId && styles.disabledText]}>
+                      {selectedDoorsPackage
+                        ? `${selectedDoorsPackage.doorsId} — ${selectedDoorsPackage.equipmentType}`
+                        : 'None (optional)'}
+                    </Text>
+                  </TouchableOpacity>
+                }
+              >
+                <Menu.Item
+                  key="none"
+                  onPress={() => {
+                    onUpdateField('doorsPackageId', '');
+                    setDoorsMenuVisible(false);
+                  }}
+                  title="None"
+                />
+                {doorsPackages.map((pkg) => (
+                  <Menu.Item
+                    key={pkg.id}
+                    onPress={() => {
+                      onUpdateField('doorsPackageId', pkg.id);
+                      setDoorsMenuVisible(false);
+                    }}
+                    title={`${pkg.doorsId} — ${pkg.equipmentType}`}
+                  />
+                ))}
+              </Menu>
+            )}
           </ScrollView>
         </Dialog.ScrollArea>
         <Dialog.Actions>

@@ -17,6 +17,7 @@ import { v44Migration } from './v44_add_domains';
 import { v45Migration } from './v45_rfq_compliance_status';
 import { v46Migration } from './v46_doors_revisions';
 import { v47Migration } from './v47_add_report_images';
+import { v48Migration } from './v48_add_doors_package_link';
 
 export default schemaMigrations({
   migrations: [
@@ -610,5 +611,7 @@ export default schemaMigrations({
     v46Migration,
     // v47: Add images field to daily_reports for site overview photos
     v47Migration,
+    // v48: Add doors_package_id to design_documents for Doc-DOORS linking
+    v48Migration,
   ],
 });

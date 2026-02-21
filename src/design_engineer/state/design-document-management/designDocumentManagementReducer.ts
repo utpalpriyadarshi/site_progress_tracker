@@ -14,6 +14,7 @@ export interface DocumentFormData {
   categoryId: string;
   siteId: string;
   keyDateId: string; // Link to Key Date for progress tracking
+  doorsPackageId: string; // Link to DOORS package
   revisionNumber: string;
   weightage: string; // String for input, will be converted to number on save
 }
@@ -107,6 +108,7 @@ export const createInitialState = (): DesignDocumentManagementState => ({
     categoryId: '',
     siteId: '',
     keyDateId: '',
+    doorsPackageId: '',
     revisionNumber: 'R0',
     weightage: '',
   },

@@ -96,6 +96,9 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
     ...(pkg.approvalRemarks ? [{ label: 'Appr Remarks', value: pkg.approvalRemarks }] : []),
     ...(pkg.closureDate ? [{ label: 'Closed', value: new Date(pkg.closureDate).toLocaleDateString() }] : []),
     ...(pkg.closureRemarks ? [{ label: 'Remarks', value: pkg.closureRemarks }] : []),
+    ...(pkg.linkedDocumentsCount !== undefined && pkg.linkedDocumentsCount > 0
+      ? [{ label: 'Linked Docs', value: String(pkg.linkedDocumentsCount) }]
+      : []),
   ];
 
   const headerRight = (
