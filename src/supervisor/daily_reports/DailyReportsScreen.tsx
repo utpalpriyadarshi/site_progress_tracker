@@ -19,6 +19,7 @@ import { ReportSyncStatus } from './components/ReportSyncStatus';
 import { ItemsList } from './components/ItemsList';
 import { ProgressReportForm } from './components/ProgressReportForm';
 import { LoadingOverlay, SupervisorHeader } from '../../components/common';
+import { commonStyles } from '../../styles/common';
 
 interface DailyReportsScreenComponentProps {
   sites: SiteModel[];
@@ -127,7 +128,7 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
       : sites.filter(site => site.id === selectedSiteId);
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <SupervisorHeader
         title="Daily Work"
         rightActions={
@@ -249,10 +250,6 @@ const DailyReportsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

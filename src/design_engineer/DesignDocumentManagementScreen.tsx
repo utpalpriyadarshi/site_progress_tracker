@@ -31,6 +31,7 @@ import { useDebounce } from '../utils/performance';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useFlatListProps } from '../hooks/useFlatListProps';
 import { useDocumentCrud } from './hooks/useDocumentCrud';
@@ -264,7 +265,7 @@ const DesignDocumentManagementScreen = () => {
   if (!projectId) {
     return (
       <ErrorBoundary>
-        <View style={styles.container}>
+        <View style={commonStyles.screen}>
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <View>
@@ -283,7 +284,7 @@ const DesignDocumentManagementScreen = () => {
 
   return (
     <ErrorBoundary>
-      <View style={styles.container}>
+      <View style={commonStyles.screen}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitleContainer}>
@@ -594,10 +595,6 @@ const DesignDocumentManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',

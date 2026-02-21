@@ -20,6 +20,7 @@ import {
 import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../components/common';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { SyncService } from '../../services/sync/SyncService';
+import { commonStyles } from '../styles/common';
 
 /**
  * SiteInspectionScreen
@@ -234,7 +235,7 @@ const SiteInspectionScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <SupervisorHeader
         title="Site Inspection"
         rightActions={
@@ -312,10 +313,6 @@ const SiteInspectionScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   fab: {
     position: 'absolute',
     margin: 16,

@@ -32,6 +32,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonList } from '../components/common/LoadingState';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 
@@ -680,7 +681,7 @@ const MilestoneManagementScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -982,10 +983,6 @@ const MilestoneManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   scrollView: {
     flex: 1,
   },

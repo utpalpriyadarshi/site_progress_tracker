@@ -14,6 +14,7 @@ import { canAddHindrance } from './utils';
 import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../../components/common';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { SyncService } from '../../../services/sync/SyncService';
+import { commonStyles } from '../../styles/common';
 
 const HindranceReportScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -111,7 +112,7 @@ const HindranceReportScreen = () => {
   }, [hindrances, setPendingCount]);
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <SupervisorHeader
         title="Hindrance Reports"
         rightActions={
@@ -207,10 +208,6 @@ const HindranceReportScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   addButtonContainer: {
     padding: 16,
     paddingBottom: 8,

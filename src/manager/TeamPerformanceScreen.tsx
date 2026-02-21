@@ -31,6 +31,7 @@ import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 
 interface SupervisorPerformance {
   userId: string;
@@ -522,7 +523,7 @@ const TeamPerformanceScreen = () => {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={commonStyles.screen}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
@@ -536,10 +537,6 @@ const TeamPerformanceScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   searchContainer: {
     marginHorizontal: 15,
     marginBottom: 10,

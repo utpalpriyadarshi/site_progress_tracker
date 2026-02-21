@@ -12,6 +12,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
+import { commonStyles } from '../styles/common';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -274,7 +275,7 @@ const MaterialTrackingScreenComponent = ({
   const selectedItem = siteItems.find(item => item.id === selectedItemId);
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <SupervisorHeader title="Material Tracking" />
 
       {/* Site Selector */}
@@ -485,10 +486,6 @@ const MaterialTrackingScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   header: {
     backgroundColor: 'white',
     padding: 16,

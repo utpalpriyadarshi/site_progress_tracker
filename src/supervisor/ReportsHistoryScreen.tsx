@@ -40,6 +40,7 @@ import type { SupervisorDrawerParamList } from '../nav/SupervisorDrawerNavigator
 import { PdfStatusChip } from '../components/PdfStatusChip';
 import { backgroundPdfQueue } from '../../services/BackgroundPdfQueue';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 
 interface ReportWithDetails {
   report: DailyReportModel;
@@ -435,7 +436,7 @@ const ReportsHistoryScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       <SupervisorHeader title="Reports History" />
 
       {/* Site Selector */}
@@ -767,10 +768,6 @@ const ReportsHistoryScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   skeletonContainer: {
     padding: 16,
     backgroundColor: COLORS.BACKGROUND,

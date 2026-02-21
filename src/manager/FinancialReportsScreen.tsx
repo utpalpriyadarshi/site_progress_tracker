@@ -28,6 +28,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonList } from '../components/common/LoadingState';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 
 interface FinancialData {
   // Budget Metrics
@@ -468,7 +469,7 @@ const FinancialReportsScreen = () => {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={commonStyles.screen}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
@@ -730,10 +731,6 @@ const FinancialReportsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   skeletonContainer: {
     padding: 16,
     backgroundColor: COLORS.BACKGROUND,
