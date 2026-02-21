@@ -21,6 +21,7 @@ import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useFlatListProps } from '../hooks/useFlatListProps';
 import { useDoorsPackageCrud } from './hooks/useDoorsPackageCrud';
@@ -213,7 +214,7 @@ const DoorsPackageManagementScreen = () => {
 
   return (
     <ErrorBoundary>
-      <View style={styles.container}>
+      <View style={commonStyles.screen}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -504,10 +505,6 @@ const DoorsPackageManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',

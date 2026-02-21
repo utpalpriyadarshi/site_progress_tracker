@@ -29,6 +29,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import RfqService from '../services/RfqService';
 import { validateRfqTitle, getErrorMessage } from './utils/validation';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 import { useFlatListProps } from '../hooks/useFlatListProps';
@@ -732,7 +733,7 @@ const DesignRfqManagementScreen = () => {
 
   return (
     <ErrorBoundary>
-      <View style={styles.container}>
+      <View style={commonStyles.screen}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -976,10 +977,6 @@ const DesignRfqManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',

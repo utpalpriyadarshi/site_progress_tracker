@@ -26,6 +26,7 @@ import {
   type PurchaseOrder,
 } from './purchase-order/state';
 import { COLORS } from '../theme/colors';
+import { commonStyles } from '../styles/common';
 
 
 /**
@@ -390,7 +391,7 @@ const PurchaseOrderManagementScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.screen}>
       {/* Offline Indicator */}
       <OfflineIndicator
         isOnline={!isOffline}
@@ -536,10 +537,6 @@ const PurchaseOrderManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
