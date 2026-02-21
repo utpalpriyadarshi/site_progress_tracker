@@ -1,7 +1,7 @@
 /**
  * Manager Tutorial Steps
  *
- * Defines the 11-step walkthrough for the Manager role.
+ * Defines the 12-step walkthrough for the Manager role.
  * Each step has a title, description, icon, and optional
  * screen/action hints for navigation context.
  *
@@ -92,6 +92,15 @@ const managerTutorialSteps: TutorialStep[] = [
   },
   {
     id: 10,
+    title: 'Change Orders',
+    description:
+      'Open the Changes tab. Create change orders to track scope changes and their cost and schedule impact. Submit them for approval, then Approve or Reject — the Dashboard KPI reflects pending count in real time.',
+    icon: 'file-document-edit-outline',
+    screenHint: 'ChangeOrders',
+    actionHint: 'Tap the Changes tab',
+  },
+  {
+    id: 11,
     title: 'BOM Management',
     description:
       'Open the BOM tab. Create and manage Bills of Materials for estimating and execution. Add line items with categories (material, labor, equipment, subcontractor), track quantities and costs.',
@@ -100,7 +109,7 @@ const managerTutorialSteps: TutorialStep[] = [
     actionHint: 'Tap the BOM tab',
   },
   {
-    id: 11,
+    id: 12,
     title: 'Monitor Progress',
     description:
       "Return to the Dashboard to see your updated metrics. Use the Role Switcher to view the app as other roles for cross-department coordination. You're all set!",
