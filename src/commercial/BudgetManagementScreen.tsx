@@ -1,20 +1,21 @@
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { FAB, Card, Searchbar, Chip, Menu, Portal, Dialog, Button, TextInput } from 'react-native-paper';
+import { FAB, Card, Searchbar, Chip, Menu, Portal, Dialog, Button, TextInput, Snackbar } from 'react-native-paper';
 import { database } from '../../models/database';
 import { useCommercial } from './context/CommercialContext';
 import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../auth/AuthContext';
 import { logger } from '../services/LoggingService';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { useSnackbar } from '../hooks/useSnackbar';
+import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 import { budgetManagementReducer, initialBudgetManagementState } from './state/budget/budgetManagementReducer';
 import { budgetManagementActions } from './state/budget/budgetManagementActions';
 import type { Budget } from './state/budget/budgetManagementReducer';
@@ -46,6 +47,8 @@ const BudgetManagementScreen = () => {
   const { projectId, projectName, selectedBudgetCategory, setSelectedBudgetCategory, refreshTrigger } = useCommercial();
   const { user } = useAuth();
   const [state, dispatch] = useReducer(budgetManagementReducer, initialBudgetManagementState);
+  const [pendingDeleteBudget, setPendingDeleteBudget] = useState<Budget | null>(null);
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   const loadBudgets = useCallback(async () => {
     if (!projectId) {
@@ -90,7 +93,7 @@ const BudgetManagementScreen = () => {
       dispatch(budgetManagementActions.setBudgets(budgetsWithActuals));
     } catch (error) {
       logger.error('[Budget] Error loading budgets:', error);
-      Alert.alert('Error', 'Failed to load budgets');
+      showSnackbar('Failed to load budgets');
     } finally {
       dispatch(budgetManagementActions.setLoading(false));
     }
@@ -127,13 +130,13 @@ const BudgetManagementScreen = () => {
 
   const handleCreateBudget = async () => {
     if (!state.form.description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -152,25 +155,25 @@ const BudgetManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Budget entry created successfully');
+      showSnackbar('Budget entry created');
       dispatch(budgetManagementActions.closeDialogs());
       dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
       logger.error('[Budget] Error creating budget:', error);
-      Alert.alert('Error', 'Failed to create budget entry');
+      showSnackbar('Failed to create budget entry');
     }
   };
 
   const handleEditBudget = async () => {
     if (!state.data.editingBudget || !state.form.description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -187,44 +190,36 @@ const BudgetManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Budget entry updated successfully');
+      showSnackbar('Budget entry updated');
       dispatch(budgetManagementActions.closeDialogs());
       dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
       logger.error('[Budget] Error updating budget:', error);
-      Alert.alert('Error', 'Failed to update budget entry');
+      showSnackbar('Failed to update budget entry');
     }
   };
 
   const handleDeleteBudget = (budget: Budget) => {
-    Alert.alert(
-      'Delete Budget',
-      `Are you sure you want to delete this budget entry?\n\n${budget.category.toUpperCase()}: ${budget.description}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const budgetsCollection = database.collections.get('budgets');
-              const budgetRecord = await budgetsCollection.find(budget.id);
+    setPendingDeleteBudget(budget);
+  };
 
-              await database.write(async () => {
-                await budgetRecord.markAsDeleted();
-              });
-
-              Alert.alert('Success', 'Budget entry deleted successfully');
-              loadBudgets();
-            } catch (error) {
-              logger.error('[Budget] Error deleting budget:', error);
-              Alert.alert('Error', 'Failed to delete budget entry');
-            }
-          },
-        },
-      ]
-    );
+  const handleConfirmDeleteBudget = async () => {
+    if (!pendingDeleteBudget) return;
+    const budget = pendingDeleteBudget;
+    setPendingDeleteBudget(null);
+    try {
+      const budgetsCollection = database.collections.get('budgets');
+      const budgetRecord = await budgetsCollection.find(budget.id);
+      await database.write(async () => {
+        await budgetRecord.markAsDeleted();
+      });
+      showSnackbar('Budget entry deleted');
+      loadBudgets();
+    } catch (error) {
+      logger.error('[Budget] Error deleting budget:', error);
+      showSnackbar('Failed to delete budget entry');
+    }
   };
 
   const openEditDialog = (budget: Budget) => {
@@ -498,6 +493,22 @@ const BudgetManagementScreen = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ConfirmDialog
+        visible={!!pendingDeleteBudget}
+        title="Delete Budget Entry"
+        message={pendingDeleteBudget ? `Delete ${pendingDeleteBudget.category.toUpperCase()}: ${pendingDeleteBudget.description}? This action cannot be undone.` : ''}
+        confirmText="Delete"
+        destructive
+        onConfirm={handleConfirmDeleteBudget}
+        onCancel={() => setPendingDeleteBudget(null)}
+      />
+
+      <Snackbar
+        {...snackbarProps}
+        duration={3000}
+        action={{ label: 'Dismiss', onPress: snackbarProps.onDismiss }}
+      />
     </View>
   );
 };

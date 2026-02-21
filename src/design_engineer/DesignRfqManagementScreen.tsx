@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -30,6 +30,7 @@ import RfqService from '../services/RfqService';
 import { validateRfqTitle, getErrorMessage } from './utils/validation';
 import { COLORS } from '../theme/colors';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 import { useFlatListProps } from '../hooks/useFlatListProps';
 
 const RFQ_STATUS_DOTS: { key: string; label: string; color: string }[] = [
@@ -77,6 +78,7 @@ const DesignRfqManagementScreen = () => {
   const flatListProps = useFlatListProps<DesignRfq>();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingDeleteRfqId, setPendingDeleteRfqId] = useState<string | null>(null);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
@@ -224,7 +226,7 @@ const DesignRfqManagementScreen = () => {
       announce(`Loaded ${rfqsList.length} Design RFQ${rfqsList.length !== 1 ? 's' : ''}`);
     } catch (error) {
       logger.error('[DesignRfq] Error loading RFQs:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQs'));
+      showSnackbar(getErrorMessage(error, 'Design RFQs'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
     }
@@ -241,20 +243,20 @@ const DesignRfqManagementScreen = () => {
     const { title, description, doorsPackageId, expectedDeliveryDays } = state.form;
 
     if (!doorsPackageId) {
-      Alert.alert('Validation Error', 'Please select a DOORS Package');
+      showSnackbar('Please select a DOORS Package');
       return;
     }
 
     const titleValidation = validateRfqTitle(title);
     if (!titleValidation.valid) {
-      Alert.alert('Validation Error', titleValidation.message || 'Please enter a valid RFQ title');
+      showSnackbar(titleValidation.message || 'Please enter a valid RFQ title');
       return;
     }
 
     // Validate delivery days
     const deliveryDays = parseInt(expectedDeliveryDays);
     if (expectedDeliveryDays && (isNaN(deliveryDays) || deliveryDays < 1 || deliveryDays > 365)) {
-      Alert.alert('Validation Error', 'Expected delivery days must be between 1 and 365');
+      showSnackbar('Expected delivery days must be between 1 and 365');
       return;
     }
 
@@ -264,7 +266,7 @@ const DesignRfqManagementScreen = () => {
       const isEditing = !!state.ui.editingRfqId;
 
       if (!selectedPackage) {
-        Alert.alert('Error', 'Selected DOORS package not found');
+        showSnackbar('Selected DOORS package not found');
         return;
       }
 
@@ -279,10 +281,7 @@ const DesignRfqManagementScreen = () => {
           .fetchCount();
 
         if (existingActiveCount > 0) {
-          Alert.alert(
-            'Active RFQ Exists',
-            `There is already an active Design RFQ for DOORS package "${selectedPackage.doorsId}". Cancel or complete it before creating a new one.`
-          );
+          showSnackbar(`Active RFQ exists for DOORS package "${selectedPackage.doorsId}". Cancel or complete it first.`);
           return;
         }
       }
@@ -373,7 +372,7 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DesignRfq] Error saving RFQ:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
     } finally {
       setIsSubmitting(false);
     }
@@ -407,29 +406,27 @@ const DesignRfqManagementScreen = () => {
     dispatch({ type: 'OPEN_DIALOG' });
   }, [dispatch]);
 
-  const handleDeleteRfq = useCallback(async (rfqId: string) => {
-    Alert.alert('Confirm Delete', 'Are you sure you want to delete this Design RFQ?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const rfqCollection = database.collections.get<RfqModel>('rfqs');
-            const record = await rfqCollection.find(rfqId);
-            await database.write(async () => {
-              await record.markAsDeleted();
-            });
-            dispatch({ type: 'DELETE_RFQ', payload: { rfqId } });
-            showSnackbar('Design RFQ deleted');
-          } catch (error) {
-            logger.error('[DesignRfq] Error deleting RFQ:', error);
-            Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
-          }
-        },
-      },
-    ]);
-  }, [dispatch, showSnackbar]);
+  const handleDeleteRfq = useCallback((rfqId: string) => {
+    setPendingDeleteRfqId(rfqId);
+  }, []);
+
+  const handleConfirmDeleteRfq = useCallback(async () => {
+    if (!pendingDeleteRfqId) return;
+    const rfqId = pendingDeleteRfqId;
+    setPendingDeleteRfqId(null);
+    try {
+      const rfqCollection = database.collections.get<RfqModel>('rfqs');
+      const record = await rfqCollection.find(rfqId);
+      await database.write(async () => {
+        await record.markAsDeleted();
+      });
+      dispatch({ type: 'DELETE_RFQ', payload: { rfqId } });
+      showSnackbar('Design RFQ deleted');
+    } catch (error) {
+      logger.error('[DesignRfq] Error deleting RFQ:', error);
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
+    }
+  }, [pendingDeleteRfqId, dispatch, showSnackbar]);
 
   const issueRfq = useCallback(async (rfqId: string) => {
     try {
@@ -454,7 +451,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar('RFQ issued successfully');
     } catch (error) {
       logger.error('[DesignRfq] Error issuing RFQ:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, dispatch, showSnackbar]);
 
@@ -480,7 +477,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar('Marked as quotes received');
     } catch (error) {
       logger.error('[DesignRfq] Error updating RFQ:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, dispatch, showSnackbar]);
 
@@ -509,7 +506,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar('RFQ marked as evaluated');
     } catch (error) {
       logger.error('[DesignRfq] Error evaluating RFQ:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, engineerId, dispatch, showSnackbar]);
 
@@ -523,7 +520,7 @@ const DesignRfqManagementScreen = () => {
 
     const value = parseFloat(awardedValue);
     if (!awardedValue || isNaN(value) || value <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid awarded value');
+      showSnackbar('Please enter a valid awarded value');
       return;
     }
 
@@ -552,7 +549,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar('RFQ awarded successfully');
     } catch (error) {
       logger.error('[DesignRfq] Error awarding RFQ:', error);
-      Alert.alert('Error', getErrorMessage(error, 'Design RFQ'));
+      showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   };
 
@@ -579,7 +576,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar('RFQ cancelled');
     } catch (error: any) {
       logger.error('[DesignRfq] Error cancelling RFQ:', error);
-      Alert.alert('Error', error.message || 'Failed to cancel RFQ');
+      showSnackbar(error.message || 'Failed to cancel RFQ');
     }
   };
 
@@ -611,7 +608,7 @@ const DesignRfqManagementScreen = () => {
       .map((r) => r.id);
 
     if (draftIds.length === 0) {
-      Alert.alert('No Draft RFQs', 'Only draft RFQs can be issued. Select at least one draft RFQ.');
+      showSnackbar('Only draft RFQs can be issued. Select at least one draft RFQ.');
       return;
     }
 
@@ -644,7 +641,7 @@ const DesignRfqManagementScreen = () => {
       showSnackbar(`${draftIds.length} RFQ(s) issued successfully`);
     } catch (error) {
       logger.error('[DesignRfq] Error bulk issuing RFQs:', error);
-      Alert.alert('Error', 'Failed to issue selected RFQs');
+      showSnackbar('Failed to issue selected RFQs');
     }
   };
 
@@ -956,6 +953,16 @@ const DesignRfqManagementScreen = () => {
           vendors={vendors}
           engineerId={engineerId}
           onRfqUpdated={handleQuotesRfqUpdated}
+        />
+
+        <ConfirmDialog
+          visible={!!pendingDeleteRfqId}
+          title="Delete Design RFQ"
+          message="Are you sure you want to delete this Design RFQ? This action cannot be undone."
+          confirmText="Delete"
+          destructive
+          onConfirm={handleConfirmDeleteRfq}
+          onCancel={() => setPendingDeleteRfqId(null)}
         />
 
         <Snackbar
