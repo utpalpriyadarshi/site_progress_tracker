@@ -18,6 +18,9 @@ import { database } from './models/database';
 // Import Snackbar provider
 import { SnackbarProvider } from './src/components/Snackbar';
 
+// Import offline banner
+import { OfflineBanner } from './src/components/common';
+
 // Import test script for session checking (Week 3 Testing)
 import { checkLatestSession } from './scripts/testCheckSessions';
 
@@ -88,6 +91,7 @@ function App() {
       <SafeAreaProvider>
         <SnackbarProvider>
           <StatusBar barStyle="dark-content" />
+          <OfflineBanner />
           <MainNavigator />
         </SnackbarProvider>
       </SafeAreaProvider>

@@ -41,3 +41,6 @@ export type { OfflineIndicatorProps } from './OfflineIndicator';
 // Sync Button (Phase 3, Task 3.5)
 export { SyncButton } from './SyncButton';
 export type { SyncButtonProps } from './SyncButton';
+
+// Offline Banner
+export { OfflineBanner } from './OfflineBanner';
