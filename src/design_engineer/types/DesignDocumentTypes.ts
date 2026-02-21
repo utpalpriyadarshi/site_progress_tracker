@@ -25,6 +25,8 @@ export interface DesignDocument {
   approvedDate?: number;
   weightage?: number; // Percentage weight for progress tracking (total per site = 100%)
   keyDateId?: string;
+  doorsPackageId?: string;
+  doorsPackageName?: string; // resolved display name (doorsId) of linked package
   createdBy: string;
   createdAt: number;
   updatedAt: number;

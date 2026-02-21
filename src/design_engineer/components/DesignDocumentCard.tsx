@@ -94,6 +94,17 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
               Key Date
             </Chip>
           )}
+          {doc.doorsPackageId && (
+            <Chip
+              mode="outlined"
+              icon="link"
+              style={styles.doorsChip}
+              textStyle={styles.doorsChipText}
+              compact
+            >
+              {doc.doorsPackageName || 'DOORS'}
+            </Chip>
+          )}
           <Text style={styles.metaText}>{doc.revisionNumber}</Text>
         </View>
 
@@ -298,6 +309,14 @@ const styles = StyleSheet.create({
   },
   keyDateText: {
     color: COLORS.PRIMARY,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  doorsChip: {
+    borderColor: '#7B1FA2',
+  },
+  doorsChipText: {
+    color: '#7B1FA2',
     fontSize: 10,
     fontWeight: 'bold',
   },

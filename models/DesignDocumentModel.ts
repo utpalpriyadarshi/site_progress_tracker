@@ -21,6 +21,7 @@ export default class DesignDocumentModel extends Model {
     design_document_categories: { type: 'belongs_to', key: 'category_id' },
     sites: { type: 'belongs_to', key: 'site_id' },
     key_dates: { type: 'belongs_to', key: 'key_date_id' },
+    doors_packages: { type: 'belongs_to', key: 'doors_package_id' },
   };
 
   @field('document_number') documentNumber!: string;
@@ -42,11 +43,13 @@ export default class DesignDocumentModel extends Model {
   @field('updated_at') updatedAt!: number;
   @field('sync_status') appSyncStatus!: string;
   @field('_version') version!: number;
+  @field('doors_package_id') doorsPackageId?: string;
 
   @relation('projects', 'project_id') project: any;
   @relation('design_document_categories', 'category_id') category: any;
   @relation('sites', 'site_id') site: any;
   @relation('key_dates', 'key_date_id') keyDate: any;
+  @relation('doors_packages', 'doors_package_id') doorsPackage: any;
 
   /**
    * Get status display color

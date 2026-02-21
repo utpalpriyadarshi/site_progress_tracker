@@ -35,6 +35,9 @@ export const useDocumentCrud = ({
   const [keyDates, setKeyDates] = useState<
     Array<{ id: string; code: string; description: string; category: string }>
   >([]);
+  const [doorsPackages, setDoorsPackages] = useState<
+    Array<{ id: string; doorsId: string; equipmentType: string }>
+  >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
@@ -64,6 +67,22 @@ export const useDocumentCrud = ({
       setKeyDates(keyDatesList);
     } catch (error: any) {
       logger.error('[DesignDocument] Error loading key dates:', error);
+    }
+  }, [projectId]);
+
+  const loadDoorsPackages = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const doorsCollection = database.collections.get('doors_packages');
+      const doorsData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
+      const doorsList = doorsData.map((pkg: any) => ({
+        id: pkg.id,
+        doorsId: pkg.doorsId,
+        equipmentType: pkg.equipmentType,
+      }));
+      setDoorsPackages(doorsList);
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error loading DOORS packages:', error);
     }
   }, [projectId]);
 
@@ -120,6 +139,7 @@ export const useDocumentCrud = ({
         docsData.map(async (doc: any) => {
           let siteName = '';
           let categoryName = '';
+          let doorsPackageName = '';
 
           if (doc.siteId) {
             try {
@@ -141,6 +161,15 @@ export const useDocumentCrud = ({
             }
           }
 
+          if (doc.doorsPackageId) {
+            try {
+              const pkg = await database.collections.get('doors_packages').find(doc.doorsPackageId);
+              doorsPackageName = (pkg as any).doorsId;
+            } catch (e) {
+              logger.warn('[DesignDocument] DOORS package not found:', doc.doorsPackageId);
+            }
+          }
+
           return {
             id: doc.id,
             documentNumber: doc.documentNumber,
@@ -153,6 +182,8 @@ export const useDocumentCrud = ({
             siteId: doc.siteId,
             siteName,
             keyDateId: doc.keyDateId,
+            doorsPackageId: doc.doorsPackageId,
+            doorsPackageName,
             revisionNumber: doc.revisionNumber,
             status: doc.status,
             approvalComment: doc.approvalComment,
@@ -181,7 +212,7 @@ export const useDocumentCrud = ({
   const handleCreateOrUpdateDocument = useCallback(async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const { documentNumber, title, documentType, categoryId, siteId, keyDateId, revisionNumber, weightage } =
+    const { documentNumber, title, documentType, categoryId, siteId, keyDateId, doorsPackageId, revisionNumber, weightage } =
       state.form;
 
     if (!documentNumber || !title || !documentType) {
@@ -261,6 +292,14 @@ export const useDocumentCrud = ({
           } catch (e) { /* ignored */ }
         }
 
+        let doorsPackageName = '';
+        if (doorsPackageId) {
+          try {
+            const pkg = await database.collections.get('doors_packages').find(doorsPackageId);
+            doorsPackageName = (pkg as any).doorsId;
+          } catch (e) { /* ignored */ }
+        }
+
         await database.write(async () => {
           await record.update((rec: any) => {
             rec.documentNumber = documentNumber;
@@ -270,6 +309,7 @@ export const useDocumentCrud = ({
             rec.categoryId = categoryId || null;
             rec.siteId = requiresSite ? siteId : null;
             rec.keyDateId = keyDateId || null;
+            rec.doorsPackageId = doorsPackageId || null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.weightage = weightageNum || null;
             rec.updatedAt = Date.now();
@@ -294,6 +334,8 @@ export const useDocumentCrud = ({
           approvedDate: (record as any).approvedDate,
           weightage: weightageNum,
           keyDateId: keyDateId || undefined,
+          doorsPackageId: doorsPackageId || undefined,
+          doorsPackageName: doorsPackageName || undefined,
           createdBy: (record as any).createdBy,
           createdAt: (record as any).createdAt,
           updatedAt: Date.now(),
@@ -314,6 +356,7 @@ export const useDocumentCrud = ({
             rec.projectId = projectId;
             rec.siteId = requiresSite ? siteId : null;
             rec.keyDateId = keyDateId || null;
+            rec.doorsPackageId = doorsPackageId || null;
             rec.revisionNumber = revisionNumber || 'R0';
             rec.weightage = weightageNum || null;
             rec.status = 'draft';
@@ -326,6 +369,7 @@ export const useDocumentCrud = ({
 
           let siteName = '';
           let categoryName = '';
+          let doorsPackageNameForNew = '';
 
           if (siteId && requiresSite) {
             try {
@@ -337,6 +381,12 @@ export const useDocumentCrud = ({
             try {
               const cat = await database.collections.get('design_document_categories').find(categoryId);
               categoryName = (cat as any).name;
+            } catch (e) { /* ignored */ }
+          }
+          if (doorsPackageId) {
+            try {
+              const pkg = await database.collections.get('doors_packages').find(doorsPackageId);
+              doorsPackageNameForNew = (pkg as any).doorsId;
             } catch (e) { /* ignored */ }
           }
 
@@ -355,6 +405,8 @@ export const useDocumentCrud = ({
             status: 'draft',
             weightage: weightageNum,
             keyDateId: keyDateId || undefined,
+            doorsPackageId: doorsPackageId || undefined,
+            doorsPackageName: doorsPackageNameForNew || undefined,
             createdBy: engineerId,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -417,6 +469,7 @@ export const useDocumentCrud = ({
           categoryId: doc.categoryId,
           siteId: doc.siteId || '',
           keyDateId: doc.keyDateId || '',
+          doorsPackageId: doc.doorsPackageId || '',
           revisionNumber: doc.revisionNumber,
           weightage:
             doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
@@ -448,6 +501,7 @@ export const useDocumentCrud = ({
           categoryId: doc.categoryId,
           siteId: doc.siteId || '',
           keyDateId: doc.keyDateId || '',
+          doorsPackageId: doc.doorsPackageId || '',
           revisionNumber: newRevision,
           weightage:
             doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
@@ -531,10 +585,12 @@ export const useDocumentCrud = ({
 
   return {
     keyDates,
+    doorsPackages,
     isSubmitting,
     isApproving,
     loadSites,
     loadKeyDates,
+    loadDoorsPackages,
     loadCategories,
     loadDocuments,
     handleCreateOrUpdateDocument,

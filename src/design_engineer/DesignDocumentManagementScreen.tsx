@@ -70,10 +70,12 @@ const DesignDocumentManagementScreen = () => {
 
   const {
     keyDates,
+    doorsPackages,
     isSubmitting,
     isApproving,
     loadSites,
     loadKeyDates,
+    loadDoorsPackages,
     loadCategories,
     loadDocuments,
     handleCreateOrUpdateDocument,
@@ -97,6 +99,7 @@ const DesignDocumentManagementScreen = () => {
     loadCategories();
     loadDocuments();
     loadKeyDates();
+    loadDoorsPackages();
   }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
   useEffect(() => {
@@ -520,6 +523,7 @@ const DesignDocumentManagementScreen = () => {
           sites={state.data.sites}
           documents={state.data.documents}
           keyDates={keyDates}
+          doorsPackages={doorsPackages}
         />
 
         <ManageCategoriesDialog

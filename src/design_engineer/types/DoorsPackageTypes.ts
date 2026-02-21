@@ -53,6 +53,7 @@ export interface DoorsPackage {
   typeTestCompliance?: number;
   routineTestCompliance?: number;
   siteReqCompliance?: number;
+  linkedDocumentsCount?: number; // count of design docs linked to this package
 }
 
 export interface Site {
