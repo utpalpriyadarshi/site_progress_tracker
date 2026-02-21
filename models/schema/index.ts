@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 46, // Add doors_revisions table for package revision history
+  version: 47, // Add images field to daily_reports for site overview photos
   tables: [
     tableSchema({
       name: 'projects',
@@ -159,6 +159,8 @@ export default appSchema({
         { name: 'pdf_generation_status', type: 'string' }, // pending, generating, completed, failed, skipped
         { name: 'pdf_generation_attempts', type: 'number' }, // retry counter
         { name: 'pdf_last_attempt_timestamp', type: 'number', isOptional: true }, // last attempt timestamp
+        // v47: Site overview photos
+        { name: 'images', type: 'string', isOptional: true }, // JSON array of local file paths
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],

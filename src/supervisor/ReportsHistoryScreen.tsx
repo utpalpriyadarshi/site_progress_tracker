@@ -5,6 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import {
   Card,
@@ -622,6 +623,33 @@ const ReportsHistoryScreen = () => {
                     <Text style={styles.notesText}>{report.notes}</Text>
                   </>
                 )}
+
+                {(() => {
+                  const images: string[] = report.images
+                    ? JSON.parse(report.images)
+                    : [];
+                  if (images.length === 0) return null;
+                  return (
+                    <>
+                      <Divider style={styles.divider} />
+                      <Text style={styles.notesLabel}>
+                        Site Photos ({images.length}):
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.photoStrip}>
+                        {images.map((uri, idx) => (
+                          <Image
+                            key={idx}
+                            source={{ uri }}
+                            style={styles.photoThumbnail}
+                          />
+                        ))}
+                      </ScrollView>
+                    </>
+                  );
+                })()}
               </Card.Content>
 
               <Card.Actions>
@@ -699,6 +727,32 @@ const ReportsHistoryScreen = () => {
                       </Text>
                     </>
                   )}
+
+                  {(() => {
+                    const images: string[] = selectedReport.report.images
+                      ? JSON.parse(selectedReport.report.images)
+                      : [];
+                    if (images.length === 0) return null;
+                    return (
+                      <>
+                        <Text style={styles.dialogLabel}>
+                          Site Photos ({images.length}):
+                        </Text>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          style={styles.photoStrip}>
+                          {images.map((uri, idx) => (
+                            <Image
+                              key={idx}
+                              source={{ uri }}
+                              style={styles.photoThumbnail}
+                            />
+                          ))}
+                        </ScrollView>
+                      </>
+                    );
+                  })()}
 
                   <Divider style={styles.dialogDivider} />
 
@@ -858,6 +912,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+  },
+  photoStrip: {
+    marginTop: 8,
+  },
+  photoThumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    marginRight: 8,
+    backgroundColor: COLORS.BORDER,
   },
   notesLabel: {
     fontSize: 14,
