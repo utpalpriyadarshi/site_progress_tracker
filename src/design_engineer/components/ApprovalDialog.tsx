@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 
 interface ApprovalDialogProps {
@@ -60,20 +60,25 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
         <Dialog.Title>{getActionTitle(action)}</Dialog.Title>
-        <Dialog.Content>
-          <Paragraph>{getActionMessage(action)}</Paragraph>
-          {needsComment && (
-            <TextInput
-              label="Comment *"
-              value={comment}
-              onChangeText={onCommentChange}
-              style={styles.input}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
-            />
-          )}
-        </Dialog.Content>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
+          <Dialog.Content>
+            <Paragraph>{getActionMessage(action)}</Paragraph>
+            {needsComment && (
+              <TextInput
+                label="Comment *"
+                value={comment}
+                onChangeText={onCommentChange}
+                style={styles.input}
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+              />
+            )}
+          </Dialog.Content>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
           <Button onPress={onConfirm} disabled={isConfirmDisabled}>

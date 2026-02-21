@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu, Chip, HelperText, IconButton } from 'react-native-paper';
 import { Site, DOORS_CATEGORIES } from '../types/DoorsPackageTypes';
 import { DoorsPackageTemplate } from '../data/doorsPackageTemplates';
@@ -233,6 +233,10 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
         <Dialog.Title>{isEditing ? 'Edit DOORS Package' : 'Create DOORS Package'}</Dialog.Title>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
         <Dialog.Content style={styles.dialogContent}>
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator>
             {/* 1. Domain picker — first, drives equipment suggestions */}
@@ -381,6 +385,7 @@ const CreateDoorsPackageDialog: React.FC<CreateDoorsPackageDialogProps> = ({
             </Menu>
           </ScrollView>
         </Dialog.Content>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
           <Button onPress={onCreate} loading={isSubmitting} disabled={isSubmitting}>

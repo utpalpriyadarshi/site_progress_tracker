@@ -1,5 +1,5 @@
 import React, { useMemo, Dispatch } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import { DoorsPackage, Domain } from '../types/DesignRfqTypes';
 import { COLORS } from '../../theme/colors';
@@ -65,7 +65,11 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Title>{isEditing ? 'Edit Design RFQ' : 'Create Design RFQ'}</Dialog.Title>
-        <Dialog.ScrollArea>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
+          <Dialog.ScrollArea>
           <ScrollView>
             <Dialog.Content>
               {/* Step 1: Domain selector */}
@@ -171,6 +175,7 @@ const CreateDesignRfqDialog: React.FC<CreateDesignRfqDialogProps> = ({
             </Dialog.Content>
           </ScrollView>
         </Dialog.ScrollArea>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
           <Button onPress={onSubmit} loading={isSubmitting} disabled={isSubmitting}>
