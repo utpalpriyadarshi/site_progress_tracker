@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { logger } from '../services/LoggingService';
 
 import {
@@ -23,6 +23,9 @@ import { switchMap } from 'rxjs/operators';
 import { useAuth } from '../auth/AuthContext';
 import RfqService from '../services/RfqService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import VendorQuotesSheet from '../design_engineer/components/VendorQuotesSheet';
+import { Vendor } from '../design_engineer/types/VendorQuoteTypes';
+import { DesignRfq } from '../design_engineer/types/DesignRfqTypes';
 
 /**
  * RFQ Detail Screen
@@ -131,6 +134,47 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [quotesSheetVisible, setQuotesSheetVisible] = useState(false);
+
+  useEffect(() => {
+    database.collections.get<VendorModel>('vendors').query().fetch().then((rows) => {
+      setVendors(rows.map((v) => ({
+        id: v.id,
+        vendorName: v.vendorName,
+        vendorCode: v.vendorCode,
+        category: v.category,
+        contactPerson: v.contactPerson,
+        email: v.email,
+        phone: v.phone,
+        rating: v.rating,
+        isApproved: v.isApproved,
+      })));
+    }).catch(() => {});
+  }, []);
+
+  const rfqAsDesignRfq: DesignRfq = {
+    id: rfq.id,
+    rfqNumber: rfq.rfqNumber,
+    doorsId: rfq.doorsId,
+    doorsPackageId: rfq.doorsPackageId,
+    projectId: rfq.projectId,
+    title: rfq.title,
+    description: rfq.description,
+    status: rfq.status,
+    rfqType: rfq.rfqType,
+    issueDate: rfq.issueDate,
+    closingDate: rfq.closingDate,
+    evaluationDate: rfq.evaluationDate,
+    awardDate: rfq.awardDate,
+    expectedDeliveryDays: rfq.expectedDeliveryDays,
+    totalVendorsInvited: rfq.totalVendorsInvited,
+    totalQuotesReceived: rfq.totalQuotesReceived,
+    winningVendorId: rfq.winningVendorId,
+    awardedValue: rfq.awardedValue,
+    createdById: rfq.createdById,
+    createdAt: rfq.createdAt,
+  };
 
   // Refresh on focus
   useFocusEffect(
@@ -374,6 +418,14 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
 
     return (
       <ScrollView style={styles.tabContent}>
+        {sortedQuotes.length > 0 && (
+          <TouchableOpacity
+            style={styles.comparisonButton}
+            onPress={() => setQuotesSheetVisible(true)}
+          >
+            <Text style={styles.comparisonButtonText}>View Detailed Comparison</Text>
+          </TouchableOpacity>
+        )}
         {sortedQuotes.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📋</Text>
@@ -498,6 +550,14 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
       {activeTab === 'overview' && renderOverviewTab()}
       {activeTab === 'quotes' && renderQuotesTab()}
       {activeTab === 'evaluation' && renderEvaluationTab()}
+
+      <VendorQuotesSheet
+        visible={quotesSheetVisible}
+        onDismiss={() => setQuotesSheetVisible(false)}
+        rfq={rfqAsDesignRfq}
+        vendors={vendors}
+        readOnly={true}
+      />
 
       {/* Action Bar */}
       <View style={styles.actionBar}>
@@ -824,6 +884,20 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#EF4444',
+  },
+  comparisonButton: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  comparisonButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
   },
 });
 
