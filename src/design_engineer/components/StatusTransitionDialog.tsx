@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 
 export type TransitionStage = 'received' | 'reviewed' | 'approved' | 'closed';
@@ -62,18 +62,23 @@ const StatusTransitionDialog: React.FC<StatusTransitionDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
         <Dialog.Title>{config.title}</Dialog.Title>
-        <Dialog.Content>
-          <Paragraph>{config.prompt}</Paragraph>
-          <TextInput
-            label={config.label}
-            value={remarks}
-            onChangeText={setRemarks}
-            mode="outlined"
-            multiline
-            numberOfLines={3}
-            style={styles.input}
-          />
-        </Dialog.Content>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
+          <Dialog.Content>
+            <Paragraph>{config.prompt}</Paragraph>
+            <TextInput
+              label={config.label}
+              value={remarks}
+              onChangeText={setRemarks}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+              style={styles.input}
+            />
+          </Dialog.Content>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
           <Button onPress={handleConfirm}>{config.action}</Button>

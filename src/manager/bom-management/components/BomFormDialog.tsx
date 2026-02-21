@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import {
   Button,
   TextInput,
@@ -70,6 +70,10 @@ export const BomFormDialog: React.FC<BomFormDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Title>{editingBom ? 'Edit BOM' : 'Add New BOM'}</Dialog.Title>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
         <Dialog.ScrollArea>
           <ScrollView>
             <TextInput
@@ -198,6 +202,7 @@ export const BomFormDialog: React.FC<BomFormDialogProps> = ({
             />
           </ScrollView>
         </Dialog.ScrollArea>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
           <Button onPress={onSave}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, Alert, KeyboardAvoidingView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { InvoiceFormData, Invoice } from '../hooks';
@@ -165,6 +165,10 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
         onDismiss={onDismiss}
       >
         <Dialog.Title accessibilityRole="header">{title}</Dialog.Title>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
         <Dialog.ScrollArea>
           <ScrollView
             style={styles.dialogContent}
@@ -337,6 +341,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
             )}
           </ScrollView>
         </Dialog.ScrollArea>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button
             onPress={onDismiss}

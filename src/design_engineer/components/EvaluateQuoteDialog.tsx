@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Portal, Dialog, Button, TextInput } from 'react-native-paper';
 import { VendorQuote } from '../types/VendorQuoteTypes';
 import { COLORS } from '../../theme/colors';
@@ -64,6 +64,10 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Title>Evaluate Quote</Dialog.Title>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
         <Dialog.ScrollArea>
           <ScrollView>
             <Dialog.Content>
@@ -120,6 +124,7 @@ const EvaluateQuoteDialog: React.FC<EvaluateQuoteDialogProps> = ({
             </Dialog.Content>
           </ScrollView>
         </Dialog.ScrollArea>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button onPress={onDismiss} disabled={isSubmitting}>Cancel</Button>
           <Button onPress={handleSubmit} loading={isSubmitting} disabled={isSubmitting}>

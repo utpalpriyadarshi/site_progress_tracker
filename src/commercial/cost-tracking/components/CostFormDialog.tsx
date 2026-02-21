@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COST_CATEGORIES } from '../utils';
@@ -97,6 +97,10 @@ export const CostFormDialog: React.FC<CostFormDialogProps> = ({
         onDismiss={onDismiss}
       >
         <Dialog.Title accessibilityRole="header">{title}</Dialog.Title>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
         <Dialog.ScrollArea>
           <ScrollView
             style={styles.content}
@@ -219,6 +223,7 @@ export const CostFormDialog: React.FC<CostFormDialogProps> = ({
             )}
           </ScrollView>
         </Dialog.ScrollArea>
+        </KeyboardAvoidingView>
         <Dialog.Actions>
           <Button
             onPress={onDismiss}
