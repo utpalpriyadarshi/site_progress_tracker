@@ -48,7 +48,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         {/* Status and Photo Count */}
         <View style={styles.chipContainer}>
           {photoCount > 0 && (
-            <Chip icon="camera" style={styles.photoChip} textStyle={styles.photoChipText}>
+            <Chip
+              icon="camera"
+              style={styles.photoChip}
+              textStyle={styles.photoChipText}
+              accessibilityLabel={`${photoCount} photo${photoCount === 1 ? '' : 's'}`}
+            >
               {photoCount}
             </Chip>
           )}
@@ -57,7 +62,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             style={{
               backgroundColor: getStatusColor(item.status),
             }}
-            textStyle={styles.statusChipText}>
+            textStyle={styles.statusChipText}
+            accessibilityLabel={`Status: ${formatStatus(item.status)}`}
+          >
             {formatStatus(item.status)}
           </Chip>
         </View>

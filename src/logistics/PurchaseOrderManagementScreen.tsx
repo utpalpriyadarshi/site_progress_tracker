@@ -309,6 +309,7 @@ const PurchaseOrderManagementScreen = () => {
             mode="flat"
             style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
             textStyle={styles.statusChipText}
+            accessibilityLabel={`Status: ${item.status}`}
           >
             {item.status.toUpperCase()}
           </Chip>
@@ -416,6 +417,8 @@ const PurchaseOrderManagementScreen = () => {
               selected={state.filters.filterStatus === status}
               onPress={() => dispatch({ type: 'TOGGLE_FILTER_STATUS', payload: status })}
               style={styles.filterChip}
+              accessibilityLabel={`Filter by ${status}. ${state.filters.filterStatus === status ? 'Selected' : 'Not selected'}`}
+              accessibilityState={{ selected: state.filters.filterStatus === status }}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </Chip>
@@ -431,6 +434,7 @@ const PurchaseOrderManagementScreen = () => {
           renderItem={renderPOCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
+          accessibilityLabel="Purchase orders list"
           ListEmptyComponent={
             debouncedSearchQuery || state.filters.filterStatus ? (
               <EmptyState
@@ -484,6 +488,8 @@ const PurchaseOrderManagementScreen = () => {
                 selected={state.form.newVendorId === vendor.id}
                 onPress={() => dispatch({ type: 'SET_NEW_VENDOR_ID', payload: vendor.id })}
                 style={styles.pickerChip}
+                accessibilityLabel={`Select vendor: ${vendor.name}. ${state.form.newVendorId === vendor.id ? 'Selected' : 'Not selected'}`}
+                accessibilityState={{ selected: state.form.newVendorId === vendor.id }}
               >
                 {vendor.name}
               </Chip>
@@ -496,6 +502,8 @@ const PurchaseOrderManagementScreen = () => {
                 selected={state.form.newRfqId === rfq.id}
                 onPress={() => dispatch({ type: 'SET_NEW_RFQ_ID', payload: rfq.id })}
                 style={styles.pickerChip}
+                accessibilityLabel={`Link to RFQ: ${rfq.rfqNumber}. ${state.form.newRfqId === rfq.id ? 'Selected' : 'Not selected'}`}
+                accessibilityState={{ selected: state.form.newRfqId === rfq.id }}
               >
                 {rfq.rfqNumber}
               </Chip>

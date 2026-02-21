@@ -519,6 +519,7 @@ const MilestoneManagementScreen = () => {
                   { backgroundColor: milestone.isCustom ? COLORS.STATUS_EVALUATED : COLORS.INFO },
                 ]}
                 textStyle={styles.chipCodeText}
+                accessibilityLabel={`Milestone code: ${milestone.milestoneCode}`}
               >
                 {milestone.milestoneCode}
               </Chip>
@@ -527,6 +528,7 @@ const MilestoneManagementScreen = () => {
             <Chip
               style={styles.weightageChip}
               textStyle={styles.chipWeightText}
+              accessibilityLabel={`Milestone weightage: ${milestone.weightage}%`}
             >
               {milestone.weightage}%
             </Chip>
