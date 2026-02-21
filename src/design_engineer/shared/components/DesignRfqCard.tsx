@@ -30,28 +30,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Chip, Button, IconButton } from 'react-native-paper';
 import { DesignRfqCardProps } from '../types';
 import { COLORS } from '../../../theme/colors';
-
-/**
- * Get status color based on RFQ status
- */
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'draft':
-      return COLORS.DISABLED;
-    case 'issued':
-      return COLORS.INFO;
-    case 'quotes_received':
-      return COLORS.WARNING;
-    case 'evaluated':
-      return COLORS.STATUS_EVALUATED;
-    case 'awarded':
-      return COLORS.SUCCESS;
-    case 'cancelled':
-      return COLORS.ERROR;
-    default:
-      return COLORS.DISABLED;
-  }
-};
+import { STATUS_CONFIG } from '../../../utils/statusConfig';
 
 /**
  * DesignRfqCard Component
@@ -81,10 +60,11 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
         </View>
         <Chip
           mode="flat"
-          style={[styles.statusChip, { backgroundColor: getStatusColor(rfq.status) }]}
-          textStyle={styles.statusChipText}
+          icon={(STATUS_CONFIG[rfq.status] || STATUS_CONFIG.draft).icon}
+          style={[styles.statusChip, { backgroundColor: (STATUS_CONFIG[rfq.status] || STATUS_CONFIG.draft).color + '20' }]}
+          textStyle={[styles.statusChipText, { color: (STATUS_CONFIG[rfq.status] || STATUS_CONFIG.draft).color }]}
         >
-          {rfq.status.toUpperCase()}
+          {(STATUS_CONFIG[rfq.status] || STATUS_CONFIG.draft).label}
         </Chip>
       </View>
 
@@ -235,7 +215,6 @@ const styles = StyleSheet.create({
     height: 28,
   },
   statusChipText: {
-    color: '#FFF',
     fontSize: 12,
     fontWeight: 'bold',
   },

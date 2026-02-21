@@ -4,6 +4,7 @@ import { Card, Button, Chip, IconButton, Checkbox } from 'react-native-paper';
 import { DoorsPackage } from '../types/DoorsPackageTypes';
 import StatusTimeline, { DOORS_STATUS_STEPS } from './StatusTimeline';
 import { COLORS } from '../../theme/colors';
+import { STATUS_CONFIG } from '../../utils/statusConfig';
 
 interface DoorsPackageCardProps {
   package: DoorsPackage;
@@ -20,22 +21,6 @@ interface DoorsPackageCardProps {
   onLongPress?: (packageId: string) => void;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return '#FFA500';
-    case 'received':
-      return COLORS.INFO;
-    case 'reviewed':
-      return COLORS.SUCCESS;
-    case 'approved':
-      return '#7B1FA2';
-    case 'closed':
-      return '#616161';
-    default:
-      return COLORS.DISABLED;
-  }
-};
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
@@ -134,11 +119,12 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
             ) : null}
             <Chip
               mode="flat"
+              icon={(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).icon}
               style={{
-                backgroundColor: getStatusColor(pkg.status),
+                backgroundColor: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color + '20',
               }}
-              textStyle={styles.statusChipText}>
-              {pkg.status.toUpperCase()}
+              textStyle={[styles.statusChipText, { color: (STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).color }]}>
+              {(STATUS_CONFIG[pkg.status] || STATUS_CONFIG.pending).label}
             </Chip>
           </View>
         </View>
@@ -387,7 +373,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statusChipText: {
-    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },
