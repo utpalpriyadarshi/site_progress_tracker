@@ -486,7 +486,6 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
                   setSiteMenuVisible(false);
                 }}
                 title={site.name}
-                description={site.location}
               />
             ))}
             {availableSites.length === 0 && (

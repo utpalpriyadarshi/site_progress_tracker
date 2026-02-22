@@ -91,7 +91,7 @@ export const useProjectForm = ({
         editingProject ? 'Project updated successfully' : 'Project created successfully'
       );
     } catch (error) {
-      logger.error('Error saving project:', error);
+      logger.error('Error saving project:', error as Error);
       onError('Failed to save project');
     }
   }, [state, currentUserId, onError, onDataReload, onSuccess]);

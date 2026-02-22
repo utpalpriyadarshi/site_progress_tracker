@@ -11,7 +11,7 @@ import {
 } from 'react-native-paper';
 import { useAuth } from './AuthContext';
 import { useSnackbar } from '../components/Snackbar';
-import { PasswordResetService } from '../services/PasswordResetService';
+import PasswordResetService from '../services/PasswordResetService';
 import {
   validatePasswordStrength,
   calculatePasswordStrength,
@@ -75,7 +75,7 @@ const PasswordChangeScreen = ({ navigation }: any) => {
     setLoading(true);
 
     try {
-      const result = await PasswordResetService.changePasswordByUser(
+      const result = await (PasswordResetService as any).changePasswordByUser(
         user.userId,
         currentPassword,
         newPassword

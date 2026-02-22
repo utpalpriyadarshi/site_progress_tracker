@@ -35,7 +35,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
 
       setDoorsPackages(packagesList);
     } catch (error) {
-      logger.error('[DesignRfq] Error loading DOORS packages:', error);
+      logger.error('[DesignRfq] Error loading DOORS packages:', error as Error);
     }
   };
 
@@ -47,7 +47,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
 
     try {
       setLoading(true);
-      logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
+      logger.info('[DesignRfq] Loading Design RFQs for project:', { projectId });
 
       const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqsData = await rfqCollection
@@ -77,10 +77,10 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
         createdAt: rfq.createdAt,
       }));
 
-      logger.debug('[DesignRfq] Loaded RFQs:', rfqsList.length);
+      logger.debug('[DesignRfq] Loaded RFQs:', { value: rfqsList.length });
       setRfqs(rfqsList);
     } catch (error) {
-      logger.error('[DesignRfq] Error loading RFQs:', error);
+      logger.error('[DesignRfq] Error loading RFQs:', error as Error);
       Alert.alert('Error', 'Failed to load Design RFQs');
     } finally {
       setLoading(false);
@@ -135,7 +135,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       loadRfqs();
       return true;
     } catch (error) {
-      logger.error('[DesignRfq] Error creating RFQ:', error);
+      logger.error('[DesignRfq] Error creating RFQ:', error as Error);
       Alert.alert('Error', 'Failed to create Design RFQ');
       return false;
     }
@@ -156,7 +156,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       Alert.alert('Success', 'RFQ issued successfully');
       loadRfqs();
     } catch (error) {
-      logger.error('[DesignRfq] Error issuing RFQ:', error);
+      logger.error('[DesignRfq] Error issuing RFQ:', error as Error);
       Alert.alert('Error', 'Failed to issue RFQ');
     }
   };
@@ -175,7 +175,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       Alert.alert('Success', 'Marked as quotes received');
       loadRfqs();
     } catch (error) {
-      logger.error('[DesignRfq] Error updating RFQ:', error);
+      logger.error('[DesignRfq] Error updating RFQ:', error as Error);
       Alert.alert('Error', 'Failed to update RFQ');
     }
   };

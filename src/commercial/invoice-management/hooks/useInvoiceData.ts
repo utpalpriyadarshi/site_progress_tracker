@@ -42,7 +42,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
 
     try {
       setLoading(true);
-      logger.debug('[Invoice] Loading invoices for project:', projectId);
+      logger.debug('[Invoice] Loading invoices for project:', { projectId });
 
       const invoicesCollection = database.collections.get('invoices');
       const invoicesData = await invoicesCollection
@@ -69,10 +69,10 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
         };
       });
 
-      logger.debug('[Invoice] Loaded invoices:', invoicesWithVendors.length);
+      logger.debug('[Invoice] Loaded invoices:', { value: invoicesWithVendors.length });
       setInvoices(invoicesWithVendors);
     } catch (error) {
-      logger.error('[Invoice] Error loading invoices:', error);
+      logger.error('[Invoice] Error loading invoices:', error as Error);
       Alert.alert('Error', 'Failed to load invoices');
     } finally {
       setLoading(false);
@@ -105,7 +105,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
       await loadInvoices();
       return true;
     } catch (error) {
-      logger.error('[Invoice] Error creating invoice:', error);
+      logger.error('[Invoice] Error creating invoice:', error as Error);
       Alert.alert('Error', 'Failed to create invoice');
       return false;
     }
@@ -135,7 +135,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
       await loadInvoices();
       return true;
     } catch (error) {
-      logger.error('[Invoice] Error updating invoice:', error);
+      logger.error('[Invoice] Error updating invoice:', error as Error);
       Alert.alert('Error', 'Failed to update invoice');
       return false;
     }
@@ -162,7 +162,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
               Alert.alert('Success', 'Invoice deleted successfully');
               await loadInvoices();
             } catch (error) {
-              logger.error('[Invoice] Error deleting invoice:', error);
+              logger.error('[Invoice] Error deleting invoice:', error as Error);
               Alert.alert('Error', 'Failed to delete invoice');
             }
           },
@@ -192,7 +192,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
             Alert.alert('Success', 'Invoice marked as paid');
             await loadInvoices();
           } catch (error) {
-            logger.error('[Invoice] Error marking invoice as paid:', error);
+            logger.error('[Invoice] Error marking invoice as paid:', error as Error);
             Alert.alert('Error', 'Failed to mark invoice as paid');
           }
         },

@@ -482,7 +482,7 @@ const enhance = withObservables(['projectId'], ({ projectId }: { projectId: stri
     ),
 }));
 
-const EnhancedMaterialTrackingScreen = enhance(MaterialTrackingScreenComponent);
+const EnhancedMaterialTrackingScreen = enhance(MaterialTrackingScreenComponent as any);
 
 // Wrapper component that provides context
 const MaterialTrackingScreen = () => {

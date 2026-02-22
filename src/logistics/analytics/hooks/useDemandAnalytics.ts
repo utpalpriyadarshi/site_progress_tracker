@@ -78,7 +78,7 @@ export const useDemandAnalytics = (projectId: string | null) => {
         leadTimes: leadTimes.length,
       });
     } catch (error) {
-      logger.error('[useDemandAnalytics] Error loading demand data', error);
+      logger.error('[useDemandAnalytics] Error loading demand data', error as Error);
     } finally {
       setLoading(false);
     }

@@ -31,7 +31,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           setSelectedRoleState(savedRole as AdminRole);
         }
       } catch (error) {
-        logger.error('Error loading saved admin role:', error);
+        logger.error('Error loading saved admin role:', error as Error);
       }
     };
 
@@ -48,7 +48,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         await AsyncStorage.removeItem(STORAGE_KEY);
       }
     } catch (error) {
-      logger.error('Error saving admin role:', error);
+      logger.error('Error saving admin role:', error as Error);
     }
   };
 

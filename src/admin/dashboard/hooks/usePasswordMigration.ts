@@ -24,7 +24,7 @@ export const usePasswordMigration = () => {
       const status = await PasswordMigrationService.getMigrationStatus();
       setMigrationStatus(status);
     } catch (error) {
-      logger.error('Error loading migration status:', error);
+      logger.error('Error loading migration status:', error as Error);
     }
   };
 

@@ -50,7 +50,7 @@ export const useCostAnalytics = (projectId: string | null) => {
 
       logger.debug('[useCostAnalytics] Loaded cost analytics', { trends: trends.length });
     } catch (error) {
-      logger.error('[useCostAnalytics] Error loading cost data', error);
+      logger.error('[useCostAnalytics] Error loading cost data', error as Error);
     } finally {
       setLoading(false);
     }

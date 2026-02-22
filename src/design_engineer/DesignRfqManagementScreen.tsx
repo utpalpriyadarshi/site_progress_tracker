@@ -111,7 +111,7 @@ const DesignRfqManagementScreen = () => {
       const domainsList: Domain[] = domainsData.map((d: DomainModel) => ({ id: d.id, name: d.name }));
       dispatch({ type: 'SET_DOMAINS', payload: { domains: domainsList } });
     } catch (error) {
-      logger.error('[DesignRfq] Error loading domains:', error);
+      logger.error('[DesignRfq] Error loading domains:', error as Error);
     }
   };
 
@@ -155,7 +155,7 @@ const DesignRfqManagementScreen = () => {
 
       dispatch({ type: 'SET_DOORS_PACKAGES', payload: { packages: packagesList } });
     } catch (error) {
-      logger.error('[DesignRfq] Error loading DOORS packages:', error);
+      logger.error('[DesignRfq] Error loading DOORS packages:', error as Error);
     }
   };
 
@@ -177,7 +177,7 @@ const DesignRfqManagementScreen = () => {
       }));
       setVendors(vendorsList);
     } catch (error) {
-      logger.error('[DesignRfq] Error loading vendors:', error);
+      logger.error('[DesignRfq] Error loading vendors:', error as Error);
     }
   };
 
@@ -189,7 +189,7 @@ const DesignRfqManagementScreen = () => {
 
     try {
       dispatch({ type: 'START_LOADING' });
-      logger.info('[DesignRfq] Loading Design RFQs for project:', projectId);
+      logger.info('[DesignRfq] Loading Design RFQs for project:', { projectId });
 
       const rfqCollection = database.collections.get<RfqModel>('rfqs');
       const rfqsData = await rfqCollection.query(
@@ -221,12 +221,12 @@ const DesignRfqManagementScreen = () => {
         createdAt: rfq.createdAt,
       }));
 
-      logger.debug('[DesignRfq] Loaded RFQs:', rfqsList.length);
+      logger.debug('[DesignRfq] Loaded RFQs:', { value: rfqsList.length });
       dispatch({ type: 'SET_RFQS', payload: { rfqs: rfqsList } });
 
       announce(`Loaded ${rfqsList.length} Design RFQ${rfqsList.length !== 1 ? 's' : ''}`);
     } catch (error) {
-      logger.error('[DesignRfq] Error loading RFQs:', error);
+      logger.error('[DesignRfq] Error loading RFQs:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQs'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
@@ -372,7 +372,7 @@ const DesignRfqManagementScreen = () => {
 
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
-      logger.error('[DesignRfq] Error saving RFQ:', error);
+      logger.error('[DesignRfq] Error saving RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     } finally {
       setIsSubmitting(false);
@@ -424,7 +424,7 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'DELETE_RFQ', payload: { rfqId } });
       showSnackbar('Design RFQ deleted');
     } catch (error) {
-      logger.error('[DesignRfq] Error deleting RFQ:', error);
+      logger.error('[DesignRfq] Error deleting RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [pendingDeleteRfqId, dispatch, showSnackbar]);
@@ -451,7 +451,7 @@ const DesignRfqManagementScreen = () => {
 
       showSnackbar('RFQ issued successfully');
     } catch (error) {
-      logger.error('[DesignRfq] Error issuing RFQ:', error);
+      logger.error('[DesignRfq] Error issuing RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, dispatch, showSnackbar]);
@@ -477,7 +477,7 @@ const DesignRfqManagementScreen = () => {
 
       showSnackbar('Marked as quotes received');
     } catch (error) {
-      logger.error('[DesignRfq] Error updating RFQ:', error);
+      logger.error('[DesignRfq] Error updating RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, dispatch, showSnackbar]);
@@ -506,7 +506,7 @@ const DesignRfqManagementScreen = () => {
 
       showSnackbar('RFQ marked as evaluated');
     } catch (error) {
-      logger.error('[DesignRfq] Error evaluating RFQ:', error);
+      logger.error('[DesignRfq] Error evaluating RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   }, [state.data.rfqs, engineerId, dispatch, showSnackbar]);
@@ -549,7 +549,7 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'CLOSE_AWARD_DIALOG' });
       showSnackbar('RFQ awarded successfully');
     } catch (error) {
-      logger.error('[DesignRfq] Error awarding RFQ:', error);
+      logger.error('[DesignRfq] Error awarding RFQ:', error as Error);
       showSnackbar(getErrorMessage(error, 'Design RFQ'));
     }
   };
@@ -641,7 +641,7 @@ const DesignRfqManagementScreen = () => {
       dispatch({ type: 'CLEAR_SELECTION' });
       showSnackbar(`${draftIds.length} RFQ(s) issued successfully`);
     } catch (error) {
-      logger.error('[DesignRfq] Error bulk issuing RFQs:', error);
+      logger.error('[DesignRfq] Error bulk issuing RFQs:', error as Error);
       showSnackbar('Failed to issue selected RFQs');
     }
   };
@@ -882,7 +882,6 @@ const DesignRfqManagementScreen = () => {
             visible={state.ui.filterMenuVisible}
             onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
             anchor={{ x: 0, y: 0 }}
-            accessibilityLabel="Status filter menu"
           >
             {[
               { key: 'draft', title: 'Draft' },

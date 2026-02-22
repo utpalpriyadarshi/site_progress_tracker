@@ -130,7 +130,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
         logger.info('[DoorsRegister] All DOORS data cleared successfully');
       });
     } catch (error) {
-      logger.error('[DoorsRegister] Error clearing DOORS data:', error);
+      logger.error('[DoorsRegister] Error clearing DOORS data:', error as Error);
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, d
       const linkedCount = await linkBomItemsToDoors(projectId);
       logger.info(`[DoorsRegister] Linked ${linkedCount} BOM items to DOORS packages`);
     } catch (error) {
-      logger.error('[DoorsRegister] Error loading demo data:', error);
+      logger.error('[DoorsRegister] Error loading demo data:', error as Error);
     } finally {
       setLoading(false);
     }

@@ -57,7 +57,7 @@ export const useAnalyticsOverview = (
       setAnalyticsSummary(summary);
       logger.debug('[useAnalyticsOverview] Generated analytics summary', { healthScore: summary.healthScore });
     } catch (error) {
-      logger.error('[useAnalyticsOverview] Error generating summary', error);
+      logger.error('[useAnalyticsOverview] Error generating summary', error as Error);
       setAnalyticsSummary(null);
     } finally {
       setLoading(false);

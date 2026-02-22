@@ -22,6 +22,9 @@ import { COLORS } from '../../../theme/colors';
 type SortField = 'category' | 'description' | 'amount' | 'costDate';
 type SortOrder = 'asc' | 'desc';
 
+const toRnpSortDirection = (order: SortOrder): 'ascending' | 'descending' =>
+  order === 'asc' ? 'ascending' : 'descending';
+
 export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
   costs,
   budgets,
@@ -180,14 +183,14 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
                 <DataTable.Title
                   style={styles.colCategory}
                   onPress={() => handleSort('category')}
-                  sortDirection={sortField === 'category' ? sortOrder : undefined}
+                  sortDirection={sortField === 'category' ? toRnpSortDirection(sortOrder) : undefined}
                 >
                   Category
                 </DataTable.Title>
                 <DataTable.Title
                   style={styles.colDescription}
                   onPress={() => handleSort('description')}
-                  sortDirection={sortField === 'description' ? sortOrder : undefined}
+                  sortDirection={sortField === 'description' ? toRnpSortDirection(sortOrder) : undefined}
                 >
                   Description
                 </DataTable.Title>
@@ -195,14 +198,14 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
                   style={styles.colAmount}
                   numeric
                   onPress={() => handleSort('amount')}
-                  sortDirection={sortField === 'amount' ? sortOrder : undefined}
+                  sortDirection={sortField === 'amount' ? toRnpSortDirection(sortOrder) : undefined}
                 >
                   Amount
                 </DataTable.Title>
                 <DataTable.Title
                   style={styles.colDate}
                   onPress={() => handleSort('costDate')}
-                  sortDirection={sortField === 'costDate' ? sortOrder : undefined}
+                  sortDirection={sortField === 'costDate' ? toRnpSortDirection(sortOrder) : undefined}
                 >
                   Date
                 </DataTable.Title>

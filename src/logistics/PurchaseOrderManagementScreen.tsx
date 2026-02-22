@@ -88,7 +88,7 @@ const PurchaseOrderManagementScreen = () => {
 
       dispatch({ type: 'SET_VENDORS', payload: vendorsList });
     } catch (error) {
-      logger.error('[PO] Error loading vendors:', error);
+      logger.error('[PO] Error loading vendors:', error as Error);
     }
   }, []);
 
@@ -111,7 +111,7 @@ const PurchaseOrderManagementScreen = () => {
 
       dispatch({ type: 'SET_RFQS', payload: rfqsList });
     } catch (error) {
-      logger.error('[PO] Error loading RFQs:', error);
+      logger.error('[PO] Error loading RFQs:', error as Error);
     }
   }, [selectedProjectId]);
 
@@ -124,7 +124,7 @@ const PurchaseOrderManagementScreen = () => {
     try {
       dispatch({ type: 'START_LOADING' });
       setLoadError(null);
-      logger.info('[PO] Loading purchase orders for project:', selectedProjectId);
+      logger.info('[PO] Loading purchase orders for project:', { selectedProjectId });
 
       const poCollection = database.collections.get('purchase_orders');
       const posData = await poCollection
@@ -163,10 +163,10 @@ const PurchaseOrderManagementScreen = () => {
         })
       );
 
-      logger.info('[PO] Loaded purchase orders:', posWithVendors.length);
+      logger.info('[PO] Loaded purchase orders:', { value: posWithVendors.length });
       dispatch({ type: 'SET_PURCHASE_ORDERS', payload: posWithVendors });
     } catch (error) {
-      logger.error('[PO] Error loading purchase orders:', error);
+      logger.error('[PO] Error loading purchase orders:', error as Error);
       setLoadError('Failed to load purchase orders. Check your connection and try again.');
     } finally {
       dispatch({ type: 'STOP_LOADING' });
@@ -247,7 +247,7 @@ const PurchaseOrderManagementScreen = () => {
       dispatch({ type: 'RESET_FORM' });
       loadPurchaseOrders();
     } catch (error) {
-      logger.error('[PO] Error creating PO:', error);
+      logger.error('[PO] Error creating PO:', error as Error);
       Alert.alert('Error', 'Failed to create Purchase Order');
     } finally {
       setIsSubmitting(false);
@@ -275,7 +275,7 @@ const PurchaseOrderManagementScreen = () => {
       Alert.alert('Success', `PO marked as ${newStatus}`);
       loadPurchaseOrders();
     } catch (error) {
-      logger.error('[PO] Error updating PO status:', error);
+      logger.error('[PO] Error updating PO status:', error as Error);
       Alert.alert('Error', 'Failed to update PO status');
     }
   };

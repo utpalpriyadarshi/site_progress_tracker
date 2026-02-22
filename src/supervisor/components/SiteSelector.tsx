@@ -33,7 +33,7 @@ const SiteSelector: React.FC<SiteSelectorProps> = ({ style }) => {
           setSelectedSiteName('All Sites');
           setSelectedSite(null);
         } else {
-          const site = supervisorSites.find(s => s.id === selectedSiteId);
+          const site = (supervisorSites as SiteModel[]).find(s => s.id === selectedSiteId);
           if (site) {
             setSelectedSiteName(site.name);
             setSelectedSite(site as SiteModel);

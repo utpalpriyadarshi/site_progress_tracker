@@ -349,7 +349,7 @@ const LogisticsAnalyticsScreen: React.FC = () => {
         },
       });
     } catch (error) {
-      logger.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error as Error);
     } finally {
       dispatch({ type: 'STOP_LOADING' });
     }

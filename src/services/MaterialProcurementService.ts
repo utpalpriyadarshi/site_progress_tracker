@@ -152,10 +152,12 @@ class MaterialProcurementService {
     // Group BOM items by material
     const requirementsByMaterial = new Map<string, BomItemModel[]>();
     bomItems.forEach(item => {
-      if (!requirementsByMaterial.has(item.materialId)) {
-        requirementsByMaterial.set(item.materialId, []);
+      const materialId = item.materialId ?? '';
+      if (!materialId) return;
+      if (!requirementsByMaterial.has(materialId)) {
+        requirementsByMaterial.set(materialId, []);
       }
-      requirementsByMaterial.get(item.materialId)!.push(item);
+      requirementsByMaterial.get(materialId)!.push(item);
     });
 
     materials.forEach(material => {

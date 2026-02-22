@@ -78,7 +78,7 @@ const EquipmentManagementScreen = () => {
         },
       });
     } catch (error) {
-      logger.error('Error loading equipment data:', error);
+      logger.error('Error loading equipment data:', error as Error);
     } finally {
       dispatch({ type: 'STOP_LOADING' });
     }

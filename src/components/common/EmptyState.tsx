@@ -227,7 +227,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 size={16}
                 color={theme.colors.primary}
                 style={styles.tipIcon}
-                accessible={false}
               />
               <Text variant="bodySmall" style={styles.tipText}>
                 {tip}

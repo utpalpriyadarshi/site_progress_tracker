@@ -37,9 +37,9 @@ export const useAnalyticsData = (materials: MaterialModel[]) => {
       });
 
       setConsumptionData(consumptionMap);
-      logger.debug('[useAnalyticsData] Loaded consumption data for materials:', materials.length);
+      logger.debug('[useAnalyticsData] Loaded consumption data for materials:', { value: materials.length });
     } catch (error) {
-      logger.error('[useAnalyticsData] Error loading consumption data:', error);
+      logger.error('[useAnalyticsData] Error loading consumption data:', error as Error);
     } finally {
       setLoading(false);
     }

@@ -34,7 +34,7 @@ const SiteSelector: React.FC<SiteSelectorProps> = ({ style }) => {
           setSelectedSiteName('All Sites');
           setSelectedSite(null);
         } else {
-          const site = designerSites.find(s => s.id === selectedSiteId);
+          const site = (designerSites as SiteModel[]).find(s => s.id === selectedSiteId);
           if (site) {
             setSelectedSiteName(site.name);
             setSelectedSite(site as SiteModel);

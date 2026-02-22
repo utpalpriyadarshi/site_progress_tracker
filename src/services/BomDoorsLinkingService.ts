@@ -166,7 +166,7 @@ export async function clearBomDoorsLinks(projectId: string): Promise<number> {
 
       for (const item of items) {
         await item.update((bomItem) => {
-          bomItem.doorsId = null;
+          bomItem.doorsId = undefined;
         });
         clearedCount++;
       }

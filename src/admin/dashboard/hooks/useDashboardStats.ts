@@ -33,7 +33,7 @@ export const useDashboardStats = () => {
         totalItems: items.length,
       });
     } catch (error) {
-      logger.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error as Error);
     }
   };
 

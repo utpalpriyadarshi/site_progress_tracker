@@ -348,7 +348,7 @@ export const useDashboardData = (
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load dashboard data';
-      logger.error('[useDashboardData] Error:', err);
+      logger.error('[useDashboardData] Error:', err as Error);
       setError(errorMessage);
     } finally {
       setLoading(false);

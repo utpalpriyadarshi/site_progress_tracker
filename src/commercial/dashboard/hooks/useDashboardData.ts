@@ -44,7 +44,7 @@ export const useDashboardData = (projectId: string | null) => {
 
     try {
       setLoading(true);
-      logger.debug('[Dashboard] Loading dashboard data for project:', projectId);
+      logger.debug('[Dashboard] Loading dashboard data for project:', { projectId });
 
       // Load all data in parallel
       const budgetsCollection = database.collections.get('budgets');
@@ -93,7 +93,7 @@ export const useDashboardData = (projectId: string | null) => {
 
       logger.debug('[Dashboard] Dashboard data loaded successfully');
     } catch (error) {
-      logger.error('[Dashboard] Error loading dashboard data:', error);
+      logger.error('[Dashboard] Error loading dashboard data:', error as Error);
       Alert.alert('Error', 'Failed to load dashboard data');
     } finally {
       setLoading(false);

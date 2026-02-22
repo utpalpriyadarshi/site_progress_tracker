@@ -70,7 +70,7 @@ export const usePasswordReset = ({
         onError(result.details || result.error || 'Failed to reset password');
       }
     } catch (error) {
-      logger.error('Error resetting password:', error);
+      logger.error('Error resetting password:', error as Error);
       onError('Failed to reset password');
     } finally {
       setResetPasswordLoading(false);

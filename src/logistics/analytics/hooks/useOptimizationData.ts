@@ -126,7 +126,7 @@ export const useOptimizationData = (projectId: string | null) => {
         negotiation: negotiation.length,
       });
     } catch (error) {
-      logger.error('[useOptimizationData] Error loading optimization data', error);
+      logger.error('[useOptimizationData] Error loading optimization data', error as Error);
     } finally {
       setLoading(false);
     }

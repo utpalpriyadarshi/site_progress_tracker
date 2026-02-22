@@ -17,9 +17,6 @@ export type {
   Trend,
   TrendDirection,
   StatsCardProps,
-  DesignRfqListSkeletonProps,
-  DoorsPackageListSkeletonProps,
-  DashboardSkeletonProps,
 } from './types';
 
 // Skeleton types are re-exported from skeletons directory

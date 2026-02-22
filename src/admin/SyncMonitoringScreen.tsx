@@ -76,7 +76,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       const connected = await NetworkMonitor.isConnected();
       setIsConnected(connected);
     } catch (error) {
-      logger.error('Failed to load sync data:', error);
+      logger.error('Failed to load sync data:', error as Error);
     }
   };
 

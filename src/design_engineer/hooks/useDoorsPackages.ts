@@ -29,7 +29,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
 
       setSites(sitesList);
     } catch (error) {
-      logger.error('[DoorsPackage] Error loading sites:', error);
+      logger.error('[DoorsPackage] Error loading sites:', error as Error);
     }
   };
 
@@ -41,7 +41,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
 
     try {
       setLoading(true);
-      logger.info('[DoorsPackage] Loading packages for project:', projectId);
+      logger.info('[DoorsPackage] Loading packages for project:', { projectId });
 
       const doorsCollection = database.collections.get('doors_packages');
       const packagesData = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
@@ -77,10 +77,10 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
         })
       );
 
-      logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
+      logger.debug('[DoorsPackage] Loaded packages:', { value: packagesWithSites.length });
       setPackages(packagesWithSites);
     } catch (error) {
-      logger.error('[DoorsPackage] Error loading packages:', error);
+      logger.error('[DoorsPackage] Error loading packages:', error as Error);
       Alert.alert('Error', 'Failed to load DOORS packages');
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
       loadPackages();
       return true;
     } catch (error) {
-      logger.error('[DoorsPackage] Error creating package:', error);
+      logger.error('[DoorsPackage] Error creating package:', error as Error);
       Alert.alert('Error', 'Failed to create DOORS package');
       return false;
     }
@@ -137,7 +137,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
       Alert.alert('Success', 'Package marked as received');
       loadPackages();
     } catch (error) {
-      logger.error('[DoorsPackage] Error marking as received:', error);
+      logger.error('[DoorsPackage] Error marking as received:', error as Error);
       Alert.alert('Error', 'Failed to update package');
     }
   };
@@ -157,7 +157,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
       Alert.alert('Success', 'Package marked as reviewed');
       loadPackages();
     } catch (error) {
-      logger.error('[DoorsPackage] Error marking as reviewed:', error);
+      logger.error('[DoorsPackage] Error marking as reviewed:', error as Error);
       Alert.alert('Error', 'Failed to update package');
     }
   };

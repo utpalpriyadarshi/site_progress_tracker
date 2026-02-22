@@ -65,7 +65,7 @@ export const useDeliveryData = () => {
         exceptions: mockDeliveryExceptions.length,
       });
     } catch (error) {
-      logger.error('Error loading delivery data:', error);
+      logger.error('Error loading delivery data:', error as Error);
     } finally {
       setLoading(false);
     }

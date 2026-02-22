@@ -312,7 +312,7 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
               onCompletedQuantityChange={(text) => updateNumericField('completedQuantity', text)}
               onUnitChange={(text) => updateField('unit', text)}
               onWeightageChange={(text) => updateNumericField('weightage', text)}
-              error={state.validation.errors.quantity}
+              errors={{ quantity: state.validation.errors.quantity ?? '' }}
             />
 
             {/* Milestone & Critical Path */}

@@ -58,7 +58,7 @@ const BudgetManagementScreen = () => {
 
     try {
       dispatch(budgetManagementActions.setLoading(true));
-      logger.debug('[Budget] Loading budgets for project:', projectId);
+      logger.debug('[Budget] Loading budgets for project:', { projectId });
 
       const budgetsCollection = database.collections.get('budgets');
       const budgetsData = await budgetsCollection
@@ -89,10 +89,10 @@ const BudgetManagementScreen = () => {
         };
       });
 
-      logger.debug('[Budget] Loaded budgets:', budgetsWithActuals.length);
+      logger.debug('[Budget] Loaded budgets:', { value: budgetsWithActuals.length });
       dispatch(budgetManagementActions.setBudgets(budgetsWithActuals));
     } catch (error) {
-      logger.error('[Budget] Error loading budgets:', error);
+      logger.error('[Budget] Error loading budgets:', error as Error);
       showSnackbar('Failed to load budgets');
     } finally {
       dispatch(budgetManagementActions.setLoading(false));
@@ -160,7 +160,7 @@ const BudgetManagementScreen = () => {
       dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
-      logger.error('[Budget] Error creating budget:', error);
+      logger.error('[Budget] Error creating budget:', error as Error);
       showSnackbar('Failed to create budget entry');
     }
   };
@@ -195,7 +195,7 @@ const BudgetManagementScreen = () => {
       dispatch(budgetManagementActions.resetForm());
       loadBudgets();
     } catch (error) {
-      logger.error('[Budget] Error updating budget:', error);
+      logger.error('[Budget] Error updating budget:', error as Error);
       showSnackbar('Failed to update budget entry');
     }
   };
@@ -217,7 +217,7 @@ const BudgetManagementScreen = () => {
       showSnackbar('Budget entry deleted');
       loadBudgets();
     } catch (error) {
-      logger.error('[Budget] Error deleting budget:', error);
+      logger.error('[Budget] Error deleting budget:', error as Error);
       showSnackbar('Failed to delete budget entry');
     }
   };

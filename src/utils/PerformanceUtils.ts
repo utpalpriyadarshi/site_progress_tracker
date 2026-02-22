@@ -449,7 +449,7 @@ export async function batchProcess<T, R>(
 
     // Add delay between batches to avoid overwhelming the system
     if (i + batchSize < items.length) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), delayMs));
     }
   }
 

@@ -32,9 +32,9 @@ export const useMaterialTrackingData = (projectId: string | null) => {
         .query(Q.where('project_id', projectId))
         .fetch();
       setDoorsPackages(packages);
-      logger.debug('[useMaterialTrackingData] Loaded DOORS packages:', packages.length);
+      logger.debug('[useMaterialTrackingData] Loaded DOORS packages:', { value: packages.length });
     } catch (error) {
-      logger.error('[useMaterialTrackingData] Error loading DOORS packages:', error);
+      logger.error('[useMaterialTrackingData] Error loading DOORS packages:', error as Error);
     } finally {
       setLoading(false);
     }

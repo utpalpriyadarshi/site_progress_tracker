@@ -117,8 +117,10 @@ class LogisticsOptimizationService {
     // Group BOM items by material
     const requirementsByMaterial = new Map<string, number>();
     bomItems.forEach(item => {
-      const current = requirementsByMaterial.get(item.materialId) || 0;
-      requirementsByMaterial.set(item.materialId, current + item.quantity);
+      const materialId = item.materialId ?? '';
+      if (!materialId) return;
+      const current = requirementsByMaterial.get(materialId) || 0;
+      requirementsByMaterial.set(materialId, current + item.quantity);
     });
 
     materials.forEach(material => {
@@ -160,7 +162,7 @@ class LogisticsOptimizationService {
     // Group materials by category for bulk ordering
     const categorizedMaterials = new Map<string, MaterialModel[]>();
     materials.forEach(material => {
-      const category = material.category || 'Uncategorized';
+      const category = (material as any).category || 'Uncategorized';
       if (!categorizedMaterials.has(category)) {
         categorizedMaterials.set(category, []);
       }
@@ -171,7 +173,7 @@ class LogisticsOptimizationService {
       if (categoryMaterials.length >= 3) {
         // Potential for bulk order
         const totalValue = categoryMaterials.reduce((sum, m) => {
-          return sum + m.quantityRequired * (m.unitCost || 0);
+          return sum + m.quantityRequired * ((m as any).unitCost || 0);
         }, 0);
 
         if (totalValue > 10000) {
@@ -209,7 +211,7 @@ class LogisticsOptimizationService {
       // Check for excess inventory
       if (required > 0 && available > required * 2) {
         const excess = available - required * 1.2; // Keep 20% buffer
-        const carryingCost = excess * (material.unitCost || 0) * 0.02; // 2% annual carrying cost
+        const carryingCost = excess * ((material as any).unitCost || 0) * 0.02; // 2% annual carrying cost
 
         if (carryingCost > 100) {
           recommendations.push({
@@ -235,7 +237,7 @@ class LogisticsOptimizationService {
           category: 'inventory',
           title: `Slow-Moving Stock: ${material.name}`,
           description: `${available.toFixed(2)} ${material.unit} with no current requirements`,
-          estimatedSavings: available * (material.unitCost || 0) * 0.01,
+          estimatedSavings: available * ((material as any).unitCost || 0) * 0.01,
           estimatedImpact: 3,
           priority: 'low',
           actionRequired: `Consider transferring to active projects or marking for disposal`,
@@ -272,7 +274,7 @@ class LogisticsOptimizationService {
       inventoryTurnover: 4.2, // Placeholder
       stockoutRate: 3.5, // Placeholder
       carryingCost: materials.reduce((sum, m) => {
-        return sum + m.quantityAvailable * (m.unitCost || 0) * 0.02;
+        return sum + m.quantityAvailable * ((m as any).unitCost || 0) * 0.02;
       }, 0),
 
       overallEfficiency: 85, // Placeholder - will be calculated from sub-metrics
@@ -304,7 +306,7 @@ class LogisticsOptimizationService {
     }
 
     // Cost trend analysis
-    const highValueMaterials = materials.filter(m => (m.unitCost || 0) > 1000);
+    const highValueMaterials = materials.filter(m => ((m as any).unitCost || 0) > 1000);
     if (highValueMaterials.length > 0) {
       insights.push({
         type: 'cost_trend',
@@ -340,11 +342,11 @@ class LogisticsOptimizationService {
    */
   static analyzeCosts(materials: MaterialModel[]): CostAnalysis {
     const procurementCost = materials.reduce((sum, m) => {
-      return sum + m.quantityRequired * (m.unitCost || 0);
+      return sum + m.quantityRequired * ((m as any).unitCost || 0);
     }, 0);
 
     const storageCost = materials.reduce((sum, m) => {
-      return sum + m.quantityAvailable * (m.unitCost || 0) * 0.02; // 2% carrying cost
+      return sum + m.quantityAvailable * ((m as any).unitCost || 0) * 0.02; // 2% carrying cost
     }, 0);
 
     // Placeholders for other costs - will be calculated from real data

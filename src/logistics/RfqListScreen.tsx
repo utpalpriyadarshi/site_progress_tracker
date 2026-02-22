@@ -174,7 +174,7 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
       setRefreshKey((prev) => prev + 1);
       Alert.alert('Success', 'RFQ demo data loaded successfully!');
     } catch (error) {
-      logger.error('[RfqList] Error loading demo data:', error);
+      logger.error('[RfqList] Error loading demo data:', error as Error);
       Alert.alert('Error', 'Failed to load demo data');
     } finally {
       setLoading(false);
@@ -198,7 +198,7 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
               setRefreshKey((prev) => prev + 1);
               Alert.alert('Success', 'All RFQ data cleared');
             } catch (error) {
-              logger.error('[RfqList] Error clearing data:', error);
+              logger.error('[RfqList] Error clearing data:', error as Error);
               Alert.alert('Error', 'Failed to clear data');
             } finally {
               setLoading(false);

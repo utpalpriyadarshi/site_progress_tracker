@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Portal, Dialog, Button, TextInput, Menu } from 'react-native-paper';
+import { Portal, Dialog, Button, TextInput, Menu, HelperText } from 'react-native-paper';
 import {
   DesignDocument,
   DesignDocumentCategory,
@@ -333,12 +333,12 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               mode="outlined"
               keyboardType="numeric"
               placeholder="0-100"
-              helperText={
-                requiresSite && form.siteId
-                  ? 'Total weightage per site should equal 100%'
-                  : 'Leave empty for project-wide documents'
-              }
             />
+            <HelperText type="info">
+              {requiresSite && form.siteId
+                ? 'Total weightage per site should equal 100%'
+                : 'Leave empty for project-wide documents'}
+            </HelperText>
 
             {/* DOORS Package Link */}
             {doorsPackages.length > 0 && (

@@ -48,7 +48,7 @@ export const useAdminDashboard = (
         },
       });
     } catch (error) {
-      logger.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error as Error);
     }
   }, []);
 
@@ -88,7 +88,7 @@ export const useAdminDashboard = (
       const status = await PasswordMigrationService.getMigrationStatus();
       dispatch({ type: 'SET_PASSWORD_MIGRATION_STATUS', payload: status });
     } catch (error) {
-      logger.error('Error loading migration status:', error);
+      logger.error('Error loading migration status:', error as Error);
     }
   }, []);
 
@@ -170,7 +170,7 @@ export const useAdminDashboard = (
                 'Category names have been updated successfully!\n\nNew names:\n• "Handing Over" (was "Finishing")\n• "Punch List" (was "Framing")\n\nAll items remain linked correctly.'
               );
             } catch (error) {
-              logger.error('Category migration failed:', error);
+              logger.error('Category migration failed:', error as Error);
               Alert.alert(
                 'Migration Error',
                 `Failed to migrate categories: ${error}\n\nCheck console for details.`
@@ -215,7 +215,7 @@ export const useAdminDashboard = (
                     logger.info(`Deleted ${records.length} records from ${collectionName}`);
                   }
                 } catch (error) {
-                  logger.warn(`Collection ${collectionName} error:`, error);
+                  logger.warn(`Collection ${collectionName} error:`, { error });
                 }
               }
 
@@ -249,7 +249,7 @@ export const useAdminDashboard = (
                 ]
               );
             } catch (error) {
-              logger.error('Reset failed:', error);
+              logger.error('Reset failed:', error as Error);
               Alert.alert('Error', 'Failed to reset database: ' + error);
             }
           },

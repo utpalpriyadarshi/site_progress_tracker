@@ -38,7 +38,7 @@ interface DoorsPackageEditScreenProps {
 }
 
 const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, navigation }) => {
-  const { user } = useAuth();
+  const { user, currentRole } = useAuth();
   const { packageId } = route.params;
 
   // Centralized state management with useReducer (replaces 13 useState hooks)
@@ -69,7 +69,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         },
       });
     } catch (error) {
-      logger.error('[DoorsPackageEdit] Error loading package:', error);
+      logger.error('[DoorsPackageEdit] Error loading package:', error as Error);
       Alert.alert('Error', 'Failed to load package details');
       navigation.goBack();
     } finally {
@@ -115,8 +115,8 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
       await DoorsEditService.updatePackage(
         packageId,
         updates,
-        user.id,
-        user.role
+        user.userId,
+        currentRole || ''
       );
 
       Alert.alert('Success', 'Package updated successfully', [
@@ -174,7 +174,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
   }
 
   // Check if user can edit
-  const canEdit = DoorsEditService.canEditPackage(user?.role || '', state.data.doorsPackage.status);
+  const canEdit = DoorsEditService.canEditPackage(currentRole || '', state.data.doorsPackage.status);
 
   return (
     <View style={styles.container}>
@@ -619,9 +619,9 @@ const styles = StyleSheet.create({
 });
 
 // Wrap with ErrorBoundary for graceful error handling
-const DoorsPackageEditScreenWithBoundary = () => (
+const DoorsPackageEditScreenWithBoundary = (props: DoorsPackageEditScreenProps) => (
   <ErrorBoundary name="Logistics - DoorsPackageEditScreen">
-    <DoorsPackageEditScreen />
+    <DoorsPackageEditScreen {...props} />
   </ErrorBoundary>
 );
 

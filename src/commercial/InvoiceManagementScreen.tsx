@@ -63,7 +63,7 @@ const InvoiceManagementScreen = () => {
 
     try {
       dispatch(invoiceManagementActions.setLoading(true));
-      logger.debug('[Invoice] Loading invoices for project:', projectId);
+      logger.debug('[Invoice] Loading invoices for project:', { projectId });
 
       const invoicesCollection = database.collections.get('invoices');
       const invoicesData = await invoicesCollection
@@ -89,10 +89,10 @@ const InvoiceManagementScreen = () => {
         };
       });
 
-      logger.debug('[Invoice] Loaded invoices:', invoicesWithVendors.length);
+      logger.debug('[Invoice] Loaded invoices:', { value: invoicesWithVendors.length });
       dispatch(invoiceManagementActions.setInvoices(invoicesWithVendors));
     } catch (error) {
-      logger.error('[Invoice] Error loading invoices:', error);
+      logger.error('[Invoice] Error loading invoices:', error as Error);
       Alert.alert('Error', 'Failed to load invoices');
     } finally {
       dispatch(invoiceManagementActions.setLoading(false));
@@ -170,7 +170,7 @@ const InvoiceManagementScreen = () => {
       loadInvoices();
       return true;
     } catch (error) {
-      logger.error('[Invoice] Error creating invoice:', error);
+      logger.error('[Invoice] Error creating invoice:', error as Error);
       Alert.alert('Error', 'Failed to create invoice');
       return false;
     }
@@ -199,7 +199,7 @@ const InvoiceManagementScreen = () => {
       loadInvoices();
       return true;
     } catch (error) {
-      logger.error('[Invoice] Error updating invoice:', error);
+      logger.error('[Invoice] Error updating invoice:', error as Error);
       Alert.alert('Error', 'Failed to update invoice');
       return false;
     }
@@ -217,7 +217,7 @@ const InvoiceManagementScreen = () => {
       Alert.alert('Success', 'Invoice deleted successfully');
       loadInvoices();
     } catch (error) {
-      logger.error('[Invoice] Error deleting invoice:', error);
+      logger.error('[Invoice] Error deleting invoice:', error as Error);
       Alert.alert('Error', 'Failed to delete invoice');
     }
   };
@@ -238,7 +238,7 @@ const InvoiceManagementScreen = () => {
       Alert.alert('Success', 'Invoice marked as paid');
       loadInvoices();
     } catch (error) {
-      logger.error('[Invoice] Error marking invoice as paid:', error);
+      logger.error('[Invoice] Error marking invoice as paid:', error as Error);
       Alert.alert('Error', 'Failed to mark invoice as paid');
     }
   };
