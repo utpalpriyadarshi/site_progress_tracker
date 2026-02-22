@@ -83,7 +83,7 @@ export const usePerformanceAnalytics = (projectId: string | null) => {
         benchmarks: benchmarks.length,
       });
     } catch (error) {
-      logger.error('[usePerformanceAnalytics] Error loading performance data', error);
+      logger.error('[usePerformanceAnalytics] Error loading performance data', error as Error);
     } finally {
       setLoading(false);
     }

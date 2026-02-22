@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import { View, Animated, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
 
 /**
  * Skeleton Props
@@ -117,15 +117,15 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         };
       case 'text':
         return {
-          width,
+          width: width as DimensionValue,
           height: height || 16,
           borderRadius: borderRadius || 4,
         };
       case 'rect':
       default:
         return {
-          width,
-          height,
+          width: width as DimensionValue,
+          height: height as DimensionValue,
           borderRadius,
         };
     }

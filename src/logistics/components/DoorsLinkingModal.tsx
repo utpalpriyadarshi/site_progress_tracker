@@ -69,7 +69,7 @@ const DoorsLinkingModal: React.FC<DoorsLinkingModalProps> = ({
       setSearchQuery('');
       onClose();
     } catch (error) {
-      logger.error('[DoorsLinkingModal] Error linking:', error);
+      logger.error('[DoorsLinkingModal] Error linking:', error as Error);
     } finally {
       setLinking(false);
     }

@@ -68,7 +68,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
       setReviewStatus(req.reviewStatus);
       setReviewComments(req.reviewComments || '');
     } catch (error) {
-      logger.error('[DoorsRequirementEdit] Error loading requirement:', error);
+      logger.error('[DoorsRequirementEdit] Error loading requirement:', error as Error);
       Alert.alert('Error', 'Failed to load requirement details');
       navigation.goBack();
     } finally {
@@ -474,9 +474,9 @@ const styles = StyleSheet.create({
 });
 
 // Wrap with ErrorBoundary for graceful error handling
-const DoorsRequirementEditScreenWithBoundary = () => (
+const DoorsRequirementEditScreenWithBoundary = (props: DoorsRequirementEditScreenProps) => (
   <ErrorBoundary name="Logistics - DoorsRequirementEditScreen">
-    <DoorsRequirementEditScreen />
+    <DoorsRequirementEditScreen {...props} />
   </ErrorBoundary>
 );
 

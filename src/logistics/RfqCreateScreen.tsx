@@ -105,7 +105,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
       );
     }
 
-    logger.debug('[RfqCreate] Filtered DOORS packages:', filtered.length);
+    logger.debug('[RfqCreate] Filtered DOORS packages:', { value: filtered.length });
     return filtered;
   }, [doorsPackages, doorsSearchQuery]);
 
@@ -212,7 +212,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
         },
       ]);
     } catch (error) {
-      logger.error('[RfqCreate] Error creating RFQ:', error);
+      logger.error('[RfqCreate] Error creating RFQ:', error as Error);
       Alert.alert('Error', 'Failed to create RFQ. Please try again.');
     } finally {
       setCreating(false);
@@ -257,7 +257,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
                 },
                 user?.userId || 'demo-user'
               );
-              logger.info('[RfqCreate] Step 2: RFQ created successfully, ID:', rfq.id);
+              logger.info('[RfqCreate] Step 2: RFQ created successfully, ID:', { value: rfq.id });
 
               // Issue RFQ
               logger.info('[RfqCreate] Step 3: Issuing RFQ...');
@@ -271,7 +271,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
                 },
               ]);
             } catch (error) {
-              logger.error('[RfqCreate] Error issuing RFQ:', error);
+              logger.error('[RfqCreate] Error issuing RFQ:', error as Error);
               Alert.alert('Error', 'Failed to issue RFQ. Please try again.');
             } finally {
               setCreating(false);

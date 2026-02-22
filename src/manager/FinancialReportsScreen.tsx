@@ -401,7 +401,7 @@ const FinancialReportsScreen = () => {
       const wbout = XLSX.write(wb, { type: 'binary', bookType: 'xlsx' });
 
       // Convert binary string to base64
-      const base64 = RNFS.base64encode ? wbout : btoa(wbout);
+      const base64 = btoa(wbout);
 
       // Determine file path
       const timestamp = new Date().toISOString().split('T')[0];

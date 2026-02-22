@@ -11,7 +11,7 @@
  * - Validation state (errors)
  */
 
-import DoorsPackageModel from '../../../models/DoorsPackageModel';
+import DoorsPackageModel from '../../../../models/DoorsPackageModel';
 
 // ==================== State Interface ====================
 

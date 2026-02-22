@@ -42,7 +42,7 @@ import { COLORS } from '../theme/colors';
 const LogisticsDashboardScreen = () => {
   const {
     selectedProjectId,
-    setSelectedProjectId,
+    selectProject: setSelectedProjectId,
     projects,
     materials,
     loading,
@@ -74,7 +74,7 @@ const LogisticsDashboardScreen = () => {
     if (selectedProjectId) {
       const loadDoorsPackages = async () => {
         try {
-          logger.debug('[Dashboard] Loading DOORS packages for project:', selectedProjectId);
+          logger.debug('[Dashboard] Loading DOORS packages for project:', { selectedProjectId });
           const packagesCollection = database.collections.get<DoorsPackageModel>('doors_packages');
           const packages = await packagesCollection.query(
             Q.where('project_id', selectedProjectId)
@@ -92,7 +92,7 @@ const LogisticsDashboardScreen = () => {
             setDoorsKPIs(null);
           }
         } catch (error) {
-          logger.error('[Dashboard] Error loading DOORS packages:', error);
+          logger.error('[Dashboard] Error loading DOORS packages:', error as Error);
         }
       };
 

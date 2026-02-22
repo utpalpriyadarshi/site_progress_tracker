@@ -175,7 +175,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       refreshProcurement();
       logger.info('[MaterialTracking] Reloaded procurement data');
     } catch (error) {
-      logger.error('[MaterialTracking] Error loading sample BOMs:', error);
+      logger.error('[MaterialTracking] Error loading sample BOMs:', error as Error);
     } finally {
       setLoading(false);
     }
@@ -197,7 +197,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       await refreshBoms();
       logger.info('[MaterialTracking] BOMs cleared, screen refreshed');
     } catch (error) {
-      logger.error('[MaterialTracking] Error clearing BOMs:', error);
+      logger.error('[MaterialTracking] Error clearing BOMs:', error as Error);
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       await refreshBoms();
       logger.info('[MaterialTracking] BOM items unlinked, screen refreshed');
     } catch (error) {
-      logger.error('[MaterialTracking] Error unlinking BOM items:', error);
+      logger.error('[MaterialTracking] Error unlinking BOM items:', error as Error);
     } finally {
       setLoading(false);
     }
@@ -263,7 +263,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       // Refresh to show the link
       await refreshBoms();
     } catch (error) {
-      logger.error('[MaterialTracking] Error linking BOM item:', error);
+      logger.error('[MaterialTracking] Error linking BOM item:', error as Error);
       throw error;
     }
   };
@@ -381,8 +381,8 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
           title="No BOM Requirements"
           message="Link materials to a Bill of Materials to track requirements."
           helpText="BOM requirements help track material needs across your project."
-          actionText={appMode === 'mock' ? 'Load Sample Data' : 'Link BOM'}
-          onAction={appMode === 'mock' ? handleLoadSampleData : () => {
+          actionText="Link BOM"
+          onAction={() => {
             logger.info('[MaterialTracking] Link BOM action pressed');
           }}
         />

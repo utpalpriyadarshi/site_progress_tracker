@@ -385,8 +385,6 @@ const DoorsPackageManagementScreen = () => {
             visible={state.ui.filterMenuVisible}
             onDismiss={() => dispatch({ type: 'CLOSE_FILTER_MENU' })}
             anchor={{ x: 0, y: 0 }}
-            accessible
-            accessibilityLabel="Status filter menu"
           >
             <Menu.Item
               onPress={() => {
@@ -396,7 +394,6 @@ const DoorsPackageManagementScreen = () => {
               }}
               title="Pending"
               accessibilityLabel="Filter by pending status"
-              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
@@ -406,7 +403,6 @@ const DoorsPackageManagementScreen = () => {
               }}
               title="Received"
               accessibilityLabel="Filter by received status"
-              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
@@ -416,7 +412,6 @@ const DoorsPackageManagementScreen = () => {
               }}
               title="Reviewed"
               accessibilityLabel="Filter by reviewed status"
-              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
@@ -426,7 +421,6 @@ const DoorsPackageManagementScreen = () => {
               }}
               title="Approved"
               accessibilityLabel="Filter by approved status"
-              accessibilityRole="menuitem"
             />
             <Menu.Item
               onPress={() => {
@@ -436,7 +430,6 @@ const DoorsPackageManagementScreen = () => {
               }}
               title="Closed"
               accessibilityLabel="Filter by closed status"
-              accessibilityRole="menuitem"
             />
           </Menu>
         </Portal>

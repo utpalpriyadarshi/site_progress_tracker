@@ -345,7 +345,7 @@ const ItemsManagementScreenComponent = ({
           showSnackbar('Item updated successfully', 'success');
         } else {
           // Create new item
-          await database.collections.get('items').create(item => {
+          await database.collections.get('items').create((item: any) => {
             item.name = itemName.trim();
             item.siteId = selectedSiteId;
             item.categoryId = selectedCategoryId;
@@ -779,7 +779,7 @@ const enhance = withObservables(['supervisorId', 'projectId'], ({ supervisorId, 
   categories: database.collections.get('categories').query(),
 }));
 
-const EnhancedItemsManagementScreen = enhance(ItemsManagementScreenComponent);
+const EnhancedItemsManagementScreen = enhance(ItemsManagementScreenComponent as any);
 
 // Wrapper component that provides context
 const ItemsManagementScreen = () => {

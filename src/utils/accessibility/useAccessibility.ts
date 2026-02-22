@@ -29,9 +29,9 @@ export const useAccessibility = () => {
   const announce = useCallback((message: string) => {
     try {
       AccessibilityInfo.announceForAccessibility(message);
-      logger.debug('[Accessibility] Announced:', message);
+      logger.debug('[Accessibility] Announced:', { message });
     } catch (error) {
-      logger.error('[Accessibility] Failed to announce:', error);
+      logger.error('[Accessibility] Failed to announce:', error as Error);
     }
   }, []);
 
@@ -54,7 +54,7 @@ export const useAccessibility = () => {
           logger.debug('[Accessibility] Focus set to:', label || 'element');
         }
       } catch (error) {
-        logger.error('[Accessibility] Failed to set focus:', error);
+        logger.error('[Accessibility] Failed to set focus:', error as Error);
       }
     },
     [announce]
@@ -67,10 +67,10 @@ export const useAccessibility = () => {
   const isReduceMotionEnabled = useCallback(async (): Promise<boolean> => {
     try {
       const reduceMotion = await AccessibilityInfo.isReduceMotionEnabled();
-      logger.debug('[Accessibility] Reduce motion enabled:', reduceMotion);
+      logger.debug('[Accessibility] Reduce motion enabled:', { reduceMotion });
       return reduceMotion;
     } catch (error) {
-      logger.error('[Accessibility] Failed to check reduce motion:', error);
+      logger.error('[Accessibility] Failed to check reduce motion:', error as Error);
       return false;
     }
   }, []);
@@ -82,10 +82,10 @@ export const useAccessibility = () => {
   const isScreenReaderEnabled = useCallback(async (): Promise<boolean> => {
     try {
       const screenReader = await AccessibilityInfo.isScreenReaderEnabled();
-      logger.debug('[Accessibility] Screen reader enabled:', screenReader);
+      logger.debug('[Accessibility] Screen reader enabled:', { screenReader });
       return screenReader;
     } catch (error) {
-      logger.error('[Accessibility] Failed to check screen reader:', error);
+      logger.error('[Accessibility] Failed to check screen reader:', error as Error);
       return false;
     }
   }, []);

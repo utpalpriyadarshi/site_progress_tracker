@@ -16,7 +16,7 @@ export const useProjectData = () => {
         .fetch();
       setProjects(projectsList);
     } catch (error) {
-      logger.error('Error loading projects:', error);
+      logger.error('Error loading projects:', error as Error);
       throw error;
     } finally {
       setLoading(false);

@@ -34,7 +34,7 @@ export const useCategoryMigration = (reloadStats: () => void) => {
                 'Category names have been updated successfully!\n\nNew names:\n• "Handing Over" (was "Finishing")\n• "Punch List" (was "Framing")\n\nAll items remain linked correctly.'
               );
             } catch (error) {
-              logger.error('Category migration failed:', error);
+              logger.error('Category migration failed:', error as Error);
               Alert.alert(
                 'Migration Error',
                 `Failed to migrate categories: ${error}\n\nCheck console for details.`

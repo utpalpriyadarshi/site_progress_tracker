@@ -26,7 +26,7 @@ export interface SyncState {
 type SyncStateListener = (state: SyncState) => void;
 
 export class AutoSyncManager {
-  private static intervalId: NodeJS.Timeout | null = null;
+  private static intervalId: ReturnType<typeof setInterval> | null = null;
   private static syncState: SyncState = {
     isSyncing: false,
     lastSyncAt: 0,

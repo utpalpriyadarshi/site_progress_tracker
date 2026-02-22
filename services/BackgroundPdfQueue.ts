@@ -16,7 +16,7 @@ class BackgroundPdfQueue {
   private static instance: BackgroundPdfQueue;
   private database: Database | null = null;
   private isProcessing = false;
-  private processingInterval: NodeJS.Timeout | null = null;
+  private processingInterval: ReturnType<typeof setInterval> | null = null;
   private readonly MAX_ATTEMPTS = 3;
   private readonly PROCESS_INTERVAL_MS = 10000; // 10 seconds
   private readonly BATCH_SIZE = 5; // Process 5 reports at a time

@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
 });
 
 // Wrap with ErrorBoundary for graceful error handling
-const WBSManagementScreenWithBoundary = (props: Props) => (
+const WBSManagementScreenWithBoundary = (props: Record<string, unknown>) => (
   <ErrorBoundary name="WBSManagementScreen">
     <WBSManagementScreen {...props} />
   </ErrorBoundary>

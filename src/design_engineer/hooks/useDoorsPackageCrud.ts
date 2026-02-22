@@ -51,7 +51,7 @@ export const useDoorsPackageCrud = ({
       const sitesList = sitesData.map((site: any) => ({ id: site.id, name: site.name }));
       dispatch({ type: 'SET_SITES', payload: { sites: sitesList } });
     } catch (error) {
-      logger.error('[DoorsPackage] Error loading sites:', error);
+      logger.error('[DoorsPackage] Error loading sites:', error as Error);
     }
   }, [projectId, dispatch]);
 
@@ -63,7 +63,7 @@ export const useDoorsPackageCrud = ({
       const domainsList = domainsData.map((d: any) => ({ id: d.id, name: d.name }));
       setProjectDomains(domainsList);
     } catch (error) {
-      logger.error('[DoorsPackage] Error loading domains:', error);
+      logger.error('[DoorsPackage] Error loading domains:', error as Error);
     }
   }, [projectId]);
 
@@ -75,7 +75,7 @@ export const useDoorsPackageCrud = ({
 
     try {
       dispatch({ type: 'START_LOADING' });
-      logger.info('[DoorsPackage] Loading packages for project:', projectId);
+      logger.info('[DoorsPackage] Loading packages for project:', { projectId });
 
       const doorsCollection = database.collections.get('doors_packages');
       let packagesData;
@@ -165,13 +165,13 @@ export const useDoorsPackageCrud = ({
         }),
       );
 
-      logger.debug('[DoorsPackage] Loaded packages:', packagesWithSites.length);
+      logger.debug('[DoorsPackage] Loaded packages:', { value: packagesWithSites.length });
       dispatch({ type: 'SET_PACKAGES', payload: { packages: packagesWithSites } });
       announce(
         `Loaded ${packagesWithSites.length} DOORS package${packagesWithSites.length !== 1 ? 's' : ''}`,
       );
     } catch (error) {
-      logger.error('[DoorsPackage] Error loading packages:', error);
+      logger.error('[DoorsPackage] Error loading packages:', error as Error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS packages'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
@@ -318,7 +318,7 @@ export const useDoorsPackageCrud = ({
             const site = await database.collections.get('sites').find(siteId);
             siteName = (site as any).name;
           } catch (error) {
-            logger.warn('[DoorsPackage] Site not found:', siteId);
+            logger.warn('[DoorsPackage] Site not found:', { siteId });
           }
 
           newPackage = {
@@ -351,7 +351,7 @@ export const useDoorsPackageCrud = ({
 
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
-      logger.error('[DoorsPackage] Error saving package:', error);
+      logger.error('[DoorsPackage] Error saving package:', error as Error);
       Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
     } finally {
       setIsSubmitting(false);
@@ -393,7 +393,7 @@ export const useDoorsPackageCrud = ({
           return;
         }
       } catch (error) {
-        logger.error('[DoorsPackage] Error checking RFQ references:', error);
+        logger.error('[DoorsPackage] Error checking RFQ references:', error as Error);
       }
 
       Alert.alert('Confirm Delete', 'Are you sure you want to delete this DOORS package?', [
@@ -411,7 +411,7 @@ export const useDoorsPackageCrud = ({
               dispatch({ type: 'DELETE_PACKAGE', payload: { packageId } });
               showSnackbar('DOORS package deleted');
             } catch (error) {
-              logger.error('[DoorsPackage] Error deleting package:', error);
+              logger.error('[DoorsPackage] Error deleting package:', error as Error);
               Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
             }
           },
@@ -518,7 +518,7 @@ export const useDoorsPackageCrud = ({
         dispatch({ type: 'CLOSE_COPY_DIALOG' });
         showSnackbar(`Copied ${newPackages.length} package(s) to ${targetSiteName}`);
       } catch (error) {
-        logger.error('[DoorsPackage] Error copying packages:', error);
+        logger.error('[DoorsPackage] Error copying packages:', error as Error);
         Alert.alert('Error', getErrorMessage(error, 'DOORS package copy'));
       }
     },
@@ -649,7 +649,7 @@ export const useDoorsPackageCrud = ({
         setTransitionDialogVisible(false);
         showSnackbar(stageLabels[transitionStage]);
       } catch (error) {
-        logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error);
+        logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error as Error);
         Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
       }
     },
@@ -711,7 +711,7 @@ export const useDoorsPackageCrud = ({
       dispatch({ type: 'CLEAR_SELECTION' });
       showSnackbar(`${pendingIds.length} package(s) marked as received`);
     } catch (error) {
-      logger.error('[DoorsPackage] Error bulk marking received:', error);
+      logger.error('[DoorsPackage] Error bulk marking received:', error as Error);
       Alert.alert('Error', 'Failed to mark selected packages as received');
     }
   }, [state.ui.selectedPackageIds, state.data.packages, dispatch, showSnackbar]);

@@ -122,7 +122,7 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
       onDataReload();
       onSuccess(editingUser ? 'User updated successfully' : 'User created successfully');
     } catch (error) {
-      logger.error('Error saving user:', error);
+      logger.error('Error saving user:', error as Error);
       onError('Failed to save user');
     }
   }, [state, onError, onDataReload, onSuccess]);
@@ -144,7 +144,7 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
       onDataReload();
       onSuccess('User deleted successfully');
     } catch (error) {
-      logger.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error as Error);
       onError('Failed to delete user');
     }
   }, [state.data, onDataReload, onSuccess, onError]);
@@ -159,7 +159,7 @@ export const useUserForm = ({ roles, onSuccess, onError, onDataReload }: UseUser
       onDataReload();
       onSuccess(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
     } catch (error) {
-      logger.error('Error toggling user status:', error);
+      logger.error('Error toggling user status:', error as Error);
       onError('Failed to update user status');
     }
   }, [onDataReload, onSuccess, onError]);

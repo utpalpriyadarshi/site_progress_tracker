@@ -86,7 +86,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        logger.debug('[CommercialContext] Loading project for user:', user.userId);
+        logger.debug('[CommercialContext] Loading project for user:', { value: user.userId });
 
         // Fetch user from database to get project assignment
         let userRecord;
@@ -102,7 +102,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
           const commercialRole = roles.find((r: any) => r.name === 'CommercialManager');
 
           if (commercialRole) {
-            logger.debug('[CommercialContext] Found CommercialManager role:', commercialRole.id);
+            logger.debug('[CommercialContext] Found CommercialManager role:', { value: commercialRole.id });
             const usersCollection = database.collections.get('users');
             const commercialManagers = await usersCollection
               .query(Q.where('role_id', commercialRole.id))
@@ -140,7 +140,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
           logger.warn('[CommercialContext] ⚠️ No user record found');
         }
       } catch (error) {
-        logger.error('[CommercialContext] ❌ Error loading manager project:', error);
+        logger.error('[CommercialContext] ❌ Error loading manager project:', error as Error);
       }
     };
 
@@ -153,7 +153,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(MANAGER_ID_KEY, id);
     } catch (error) {
-      logger.error('[CommercialContext] Error saving manager ID:', error);
+      logger.error('[CommercialContext] Error saving manager ID:', error as Error);
     }
   };
 
@@ -163,7 +163,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      logger.error('[CommercialContext] Error saving project ID:', error);
+      logger.error('[CommercialContext] Error saving project ID:', error as Error);
     }
   };
 
@@ -173,7 +173,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      logger.error('[CommercialContext] Error saving project name:', error);
+      logger.error('[CommercialContext] Error saving project name:', error as Error);
     }
   };
 
@@ -189,7 +189,7 @@ export const CommercialProvider = ({ children }: { children: ReactNode }) => {
         if (savedProjectId) setProjectIdState(savedProjectId);
         if (savedProjectName) setProjectNameState(savedProjectName);
       } catch (error) {
-        logger.error('[CommercialContext] Error loading persisted data:', error);
+        logger.error('[CommercialContext] Error loading persisted data:', error as Error);
       }
     };
 

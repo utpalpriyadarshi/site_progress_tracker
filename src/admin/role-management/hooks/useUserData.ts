@@ -22,7 +22,7 @@ export const useUserData = () => {
       setRoles(rolesList);
       setProjects(projectsList);
     } catch (error) {
-      logger.error('Error loading data:', error);
+      logger.error('Error loading data:', error as Error);
       throw error;
     } finally {
       setLoading(false);

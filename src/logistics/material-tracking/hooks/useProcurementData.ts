@@ -38,9 +38,9 @@ export const useProcurementData = (
           mockSuppliers
         );
         setPurchaseSuggestions(suggestions);
-        logger.debug('[useProcurementData] Generated suggestions:', suggestions.length);
+        logger.debug('[useProcurementData] Generated suggestions:', { value: suggestions.length });
       } catch (error) {
-        logger.error('[useProcurementData] Error loading procurement data:', error);
+        logger.error('[useProcurementData] Error loading procurement data:', error as Error);
       } finally {
         setLoading(false);
       }
@@ -63,11 +63,11 @@ export const useProcurementData = (
       );
 
       setSupplierQuotes(quotes);
-      logger.debug('[useProcurementData] Generated quotes:', quotes.length);
+      logger.debug('[useProcurementData] Generated quotes:', { value: quotes.length });
 
       return quotes;
     } catch (error) {
-      logger.error('[useProcurementData] Error loading supplier quotes:', error);
+      logger.error('[useProcurementData] Error loading supplier quotes:', error as Error);
       return [];
     }
   };

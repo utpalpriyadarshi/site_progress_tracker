@@ -369,7 +369,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
           } as VendorQuote;
         }
       } catch (err) {
-        logger.error('[VendorQuotes] Error auto-ranking:', err);
+        logger.error('[VendorQuotes] Error auto-ranking:', err as Error);
       }
     }
 

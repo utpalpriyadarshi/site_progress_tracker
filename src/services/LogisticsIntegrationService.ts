@@ -950,7 +950,8 @@ export class LogisticsIntegrationService {
   private static generateSignature(secret: string | undefined, data: Record<string, any>): string {
     if (!secret) return '';
     // In real app: use HMAC SHA256
-    return `sha256=${Buffer.from(JSON.stringify(data) + secret).toString('base64')}`;
+    const raw = JSON.stringify(data) + secret;
+    return `sha256=${btoa(unescape(encodeURIComponent(raw)))}`;
   }
 
   // -------------------------------------------------------------------------

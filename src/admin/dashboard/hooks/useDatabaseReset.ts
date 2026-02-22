@@ -38,7 +38,7 @@ export const useDatabaseReset = () => {
                     logger.info(`Deleted ${records.length} records from ${collectionName}`);
                   }
                 } catch (error) {
-                  logger.warn(`Collection ${collectionName} error:`, error);
+                  logger.warn(`Collection ${collectionName} error:`, { error });
                 }
               }
 
@@ -72,7 +72,7 @@ export const useDatabaseReset = () => {
                 ]
               );
             } catch (error) {
-              logger.error('Reset failed:', error);
+              logger.error('Reset failed:', error as Error);
               Alert.alert('Error', 'Failed to reset database: ' + error);
             }
           },

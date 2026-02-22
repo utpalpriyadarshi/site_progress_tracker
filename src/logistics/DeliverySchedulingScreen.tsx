@@ -80,7 +80,7 @@ const DeliverySchedulingScreen = () => {
     searchQuery,
     setSearchQuery,
     filteredDeliveries,
-  } = useDeliveryFilters(deliveries, selectedProjectId);
+  } = useDeliveryFilters(deliveries, selectedProjectId ?? undefined);
 
   // Sync debounced search to filter hook
   useEffect(() => {

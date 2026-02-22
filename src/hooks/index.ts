@@ -21,16 +21,10 @@ export {
   usePrevious,
   useBatchUpdate,
   useWindowedList,
-  useIntersectionObserver,
   useOptimizedSearch,
   useRenderTimer,
 } from './usePerformance';
 
-export type {
-  CachedDataResult,
-  WindowedListResult,
-  IntersectionObserverOptions,
-} from './usePerformance';
 
 // Photo upload hook
 export { usePhotoUpload } from './usePhotoUpload';

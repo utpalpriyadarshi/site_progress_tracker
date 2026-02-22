@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database } from '../../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import { useAuth } from '../../auth/AuthContext';
 import { logger } from '../../services/LoggingService';
 
@@ -63,7 +64,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
       }
 
       try {
-        logger.info('[DesignEngineerContext] Loading project for user:', user.userId);
+        logger.info('[DesignEngineerContext] Loading project for user:', { value: user.userId });
 
         // Fetch user from database to get project assignment
         let userRecord;
@@ -79,7 +80,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           const designEngineerRole = roles.find((r: any) => r.name === 'DesignEngineer');
 
           if (designEngineerRole) {
-            logger.debug('[DesignEngineerContext] Found DesignEngineer role:', designEngineerRole.id);
+            logger.debug('[DesignEngineerContext] Found DesignEngineer role:', { value: designEngineerRole.id });
             const usersCollection = database.collections.get('users');
             const designEngineers = await usersCollection
               .query(Q.where('role_id', designEngineerRole.id))
@@ -97,7 +98,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           const userId = (userRecord as any).id;
           logger.debug('[DesignEngineerContext] User record found');
           logger.debug('[DesignEngineerContext] User projectId:', projectId);
-          logger.debug('[DesignEngineerContext] ProjectId type:', typeof projectId);
+          logger.debug('[DesignEngineerContext] ProjectId type:', { value: typeof projectId });
 
           if (projectId) {
             try {
@@ -115,7 +116,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
 
               logger.info('[DesignEngineerContext] ✅ Project loaded successfully');
             } catch (projectError) {
-              logger.error('[DesignEngineerContext] ❌ Error fetching project:', projectError);
+              logger.error('[DesignEngineerContext] ❌ Error fetching project:', projectError as Error);
             }
           } else {
             logger.warn('[DesignEngineerContext] ⚠️ No project assigned to user (projectId is null/undefined)');
@@ -124,7 +125,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           logger.warn('[DesignEngineerContext] ❌ User record not found in database');
         }
       } catch (error) {
-        logger.error('[DesignEngineerContext] ❌ Error loading engineer project:', error);
+        logger.error('[DesignEngineerContext] ❌ Error loading engineer project:', error as Error);
       }
     };
 
@@ -158,7 +159,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
           setSelectedSiteIdState(savedSiteId);
         }
       } catch (error) {
-        logger.error('[DesignEngineerContext] Error loading saved data:', error);
+        logger.error('[DesignEngineerContext] Error loading saved data:', error as Error);
       }
     };
 
@@ -171,7 +172,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(ENGINEER_ID_KEY, id);
     } catch (error) {
-      logger.error('[DesignEngineerContext] Error saving engineer ID:', error);
+      logger.error('[DesignEngineerContext] Error saving engineer ID:', error as Error);
     }
   };
 
@@ -181,7 +182,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(PROJECT_ID_KEY, id);
     } catch (error) {
-      logger.error('[DesignEngineerContext] Error saving project ID:', error);
+      logger.error('[DesignEngineerContext] Error saving project ID:', error as Error);
     }
   };
 
@@ -191,7 +192,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(PROJECT_NAME_KEY, name);
     } catch (error) {
-      logger.error('[DesignEngineerContext] Error saving project name:', error);
+      logger.error('[DesignEngineerContext] Error saving project name:', error as Error);
     }
   };
 
@@ -201,7 +202,7 @@ export const DesignEngineerProvider = ({ children }: { children: ReactNode }) =>
     try {
       await AsyncStorage.setItem(SELECTED_SITE_KEY, siteId);
     } catch (error) {
-      logger.error('[DesignEngineerContext] Error saving selected site:', error);
+      logger.error('[DesignEngineerContext] Error saving selected site:', error as Error);
     }
   };
 

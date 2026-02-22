@@ -99,7 +99,7 @@ const DesignEngineerDashboardScreen = () => {
     );
   }
 
-  logger.debug('[Dashboard] Rendering with project:', projectId);
+  logger.debug('[Dashboard] Rendering with project:', { projectId });
 
   // Show empty state only when BOTH scopes have no data at all
   const hasNoData =

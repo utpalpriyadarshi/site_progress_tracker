@@ -31,7 +31,7 @@ export const useDashboardMetrics = (projectId: string, engineerId: string, refre
 
     try {
       setLoading(true);
-      logger.info('[Dashboard] Loading metrics for project:', projectId);
+      logger.info('[Dashboard] Loading metrics for project:', { projectId });
 
       const doorsCollection = database.collections.get('doors_packages');
       const allPackages = await doorsCollection.query(Q.where('project_id', projectId)).fetch();
@@ -82,7 +82,7 @@ export const useDashboardMetrics = (projectId: string, engineerId: string, refre
         rfqs: allRfqs.length,
       });
     } catch (error) {
-      logger.error('[Dashboard] Error loading metrics:', error);
+      logger.error('[Dashboard] Error loading metrics:', error as Error);
     } finally {
       setLoading(false);
     }

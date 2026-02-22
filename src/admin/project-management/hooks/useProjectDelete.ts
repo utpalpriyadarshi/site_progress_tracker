@@ -117,7 +117,7 @@ export const useProjectDelete = ({
       onSuccess('Project and all related data deleted successfully');
       setProjectToDelete(null);
     } catch (error) {
-      logger.error('Error deleting project:', error);
+      logger.error('Error deleting project:', error as Error);
       onError('Failed to delete project');
     }
   };

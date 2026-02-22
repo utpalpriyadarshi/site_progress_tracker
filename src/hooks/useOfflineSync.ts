@@ -135,46 +135,8 @@ export const useOfflineSync = ({
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
 
   // Refs for cleanup and interval management
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef<boolean>(true);
-
-  // ==================== Network Monitoring ====================
-
-  useEffect(() => {
-    // Subscribe to network state changes
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const online = state.isConnected ?? false;
-
-      if (isMountedRef.current) {
-        setIsOnline(online);
-
-        logger.info('Network status changed', {
-          component: componentName,
-          isOnline: online,
-          connectionType: state.type,
-        });
-
-        // Notify callback
-        if (onNetworkChange) {
-          onNetworkChange(online);
-        }
-
-        // Auto-sync when coming back online
-        if (online && autoSync && pendingCount > 0) {
-          logger.info('Auto-syncing after reconnection', {
-            component: componentName,
-            pendingCount,
-          });
-          sync();
-        }
-      }
-    });
-
-    // Cleanup
-    return () => {
-      unsubscribe();
-    };
-  }, [autoSync, pendingCount, onNetworkChange, componentName, sync]);
 
   // ==================== Sync Function ====================
 
@@ -291,6 +253,44 @@ export const useOfflineSync = ({
     onSyncError,
     componentName,
   ]);
+
+  // ==================== Network Monitoring ====================
+
+  useEffect(() => {
+    // Subscribe to network state changes
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const online = state.isConnected ?? false;
+
+      if (isMountedRef.current) {
+        setIsOnline(online);
+
+        logger.info('Network status changed', {
+          component: componentName,
+          isOnline: online,
+          connectionType: state.type,
+        });
+
+        // Notify callback
+        if (onNetworkChange) {
+          onNetworkChange(online);
+        }
+
+        // Auto-sync when coming back online
+        if (online && autoSync && pendingCount > 0) {
+          logger.info('Auto-syncing after reconnection', {
+            component: componentName,
+            pendingCount,
+          });
+          sync();
+        }
+      }
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribe();
+    };
+  }, [autoSync, pendingCount, onNetworkChange, componentName, sync]);
 
   // ==================== Auto-Sync ====================
 

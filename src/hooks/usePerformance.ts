@@ -141,7 +141,7 @@ export function useCachedData<T>(
  * Hook to get previous value
  */
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
 
   useEffect(() => {
     ref.current = value;
@@ -272,7 +272,7 @@ export function useBatchUpdate<T>(
 ): [T, (updates: Partial<T>) => void, () => void] {
   const [state, setState] = useState<T>(initialState);
   const pendingUpdatesRef = useRef<Partial<T>>({});
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const batchUpdate = useCallback((updates: Partial<T>) => {
     // Accumulate updates
@@ -371,35 +371,6 @@ export function useWindowedList<T>(
 // Intersection Observer Hook
 // ============================================================================
 
-/**
- * Hook for intersection observer (lazy loading images, infinite scroll)
- */
-export function useIntersectionObserver(
-  ref: React.RefObject<any>,
-  options?: IntersectionObserverInit
-): boolean {
-  const [isIntersecting, setIsIntersecting] = useState(false);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(([entry]) => {
-      setIsIntersecting(entry.isIntersecting);
-    }, options);
-
-    observer.observe(element);
-
-    return () => {
-      observer.unobserve(element);
-    };
-  }, [ref, options]);
-
-  return isIntersecting;
-}
-
 // ============================================================================
 // Optimized Search Hook
 // ============================================================================
@@ -481,7 +452,6 @@ export default {
   useLazyLoad,
   useBatchUpdate,
   useWindowedList,
-  useIntersectionObserver,
   useOptimizedSearch,
   useRenderTimer,
 };

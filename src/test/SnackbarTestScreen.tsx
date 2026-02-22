@@ -109,7 +109,7 @@ const SnackbarTestScreen = () => {
 
   const confirmAsync = async () => {
     // Simulate async operation
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 2000));
     setShowAsyncDialog(false);
     showSnackbar('Async operation completed', 'success');
   };
