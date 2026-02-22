@@ -25,6 +25,8 @@ export interface DesignDocument {
   approvedDate?: number;
   weightage?: number; // Percentage weight for progress tracking (total per site = 100%)
   keyDateId?: string;
+  keyDateCode?: string;        // resolved display code (e.g. "KD-A-03")
+  keyDateDescription?: string; // resolved display description
   doorsPackageId?: string;
   doorsPackageName?: string; // resolved display name (doorsId) of linked package
   createdBy: string;
@@ -44,6 +46,14 @@ export interface DesignDocumentCategory {
 export interface Site {
   id: string;
   name: string;
+}
+
+/** A Key Date resolved from the key_date_sites junction for a specific site. */
+export interface ResolvedKeyDate {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
 }
 
 export const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Portal, Dialog, Button, TextInput, Menu, HelperText } from 'react-native-paper';
 import {
   DesignDocument,
   DesignDocumentCategory,
+  ResolvedKeyDate,
   Site,
   SITE_REQUIRED_TYPES,
   DocumentType,
@@ -19,13 +20,6 @@ const DOCUMENT_TYPE_PREFIXES: Record<string, string> = {
   product_equipment: 'PRD',
   as_built: 'ABD',
 };
-
-interface KeyDate {
-  id: string;
-  code: string;
-  description: string;
-  category: string;
-}
 
 interface DoorsPackageItem {
   id: string;
@@ -44,7 +38,18 @@ interface CreateDesignDocumentDialogProps {
   categories: DesignDocumentCategory[];
   sites: Site[];
   documents: DesignDocument[];
-  keyDates: KeyDate[];
+  /**
+   * Key Date auto-resolved from the selected site (Category A lookup via key_date_sites).
+   * null  = site is known but has no Category A Key Date linked → show warning.
+   * undefined = no site context yet (project-scoped doc or site not yet picked).
+   */
+  resolvedKeyDate: ResolvedKeyDate | null | undefined;
+  /** selectedSiteId from context — 'all' or a specific site ID */
+  contextSiteId: string;
+  /** Category A Key Dates for the project, used as picker for project-scoped docs */
+  projectCategoryAKeyDates: Array<{ id: string; code: string; description: string }>;
+  /** Called when user picks a site inside the form (only shown in 'all' context for site-required docs) */
+  onSiteSelectedInForm: (siteId: string) => void;
   doorsPackages?: DoorsPackageItem[];
 }
 
@@ -59,13 +64,16 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   categories,
   sites,
   documents,
-  keyDates,
+  resolvedKeyDate,
+  contextSiteId,
+  projectCategoryAKeyDates,
+  onSiteSelectedInForm,
   doorsPackages = [],
 }) => {
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [docTypeMenuVisible, setDocTypeMenuVisible] = useState(false);
   const [siteMenuVisible, setSiteMenuVisible] = useState(false);
-  const [keyDateMenuVisible, setKeyDateMenuVisible] = useState(false);
+  const [projectKdMenuVisible, setProjectKdMenuVisible] = useState(false);
   const [doorsMenuVisible, setDoorsMenuVisible] = useState(false);
   const [docNumberManuallyEdited, setDocNumberManuallyEdited] = useState(false);
 
@@ -85,9 +93,13 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
 
   const selectedSubCategory = categories.find((c) => c.id === form.categoryId);
   const selectedSite = sites.find((s) => s.id === form.siteId);
-  const selectedKeyDate = keyDates.find((kd) => kd.id === form.keyDateId);
+  const selectedProjectKD = projectCategoryAKeyDates.find((kd) => kd.id === form.keyDateId);
   const selectedDoorsPackage = doorsPackages.find((p) => p.id === form.doorsPackageId);
   const requiresSite = SITE_REQUIRED_TYPES.includes(form.documentType as DocumentType);
+  // True when a specific (non-all) site is already selected on the main screen
+  const hasSiteContext = contextSiteId !== '' && contextSiteId !== 'all';
+  // Whether we know the effective site (from context or from form)
+  const hasSite = hasSiteContext || !!form.siteId;
 
   // Reset manual edit flag when dialog opens
   useEffect(() => {
@@ -106,33 +118,16 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
     return `DD-${prefix}-${String(nextNumber).padStart(3, '0')}`;
   };
 
-  // Map document type slugs to Key Date categories for auto-suggestion
-  const DOC_TYPE_TO_KD_CATEGORY: Record<string, string> = {
-    simulation_study: 'A',  // Design category
-    installation: 'A',
-    product_equipment: 'A',
-    as_built: 'A',
-  };
-
   const handleCategorySelect = (category: DesignDocumentCategory) => {
     const slug = getCategorySlug(category.name);
     onUpdateField('documentType', slug as string);
     onUpdateField('categoryId', '');
     if (!SITE_REQUIRED_TYPES.includes(slug as DocumentType)) {
       onUpdateField('siteId', '');
+      onUpdateField('keyDateId', '');
     }
     if (!docNumberManuallyEdited) {
       onUpdateField('documentNumber', generateDocumentNumber(slug as string));
-    }
-    // Auto-suggest a Key Date based on category if none is selected
-    if (!form.keyDateId) {
-      const suggestedCategory = DOC_TYPE_TO_KD_CATEGORY[slug as string];
-      if (suggestedCategory) {
-        const matchingKd = keyDates.find((kd) => kd.category === suggestedCategory);
-        if (matchingKd) {
-          onUpdateField('keyDateId', matchingKd.id);
-        }
-      }
     }
     setCategoryMenuVisible(false);
   };
@@ -241,77 +236,105 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               numberOfLines={3}
             />
 
-            {/* Key Date Dropdown - Prominent placement for progress tracking */}
-            <Menu
-              visible={keyDateMenuVisible}
-              onDismiss={() => setKeyDateMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  onPress={() => setKeyDateMenuVisible(true)}
-                  style={[
-                    styles.pickerButton,
-                    !form.keyDateId && styles.keyDatePickerHighlight,
-                  ]}
-                >
-                  <Text style={styles.pickerLabel}>Key Date</Text>
-                  <Text style={[styles.pickerValue, !form.keyDateId && styles.keyDateUnlinkedValue]}>
-                    {selectedKeyDate
-                      ? `${selectedKeyDate.code} - ${selectedKeyDate.description}`
-                      : 'None selected'}
-                  </Text>
-                  {!form.keyDateId && (
-                    <Text style={styles.keyDateHint}>
-                      Tip: Link to a Key Date so your progress counts toward project tracking
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              }
-            >
-              <Menu.Item
-                key="none"
-                onPress={() => {
-                  onUpdateField('keyDateId', '');
-                  setKeyDateMenuVisible(false);
-                }}
-                title="None - Progress not tracked"
-              />
-              {keyDates.map((kd) => (
-                <Menu.Item
-                  key={kd.id}
-                  onPress={() => {
-                    onUpdateField('keyDateId', kd.id);
-                    setKeyDateMenuVisible(false);
-                  }}
-                  title={`${kd.code} - ${kd.description}`}
-                />
-              ))}
-            </Menu>
-
-            {/* Site Dropdown (only for Installation/As-Built) */}
+            {/* Site — read-only label when context site is known; picker when in 'All Sites' view */}
             {requiresSite && (
+              hasSiteContext ? (
+                <View style={styles.readOnlyRow}>
+                  <Text style={styles.readOnlyLabel}>Site</Text>
+                  <Text style={styles.readOnlyValue}>{selectedSite?.name || '—'}</Text>
+                </View>
+              ) : (
+                <Menu
+                  visible={siteMenuVisible}
+                  onDismiss={() => setSiteMenuVisible(false)}
+                  anchor={
+                    <TouchableOpacity
+                      onPress={() => setSiteMenuVisible(true)}
+                      style={styles.pickerButton}
+                    >
+                      <Text style={styles.pickerLabel}>Site *</Text>
+                      <Text style={styles.pickerValue}>
+                        {selectedSite?.name || 'Select Site'}
+                      </Text>
+                    </TouchableOpacity>
+                  }
+                >
+                  {sites.map((site) => (
+                    <Menu.Item
+                      key={site.id}
+                      onPress={() => {
+                        onUpdateField('siteId', site.id);
+                        onSiteSelectedInForm(site.id);
+                        setSiteMenuVisible(false);
+                      }}
+                      title={site.name}
+                    />
+                  ))}
+                </Menu>
+              )
+            )}
+
+            {/* Key Date — auto-resolved (read-only) for site-scoped docs; picker for project-scoped */}
+            {requiresSite ? (
+              !hasSite ? (
+                // Site not yet selected in 'All Sites' view
+                <View style={styles.keyDateInfoRow}>
+                  <Text style={styles.keyDateInfoLabel}>Key Date</Text>
+                  <Text style={styles.keyDatePlaceholder}>Select a site to determine Key Date</Text>
+                </View>
+              ) : resolvedKeyDate ? (
+                // Site linked to a Category A Key Date
+                <View style={[styles.keyDateInfoRow, styles.keyDateLinkedRow]}>
+                  <Text style={styles.keyDateInfoLabel}>Key Date</Text>
+                  <Text style={styles.keyDateLinkedCode}>{resolvedKeyDate.code}</Text>
+                  <Text style={styles.keyDateLinkedDesc} numberOfLines={2}>
+                    {resolvedKeyDate.description}
+                  </Text>
+                </View>
+              ) : (
+                // Site has no Category A Key Date linked
+                <View style={[styles.keyDateInfoRow, styles.keyDateWarningRow]}>
+                  <Text style={styles.keyDateInfoLabel}>Key Date</Text>
+                  <Text style={styles.keyDateWarningText}>
+                    No Key Date linked to this site — contact Planner
+                  </Text>
+                </View>
+              )
+            ) : (
+              // Project-scoped doc — show Category A picker
               <Menu
-                visible={siteMenuVisible}
-                onDismiss={() => setSiteMenuVisible(false)}
+                visible={projectKdMenuVisible}
+                onDismiss={() => setProjectKdMenuVisible(false)}
                 anchor={
                   <TouchableOpacity
-                    onPress={() => setSiteMenuVisible(true)}
+                    onPress={() => setProjectKdMenuVisible(true)}
                     style={styles.pickerButton}
                   >
-                    <Text style={styles.pickerLabel}>Site *</Text>
-                    <Text style={styles.pickerValue}>
-                      {selectedSite?.name || 'Select Site'}
+                    <Text style={styles.pickerLabel}>Key Date (Project)</Text>
+                    <Text style={[styles.pickerValue, !form.keyDateId && styles.disabledText]}>
+                      {selectedProjectKD
+                        ? `${selectedProjectKD.code} — ${selectedProjectKD.description}`
+                        : 'Select Project Key Date (optional)'}
                     </Text>
                   </TouchableOpacity>
                 }
               >
-                {sites.map((site) => (
+                <Menu.Item
+                  key="none"
+                  onPress={() => {
+                    onUpdateField('keyDateId', '');
+                    setProjectKdMenuVisible(false);
+                  }}
+                  title="None — Progress not tracked"
+                />
+                {projectCategoryAKeyDates.map((kd) => (
                   <Menu.Item
-                    key={site.id}
+                    key={kd.id}
                     onPress={() => {
-                      onUpdateField('siteId', site.id);
-                      setSiteMenuVisible(false);
+                      onUpdateField('keyDateId', kd.id);
+                      setProjectKdMenuVisible(false);
                     }}
-                    title={site.name}
+                    title={`${kd.code} — ${kd.description}`}
                   />
                 ))}
               </Menu>
@@ -424,19 +447,64 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
-  keyDatePickerHighlight: {
+  readOnlyRow: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 12,
+    marginHorizontal: 24,
+    backgroundColor: '#F5F5F5',
+  },
+  readOnlyLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  readOnlyValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  keyDateInfoRow: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 12,
+    marginHorizontal: 24,
+  },
+  keyDateInfoLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  keyDateLinkedRow: {
+    borderColor: COLORS.PRIMARY,
+    backgroundColor: '#EEF4FF',
+  },
+  keyDateLinkedCode: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.PRIMARY,
+    marginBottom: 2,
+  },
+  keyDateLinkedDesc: {
+    fontSize: 13,
+    color: '#444',
+  },
+  keyDateWarningRow: {
     borderColor: COLORS.WARNING,
-    borderWidth: 1.5,
     backgroundColor: '#FFF8E1',
   },
-  keyDateUnlinkedValue: {
-    color: '#999',
+  keyDateWarningText: {
+    fontSize: 13,
+    color: '#E65100',
     fontStyle: 'italic',
   },
-  keyDateHint: {
-    fontSize: 11,
-    color: '#F57C00',
-    marginTop: 4,
+  keyDatePlaceholder: {
+    fontSize: 13,
+    color: '#999',
     fontStyle: 'italic',
   },
 });

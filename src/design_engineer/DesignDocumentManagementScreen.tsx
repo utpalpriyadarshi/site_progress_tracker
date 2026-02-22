@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useState, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { FAB, Searchbar, Menu, Snackbar, IconButton } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
@@ -17,6 +17,7 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import {
   DesignDocument,
+  ResolvedKeyDate,
   DocumentType,
   DocumentStatus,
   DOCUMENT_TYPES,
@@ -69,12 +70,13 @@ const DesignDocumentManagementScreen = () => {
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
   const {
-    keyDates,
+    projectCategoryAKeyDates,
     doorsPackages,
     isSubmitting,
     isApproving,
     loadSites,
-    loadKeyDates,
+    loadProjectKeyDates,
+    resolveKeyDateForSite,
     loadDoorsPackages,
     loadCategories,
     loadDocuments,
@@ -84,6 +86,55 @@ const DesignDocumentManagementScreen = () => {
     handleReviseDocument,
     handleApprovalAction,
   } = useDocumentCrud({ projectId, engineerId, selectedSiteId, state, dispatch, announce });
+
+  // Tracks the auto-resolved Key Date for the currently open dialog
+  const [resolvedKeyDate, setResolvedKeyDate] = useState<ResolvedKeyDate | null | undefined>(undefined);
+  // Stable ref so async callbacks don't capture stale state
+  const resolveKeyDateForSiteRef = useRef(resolveKeyDateForSite);
+  useEffect(() => { resolveKeyDateForSiteRef.current = resolveKeyDateForSite; }, [resolveKeyDateForSite]);
+
+  /** Resolves and stores the Key Date for a given site, also syncs form.keyDateId. */
+  const resolveAndSetKeyDate = useCallback(async (siteId: string) => {
+    const kd = await resolveKeyDateForSiteRef.current(siteId);
+    setResolvedKeyDate(kd);
+    dispatch({
+      type: 'UPDATE_FORM_FIELD',
+      payload: { field: 'keyDateId', value: kd?.id || '' },
+    });
+  }, [dispatch]);
+
+  /** Opens the create dialog, pre-setting siteId and resolving the Key Date when a site is in context. */
+  const handleOpenCreateDialog = useCallback(async () => {
+    dispatch({ type: 'OPEN_DIALOG' });
+    if (selectedSiteId && selectedSiteId !== 'all') {
+      dispatch({ type: 'UPDATE_FORM_FIELD', payload: { field: 'siteId', value: selectedSiteId } });
+      await resolveAndSetKeyDate(selectedSiteId);
+    } else {
+      setResolvedKeyDate(undefined);
+    }
+  }, [selectedSiteId, dispatch, resolveAndSetKeyDate]);
+
+  /** Wraps handleEditDocument to also resolve the Key Date from the doc's site. */
+  const handleEditWithKD = useCallback(async (doc: DesignDocument) => {
+    handleEditDocument(doc);
+    const effectiveSite = doc.siteId || (selectedSiteId !== 'all' ? selectedSiteId : '');
+    if (effectiveSite) {
+      await resolveAndSetKeyDate(effectiveSite);
+    } else {
+      setResolvedKeyDate(undefined);
+    }
+  }, [handleEditDocument, selectedSiteId, resolveAndSetKeyDate]);
+
+  /** Wraps handleReviseDocument to also resolve the Key Date from the doc's site. */
+  const handleReviseWithKD = useCallback(async (doc: DesignDocument) => {
+    handleReviseDocument(doc);
+    const effectiveSite = doc.siteId || (selectedSiteId !== 'all' ? selectedSiteId : '');
+    if (effectiveSite) {
+      await resolveAndSetKeyDate(effectiveSite);
+    } else {
+      setResolvedKeyDate(undefined);
+    }
+  }, [handleReviseDocument, selectedSiteId, resolveAndSetKeyDate]);
 
   const {
     seedDefaultCategories,
@@ -98,7 +149,7 @@ const DesignDocumentManagementScreen = () => {
     loadSites();
     loadCategories();
     loadDocuments();
-    loadKeyDates();
+    loadProjectKeyDates();
     loadDoorsPackages();
   }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
 
@@ -231,7 +282,7 @@ const DesignDocumentManagementScreen = () => {
           message="Create your first design document to start tracking"
           helpText="Design documents cover Simulation/Study, Installation, Product/Equipment, and As-Built types."
           actionText="Create Document"
-          onAction={() => dispatch({ type: 'OPEN_DIALOG' })}
+          onAction={handleOpenCreateDialog}
           variant="large"
         />
       );
@@ -455,7 +506,7 @@ const DesignDocumentManagementScreen = () => {
             renderItem={({ item }) => (
               <DesignDocumentCard
                 document={item}
-                onEdit={handleEditDocument}
+                onEdit={handleEditWithKD}
                 onDelete={handleDeleteDocument}
                 onSubmit={(id) =>
                   dispatch({ type: 'OPEN_APPROVAL_DIALOG', payload: { documentId: id, action: 'submit' } })
@@ -469,7 +520,7 @@ const DesignDocumentManagementScreen = () => {
                 onReject={(id) =>
                   dispatch({ type: 'OPEN_APPROVAL_DIALOG', payload: { documentId: id, action: 'reject' } })
                 }
-                onRevise={handleReviseDocument}
+                onRevise={handleReviseWithKD}
                 onMove={handleMoveDocument}
               />
             )}
@@ -489,7 +540,7 @@ const DesignDocumentManagementScreen = () => {
             {
               icon: 'file-document-plus',
               label: 'New Document',
-              onPress: () => dispatch({ type: 'OPEN_DIALOG' }),
+              onPress: handleOpenCreateDialog,
               accessibilityLabel: 'Create new design document',
             },
             {
@@ -522,7 +573,10 @@ const DesignDocumentManagementScreen = () => {
           categories={state.data.categories}
           sites={state.data.sites}
           documents={state.data.documents}
-          keyDates={keyDates}
+          resolvedKeyDate={resolvedKeyDate}
+          contextSiteId={selectedSiteId}
+          projectCategoryAKeyDates={projectCategoryAKeyDates}
+          onSiteSelectedInForm={resolveAndSetKeyDate}
           doorsPackages={doorsPackages}
         />
 
