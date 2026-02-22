@@ -20,3 +20,4 @@ export { EquipmentMaterialsWidget } from './EquipmentMaterialsWidget';
 export { FinancialSummaryWidget } from './FinancialSummaryWidget';
 export { TestingCommissioningWidget } from './TestingCommissioningWidget';
 export { HandoverStatusWidget } from './HandoverStatusWidget';
+export { KeyDateProgressWidget } from './KeyDateProgressWidget';

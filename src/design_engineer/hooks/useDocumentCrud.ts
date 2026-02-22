@@ -8,8 +8,11 @@ import {
   DesignDocumentCategory,
   DocumentType,
   DocumentStatus,
+  ResolvedKeyDate,
   SITE_REQUIRED_TYPES,
 } from '../types/DesignDocumentTypes';
+
+export type { ResolvedKeyDate };
 import {
   DesignDocumentManagementState,
   DesignDocumentManagementAction,
@@ -32,7 +35,7 @@ export const useDocumentCrud = ({
   dispatch,
   announce,
 }: UseDocumentCrudParams) => {
-  const [keyDates, setKeyDates] = useState<
+  const [projectCategoryAKeyDates, setProjectCategoryAKeyDates] = useState<
     Array<{ id: string; code: string; description: string; category: string }>
   >([]);
   const [doorsPackages, setDoorsPackages] = useState<
@@ -53,22 +56,67 @@ export const useDocumentCrud = ({
     }
   }, [projectId, dispatch]);
 
-  const loadKeyDates = useCallback(async () => {
+  /**
+   * Loads all Category A Key Dates for the project.
+   * Used as the picker source for project-scoped documents (no site).
+   */
+  const loadProjectKeyDates = useCallback(async () => {
     if (!projectId) return;
     try {
       const keyDatesCollection = database.collections.get('key_dates');
-      const keyDatesData = await keyDatesCollection.query(Q.where('project_id', projectId)).fetch();
-      const keyDatesList = keyDatesData.map((kd: any) => ({
-        id: kd.id,
-        code: kd.code,
-        description: kd.description,
-        category: kd.category,
-      }));
-      setKeyDates(keyDatesList);
+      const keyDatesData = await keyDatesCollection
+        .query(Q.where('project_id', projectId), Q.where('category', 'A'))
+        .fetch();
+      const sorted = keyDatesData
+        .map((kd: any) => ({
+          id: kd.id,
+          code: kd.code,
+          description: kd.description,
+          category: kd.category,
+        }))
+        .sort((a: any, b: any) => a.code.localeCompare(b.code));
+      setProjectCategoryAKeyDates(sorted);
     } catch (error: any) {
-      logger.error('[DesignDocument] Error loading key dates:', error);
+      logger.error('[DesignDocument] Error loading project key dates:', error);
     }
   }, [projectId]);
+
+  /**
+   * Resolves the Category A Key Date linked to a specific site via key_date_sites.
+   * Returns the first match sorted by code, or null if none found.
+   */
+  const resolveKeyDateForSite = useCallback(async (siteId: string): Promise<ResolvedKeyDate | null> => {
+    if (!siteId || siteId === 'all') return null;
+    try {
+      const kdSiteRecords = await database.collections
+        .get('key_date_sites')
+        .query(Q.where('site_id', siteId))
+        .fetch();
+
+      if (kdSiteRecords.length === 0) return null;
+
+      const keyDateIds = kdSiteRecords.map((r: any) => r.keyDateId);
+      const categoryAKeyDates = await database.collections
+        .get('key_dates')
+        .query(Q.where('id', Q.oneOf(keyDateIds)), Q.where('category', 'A'))
+        .fetch();
+
+      if (categoryAKeyDates.length === 0) return null;
+
+      categoryAKeyDates.sort((a: any, b: any) => a.code.localeCompare(b.code));
+      const picked = categoryAKeyDates[0] as any;
+
+      return {
+        id: picked.id,
+        code: picked.code,
+        description: picked.description,
+        category: picked.category,
+      };
+    } catch (error: any) {
+      logger.error('[DesignDocument] Error resolving key date for site:', error);
+      return null;
+    }
+  }, []);
 
   const loadDoorsPackages = useCallback(async () => {
     if (!projectId) return;
@@ -140,6 +188,8 @@ export const useDocumentCrud = ({
           let siteName = '';
           let categoryName = '';
           let doorsPackageName = '';
+          let keyDateCode = '';
+          let keyDateDescription = '';
 
           if (doc.siteId) {
             try {
@@ -170,6 +220,16 @@ export const useDocumentCrud = ({
             }
           }
 
+          if (doc.keyDateId) {
+            try {
+              const kd = await database.collections.get('key_dates').find(doc.keyDateId);
+              keyDateCode = (kd as any).code;
+              keyDateDescription = (kd as any).description;
+            } catch (e) {
+              logger.warn('[DesignDocument] Key Date not found:', doc.keyDateId);
+            }
+          }
+
           return {
             id: doc.id,
             documentNumber: doc.documentNumber,
@@ -182,6 +242,8 @@ export const useDocumentCrud = ({
             siteId: doc.siteId,
             siteName,
             keyDateId: doc.keyDateId,
+            keyDateCode: keyDateCode || undefined,
+            keyDateDescription: keyDateDescription || undefined,
             doorsPackageId: doc.doorsPackageId,
             doorsPackageName,
             revisionNumber: doc.revisionNumber,
@@ -584,12 +646,13 @@ export const useDocumentCrud = ({
   }, [isApproving, state, dispatch]);
 
   return {
-    keyDates,
+    projectCategoryAKeyDates,
     doorsPackages,
     isSubmitting,
     isApproving,
     loadSites,
-    loadKeyDates,
+    loadProjectKeyDates,
+    resolveKeyDateForSite,
     loadDoorsPackages,
     loadCategories,
     loadDocuments,

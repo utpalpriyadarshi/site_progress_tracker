@@ -91,7 +91,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
               textStyle={styles.keyDateText}
               compact
             >
-              Key Date
+              {doc.keyDateCode || 'Key Date'}
             </Chip>
           )}
           {doc.doorsPackageId && (

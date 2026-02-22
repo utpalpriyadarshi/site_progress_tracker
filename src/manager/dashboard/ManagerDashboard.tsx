@@ -17,6 +17,7 @@ import {
   KPIOverviewWidget,
   EngineeringProgressWidget,
   SiteProgressWidget,
+  KeyDateProgressWidget,
   EquipmentMaterialsWidget,
   FinancialSummaryWidget,
   TestingCommissioningWidget,
@@ -109,7 +110,10 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
         {/* Row 2: Site Progress */}
         <SiteProgressWidget />
 
-        {/* Row 3: Engineering Progress */}
+        {/* Row 3: Key Date Progress (design vs activities split) */}
+        <KeyDateProgressWidget />
+
+        {/* Row 4: Engineering Progress */}
         <EngineeringProgressWidget />
 
         {/* Row 4: Equipment & Materials */}
