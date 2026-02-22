@@ -28,11 +28,13 @@ import { ManagerProvider } from '../manager/context/ManagerContext';
 import { BomProvider } from '../manager/context/BomContext';
 import ManagerTabNavigator from './ManagerNavigator';
 import BomManagementScreen from '../manager/BomManagementScreen';
+import ChangeOrdersScreen from '../manager/ChangeOrdersScreen';
 import TutorialService from '../services/TutorialService';
 
 export type ManagerDrawerParamList = {
   ManagerTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   BomManagement: undefined;
+  ChangeOrders: undefined;
 };
 
 const Drawer = createDrawerNavigator<ManagerDrawerParamList>();
@@ -93,9 +95,11 @@ export const ManagerDrawerNavigator: React.FC = () => {
   );
 
   const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
-    let iconName = 'clipboard-list';
+    let iconName = 'clipboard-list-outline';
     if (routeName === 'BomManagement') {
       iconName = focused ? 'clipboard-list' : 'clipboard-list-outline';
+    } else if (routeName === 'ChangeOrders') {
+      iconName = focused ? 'file-document-edit' : 'file-document-edit-outline';
     }
     return <Icon name={iconName} size={size} color={color} />;
   }, []);
@@ -133,6 +137,17 @@ export const ManagerDrawerNavigator: React.FC = () => {
             options={{
               title: 'BOM Management',
               drawerLabel: 'BOM Management',
+              headerShown: false,
+            }}
+          />
+
+          {/* Change Orders in Drawer */}
+          <Drawer.Screen
+            name="ChangeOrders"
+            component={ChangeOrdersScreen}
+            options={{
+              title: 'Change Orders',
+              drawerLabel: 'Change Orders',
               headerShown: false,
             }}
           />

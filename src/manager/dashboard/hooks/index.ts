@@ -27,3 +27,6 @@ export type { TestingData, UseTestingDataResult } from './useTestingData';
 
 export { useHandoverData } from './useHandoverData';
 export type { HandoverData, UseHandoverDataResult } from './useHandoverData';
+
+export { useKeyDateProgressData } from './useKeyDateProgressData';
+export type { KDProgressItem, UseKeyDateProgressDataResult } from './useKeyDateProgressData';
