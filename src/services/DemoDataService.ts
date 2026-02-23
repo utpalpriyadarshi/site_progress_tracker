@@ -680,14 +680,18 @@ interface DesignDocCategoryDef {
 }
 
 const DESIGN_DOC_CATEGORIES: DesignDocCategoryDef[] = [
-  { name: 'System Studies', documentType: 'simulation_study', sequenceOrder: 1 },
-  { name: 'Load Flow Analysis', documentType: 'simulation_study', sequenceOrder: 2 },
-  { name: 'Short Circuit Studies', documentType: 'simulation_study', sequenceOrder: 3 },
-  { name: 'Layout Plan & Section', documentType: 'installation', sequenceOrder: 1 },
-  { name: 'Cable Tray Layout', documentType: 'installation', sequenceOrder: 2 },
-  { name: 'Cable Schedule', documentType: 'installation', sequenceOrder: 3 },
-  { name: 'Equipment Application', documentType: 'product_equipment', sequenceOrder: 1 },
-  { name: 'Control Panel Design', documentType: 'product_equipment', sequenceOrder: 2 },
+  // index 0 — TSS Studies
+  { name: 'TSS Studies', documentType: 'simulation_study', sequenceOrder: 1 },
+  // index 1 — OCS Studies
+  { name: 'OCS Studies', documentType: 'simulation_study', sequenceOrder: 2 },
+  // index 2 — TSS Installation Design
+  { name: 'TSS Installation Design', documentType: 'installation', sequenceOrder: 1 },
+  // index 3 — TSS Product Design
+  { name: 'TSS Product Design', documentType: 'product_equipment', sequenceOrder: 1 },
+  // index 4 — OCS Installation Design
+  { name: 'OCS Installation Design', documentType: 'installation', sequenceOrder: 2 },
+  // index 5 — OCS Product Design
+  { name: 'OCS Product Design', documentType: 'product_equipment', sequenceOrder: 2 },
 ];
 
 interface DesignDocumentDef {
@@ -696,6 +700,7 @@ interface DesignDocumentDef {
   description: string;
   documentType: string;
   categoryIndex: number; // index into DESIGN_DOC_CATEGORIES
+  siteIndex: number;     // 0 = Simulation Studies, 1 = TSS-01, 2 = OHE Zone 1
   revisionNumber: string;
   status: string;
   linkToKD?: string; // KD code to link this doc to (e.g., 'KD-A-01')
@@ -703,70 +708,152 @@ interface DesignDocumentDef {
 }
 
 const DESIGN_DOCUMENTS: DesignDocumentDef[] = [
+  // ── TSS Studies (site: Simulation Studies) ──
   {
     documentNumber: 'DD-SIM-001',
-    title: 'Power System Load Flow Analysis',
-    description: 'Load flow analysis for 33kV distribution network',
+    title: 'Load Flow Study (Normal & Degraded Mode)',
+    description: 'Load flow analysis for 25kV traction power system under normal and degraded operating conditions',
     documentType: 'simulation_study',
-    categoryIndex: 1,
+    categoryIndex: 0,
+    siteIndex: 0,
     revisionNumber: 'R2',
     status: 'approved',
     linkToKD: 'KD-A-01',
-    weightage: 25,
+    weightage: 15,
   },
   {
     documentNumber: 'DD-SIM-002',
-    title: 'Short Circuit Analysis Report',
-    description: 'Fault current analysis for protection coordination',
+    title: 'Short Circuit Study (Max/Min Fault Level)',
+    description: 'Fault current analysis for protection coordination and relay settings',
     documentType: 'simulation_study',
-    categoryIndex: 2,
-    revisionNumber: 'R1',
-    status: 'submitted',
-    linkToKD: 'KD-A-01',
-    weightage: 25,
-  },
-  {
-    documentNumber: 'DD-INS-001',
-    title: 'TSS General Arrangement',
-    description: 'General arrangement drawing for Traction Substation',
-    documentType: 'installation',
-    categoryIndex: 3,
-    revisionNumber: 'R3',
-    status: 'approved',
-    linkToKD: 'KD-A-01',
-    weightage: 20,
-  },
-  {
-    documentNumber: 'DD-INS-002',
-    title: 'Cable Tray Routing Layout',
-    description: 'Cable tray routing for control building',
-    documentType: 'installation',
-    categoryIndex: 4,
+    categoryIndex: 0,
+    siteIndex: 0,
     revisionNumber: 'R1',
     status: 'submitted',
     linkToKD: 'KD-A-01',
     weightage: 15,
   },
+  // ── OCS Studies (site: Simulation Studies) ──
   {
-    documentNumber: 'DD-PRD-001',
-    title: 'Auxiliary Transformer Application',
-    description: 'Application design for 1000kVA auxiliary transformer',
-    documentType: 'product_equipment',
-    categoryIndex: 6,
-    revisionNumber: 'R2',
-    status: 'approved_with_comment',
+    documentNumber: 'DD-SIM-003',
+    title: 'OCS Span & Tension Calculation',
+    description: 'Catenary wire span-tension analysis accounting for temperature variation and dynamic loading',
+    documentType: 'simulation_study',
+    categoryIndex: 1,
+    siteIndex: 0,
+    revisionNumber: 'R1',
+    status: 'approved',
     linkToKD: 'KD-A-01',
     weightage: 10,
   },
   {
-    documentNumber: 'DD-PRD-002',
-    title: 'SCADA RTU Panel Design',
-    description: 'Control panel design for RTU installation',
+    documentNumber: 'DD-SIM-004',
+    title: 'Pantograph-Catenary Dynamic Interaction Study',
+    description: 'Dynamic interaction analysis between pantograph and catenary at operational speeds',
+    documentType: 'simulation_study',
+    categoryIndex: 1,
+    siteIndex: 0,
+    revisionNumber: 'R0',
+    status: 'submitted',
+    linkToKD: 'KD-A-01',
+    weightage: 10,
+  },
+  // ── TSS Installation Design (site: TSS-01) ──
+  {
+    documentNumber: 'DD-INS-001',
+    title: 'TSS General Arrangement (GA) Drawing',
+    description: 'General arrangement drawing for Traction Substation showing equipment placement and clearances',
+    documentType: 'installation',
+    categoryIndex: 2,
+    siteIndex: 1,
+    revisionNumber: 'R3',
+    status: 'approved',
+    linkToKD: 'KD-A-01',
+    weightage: 10,
+  },
+  {
+    documentNumber: 'DD-INS-002',
+    title: 'Single Line Diagram (SLD)',
+    description: 'Single line diagram for 25kV AC traction substation showing all switching and protection elements',
+    documentType: 'installation',
+    categoryIndex: 2,
+    siteIndex: 1,
+    revisionNumber: 'R2',
+    status: 'submitted',
+    linkToKD: 'KD-A-01',
+    weightage: 10,
+  },
+  // ── TSS Product Design (site: TSS-01) ──
+  {
+    documentNumber: 'DD-PRD-001',
+    title: 'Transformer Detail Design Report',
+    description: 'Detailed design report for 25kV traction transformer including rating calculations and GA drawing',
     documentType: 'product_equipment',
-    categoryIndex: 7,
+    categoryIndex: 3,
+    siteIndex: 1,
+    revisionNumber: 'R2',
+    status: 'approved_with_comment',
+    linkToKD: 'KD-A-01',
+    weightage: 8,
+  },
+  {
+    documentNumber: 'DD-PRD-002',
+    title: 'SCADA System Architecture',
+    description: 'SCADA architecture diagram and network topology for traction power monitoring and control',
+    documentType: 'product_equipment',
+    categoryIndex: 3,
+    siteIndex: 1,
     revisionNumber: 'R0',
     status: 'draft',
-    weightage: 5,
+    weightage: 7,
+  },
+  // ── OCS Installation Design (site: OHE Zone 1) ──
+  {
+    documentNumber: 'DD-INS-003',
+    title: 'OCS Layout Plan (Chainage-wise)',
+    description: 'Chainage-wise OCS layout plan showing mast positions, registration arms, and section insulators',
+    documentType: 'installation',
+    categoryIndex: 4,
+    siteIndex: 2,
+    revisionNumber: 'R2',
+    status: 'approved',
+    linkToKD: 'KD-A-01',
+    weightage: 8,
+  },
+  {
+    documentNumber: 'DD-INS-004',
+    title: 'Foundation Drawing (Mast/Portal)',
+    description: 'Structural foundation drawings for OHE mast and portal structures',
+    documentType: 'installation',
+    categoryIndex: 4,
+    siteIndex: 2,
+    revisionNumber: 'R1',
+    status: 'draft',
+    weightage: 7,
+  },
+  // ── OCS Product Design (site: OHE Zone 1) ──
+  {
+    documentNumber: 'DD-PRD-003',
+    title: 'Cantilever Assembly Drawing',
+    description: 'Detailed fabrication drawing for cantilever bracket assembly used in OHE registration',
+    documentType: 'product_equipment',
+    categoryIndex: 5,
+    siteIndex: 2,
+    revisionNumber: 'R1',
+    status: 'submitted',
+    linkToKD: 'KD-A-01',
+    weightage: 8,
+  },
+  {
+    documentNumber: 'DD-PRD-004',
+    title: 'Mast Fabrication Drawing',
+    description: 'Fabrication drawing for 9m galvanized steel OHE mast with foundation bolt arrangement',
+    documentType: 'product_equipment',
+    categoryIndex: 5,
+    siteIndex: 2,
+    revisionNumber: 'R0',
+    status: 'draft',
+    weightage: 7,
   },
 ];
 
@@ -829,8 +916,12 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     // If no sites exist, create default sites for designer
     if (projectSites.length === 0) {
       const defaultSites = [
-        { name: 'Substation A', location: 'Zone 1 — North Block, Plot 14' },
-        { name: 'Substation B', location: 'Zone 2 — South Block, Plot 22' },
+        // index 0: project-level analytical site for all studies
+        { name: 'Simulation Studies', location: 'Project-Level — All Systems' },
+        // index 1: physical TSS site for installation and product docs
+        { name: 'Traction Substation (TSS-01)', location: 'Zone 1 — North Block, Plot 14' },
+        // index 2: physical OCS/OHE site for installation and product docs
+        { name: 'OHE Zone 1 — North Corridor', location: 'Zone 2 — North Corridor, Ch. 0+000 to 15+500' },
       ];
 
       for (const siteDef of defaultSites) {
@@ -847,8 +938,8 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         projectSites.push(site);
       }
     } else {
-      // Assign designer to first 2 existing sites
-      const assignedSites = projectSites.slice(0, 2);
+      // Assign designer to first 3 existing sites
+      const assignedSites = projectSites.slice(0, 3);
       for (const site of assignedSites) {
         await site.update((s: any) => {
           s.designEngineerId = designerId;
@@ -856,7 +947,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
       }
     }
 
-  const assignedSites = projectSites.slice(0, 2);
+  const assignedSites = projectSites.slice(0, 3);
   const siteIds = assignedSites.map((s: any) => s.id);
 
     // 0. Create default domains for the project
@@ -877,14 +968,18 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         domainCount++;
       }
 
-      // Assign domains to sites (distribute evenly)
-      const domainIds = Object.values(domainsByName);
-      for (let i = 0; i < assignedSites.length; i++) {
-        const site = assignedSites[i];
-        const domainId = domainIds[i % domainIds.length];
-        await site.update((s: any) => {
-          s.domainId = domainId;
-        });
+      // Assign domains to sites explicitly by discipline
+      // index 0 = Simulation Studies site → 'Simulation Studies' domain
+      // index 1 = TSS-01 site             → 'PSY' domain (TSS maps to PSY)
+      // index 2 = OHE Zone 1 site         → 'OHE' domain
+      const siteDomainNames = ['Simulation Studies', 'PSY', 'OHE'];
+      for (let i = 0; i < Math.min(assignedSites.length, siteDomainNames.length); i++) {
+        const domainId = domainsByName[siteDomainNames[i]] || null;
+        if (domainId) {
+          await assignedSites[i].update((s: any) => {
+            s.domainId = domainId;
+          });
+        }
       }
     } else {
       for (const d of existingDomains) {
@@ -898,10 +993,12 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     const documentsCollection = database.collections.get<DesignDocumentModel>('design_documents');
 
     // 1. Create DOORS Packages
+    // DOORS packages are physical equipment — assign to physical sites only (skip Simulation Studies at index 0)
+    const physicalSiteIds = siteIds.slice(1);
     let pkgIndex = 0;
     for (const pkgDef of DOORS_PACKAGES) {
       const compliancePercentage = Math.round((pkgDef.compliantRequirements / pkgDef.totalRequirements) * 100);
-      const siteId = siteIds.length > 0 ? siteIds[pkgIndex % siteIds.length] : null;
+      const siteId = physicalSiteIds.length > 0 ? physicalSiteIds[pkgIndex % physicalSiteIds.length] : null;
       // Map category to domain
       const domainName = CATEGORY_TO_DOMAIN[pkgDef.category] || 'Civil';
       const domainId = domainsByName[domainName] || null;
@@ -1028,10 +1125,9 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     }
 
     // 5. Create Design Documents
-    let docIndex = 0;
     for (const docDef of DESIGN_DOCUMENTS) {
       const category = createdCategories[docDef.categoryIndex];
-      const siteId = siteIds.length > 0 ? siteIds[docIndex % siteIds.length] : null;
+      const siteId = siteIds[docDef.siteIndex] ?? null;
       await documentsCollection.create((record: any) => {
         record.documentNumber = docDef.documentNumber;
         record.title = docDef.title;
@@ -1063,7 +1159,6 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.version = 1;
       });
       docCount++;
-      docIndex++;
     }
   });
 
