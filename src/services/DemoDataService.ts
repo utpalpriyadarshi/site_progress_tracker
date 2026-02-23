@@ -1572,6 +1572,17 @@ const MANAGER_VENDORS: VendorDef[] = [
     performanceScore: 75,
     totalOrders: 15,
   },
+  {
+    vendorCode: 'VND-SS-004',
+    vendorName: 'Structural Systems India',
+    category: 'OHE Structural Components',
+    contactPerson: 'Suresh Nair',
+    email: 'suresh@structuralsystems.in',
+    phone: '+91-9876543213',
+    isApproved: true,
+    performanceScore: 83,
+    totalOrders: 9,
+  },
 ];
 
 interface PurchaseOrderDef {
@@ -1628,29 +1639,31 @@ const MANAGER_POS: PurchaseOrderDef[] = [
   },
   {
     poNumber: 'PO-MGR-2026-004',
-    vendorIndex: 0,
-    poValue: 350000,
+    vendorIndex: 3,  // Structural Systems India
+    poValue: 2400000,
     currency: 'INR',
-    status: 'draft',
-    expectedDeliveryDayOffset: 90,
+    status: 'issued',
+    expectedDeliveryDayOffset: 45,
     actualDeliveryDayOffset: null,
     itemsDetails: JSON.stringify([
-      { description: 'Control Panel Components', quantity: 4, unitPrice: 87500 },
+      { description: 'OHE Mast 9m Galvanized Steel', quantity: 120, unitPrice: 18000 },
+      { description: 'Foundation Bolt Sets', quantity: 120, unitPrice: 2000 },
     ]),
-    notes: 'Draft PO pending approval.',
+    notes: 'PO issued for OHE Zone 1 mast supply. Staggered delivery in 3 lots.',
   },
   {
     poNumber: 'PO-MGR-2026-005',
-    vendorIndex: 1,
-    poValue: 1200000,
+    vendorIndex: 1,  // SwitchGear Solutions
+    poValue: 1350000,
     currency: 'INR',
     status: 'in_progress',
     expectedDeliveryDayOffset: -5,
     actualDeliveryDayOffset: null,
     itemsDetails: JSON.stringify([
-      { description: 'Protection Relay Panels', quantity: 6, unitPrice: 200000 },
+      { description: 'SCADA RTU Panel', quantity: 8, unitPrice: 150000 },
+      { description: 'Communication Gateway Unit', quantity: 3, unitPrice: 50000 },
     ]),
-    notes: 'OVERDUE - Vendor notified. Expediting delivery.',
+    notes: 'OVERDUE — Vendor notified. FAT completion pending. Expediting delivery.',
   },
 ];
 
@@ -1731,8 +1744,10 @@ const MANAGER_BOM_ITEMS: BomItemDef[] = [
   { bomIndex: 0, itemCode: 'SUB-TSS-001', description: 'Civil Foundation Subcontract', category: 'subcontractor', subCategory: 'civil', quantity: 1, unit: 'lot', unitCost: 450000, actualQuantity: 1, actualCost: 450000 },
   // OHE BOM items
   { bomIndex: 1, itemCode: 'MAT-OHE-001', description: 'Contact Wire Cu-Mg 107mm²', category: 'material', subCategory: 'cables', quantity: 25000, unit: 'meters', unitCost: 190, actualQuantity: 12000, actualCost: 2280000 },
-  { bomIndex: 1, itemCode: 'MAT-OHE-002', description: 'OHE Mast 9m', category: 'material', subCategory: 'structural', quantity: 120, unit: 'nos', unitCost: 18000, actualQuantity: 50, actualCost: 900000 },
-  { bomIndex: 1, itemCode: 'LAB-OHE-001', description: 'Mast Erection Labour', category: 'labor', subCategory: 'structural', quantity: 600, unit: 'hrs', unitCost: 750, actualQuantity: 250, actualCost: 187500 },
+  { bomIndex: 1, itemCode: 'MAT-OHE-002', description: 'OHE Mast 9m Galvanized Steel', category: 'material', subCategory: 'structural', quantity: 120, unit: 'nos', unitCost: 18000, actualQuantity: 50, actualCost: 900000 },
+  { bomIndex: 1, itemCode: 'MAT-OHE-003', description: 'Cantilever Assembly (Bracket + Arm)', category: 'material', subCategory: 'structural', quantity: 240, unit: 'nos', unitCost: 12500, actualQuantity: 0, actualCost: 0 },
+  { bomIndex: 1, itemCode: 'MAT-OHE-004', description: 'Portal Boom Fabricated Steel', category: 'material', subCategory: 'structural', quantity: 18, unit: 'nos', unitCost: 85000, actualQuantity: 0, actualCost: 0 },
+  { bomIndex: 1, itemCode: 'LAB-OHE-001', description: 'Mast Erection & OHE Stringing Labour', category: 'labor', subCategory: 'structural', quantity: 600, unit: 'hrs', unitCost: 750, actualQuantity: 250, actualCost: 187500 },
   // SCADA BOM items
   { bomIndex: 2, itemCode: 'MAT-SCADA-001', description: 'Remote Terminal Unit', category: 'material', subCategory: 'electronics', quantity: 8, unit: 'nos', unitCost: 150000, actualQuantity: 0, actualCost: 0 },
   { bomIndex: 2, itemCode: 'MAT-SCADA-002', description: 'SCADA Server & Software', category: 'material', subCategory: 'IT', quantity: 2, unit: 'nos', unitCost: 350000, actualQuantity: 0, actualCost: 0 },
@@ -1745,10 +1760,10 @@ const MANAGER_BOM_ITEMS: BomItemDef[] = [
  * Generates realistic Manager demo data for a given project.
  *
  * Creates:
- * - 3 Vendors (PowerTech Industries, SwitchGear Solutions, CableCo International)
- * - 5 Purchase Orders with mixed statuses (draft, issued, in_progress, delivered) + 1 overdue
- * - 3 BOMs (2 execution/active, 1 estimating/draft)
- * - 10 BOM Items across the 3 BOMs (materials, labor, equipment, subcontractor categories)
+ * - 4 Vendors (PowerTech Industries, SwitchGear Solutions, CableCo International, Structural Systems India)
+ * - 5 Purchase Orders covering TSS, OHE, and SCADA disciplines (draft, issued, in_progress, delivered) + 1 overdue
+ * - 3 BOMs (2 execution/active, 1 estimating/draft) aligned to TSS / OHE / SCADA disciplines
+ * - 12 BOM Items across the 3 BOMs (materials, labor, equipment, subcontractor categories)
  *
  * Links POs to existing RFQs if Designer demo data was run first (graceful fallback).
  *
