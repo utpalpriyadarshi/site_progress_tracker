@@ -2023,11 +2023,11 @@ export async function generateLogisticsDemoData(projectId: string): Promise<Logi
 // ─── Commercial Manager Demo Data Function ─────────────────────────
 
 const COMMERCIAL_BUDGET_CATEGORIES = [
-  { category: 'material', allocatedAmount: 5000000, description: 'Materials and supplies budget' },
-  { category: 'labor', allocatedAmount: 3000000, description: 'Labor costs budget' },
-  { category: 'equipment', allocatedAmount: 2000000, description: 'Equipment and machinery budget' },
-  { category: 'subcontractor', allocatedAmount: 4000000, description: 'Subcontractor services budget' },
-  { category: 'other', allocatedAmount: 1000000, description: 'Miscellaneous expenses budget' },
+  { category: 'material', allocatedAmount: 12000000, description: 'Traction & OHE equipment — transformers, switchgear, contact wire, masts, cantilever assemblies, SCADA panels' },
+  { category: 'labor', allocatedAmount: 8000000, description: 'Site erection & installation labour — TSS equipment erection, OHE mast erection, stringing & tensioning' },
+  { category: 'equipment', allocatedAmount: 5000000, description: 'Construction plant & equipment — cranes, hydraulic platforms, drilling rigs, test equipment' },
+  { category: 'subcontractor', allocatedAmount: 10000000, description: 'Specialist subcontracts — TSS civil foundation, SCADA integration & commissioning, third-party testing' },
+  { category: 'other', allocatedAmount: 3000000, description: 'Miscellaneous — safety equipment, PPE, site establishment, insurance, testing & commissioning consumables' },
 ];
 
 interface CommercialCostDef {
@@ -2038,18 +2038,26 @@ interface CommercialCostDef {
 }
 
 const COMMERCIAL_COSTS: CommercialCostDef[] = [
-  { category: 'material', amount: 250000, description: 'Steel reinforcement bars - Batch 1', daysAgo: 2 },
-  { category: 'material', amount: 180000, description: 'Cement - Grade 43 (500 bags)', daysAgo: 5 },
-  { category: 'material', amount: 320000, description: 'Electrical cables and wiring', daysAgo: 7 },
-  { category: 'labor', amount: 150000, description: 'Site labor - Week 1', daysAgo: 10 },
-  { category: 'labor', amount: 175000, description: 'Site labor - Week 2', daysAgo: 3 },
-  { category: 'equipment', amount: 450000, description: 'Excavator rental - 2 weeks', daysAgo: 8 },
-  { category: 'equipment', amount: 280000, description: 'Crane rental - 1 week', daysAgo: 4 },
-  { category: 'subcontractor', amount: 650000, description: 'HVAC installation - Phase 1', daysAgo: 12 },
-  { category: 'subcontractor', amount: 480000, description: 'Plumbing work - Floor 1-2', daysAgo: 6 },
-  { category: 'other', amount: 85000, description: 'Safety equipment and PPE', daysAgo: 9 },
-  { category: 'material', amount: 195000, description: 'Paint and finishing materials', daysAgo: 1 },
-  { category: 'labor', amount: 160000, description: 'Skilled technicians - Week 3', daysAgo: 1 },
+  // TSS equipment & civil (maps to PO-001: Transformer, PO-002: Switchgear)
+  { category: 'material', amount: 1250000, description: 'Auxiliary Transformer 1000kVA — supply payment Part 1 (TSS-01)', daysAgo: 30 },
+  { category: 'material', amount: 540000, description: '33kV GIS Switchgear — advance payment against PO (TSS-01)', daysAgo: 25 },
+  // OHE supply (maps to PO-003: Contact Wire, PO-004: Mast)
+  { category: 'material', amount: 950000, description: 'Cu-Mg Contact Wire 107mm² — Lot 1, 5000m (OHE Zone 1)', daysAgo: 20 },
+  { category: 'material', amount: 720000, description: 'OHE Mast 9m Galvanized Steel — Batch 1, 40 nos (OHE Zone 1)', daysAgo: 15 },
+  // SCADA (maps to PO-005: SCADA RTU)
+  { category: 'material', amount: 405000, description: 'SCADA RTU Panel — advance 30% against PO (project-level)', daysAgo: 14 },
+  // Labour costs (maps back to PO-001, PO-002)
+  { category: 'labor', amount: 220000, description: 'TSS Equipment Erection Labour — Month 1 (TSS-01)', daysAgo: 10 },
+  { category: 'labor', amount: 180000, description: 'OHE Mast Erection Labour — Week 1–2 (OHE Zone 1)', daysAgo: 7 },
+  // OHE stringing & contact wire (maps to PO-003)
+  { category: 'labor', amount: 150000, description: 'OHE Stringing & Registration Labour — Ch.0+000 to 5+500', daysAgo: 5 },
+  // Equipment hire (maps to PO-004, PO-005)
+  { category: 'equipment', amount: 125000, description: 'Crane Hire for Transformer & Mast Erection — 10 days (TSS-01)', daysAgo: 8 },
+  { category: 'equipment', amount: 80000, description: 'Hydraulic Platform for OHE Stringing Works — 2 weeks', daysAgo: 6 },
+  // Subcontractor (maps to PO-001)
+  { category: 'subcontractor', amount: 450000, description: 'TSS Civil Foundation Subcontract — Phase 1 completion (TSS-01)', daysAgo: 12 },
+  // Other (maps to PO-002)
+  { category: 'other', amount: 85000, description: 'Safety Equipment & PPE — TSS-01 and OHE Zone 1 sites', daysAgo: 9 },
 ];
 
 interface CommercialInvoiceDef {
@@ -2061,15 +2069,17 @@ interface CommercialInvoiceDef {
   paymentDaysAfter?: number;
 }
 
+// Vendor order matches Manager demo cycling (4 vendors × 2 invoices each):
+// i=0 → PowerTech, i=1 → SwitchGear Solutions, i=2 → CableCo, i=3 → Structural Systems India
 const COMMERCIAL_INVOICES: CommercialInvoiceDef[] = [
-  { invoiceNumber: 'INV-2024-001', amount: 450000, paymentStatus: 'paid', daysAgo: 25, vendorName: 'Steel Suppliers Ltd', paymentDaysAfter: 15 },
-  { invoiceNumber: 'INV-2024-002', amount: 320000, paymentStatus: 'paid', daysAgo: 20, vendorName: 'Cement Traders', paymentDaysAfter: 10 },
-  { invoiceNumber: 'INV-2024-003', amount: 280000, paymentStatus: 'pending', daysAgo: 12, vendorName: 'Equipment Rentals Inc' },
-  { invoiceNumber: 'INV-2024-004', amount: 650000, paymentStatus: 'pending', daysAgo: 10, vendorName: 'HVAC Systems Co' },
-  { invoiceNumber: 'INV-2024-005', amount: 175000, paymentStatus: 'paid', daysAgo: 8, vendorName: 'Labor Contractors', paymentDaysAfter: 5 },
-  { invoiceNumber: 'INV-2024-006', amount: 480000, paymentStatus: 'overdue', daysAgo: 45, vendorName: 'Plumbing Services' },
-  { invoiceNumber: 'INV-2024-007', amount: 195000, paymentStatus: 'pending', daysAgo: 5, vendorName: 'Paint & Coatings' },
-  { invoiceNumber: 'INV-2024-008', amount: 380000, paymentStatus: 'overdue', daysAgo: 35, vendorName: 'Electrical Supplies' },
+  { invoiceNumber: 'INV-2026-001', amount: 1250000, paymentStatus: 'paid', daysAgo: 25, vendorName: 'PowerTech Industries', paymentDaysAfter: 15 },
+  { invoiceNumber: 'INV-2026-002', amount: 540000, paymentStatus: 'paid', daysAgo: 20, vendorName: 'SwitchGear Solutions', paymentDaysAfter: 10 },
+  { invoiceNumber: 'INV-2026-003', amount: 950000, paymentStatus: 'pending', daysAgo: 12, vendorName: 'CableCo International' },
+  { invoiceNumber: 'INV-2026-004', amount: 720000, paymentStatus: 'pending', daysAgo: 10, vendorName: 'Structural Systems India' },
+  { invoiceNumber: 'INV-2026-005', amount: 320000, paymentStatus: 'paid', daysAgo: 8, vendorName: 'PowerTech Industries', paymentDaysAfter: 7 },
+  { invoiceNumber: 'INV-2026-006', amount: 850000, paymentStatus: 'overdue', daysAgo: 45, vendorName: 'SwitchGear Solutions' },
+  { invoiceNumber: 'INV-2026-007', amount: 360000, paymentStatus: 'pending', daysAgo: 5, vendorName: 'CableCo International' },
+  { invoiceNumber: 'INV-2026-008', amount: 480000, paymentStatus: 'overdue', daysAgo: 35, vendorName: 'Structural Systems India' },
 ];
 
 export async function generateCommercialManagerDemoData(projectId: string): Promise<CommercialManagerDemoDataResult> {
