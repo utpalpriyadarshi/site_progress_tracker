@@ -1896,6 +1896,48 @@ export async function generateManagerDemoData(projectId: string): Promise<Manage
   };
 }
 
+// ─── Logistics Demo Data Definitions ────────────────────────────────
+
+interface LogisticsMaterialDef {
+  name: string;
+  supplier: string;
+  unit: string;
+  quantityRequired: number;
+  quantityAvailable: number;
+  quantityUsed: number;
+  status: string;
+  discipline: 'tss' | 'ohe' | 'general';
+}
+
+// 20 discipline-specific materials — suppliers aligned to Manager vendor list
+const LOGISTICS_MATERIALS: LogisticsMaterialDef[] = [
+  // ── TSS materials (8) — linked to Traction Substation (TSS-01) items ──
+  { name: 'Transformer Oil (Conservator)', supplier: 'PowerTech Industries', unit: 'litres', quantityRequired: 1200, quantityAvailable: 800, quantityUsed: 500, status: 'in_use', discipline: 'tss' },
+  { name: 'Silica Gel Breather Unit', supplier: 'PowerTech Industries', unit: 'nos', quantityRequired: 8, quantityAvailable: 8, quantityUsed: 0, status: 'delivered', discipline: 'tss' },
+  { name: 'HV Bushing Assembly 33kV', supplier: 'PowerTech Industries', unit: 'nos', quantityRequired: 12, quantityAvailable: 0, quantityUsed: 0, status: 'ordered', discipline: 'tss' },
+  { name: 'SF6 Gas Cylinder (50L)', supplier: 'SwitchGear Solutions', unit: 'nos', quantityRequired: 6, quantityAvailable: 4, quantityUsed: 4, status: 'in_use', discipline: 'tss' },
+  { name: 'Control Cable 4-core 2.5mm²', supplier: 'CableCo International', unit: 'm', quantityRequired: 5000, quantityAvailable: 3000, quantityUsed: 1200, status: 'in_use', discipline: 'tss' },
+  { name: 'Earthing Copper Strip 50×6mm', supplier: 'PowerTech Industries', unit: 'm', quantityRequired: 800, quantityAvailable: 800, quantityUsed: 0, status: 'delivered', discipline: 'tss' },
+  { name: 'Cable Lug Copper 240mm²', supplier: 'CableCo International', unit: 'nos', quantityRequired: 200, quantityAvailable: 200, quantityUsed: 80, status: 'delivered', discipline: 'tss' },
+  { name: 'RCC Ready Mix M30', supplier: 'Local Aggregate Supplier', unit: 'cum', quantityRequired: 400, quantityAvailable: 200, quantityUsed: 180, status: 'in_use', discipline: 'tss' },
+
+  // ── OHE materials (8) — linked to OHE Zone 1 items ──
+  { name: 'Cu-Mg Contact Wire 107mm²', supplier: 'CableCo International', unit: 'm', quantityRequired: 16000, quantityAvailable: 5000, quantityUsed: 0, status: 'in_use', discipline: 'ohe' },
+  { name: 'Catenary Wire Cu 70mm²', supplier: 'CableCo International', unit: 'm', quantityRequired: 16000, quantityAvailable: 0, quantityUsed: 0, status: 'ordered', discipline: 'ohe' },
+  { name: 'OHE Mast 9m Galvanized Steel', supplier: 'Structural Systems India', unit: 'nos', quantityRequired: 120, quantityAvailable: 40, quantityUsed: 20, status: 'in_use', discipline: 'ohe' },
+  { name: 'Cantilever Assembly (Bracket + Arm)', supplier: 'Structural Systems India', unit: 'nos', quantityRequired: 240, quantityAvailable: 0, quantityUsed: 0, status: 'ordered', discipline: 'ohe' },
+  { name: 'Section Insulator OHE', supplier: 'Structural Systems India', unit: 'nos', quantityRequired: 30, quantityAvailable: 8, quantityUsed: 0, status: 'shortage', discipline: 'ohe' },
+  { name: 'Dropper Wire Copper 10mm²', supplier: 'CableCo International', unit: 'm', quantityRequired: 3000, quantityAvailable: 3000, quantityUsed: 0, status: 'delivered', discipline: 'ohe' },
+  { name: 'Foundation Concrete M30', supplier: 'Local Aggregate Supplier', unit: 'cum', quantityRequired: 200, quantityAvailable: 120, quantityUsed: 80, status: 'in_use', discipline: 'ohe' },
+  { name: 'Anchor Bolt Set M24 (4-bolt set)', supplier: 'Structural Systems India', unit: 'sets', quantityRequired: 120, quantityAvailable: 40, quantityUsed: 20, status: 'shortage', discipline: 'ohe' },
+
+  // ── General / SCADA / project-level materials (4) — linked to remaining items ──
+  { name: 'RTU Communication Module', supplier: 'SwitchGear Solutions', unit: 'nos', quantityRequired: 8, quantityAvailable: 0, quantityUsed: 0, status: 'ordered', discipline: 'general' },
+  { name: 'Fibre Optic Cable 12-core', supplier: 'CableCo International', unit: 'm', quantityRequired: 5000, quantityAvailable: 5000, quantityUsed: 0, status: 'delivered', discipline: 'general' },
+  { name: 'SCADA HMI Workstation', supplier: 'SwitchGear Solutions', unit: 'nos', quantityRequired: 3, quantityAvailable: 0, quantityUsed: 0, status: 'ordered', discipline: 'general' },
+  { name: 'Instrumentation Cable 2×1.5mm²', supplier: 'CableCo International', unit: 'm', quantityRequired: 2000, quantityAvailable: 2000, quantityUsed: 500, status: 'in_use', discipline: 'general' },
+];
+
 // ─── Logistics Demo Data Function ───────────────────────────────────
 
 export async function generateLogisticsDemoData(projectId: string): Promise<LogisticsDemoDataResult> {
@@ -1914,8 +1956,6 @@ export async function generateLogisticsDemoData(projectId: string): Promise<Logi
       throw new Error('Please generate Planner or Supervisor demo data first to create sites and items.');
     }
 
-    const siteIds = sites.map(s => s.id);
-
     // Get items for these sites
     const items = await database.collections
       .get('items')
@@ -1926,68 +1966,45 @@ export async function generateLogisticsDemoData(projectId: string): Promise<Logi
       throw new Error('Please generate Planner or Supervisor demo data first to create items.');
     }
 
-    // Create Materials (18-20 materials linked to existing items)
-    const materialNames = [
-      'Copper Wire - 2.5mm',
-      'PVC Conduit Pipes',
-      'MCB Circuit Breakers',
-      'LED Panel Lights',
-      'Switch Boards',
-      'Cable Trays',
-      'Steel Reinforcement Bars',
-      'Cement - Grade 43',
-      'Fine Aggregate Sand',
-      'Ready Mix Concrete',
-      'Structural Steel Beams',
-      'Welding Electrodes',
-      'HVAC Ductwork',
-      'Centrifugal Pumps',
-      'Control Valves',
-      'GI Pipes - 4 inch',
-      'Pressure Gauges',
-      'Safety Valves',
-      'Instrumentation Cables',
-      'Temperature Sensors',
-    ];
+    // Identify sites by discipline from site name (matches aligned site taxonomy)
+    const tssSiteIds = new Set(
+      sites.filter((s: any) => s.name.includes('TSS')).map((s: any) => s.id)
+    );
+    const oheSiteIds = new Set(
+      sites.filter((s: any) => s.name.includes('OHE')).map((s: any) => s.id)
+    );
 
-    const suppliers = [
-      'ABC Electricals Pvt Ltd',
-      'BuildTech Suppliers',
-      'Steel & Cement Co',
-      'Industrial Equipment Ltd',
-      'Mechanical Systems Inc',
-    ];
+    // Group items by discipline for targeted material assignment
+    const tssItems = items.filter((item: any) => tssSiteIds.has(item.siteId));
+    const oheItems = items.filter((item: any) => oheSiteIds.has(item.siteId));
+    const otherItems = items.filter(
+      (item: any) => !tssSiteIds.has(item.siteId) && !oheSiteIds.has(item.siteId)
+    );
 
-    const materialStatuses = ['ordered', 'delivered', 'in_use', 'shortage'];
-    const units = ['pcs', 'kg', 'm', 'box', 'bundle', 'ton'];
+    // Create 20 discipline-specific materials linked to matching site items
+    for (const matDef of LOGISTICS_MATERIALS) {
+      // Route material to an item of the same discipline; fall back to any item
+      let pool: any[];
+      if (matDef.discipline === 'tss') {
+        pool = tssItems.length > 0 ? tssItems : items;
+      } else if (matDef.discipline === 'ohe') {
+        pool = oheItems.length > 0 ? oheItems : items;
+      } else {
+        pool = otherItems.length > 0 ? otherItems : items;
+      }
 
-    const numMaterials = Math.min(20, items.length * 2); // Create 2 materials per item on average
-
-    for (let i = 0; i < numMaterials; i++) {
-      const item = items[i % items.length];
-      const materialName = materialNames[i % materialNames.length];
-      const status = materialStatuses[Math.floor(Math.random() * materialStatuses.length)];
-      const supplier = suppliers[Math.floor(Math.random() * suppliers.length)];
-      const unit = units[Math.floor(Math.random() * units.length)];
-
-      const quantityRequired = Math.floor(Math.random() * 500) + 100;
-      const quantityAvailable = status === 'shortage'
-        ? Math.floor(quantityRequired * 0.3)
-        : Math.floor(quantityRequired * (0.5 + Math.random() * 0.5));
-      const quantityUsed = status === 'in_use'
-        ? Math.floor(quantityAvailable * (0.2 + Math.random() * 0.3))
-        : 0;
+      const item = pool[materialsCount % pool.length];
 
       await materialsCollection.create((record: any) => {
-        record.name = materialName;
+        record.name = matDef.name;
         record.itemId = item.id;
-        record.quantityRequired = quantityRequired;
-        record.quantityAvailable = quantityAvailable;
-        record.quantityUsed = quantityUsed;
-        record.unit = unit;
-        record.status = status;
-        record.supplier = supplier;
-        record.procurementManagerId = ''; // Can be linked later
+        record.quantityRequired = matDef.quantityRequired;
+        record.quantityAvailable = matDef.quantityAvailable;
+        record.quantityUsed = matDef.quantityUsed;
+        record.unit = matDef.unit;
+        record.status = matDef.status;
+        record.supplier = matDef.supplier;
+        record.procurementManagerId = '';
         record.appSyncStatus = 'pending';
         record._version = 1;
       });
