@@ -18,9 +18,9 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps, DrawerNavigationProp } from '@react-navigation/drawer';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, DrawerActions, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Divider, useTheme } from 'react-native-paper';
@@ -69,6 +69,21 @@ type DesignEngineerNavigatorProps = {
 
 const Tab = createBottomTabNavigator<DesignEngineerTabParamList>();
 const Drawer = createDrawerNavigator<DesignEngineerDrawerParamList>();
+
+// ==================== Drawer Menu Button ====================
+
+const DrawerMenuButton = () => {
+  const navigation = useNavigation<DrawerNavigationProp<DesignEngineerDrawerParamList>>();
+  return (
+    <TouchableOpacity
+      style={styles.headerMenuButton}
+      onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+      accessibilityLabel="Toggle navigation drawer"
+    >
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  );
+};
 
 // ==================== Custom Drawer Content ====================
 
@@ -263,6 +278,7 @@ const DesignEngineerDrawer: React.FC<DesignEngineerNavigatorProps> = memo(({ nav
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
+    headerLeft: DrawerMenuButton,
     headerRight: HeaderRight,
     lazy: true,
     swipeEdgeWidth: 50,
@@ -313,6 +329,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  headerMenuButton: {
+    marginLeft: 15,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   headerButtons: {
     flexDirection: 'row',

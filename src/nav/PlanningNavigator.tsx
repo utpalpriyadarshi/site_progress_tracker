@@ -23,10 +23,10 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps, DrawerNavigationProp } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, DrawerActions, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Divider, useTheme } from 'react-native-paper';
@@ -90,6 +90,21 @@ const Tab = createBottomTabNavigator<PlanningTabParamList>();
 const Drawer = createDrawerNavigator<PlanningDrawerParamList>();
 const Stack = createNativeStackNavigator<PlanningStackParamList>();
 
+// ==================== Drawer Menu Button ====================
+
+const DrawerMenuButton = () => {
+  const navigation = useNavigation<DrawerNavigationProp<PlanningDrawerParamList>>();
+  return (
+    <TouchableOpacity
+      style={styles.headerMenuButton}
+      onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+      accessibilityLabel="Toggle navigation drawer"
+    >
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  );
+};
+
 // ==================== Custom Drawer Content ====================
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) => {
@@ -141,6 +156,37 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) 
 
 const PlanningTabs: React.FC = memo(() => {
   const theme = useTheme();
+  const { logout } = useAuth();
+  const navigation = useNavigation<DrawerNavigationProp<PlanningDrawerParamList>>();
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as any }],
+      })
+    );
+  }, [logout, navigation]);
+
+  const handleDrawerToggle = useCallback(() => {
+    navigation.dispatch(DrawerActions.toggleDrawer());
+  }, [navigation]);
+
+  const HeaderLeft = useCallback(() => (
+    <TouchableOpacity onPress={handleDrawerToggle} style={styles.headerMenuButton}>
+      <Icon name="menu" size={28} color="#FFF" />
+    </TouchableOpacity>
+  ), [handleDrawerToggle]);
+
+  const HeaderRight = useCallback(() => (
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  ), [handleLogout]);
 
   // Memoize icon getter to prevent re-creation on each render
   const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
@@ -170,7 +216,17 @@ const PlanningTabs: React.FC = memo(() => {
       getTabBarIcon(route.name, focused, color, size),
     tabBarActiveTintColor: COLORS.PRIMARY,
     tabBarInactiveTintColor: 'gray',
-    headerShown: false,
+    headerShown: true,
+    headerStyle: {
+      backgroundColor: COLORS.PRIMARY,
+    },
+    headerTintColor: '#FFF',
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+      fontSize: 20,
+    },
+    headerLeft: HeaderLeft,
+    headerRight: HeaderRight,
     tabBarStyle: {
       paddingBottom: 4,
       height: 56,
@@ -181,7 +237,7 @@ const PlanningTabs: React.FC = memo(() => {
     },
     // Performance: Lazy load tabs
     lazy: true,
-  }), [theme.colors.primary, getTabBarIcon]);
+  }), [getTabBarIcon, HeaderLeft, HeaderRight]);
 
   return (
     <Tab.Navigator screenOptions={screenOptions}>
@@ -190,6 +246,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={PlanningDashboard}
         options={{
           title: 'Dashboard',
+          headerTitle: 'Planning',
           tabBarAccessibilityLabel: 'Dashboard tab, overview of project planning',
         }}
       />
@@ -198,6 +255,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={KeyDateManagementScreen}
         options={{
           title: 'Key Dates',
+          headerTitle: 'Planning',
           tabBarAccessibilityLabel: 'Key Dates tab, manage key dates and site associations',
         }}
       />
@@ -206,6 +264,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={UnifiedSchedule}
         options={{
           title: 'Schedule',
+          headerTitle: 'Planning',
           tabBarAccessibilityLabel: 'Schedule tab, manage project schedule',
         }}
       />
@@ -214,6 +273,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={GanttChartScreen}
         options={{
           title: 'Gantt',
+          headerTitle: 'Planning',
           tabBarAccessibilityLabel: 'Gantt chart tab, visual timeline',
         }}
       />
@@ -295,6 +355,7 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
+    headerLeft: DrawerMenuButton,
     headerRight: LogoutButton,
     // Performance optimizations
     lazy: true, // Lazy load drawer screens
@@ -314,6 +375,7 @@ const PlanningDrawer: React.FC<PlanningNavigatorProps> = memo(({ navigation: par
           title: 'Dashboard',
           drawerLabel: 'Dashboard',
           headerTitle: 'Planning',
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -405,6 +467,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  headerMenuButton: {
+    marginLeft: 15,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   headerButtons: {
     flexDirection: 'row',

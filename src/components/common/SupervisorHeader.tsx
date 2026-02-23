@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Appbar, Text } from 'react-native-paper';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { Appbar, Text, IconButton } from 'react-native-paper';
+import { useNavigation, CommonActions, DrawerActions } from '@react-navigation/native';
 import { useAuth } from '../../auth/AuthContext';
 import { COLORS } from '../../theme/colors';
 
@@ -39,9 +39,16 @@ export const SupervisorHeader: React.FC<SupervisorHeaderProps> = ({
     );
   };
 
+  const handleDrawerToggle = () => {
+    navigation.dispatch(DrawerActions.toggleDrawer());
+  };
+
   return (
     <Appbar.Header style={styles.header}>
-      {showBack && <Appbar.BackAction onPress={() => navigation.goBack()} />}
+      {showBack
+        ? <Appbar.BackAction onPress={() => navigation.goBack()} />
+        : <IconButton icon="menu" size={26} iconColor="#FFF" onPress={handleDrawerToggle} style={styles.menuButton} />
+      }
       <Appbar.Content title={title} />
 
       {/* Custom right actions (optional) */}
@@ -58,6 +65,9 @@ export const SupervisorHeader: React.FC<SupervisorHeaderProps> = ({
 const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.PRIMARY,
+  },
+  menuButton: {
+    marginLeft: 2,
   },
   logoutButton: {
     marginRight: 12,
