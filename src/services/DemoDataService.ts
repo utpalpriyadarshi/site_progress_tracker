@@ -183,19 +183,22 @@ interface SiteDef {
 }
 
 const SITES: SiteDef[] = [
-  { name: 'Substation A', location: 'Zone 1 — North Block, Plot 14', startDayOffset: 0, endDayOffset: 365 },
-  { name: 'Substation B', location: 'Zone 2 — South Block, Plot 22', startDayOffset: 7, endDayOffset: 350 },
-  { name: 'Control Building', location: 'Zone 1 — Central Area, Plot 8', startDayOffset: 14, endDayOffset: 330 },
+  // index 0: project-level analytical site — design & engineering activities
+  { name: 'Simulation Studies', location: 'Project-Level — All Systems', startDayOffset: 0, endDayOffset: 365 },
+  // index 1: physical TSS site — civil, equipment erection
+  { name: 'Traction Substation (TSS-01)', location: 'Zone 1 — North Block, Plot 14', startDayOffset: 7, endDayOffset: 365 },
+  // index 2: physical OCS/OHE site — mast erection, stringing
+  { name: 'OHE Zone 1 — North Corridor', location: 'Zone 2 — North Corridor, Ch. 0+000 to 15+500', startDayOffset: 14, endDayOffset: 350 },
 ];
 
 // ─── KD ↔ Site contribution percentages ─────────────────────────
 
-// Indexed by KD code, then site index (0, 1, 2)
+// Indexed by KD code, then site index (0=Simulation Studies, 1=TSS-01, 2=OHE Zone 1)
 const KD_SITE_CONTRIBUTIONS: Record<string, number[]> = {
-  'KD-A-01': [35, 35, 30],
-  'KD-B-01': [40, 40, 20],
-  'KD-C-01': [35, 35, 30],
-  'KD-D-01': [40, 40, 20],
+  'KD-A-01': [50, 30, 20], // Design Approval — led by Simulation Studies
+  'KD-B-01': [10, 50, 40], // Procurement — physical-site driven
+  'KD-C-01': [10, 55, 35], // Civil Works — physical sites; Sim Studies has design supervision share
+  'KD-D-01': [5, 55, 40],  // Erection & Commissioning — physical sites; Sim Studies has documentation share
 };
 
 // ─── Milestone definitions ───────────────────────────────────────
@@ -250,49 +253,50 @@ interface WBSItemDef {
   dependsOnWbsCodes?: string[]; // WBS codes this item depends on (Finish-to-Start)
 }
 
-// Items for Substation A
+// Items for Simulation Studies site — engineering, studies, approvals
+// Dependency chain: 1.1 → 1.2 → 2.1 → 2.2
+const SIMULATION_STUDIES_ITEMS: WBSItemDef[] = [
+  { wbsCode: '1.0', wbsLevel: 1, parentWbsCode: null, name: 'System Studies & Engineering', phase: 'design', quantity: 1, unit: 'lot', weightage: 8, startDayOffset: 0, durationDays: 30, isMilestone: false, isCriticalPath: true, categoryIndex: 1 },
+  { wbsCode: '1.1', wbsLevel: 2, parentWbsCode: '1.0', name: 'Load Flow & Short Circuit Studies', phase: 'design', quantity: 1, unit: 'lot', weightage: 4, startDayOffset: 0, durationDays: 15, isMilestone: false, isCriticalPath: true, categoryIndex: 1 },
+  { wbsCode: '1.2', wbsLevel: 2, parentWbsCode: '1.0', name: 'OCS Engineering Analysis', phase: 'design', quantity: 1, unit: 'lot', weightage: 4, startDayOffset: 10, durationDays: 15, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['1.1'] },
+  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'Design Approval', phase: 'design', quantity: 1, unit: 'lot', weightage: 10, startDayOffset: 30, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 1 },
+  { wbsCode: '2.1', wbsLevel: 2, parentWbsCode: '2.0', name: 'Preliminary Design Submission', phase: 'design', quantity: 1, unit: 'lot', weightage: 4, startDayOffset: 30, durationDays: 10, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['1.2'] },
+  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'Detail Design Review & Approval', phase: 'design', quantity: 1, unit: 'lot', weightage: 6, startDayOffset: 40, durationDays: 10, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['2.1'] },
+];
+
+// Items for Traction Substation (TSS-01) — civil works, equipment erection
 // Dependency chain: 1.1 → 1.2 → 2.1 → 2.2 → 3.1 → 3.2
-const SUBSTATION_A_ITEMS: WBSItemDef[] = [
+const TSS_ITEMS: WBSItemDef[] = [
   { wbsCode: '1.0', wbsLevel: 1, parentWbsCode: null, name: 'Site Preparation', phase: 'site_prep', quantity: 1, unit: 'lot', weightage: 5, startDayOffset: 0, durationDays: 15, isMilestone: false, isCriticalPath: false, categoryIndex: 0 },
   { wbsCode: '1.1', wbsLevel: 2, parentWbsCode: '1.0', name: 'Clearing & Grubbing', phase: 'site_prep', quantity: 2000, unit: 'sqm', weightage: 2, startDayOffset: 0, durationDays: 7, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
   { wbsCode: '1.2', wbsLevel: 2, parentWbsCode: '1.0', name: 'Temporary Fencing', phase: 'site_prep', quantity: 500, unit: 'm', weightage: 3, startDayOffset: 3, durationDays: 8, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.1'] },
-  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'Civil Works', phase: 'construction', quantity: 1, unit: 'lot', weightage: 20, startDayOffset: 15, durationDays: 90, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
+  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'Civil & Structural Works', phase: 'construction', quantity: 1, unit: 'lot', weightage: 20, startDayOffset: 15, durationDays: 90, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
   { wbsCode: '2.1', wbsLevel: 2, parentWbsCode: '2.0', name: 'Foundation Excavation', phase: 'construction', quantity: 800, unit: 'cum', weightage: 8, startDayOffset: 15, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.2'] },
-  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'RCC Foundation', phase: 'construction', quantity: 400, unit: 'cum', weightage: 12, startDayOffset: 35, durationDays: 30, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.1'] },
+  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'RCC Foundation & Cable Trench', phase: 'construction', quantity: 400, unit: 'cum', weightage: 12, startDayOffset: 35, durationDays: 30, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.1'] },
   { wbsCode: '3.0', wbsLevel: 1, parentWbsCode: null, name: 'Equipment Erection', phase: 'construction', quantity: 1, unit: 'lot', weightage: 15, startDayOffset: 120, durationDays: 60, isMilestone: false, isCriticalPath: true, categoryIndex: 2 },
-  { wbsCode: '3.1', wbsLevel: 2, parentWbsCode: '3.0', name: 'Transformer Installation', phase: 'commissioning', quantity: 2, unit: 'nos', weightage: 10, startDayOffset: 120, durationDays: 25, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['2.2'] },
-  { wbsCode: '3.2', wbsLevel: 2, parentWbsCode: '3.0', name: 'Switchgear Erection', phase: 'commissioning', quantity: 6, unit: 'nos', weightage: 5, startDayOffset: 145, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['3.1'] },
+  { wbsCode: '3.1', wbsLevel: 2, parentWbsCode: '3.0', name: 'Transformer & Switchgear Erection', phase: 'commissioning', quantity: 3, unit: 'nos', weightage: 10, startDayOffset: 120, durationDays: 25, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['2.2'] },
+  { wbsCode: '3.2', wbsLevel: 2, parentWbsCode: '3.0', name: 'Control Cable Laying & Panel Wiring', phase: 'commissioning', quantity: 2000, unit: 'm', weightage: 5, startDayOffset: 145, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['3.1'] },
 ];
 
-// Items for Substation B
-// Dependency chain: 1.1 → 2.1 → 2.2 → 3.1 → 3.2
-const SUBSTATION_B_ITEMS: WBSItemDef[] = [
-  { wbsCode: '1.0', wbsLevel: 1, parentWbsCode: null, name: 'Site Preparation', phase: 'site_prep', quantity: 1, unit: 'lot', weightage: 4, startDayOffset: 0, durationDays: 12, isMilestone: false, isCriticalPath: false, categoryIndex: 0 },
-  { wbsCode: '1.1', wbsLevel: 2, parentWbsCode: '1.0', name: 'Clearing & Leveling', phase: 'site_prep', quantity: 1800, unit: 'sqm', weightage: 2, startDayOffset: 0, durationDays: 6, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
-  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'Civil & Structural', phase: 'construction', quantity: 1, unit: 'lot', weightage: 18, startDayOffset: 12, durationDays: 80, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
-  { wbsCode: '2.1', wbsLevel: 2, parentWbsCode: '2.0', name: 'Pile Foundation', phase: 'construction', quantity: 24, unit: 'nos', weightage: 10, startDayOffset: 12, durationDays: 30, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.1'] },
-  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'Superstructure', phase: 'construction', quantity: 350, unit: 'cum', weightage: 8, startDayOffset: 42, durationDays: 40, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.1'] },
-  { wbsCode: '3.0', wbsLevel: 1, parentWbsCode: null, name: 'Electrical Installation', phase: 'construction', quantity: 1, unit: 'lot', weightage: 13, startDayOffset: 100, durationDays: 50, isMilestone: false, isCriticalPath: true, categoryIndex: 1 },
-  { wbsCode: '3.1', wbsLevel: 2, parentWbsCode: '3.0', name: 'Cable Laying', phase: 'construction', quantity: 5000, unit: 'm', weightage: 7, startDayOffset: 100, durationDays: 25, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['2.2'] },
-  { wbsCode: '3.2', wbsLevel: 2, parentWbsCode: '3.0', name: 'Panel Wiring', phase: 'commissioning', quantity: 12, unit: 'nos', weightage: 6, startDayOffset: 125, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 1, dependsOnWbsCodes: ['3.1'] },
+// Items for OHE Zone 1 — survey, mast foundation, OHE erection, stringing
+// Dependency chain: 1.1 → 1.2 → 2.1 → 2.2 → 3.1 → 3.2
+const OHE_ITEMS: WBSItemDef[] = [
+  { wbsCode: '1.0', wbsLevel: 1, parentWbsCode: null, name: 'Survey & Preparation', phase: 'site_prep', quantity: 1, unit: 'lot', weightage: 4, startDayOffset: 0, durationDays: 15, isMilestone: false, isCriticalPath: false, categoryIndex: 0 },
+  { wbsCode: '1.1', wbsLevel: 2, parentWbsCode: '1.0', name: 'Route Survey & Chainage Marking', phase: 'site_prep', quantity: 15.5, unit: 'km', weightage: 2, startDayOffset: 0, durationDays: 7, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
+  { wbsCode: '1.2', wbsLevel: 2, parentWbsCode: '1.0', name: 'Mast Position Staking', phase: 'site_prep', quantity: 310, unit: 'nos', weightage: 2, startDayOffset: 5, durationDays: 8, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.1'] },
+  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'OHE Civil Works', phase: 'construction', quantity: 1, unit: 'lot', weightage: 18, startDayOffset: 15, durationDays: 80, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
+  { wbsCode: '2.1', wbsLevel: 2, parentWbsCode: '2.0', name: 'Mast Foundation Excavation', phase: 'construction', quantity: 310, unit: 'nos', weightage: 10, startDayOffset: 15, durationDays: 35, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.2'] },
+  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'Mast Foundation Concreting', phase: 'construction', quantity: 310, unit: 'nos', weightage: 8, startDayOffset: 50, durationDays: 35, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.1'] },
+  { wbsCode: '3.0', wbsLevel: 1, parentWbsCode: null, name: 'OHE Erection & Stringing', phase: 'construction', quantity: 1, unit: 'lot', weightage: 13, startDayOffset: 100, durationDays: 50, isMilestone: false, isCriticalPath: true, categoryIndex: 2 },
+  { wbsCode: '3.1', wbsLevel: 2, parentWbsCode: '3.0', name: 'Mast Erection', phase: 'construction', quantity: 310, unit: 'nos', weightage: 7, startDayOffset: 100, durationDays: 25, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['2.2'] },
+  { wbsCode: '3.2', wbsLevel: 2, parentWbsCode: '3.0', name: 'Catenary & Contact Wire Stringing', phase: 'commissioning', quantity: 15.5, unit: 'km', weightage: 6, startDayOffset: 125, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['3.1'] },
 ];
 
-// Items for Control Building
-// Dependency chain: 1.0 → 2.1 → 2.2 → 2.3 → 3.0
-const CONTROL_BUILDING_ITEMS: WBSItemDef[] = [
-  { wbsCode: '1.0', wbsLevel: 1, parentWbsCode: null, name: 'Design & Approvals', phase: 'design', quantity: 1, unit: 'lot', weightage: 3, startDayOffset: 0, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
-  { wbsCode: '2.0', wbsLevel: 1, parentWbsCode: null, name: 'Building Construction', phase: 'construction', quantity: 1, unit: 'lot', weightage: 15, startDayOffset: 20, durationDays: 100, isMilestone: false, isCriticalPath: true, categoryIndex: 0 },
-  { wbsCode: '2.1', wbsLevel: 2, parentWbsCode: '2.0', name: 'Foundation Work', phase: 'construction', quantity: 200, unit: 'cum', weightage: 6, startDayOffset: 20, durationDays: 25, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['1.0'] },
-  { wbsCode: '2.2', wbsLevel: 2, parentWbsCode: '2.0', name: 'Structural Steel', phase: 'construction', quantity: 80, unit: 'MT', weightage: 5, startDayOffset: 45, durationDays: 35, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.1'] },
-  { wbsCode: '2.3', wbsLevel: 2, parentWbsCode: '2.0', name: 'Roofing & Cladding', phase: 'construction', quantity: 600, unit: 'sqm', weightage: 4, startDayOffset: 80, durationDays: 20, isMilestone: false, isCriticalPath: true, categoryIndex: 0, dependsOnWbsCodes: ['2.2'] },
-  { wbsCode: '3.0', wbsLevel: 1, parentWbsCode: null, name: 'SCADA & Control Systems', phase: 'commissioning', quantity: 1, unit: 'lot', weightage: 10, startDayOffset: 130, durationDays: 40, isMilestone: false, isCriticalPath: true, categoryIndex: 2, dependsOnWbsCodes: ['2.3'] },
-];
-
-// Map site index → items
+// Map site index → items (0=Simulation Studies, 1=TSS-01, 2=OHE Zone 1)
 const SITE_ITEMS: WBSItemDef[][] = [
-  SUBSTATION_A_ITEMS,
-  SUBSTATION_B_ITEMS,
-  CONTROL_BUILDING_ITEMS,
+  SIMULATION_STUDIES_ITEMS,
+  TSS_ITEMS,
+  OHE_ITEMS,
 ];
 
 // ─── Helper ──────────────────────────────────────────────────────
@@ -1179,9 +1183,10 @@ interface SupervisorSiteDef {
 }
 
 const SUPERVISOR_SITES: SupervisorSiteDef[] = [
-  { name: 'Site Alpha', location: 'Block A, North Sector' },
-  { name: 'Site Beta', location: 'Block B, South Sector' },
-  { name: 'Site Gamma', location: 'Block C, Central Area' },
+  // index 0: physical TSS site — matches Planner + Design Engineer site name
+  { name: 'Traction Substation (TSS-01)', location: 'Zone 1 — North Block, Plot 14' },
+  // index 1: physical OCS/OHE site — matches Planner + Design Engineer site name
+  { name: 'OHE Zone 1 — North Corridor', location: 'Zone 2 — North Corridor, Ch. 0+000 to 15+500' },
 ];
 
 interface SupervisorItemDef {
@@ -1195,28 +1200,21 @@ interface SupervisorItemDef {
   categoryIndex: number;
 }
 
-// Items per site
+// Items per site (2 physical sites — no Simulation Studies for supervisor)
 const SUPERVISOR_ITEMS: SupervisorItemDef[][] = [
-  // Site Alpha items
+  // TSS-01 items — civil foundation, equipment erection
   [
-    { name: 'Earthwork Excavation', phase: 'site_prep', quantity: 500, completedQuantity: 350, unit: 'cum', weightage: 10, status: 'in_progress', categoryIndex: 0 },
-    { name: 'PCC for Foundation', phase: 'construction', quantity: 200, completedQuantity: 200, unit: 'cum', weightage: 15, status: 'completed', categoryIndex: 0 },
+    { name: 'Earthwork & Foundation Excavation', phase: 'site_prep', quantity: 500, completedQuantity: 500, unit: 'cum', weightage: 10, status: 'completed', categoryIndex: 0 },
     { name: 'RCC Foundation', phase: 'construction', quantity: 300, completedQuantity: 150, unit: 'cum', weightage: 20, status: 'in_progress', categoryIndex: 0 },
-    { name: 'Cable Trench Work', phase: 'construction', quantity: 100, completedQuantity: 0, unit: 'm', weightage: 8, status: 'not_started', categoryIndex: 1 },
+    { name: 'Transformer & Switchgear Erection', phase: 'construction', quantity: 3, completedQuantity: 0, unit: 'nos', weightage: 25, status: 'not_started', categoryIndex: 2 },
+    { name: 'Control Cable Laying', phase: 'construction', quantity: 2000, completedQuantity: 0, unit: 'm', weightage: 10, status: 'not_started', categoryIndex: 1 },
   ],
-  // Site Beta items
+  // OHE Zone 1 items — mast foundation, erection, stringing
   [
-    { name: 'Site Clearing', phase: 'site_prep', quantity: 1000, completedQuantity: 1000, unit: 'sqm', weightage: 5, status: 'completed', categoryIndex: 0 },
-    { name: 'Pile Foundation', phase: 'construction', quantity: 20, completedQuantity: 12, unit: 'nos', weightage: 25, status: 'in_progress', categoryIndex: 0 },
-    { name: 'Structural Steel', phase: 'construction', quantity: 50, completedQuantity: 0, unit: 'MT', weightage: 20, status: 'not_started', categoryIndex: 0 },
-    { name: 'Electrical Panel Installation', phase: 'commissioning', quantity: 4, completedQuantity: 0, unit: 'nos', weightage: 15, status: 'not_started', categoryIndex: 1 },
-  ],
-  // Site Gamma items
-  [
-    { name: 'Boundary Wall Construction', phase: 'construction', quantity: 150, completedQuantity: 100, unit: 'm', weightage: 12, status: 'in_progress', categoryIndex: 0 },
-    { name: 'Control Room Building', phase: 'construction', quantity: 1, completedQuantity: 0, unit: 'lot', weightage: 30, status: 'not_started', categoryIndex: 0 },
-    { name: 'Equipment Foundation', phase: 'construction', quantity: 80, completedQuantity: 40, unit: 'cum', weightage: 18, status: 'in_progress', categoryIndex: 0 },
-    { name: 'Pre-commissioning Tests', phase: 'testing', quantity: 1, completedQuantity: 0, unit: 'lot', weightage: 10, status: 'not_started', categoryIndex: 2 },
+    { name: 'Mast Foundation Excavation & Concreting', phase: 'construction', quantity: 120, completedQuantity: 80, unit: 'nos', weightage: 15, status: 'in_progress', categoryIndex: 0 },
+    { name: 'Mast Erection', phase: 'construction', quantity: 120, completedQuantity: 20, unit: 'nos', weightage: 20, status: 'in_progress', categoryIndex: 2 },
+    { name: 'Catenary & Contact Wire Stringing', phase: 'construction', quantity: 15.5, completedQuantity: 0, unit: 'km', weightage: 20, status: 'not_started', categoryIndex: 2 },
+    { name: 'OCS Registration & Tensioning', phase: 'commissioning', quantity: 1, completedQuantity: 0, unit: 'lot', weightage: 10, status: 'not_started', categoryIndex: 2 },
   ],
 ];
 
@@ -1230,11 +1228,13 @@ interface HindranceDef {
 }
 
 const HINDRANCES: HindranceDef[] = [
-  { title: 'Material Delay - Cement', description: 'Cement supply delayed by 5 days due to transportation issues', priority: 'high', status: 'open', siteIndex: 0, itemIndex: 2 },
-  { title: 'Weather Disruption', description: 'Heavy rain causing waterlogging at excavation site', priority: 'medium', status: 'in_progress', siteIndex: 0, itemIndex: 0 },
-  { title: 'Manpower Shortage', description: 'Electricians not available for cable work', priority: 'high', status: 'open', siteIndex: 1, itemIndex: 3 },
-  { title: 'Drawing Approval Pending', description: 'Structural drawings awaiting client approval', priority: 'medium', status: 'resolved', siteIndex: 1, itemIndex: 2 },
-  { title: 'Equipment Breakdown', description: 'Crane maintenance required, affecting lifting operations', priority: 'high', status: 'in_progress', siteIndex: 2, itemIndex: 1 },
+  // TSS-01 hindrances (siteIndex: 0)
+  { title: 'Cement Supply Delay', description: 'Cement supply delayed by 5 days due to transportation issues, affecting RCC foundation progress', priority: 'high', status: 'open', siteIndex: 0, itemIndex: 1 },
+  { title: 'Weather Disruption', description: 'Heavy rain causing waterlogging at foundation excavation area', priority: 'medium', status: 'in_progress', siteIndex: 0, itemIndex: 0 },
+  { title: 'Switchgear Drawing Approval Pending', description: 'TSS switchgear foundation drawings awaiting client approval before erection can begin', priority: 'medium', status: 'resolved', siteIndex: 0, itemIndex: 2 },
+  // OHE Zone 1 hindrances (siteIndex: 1)
+  { title: 'Crane Breakdown', description: 'Crane maintenance required, affecting mast lifting and erection operations', priority: 'high', status: 'in_progress', siteIndex: 1, itemIndex: 1 },
+  { title: 'Contact Wire Procurement Delay', description: 'Cu-Mg contact wire 107mm² delivery delayed by 2 weeks from supplier', priority: 'high', status: 'open', siteIndex: 1, itemIndex: 2 },
 ];
 
 interface MaterialDef {
@@ -1250,12 +1250,14 @@ interface MaterialDef {
 }
 
 const MATERIALS: MaterialDef[] = [
-  { name: 'OPC Cement 53 Grade', quantityRequired: 500, quantityAvailable: 300, quantityUsed: 150, unit: 'bags', status: 'in_use', supplier: 'UltraTech Cement', siteIndex: 0, itemIndex: 2 },
-  { name: 'TMT Steel Bars 16mm', quantityRequired: 20, quantityAvailable: 20, quantityUsed: 8, unit: 'MT', status: 'delivered', supplier: 'SAIL', siteIndex: 0, itemIndex: 2 },
-  { name: 'River Sand', quantityRequired: 100, quantityAvailable: 50, quantityUsed: 30, unit: 'cum', status: 'shortage', supplier: 'Local Supplier', siteIndex: 0, itemIndex: 1 },
-  { name: 'Structural Steel Sections', quantityRequired: 50, quantityAvailable: 0, quantityUsed: 0, unit: 'MT', status: 'ordered', supplier: 'Tata Steel', siteIndex: 1, itemIndex: 2 },
-  { name: 'Pile Concrete M30', quantityRequired: 200, quantityAvailable: 100, quantityUsed: 60, unit: 'cum', status: 'in_use', supplier: 'RMC Plant', siteIndex: 1, itemIndex: 1 },
-  { name: 'Concrete Blocks', quantityRequired: 2000, quantityAvailable: 1500, quantityUsed: 800, unit: 'nos', status: 'in_use', supplier: 'Block Factory', siteIndex: 2, itemIndex: 0 },
+  // TSS-01 materials (siteIndex: 0)
+  { name: 'OPC Cement 53 Grade', quantityRequired: 500, quantityAvailable: 300, quantityUsed: 150, unit: 'bags', status: 'in_use', supplier: 'UltraTech Cement', siteIndex: 0, itemIndex: 1 },
+  { name: 'TMT Steel Bars 16mm', quantityRequired: 20, quantityAvailable: 20, quantityUsed: 8, unit: 'MT', status: 'delivered', supplier: 'SAIL', siteIndex: 0, itemIndex: 1 },
+  { name: 'River Sand', quantityRequired: 100, quantityAvailable: 50, quantityUsed: 30, unit: 'cum', status: 'shortage', supplier: 'Local Supplier', siteIndex: 0, itemIndex: 0 },
+  // OHE Zone 1 materials (siteIndex: 1)
+  { name: 'Galvanized Steel Masts 9m', quantityRequired: 120, quantityAvailable: 40, quantityUsed: 20, unit: 'nos', status: 'in_use', supplier: 'SAIL Structures', siteIndex: 1, itemIndex: 1 },
+  { name: 'Foundation Concrete M30', quantityRequired: 200, quantityAvailable: 120, quantityUsed: 80, unit: 'cum', status: 'in_use', supplier: 'RMC Plant', siteIndex: 1, itemIndex: 0 },
+  { name: 'Cu-Mg Contact Wire 107mm²', quantityRequired: 16000, quantityAvailable: 0, quantityUsed: 0, unit: 'm', status: 'ordered', supplier: 'Elcowire Group', siteIndex: 1, itemIndex: 2 },
 ];
 
 interface InspectionDef {
@@ -1268,10 +1270,12 @@ interface InspectionDef {
 }
 
 const INSPECTIONS: InspectionDef[] = [
-  { inspectionType: 'daily', overallRating: 'good', safetyFlagged: false, notes: 'Work progressing as per schedule. Housekeeping satisfactory.', siteIndex: 0, daysAgo: 1 },
-  { inspectionType: 'safety', overallRating: 'fair', safetyFlagged: true, notes: 'PPE compliance needs improvement. Some workers without helmets.', siteIndex: 0, daysAgo: 3 },
-  { inspectionType: 'weekly', overallRating: 'good', safetyFlagged: false, notes: 'Pile work quality verified. Lab test reports satisfactory.', siteIndex: 1, daysAgo: 2 },
-  { inspectionType: 'quality', overallRating: 'excellent', safetyFlagged: false, notes: 'Concrete cube strength meets specifications. Good workmanship.', siteIndex: 2, daysAgo: 4 },
+  // TSS-01 inspections (siteIndex: 0)
+  { inspectionType: 'daily', overallRating: 'good', safetyFlagged: false, notes: 'Foundation work progressing as per schedule. Concrete cube tests satisfactory. Housekeeping maintained.', siteIndex: 0, daysAgo: 1 },
+  { inspectionType: 'safety', overallRating: 'fair', safetyFlagged: true, notes: 'PPE compliance needs improvement near excavation area. Some workers observed without helmets. Warning issued.', siteIndex: 0, daysAgo: 3 },
+  // OHE Zone 1 inspections (siteIndex: 1)
+  { inspectionType: 'weekly', overallRating: 'good', safetyFlagged: false, notes: 'Mast foundation quality verified. Plumb and alignment within tolerance. Cube test results satisfactory.', siteIndex: 1, daysAgo: 2 },
+  { inspectionType: 'quality', overallRating: 'excellent', safetyFlagged: false, notes: 'Mast erection quality meets specifications. Bracket assembly and cantilever alignment verified. Good workmanship.', siteIndex: 1, daysAgo: 4 },
 ];
 
 // Sample checklist data for inspections
@@ -1299,8 +1303,8 @@ const SAMPLE_CHECKLIST = JSON.stringify({
  * Generates realistic Supervisor demo data for a given project.
  *
  * Creates:
- * - 3 Sites (assigned to the given supervisorId)
- * - 12 Items across sites (with progress)
+ * - 2 Sites — physical sites only (TSS-01, OHE Zone 1); no Simulation Studies
+ * - 8 Items across sites (with progress)
  * - 6 Progress Logs
  * - 2 Daily Reports
  * - 5 Hindrances
@@ -1314,7 +1318,7 @@ const SAMPLE_CHECKLIST = JSON.stringify({
  */
 export async function generateSupervisorDemoData(projectId: string, supervisorId: string): Promise<SupervisorDemoDataResult> {
   const createdSites: SiteModel[] = [];
-  const createdItems: ItemModel[][] = [[], [], []]; // Items per site
+  const createdItems: ItemModel[][] = [[], []]; // Items per site (TSS-01, OHE Zone 1)
   const createdCategories: CategoryModel[] = [];
   let progressLogCount = 0;
   let dailyReportCount = 0;
