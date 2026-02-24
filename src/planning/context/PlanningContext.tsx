@@ -303,7 +303,8 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
    */
   const loadDashboardData = useCallback(async () => {
     if (!state.projectId || state.sites.length === 0) {
-      setDashboardCache(initialDashboardCache);
+      // Context is done loading but no project/sites — mark ready so widgets show empty state
+      setDashboardCache({ ...initialDashboardCache, dataReady: true });
       return;
     }
 
@@ -374,9 +375,11 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
 
   // Unified subscription: one subscription replaces 14+ individual hook subscriptions
   useEffect(() => {
-    if (!state.projectId || state.sites.length === 0) return;
-
+    // Always call so widgets can resolve their loading state (sets dataReady:true on early return)
     loadDashboardData();
+
+    // Only set up live subscription when project + sites are available
+    if (!state.projectId || state.sites.length === 0) return;
 
     let debounceTimer: ReturnType<typeof setTimeout>;
     const subscription = database
