@@ -57,6 +57,8 @@ import {
   useSiteProgressData,
 } from './hooks';
 import { COLORS } from '../../theme/colors';
+import { EmptyState } from '../../components/common/EmptyState';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 
 // ==================== Component ====================
 
@@ -66,7 +68,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const { announce } = useAccessibility();
   const { user } = useAuth();
-  const { dashboardCache, refreshDashboard } = usePlanningContext();
+  const { dashboardCache, refreshDashboard, loading: contextLoading, error: contextError } = usePlanningContext();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const route = useRoute<any>();
 
@@ -330,6 +332,30 @@ const PlanningDashboardScreen: React.FC = () => {
     // Single column layout for phones
     return widgets;
   };
+
+  // Show full-screen spinner while context is loading project/sites from DB
+  if (contextLoading) {
+    return (
+      <View style={styles.container}>
+        <SpinnerLoading message="Loading project data..." />
+      </View>
+    );
+  }
+
+  // Show error state when no project is assigned (or other context-level errors)
+  if (contextError) {
+    return (
+      <View style={styles.container}>
+        <EmptyState
+          icon="folder-alert-outline"
+          title="No Project Assigned"
+          message={contextError}
+          helpText="Ask your Admin to assign you to a project in Role Management."
+          variant="large"
+        />
+      </View>
+    );
+  }
 
   return (
     <View
