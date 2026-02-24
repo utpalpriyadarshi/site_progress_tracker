@@ -302,25 +302,47 @@ export const useDocumentCrud = ({
         const docsCollection = database.collections.get('design_documents');
         const siteDocuments = await docsCollection.query(Q.where('site_id', siteId)).fetch();
 
-        const totalWeightage = siteDocuments
+        // Sum all other docs (exclude the one being edited)
+        const othersTotal = siteDocuments
           .filter((doc: any) => doc.id !== state.ui.editingDocumentId)
           .reduce((sum: number, doc: any) => sum + (doc.weightage || 0), 0);
 
-        const newTotal = totalWeightage + weightageNum;
+        const newTotal = othersTotal + weightageNum;
         const siteName = state.data.sites.find((s) => s.id === siteId)?.name || 'this site';
 
         if (newTotal > 100) {
-          Alert.alert(
-            'Weightage Validation',
-            `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
-              `Total weightage per site should equal 100%.\n\n` +
-              `Current total: ${totalWeightage.toFixed(1)}%\n` +
-              `Adding: ${weightageNum.toFixed(1)}%\n` +
-              `New total: ${newTotal.toFixed(1)}%\n\n` +
-              `Available: ${(100 - totalWeightage).toFixed(1)}%`,
-          );
-          setIsSubmitting(false);
-          return;
+          // When editing, allow the save if the user is reducing the overrun
+          if (state.ui.editingDocumentId) {
+            const currentDoc = siteDocuments.find((d: any) => d.id === state.ui.editingDocumentId);
+            const currentWeightage = (currentDoc as any)?.weightage || 0;
+            const previousTotal = othersTotal + currentWeightage;
+            if (newTotal < previousTotal) {
+              // Reducing the overrun — allow save to proceed
+            } else {
+              Alert.alert(
+                'Weightage Validation',
+                `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
+                  `This would increase the overrun.\n\n` +
+                  `Current total: ${previousTotal.toFixed(1)}%\n` +
+                  `New total: ${newTotal.toFixed(1)}%\n\n` +
+                  `Reduce other documents first, or use Normalize to 100%.`,
+              );
+              setIsSubmitting(false);
+              return;
+            }
+          } else {
+            Alert.alert(
+              'Weightage Validation',
+              `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
+                `Total weightage per site should equal 100%.\n\n` +
+                `Current total: ${othersTotal.toFixed(1)}%\n` +
+                `Adding: ${weightageNum.toFixed(1)}%\n` +
+                `New total: ${newTotal.toFixed(1)}%\n\n` +
+                `Available: ${(100 - othersTotal).toFixed(1)}%`,
+            );
+            setIsSubmitting(false);
+            return;
+          }
         }
       } catch (error) {
         logger.error('[DesignDocument] Error validating weightage:', error as Error, {

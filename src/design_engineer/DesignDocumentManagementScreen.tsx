@@ -254,6 +254,54 @@ const DesignDocumentManagementScreen = () => {
     loadDocuments();
   };
 
+  // ==================== Normalize Weightage ====================
+
+  const handleNormalizeWeightage = async (siteId: string, totalWeightage: number) => {
+    Alert.alert(
+      'Normalize Weightage',
+      `Scale all document weightages proportionally so the total equals exactly 100%?\n\nCurrent total: ${totalWeightage.toFixed(1)}%`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Normalize',
+          onPress: async () => {
+            try {
+              const docsCollection = database.collections.get('design_documents');
+              const siteDocs = await docsCollection.query(Q.where('site_id', siteId)).fetch();
+              const weightedDocs = siteDocs.filter((d: any) => d.weightage > 0);
+              if (weightedDocs.length === 0) return;
+
+              const scaleFactor = 100 / totalWeightage;
+              const newWeightages = weightedDocs.map((d: any) =>
+                Math.max(0, Math.round(d.weightage * scaleFactor * 10) / 10)
+              );
+
+              // Fix rounding drift on last doc
+              const scaledSum = newWeightages.reduce((a, b) => a + b, 0);
+              const diff = parseFloat((100 - scaledSum).toFixed(1));
+              newWeightages[newWeightages.length - 1] = parseFloat(
+                (newWeightages[newWeightages.length - 1] + diff).toFixed(1)
+              );
+
+              await database.write(async () => {
+                for (let i = 0; i < weightedDocs.length; i++) {
+                  await weightedDocs[i].update((rec: any) => {
+                    rec.weightage = newWeightages[i];
+                  });
+                }
+              });
+
+              showSnackbar('Weightage normalized to 100%');
+              loadDocuments();
+            } catch (error) {
+              logger.error('[DesignDocument] Error normalizing weightage:', error as Error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // ==================== Template Functionality ====================
 
   const handleTemplateSuccess = (createdCount: number, templateName: string) => {
@@ -383,11 +431,21 @@ const DesignDocumentManagementScreen = () => {
                     <View style={styles.weightageBarBg}>
                       <View style={[styles.weightageBarFill, { width: `${barWidth}%`, backgroundColor: barColor }]} />
                     </View>
-                    <Text style={[styles.weightageText, totalWeightage > 100 && styles.weightageWarning]}>
-                      {totalWeightage > 100
-                        ? `⚠ ${totalWeightage.toFixed(1)}% (over by ${(totalWeightage - 100).toFixed(1)}%)`
-                        : `${totalWeightage.toFixed(1)}% used · ${remaining.toFixed(1)}% available`}
-                    </Text>
+                    <View style={styles.weightageRow}>
+                      <Text style={[styles.weightageText, totalWeightage > 100 && styles.weightageWarning]}>
+                        {totalWeightage > 100
+                          ? `⚠ ${totalWeightage.toFixed(1)}% (over by ${(totalWeightage - 100).toFixed(1)}%)`
+                          : `${totalWeightage.toFixed(1)}% used · ${remaining.toFixed(1)}% available`}
+                      </Text>
+                      {totalWeightage > 100 && (
+                        <TouchableOpacity
+                          onPress={() => handleNormalizeWeightage(selectedSiteId, totalWeightage)}
+                          style={styles.normalizeButton}
+                        >
+                          <Text style={styles.normalizeButtonText}>Normalize</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </>
                 )}
               </View>
@@ -742,11 +800,28 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
+  weightageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 3,
+  },
   weightageText: {
     fontSize: 11,
     color: '#555',
-    marginTop: 3,
-    textAlign: 'center',
+    flex: 1,
+  },
+  normalizeButton: {
+    backgroundColor: COLORS.ERROR,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  normalizeButtonText: {
+    fontSize: 10,
+    color: '#FFF',
+    fontWeight: '600',
   },
   weightageWarning: {
     color: COLORS.ERROR,

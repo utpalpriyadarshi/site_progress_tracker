@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Dialog, Portal, Button, Text, Menu, Divider, ActivityIndicator } from 'react-native-paper';
+import { Dialog, Portal, Button, Text, Menu, Divider, ActivityIndicator, Switch } from 'react-native-paper';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { useDesignEngineerContext } from '../context/DesignEngineerContext';
@@ -46,6 +46,8 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
   const [generatedDocs, setGeneratedDocs] = useState<GeneratedDoc[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [existingSiteTotal, setExistingSiteTotal] = useState(0);
+  const [autoScale, setAutoScale] = useState(false);
 
   // Load sites when dialog opens
   useEffect(() => {
@@ -73,6 +75,8 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
       setSelectedSiteName('Select target site');
       setGeneratedDocs([]);
       setSelectedTemplate(DOCUMENT_TEMPLATES[0]);
+      setExistingSiteTotal(0);
+      setAutoScale(false);
     }
   }, [visible]);
 
@@ -101,6 +105,11 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
         existingDocs.forEach((d: any) => {
           typeCounts[d.documentType] = (typeCounts[d.documentType] || 0) + 1;
         });
+
+        // Compute existing weightage total for the selected site
+        const siteDocs = existingDocs.filter((d: any) => d.siteId === selectedSiteId);
+        const siteTotal = siteDocs.reduce((sum: number, d: any) => sum + (d.weightage || 0), 0);
+        setExistingSiteTotal(siteTotal);
 
         const docs: GeneratedDoc[] = selectedTemplate.documents.map((tmplDoc) => {
           const prefix = DOCUMENT_TYPE_PREFIXES[tmplDoc.documentType] || tmplDoc.documentType.substring(0, 3).toUpperCase();
@@ -138,6 +147,31 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
     [generatedDocs]
   );
 
+  const templateWeightageTotal = useMemo(
+    () => docsToCreate.reduce((sum, d) => sum + d.weightage, 0),
+    [docsToCreate]
+  );
+
+  const projectedTotal = existingSiteTotal + templateWeightageTotal;
+  const weightageOverrun = projectedTotal > 100;
+  const availableCapacity = Math.max(0, 100 - existingSiteTotal);
+
+  // Pre-compute scaled weightages for preview and apply (lifted from handleApply)
+  const scaledWeightages = useMemo(() => {
+    const scaleFactor = (autoScale && weightageOverrun && templateWeightageTotal > 0)
+      ? availableCapacity / templateWeightageTotal
+      : 1;
+    const raw = docsToCreate.map((doc) =>
+      Math.max(0, Math.round(doc.weightage * scaleFactor * 10) / 10)
+    );
+    if (autoScale && weightageOverrun && raw.length > 0) {
+      const scaledSum = raw.reduce((a, b) => a + b, 0);
+      const diff = parseFloat((availableCapacity - scaledSum).toFixed(1));
+      raw[raw.length - 1] = parseFloat((raw[raw.length - 1] + diff).toFixed(1));
+    }
+    return raw;
+  }, [autoScale, weightageOverrun, availableCapacity, templateWeightageTotal, docsToCreate]);
+
   const canApply = selectedSiteId !== '' && docsToCreate.length > 0 && !loading;
 
   const handleApply = async () => {
@@ -165,7 +199,8 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
       const now = Date.now();
 
       await database.write(async () => {
-        for (const doc of docsToCreate) {
+        for (let i = 0; i < docsToCreate.length; i++) {
+          const doc = docsToCreate[i];
           await docsCollection.create((rec: any) => {
             rec.documentNumber = doc.documentNumber;
             rec.title = doc.title;
@@ -174,7 +209,7 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
             rec.projectId = projectId;
             rec.siteId = selectedSiteId;
             rec.revisionNumber = 'R0';
-            rec.weightage = doc.weightage;
+            rec.weightage = scaledWeightages[i];
             rec.status = 'draft';
             rec.createdBy = engineerId;
             rec.createdAt = now;
@@ -294,7 +329,27 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
                   </View>
                 )}
 
-                {generatedDocs.map((doc, index) => (
+                {/* Weightage overrun warning */}
+                {weightageOverrun && (
+                  <View style={styles.overrunBanner}>
+                    <Text style={styles.overrunText}>
+                      {`⚠ Weightage overrun: site already has ${existingSiteTotal.toFixed(1)}%, template adds ${templateWeightageTotal}% → projected ${projectedTotal.toFixed(1)}% (${(projectedTotal - 100).toFixed(1)}% over)`}
+                    </Text>
+                    <View style={styles.autoScaleRow}>
+                      <Text style={styles.autoScaleLabel}>
+                        {`Auto-scale to fit (${availableCapacity.toFixed(1)}% available)`}
+                      </Text>
+                      <Switch value={autoScale} onValueChange={setAutoScale} />
+                    </View>
+                  </View>
+                )}
+
+                {generatedDocs.map((doc, index) => {
+                  const nonDupIndex = docsToCreate.findIndex((d) => d.documentNumber === doc.documentNumber);
+                  const displayWeightage = (!doc.isDuplicate && autoScale && weightageOverrun && nonDupIndex >= 0)
+                    ? scaledWeightages[nonDupIndex]
+                    : doc.weightage;
+                  return (
                   <View
                     key={index}
                     style={[
@@ -311,8 +366,8 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
                       >
                         {doc.documentNumber}
                       </Text>
-                      <Text style={styles.previewWeightage}>
-                        {doc.weightage}%
+                      <Text style={[styles.previewWeightage, autoScale && weightageOverrun && !doc.isDuplicate && styles.scaledWeightage]}>
+                        {displayWeightage}%{autoScale && weightageOverrun && !doc.isDuplicate ? ' (scaled)' : ''}
                       </Text>
                     </View>
                     <Text
@@ -328,7 +383,8 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
                       {doc.isDuplicate ? ' — DUPLICATE (will skip)' : ''}
                     </Text>
                   </View>
-                ))}
+                  );
+                })}
               </>
             )}
           </ScrollView>
@@ -402,6 +458,36 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 12,
     color: '#E65100',
+  },
+  overrunBanner: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 6,
+    padding: 10,
+    marginHorizontal: 24,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.ERROR,
+  },
+  overrunText: {
+    fontSize: 12,
+    color: '#B71C1C',
+    marginBottom: 8,
+  },
+  autoScaleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  autoScaleLabel: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 8,
+  },
+  scaledWeightage: {
+    color: '#1565C0',
+    fontWeight: '600',
   },
   previewItem: {
     paddingHorizontal: 24,
