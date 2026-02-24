@@ -70,7 +70,7 @@ export class SyncService {
    */
   private static async apiRequest(
     endpoint: string,
-    method: 'GET' | 'POST' = 'GET',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any
   ): Promise<any> {
     const accessToken = await AuthService.getAccessToken();
@@ -1064,7 +1064,7 @@ export class SyncService {
         retryCount: queueItem.retryCount,
         lastError: queueItem.lastError,
         failedAt: Date.now(),
-        originalCreatedAt: queueItem.createdAt,
+        originalCreatedAt: queueItem._raw.created_at,
       };
 
       await AsyncStorage.setItem(deadLetterKey, JSON.stringify(deadLetterItem));
