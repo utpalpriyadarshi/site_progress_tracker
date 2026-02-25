@@ -574,7 +574,7 @@ export const useDocumentCrud = ({
 
       const newRevision = incrementRevision(doc.revisionNumber);
 
-      dispatch({ type: 'OPEN_DIALOG' });
+      dispatch({ type: 'OPEN_DIALOG', payload: { isRevising: true } });
       dispatch({
         type: 'SET_FORM',
         payload: {
@@ -587,8 +587,7 @@ export const useDocumentCrud = ({
           keyDateId: doc.keyDateId || '',
           doorsPackageId: doc.doorsPackageId || '',
           revisionNumber: newRevision,
-          weightage:
-            doc.weightage !== undefined && doc.weightage !== null ? String(doc.weightage) : '',
+          weightage: '0',
         },
       });
     },

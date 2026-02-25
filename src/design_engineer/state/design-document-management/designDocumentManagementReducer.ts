@@ -26,6 +26,7 @@ export interface DesignDocumentManagementState {
     categoriesDialogVisible: boolean;
     approvalDialogVisible: boolean;
     editingDocumentId: string | null;
+    isRevising: boolean;
     approvalDocumentId: string | null;
     approvalAction: 'submit' | 'approve' | 'approve_with_comment' | 'reject' | null;
   };
@@ -60,7 +61,7 @@ export type DesignDocumentManagementAction =
   | { type: 'UPDATE_CATEGORY'; payload: { categoryId: string; name: string } }
   | { type: 'DELETE_CATEGORY'; payload: { categoryId: string } }
   // Dialog management
-  | { type: 'OPEN_DIALOG'; payload?: { editingDocumentId?: string } }
+  | { type: 'OPEN_DIALOG'; payload?: { editingDocumentId?: string; isRevising?: boolean } }
   | { type: 'CLOSE_DIALOG' }
   | { type: 'OPEN_CATEGORIES_DIALOG' }
   | { type: 'CLOSE_CATEGORIES_DIALOG' }
@@ -85,6 +86,7 @@ export const createInitialState = (): DesignDocumentManagementState => ({
     categoriesDialogVisible: false,
     approvalDialogVisible: false,
     editingDocumentId: null,
+    isRevising: false,
     approvalDocumentId: null,
     approvalAction: null,
   },
@@ -268,13 +270,14 @@ export const designDocumentManagementReducer = (
           ...state.ui,
           dialogVisible: true,
           editingDocumentId: action.payload?.editingDocumentId || null,
+          isRevising: action.payload?.isRevising || false,
         },
       };
 
     case 'CLOSE_DIALOG':
       return {
         ...state,
-        ui: { ...state.ui, dialogVisible: false, editingDocumentId: null },
+        ui: { ...state.ui, dialogVisible: false, editingDocumentId: null, isRevising: false },
         form: createInitialState().form,
       };
 
