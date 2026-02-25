@@ -171,6 +171,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="edit"
                 color={COLORS.DISABLED}
                 loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'draft' } as never)}
               />
             </View>
             <View style={styles.metricsGrid}>
@@ -180,6 +181,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="send"
                 color={COLORS.INFO}
                 loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'submitted' } as never)}
               />
               <MetricCard
                 title="Approved"
@@ -187,6 +189,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="check-circle"
                 color={COLORS.SUCCESS}
                 loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'approved' } as never)}
               />
             </View>
             <View style={styles.metricsGrid}>
@@ -196,6 +199,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="cancel"
                 color={COLORS.ERROR}
                 loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'rejected' } as never)}
               />
               <MetricCard
                 title="Revised"
@@ -203,6 +207,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="refresh"
                 color={COLORS.WARNING}
                 loading={loading}
+                onPress={() => navigation.navigate('DesignDocuments' as never)}
               />
             </View>
 

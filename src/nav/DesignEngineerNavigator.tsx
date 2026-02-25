@@ -52,7 +52,7 @@ export type RootStackParamList = {
 export type DesignEngineerTabParamList = {
   Dashboard: { showTutorial?: boolean } | undefined;
   Sites: undefined;
-  DesignDocuments: undefined;
+  DesignDocuments: { statusFilter?: string } | undefined;
   DoorsPackages: undefined;
   DesignRfqs: undefined;
 };
