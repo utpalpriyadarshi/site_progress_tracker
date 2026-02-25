@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useState, useRef } from 'react';
+import React, { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { FAB, Searchbar, Menu, Snackbar, IconButton } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
@@ -9,7 +9,6 @@ import ManageCategoriesDialog from './components/ManageCategoriesDialog';
 import ApprovalDialog from './components/ApprovalDialog';
 import CopyDesignDocumentsDialog from './components/CopyDesignDocumentsDialog';
 import DuplicateDocumentsDialog from './components/DuplicateDocumentsDialog';
-import MoveDesignDocumentDialog from './components/MoveDesignDocumentDialog';
 import ApplyTemplateDialog from './components/ApplyTemplateDialog';
 import SiteSelector from './components/SiteSelector';
 import { database } from '../../models/database';
@@ -63,9 +62,7 @@ const DesignDocumentManagementScreen = () => {
   const { show: showSnackbar, snackbarProps } = useSnackbar();
   const flatListProps = useFlatListProps<DesignDocument>();
   const [siteDocumentCount, setSiteDocumentCount] = useState(0);
-  const [moveDialogVisible, setMoveDialogVisible] = useState(false);
   const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
-  const [moveDocument, setMoveDocument] = useState<DesignDocument | null>(null);
 
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -135,6 +132,23 @@ const DesignDocumentManagementScreen = () => {
       setResolvedKeyDate(undefined);
     }
   }, [handleReviseDocument, selectedSiteId, resolveAndSetKeyDate]);
+
+  /** Set of document IDs that are the latest revision for their documentNumber. */
+  const latestRevisionIds = useMemo(() => {
+    const getRevNum = (rev: string) => {
+      const m = rev.match(/^R(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+    const latest = new Map<string, { id: string; revNum: number }>();
+    for (const doc of state.data.documents) {
+      const revNum = getRevNum(doc.revisionNumber);
+      const existing = latest.get(doc.documentNumber);
+      if (!existing || revNum > existing.revNum) {
+        latest.set(doc.documentNumber, { id: doc.id, revNum });
+      }
+    }
+    return new Set(Array.from(latest.values()).map((v) => v.id));
+  }, [state.data.documents]);
 
   const {
     seedDefaultCategories,
@@ -240,19 +254,6 @@ const DesignDocumentManagementScreen = () => {
     setCopyDialogVisible(false);
   };
 
-  // ==================== Move Functionality ====================
-
-  const handleMoveDocument = (doc: DesignDocument) => {
-    setMoveDocument(doc);
-    setMoveDialogVisible(true);
-  };
-
-  const handleMoveSuccess = (destinationSiteName: string) => {
-    setMoveDialogVisible(false);
-    setMoveDocument(null);
-    showSnackbar(`Document moved to ${destinationSiteName}`);
-    loadDocuments();
-  };
 
   // ==================== Normalize Weightage ====================
 
@@ -578,8 +579,7 @@ const DesignDocumentManagementScreen = () => {
                 onReject={(id) =>
                   dispatch({ type: 'OPEN_APPROVAL_DIALOG', payload: { documentId: id, action: 'reject' } })
                 }
-                onRevise={handleReviseWithKD}
-                onMove={handleMoveDocument}
+                onRevise={latestRevisionIds.has(item.id) ? handleReviseWithKD : undefined}
               />
             )}
             contentContainerStyle={styles.listContainer}
@@ -623,6 +623,7 @@ const DesignDocumentManagementScreen = () => {
           onDismiss={() => dispatch({ type: 'CLOSE_DIALOG' })}
           onSave={handleCreateOrUpdateDocument}
           isEditing={!!state.ui.editingDocumentId}
+          isRevising={state.ui.isRevising}
           isSubmitting={isSubmitting}
           form={state.form}
           onUpdateField={(field, value) =>
@@ -679,17 +680,6 @@ const DesignDocumentManagementScreen = () => {
           onSkip={handleSkipDuplicates}
           onCreateAll={handleCreateAllDuplicates}
           onCancel={handleCancelDuplicates}
-        />
-
-        {/* Move Document Dialog */}
-        <MoveDesignDocumentDialog
-          visible={moveDialogVisible}
-          document={moveDocument}
-          onDismiss={() => {
-            setMoveDialogVisible(false);
-            setMoveDocument(null);
-          }}
-          onSuccess={handleMoveSuccess}
         />
 
         {/* Apply Template Dialog */}

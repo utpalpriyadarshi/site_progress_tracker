@@ -51,6 +51,7 @@ interface CreateDesignDocumentDialogProps {
   /** Called when user picks a site inside the form (only shown in 'all' context for site-required docs) */
   onSiteSelectedInForm: (siteId: string) => void;
   doorsPackages?: DoorsPackageItem[];
+  isRevising?: boolean;
 }
 
 const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
@@ -69,6 +70,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
   projectCategoryAKeyDates,
   onSiteSelectedInForm,
   doorsPackages = [],
+  isRevising = false,
 }) => {
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [docTypeMenuVisible, setDocTypeMenuVisible] = useState(false);
@@ -356,11 +358,14 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
               mode="outlined"
               keyboardType="numeric"
               placeholder="0-100"
+              disabled={isRevising}
             />
             <HelperText type="info">
-              {requiresSite && form.siteId
-                ? 'Total weightage per site should equal 100%'
-                : 'Leave empty for project-wide documents'}
+              {isRevising
+                ? 'Weightage is 0 for revisions — the original document retains its weightage'
+                : requiresSite && form.siteId
+                  ? 'Total weightage per site should equal 100%'
+                  : 'Leave empty for project-wide documents'}
             </HelperText>
 
             {/* DOORS Package Link */}
