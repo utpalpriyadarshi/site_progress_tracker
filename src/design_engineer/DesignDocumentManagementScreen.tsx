@@ -29,6 +29,7 @@ import {
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 import { useAuth } from '../auth/AuthContext';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
 import { commonStyles } from '../styles/common';
@@ -48,9 +49,11 @@ import { useCategoryManagement } from './hooks/useCategoryManagement';
  */
 
 const DesignDocumentManagementScreen = () => {
-  const { projectId, projectName, engineerId, refreshTrigger, selectedSiteId } = useDesignEngineerContext();
+  const { projectId, projectName, engineerId, refreshTrigger, selectedSiteId, setSelectedSiteId } = useDesignEngineerContext();
   const [state, dispatch] = useReducer(designDocumentManagementReducer, createDesignDocumentInitialState());
   const { announce } = useAccessibility();
+  const route = useRoute<any>();
+  const navigation = useNavigation();
 
   // Copy dialogs state
   const [copyDialogVisible, setCopyDialogVisible] = useState(false);
@@ -166,6 +169,18 @@ const DesignDocumentManagementScreen = () => {
     loadProjectKeyDates();
     loadDoorsPackages();
   }, [projectId, refreshTrigger, selectedSiteId, engineerId]);
+
+  // Apply statusFilter from dashboard navigation (e.g. clicking "Rejected" widget)
+  useEffect(() => {
+    const statusFilter = route.params?.statusFilter as DocumentStatus | undefined;
+    if (statusFilter) {
+      // Reset site to "All Sites" so the filter spans the whole project, not just the last-viewed site
+      setSelectedSiteId('all');
+      dispatch({ type: 'SET_FILTER_STATUS', payload: { status: statusFilter } });
+      // Clear the param so navigating back and tapping the same widget again re-applies the filter
+      navigation.setParams({ statusFilter: undefined } as never);
+    }
+  }, [route.params?.statusFilter]);
 
   useEffect(() => {
     if (projectId && engineerId) {
@@ -547,6 +562,46 @@ const DesignDocumentManagementScreen = () => {
               ))}
             </Menu>
           </View>
+
+          {/* Active filter chips — tap × to clear */}
+          {(state.filters.status !== null || state.filters.documentType !== null) && (
+            <View style={styles.activeFiltersRow}>
+              {state.filters.documentType !== null && (
+                <TouchableOpacity
+                  style={styles.activeFilterChip}
+                  onPress={() => dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } })}
+                  accessibilityLabel={`Clear type filter: ${DOCUMENT_TYPES.find(t => t.value === state.filters.documentType)?.label}`}
+                >
+                  <Text style={styles.activeFilterChipText}>
+                    {DOCUMENT_TYPES.find(t => t.value === state.filters.documentType)?.label}  ×
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {state.filters.status !== null && (
+                <TouchableOpacity
+                  style={styles.activeFilterChip}
+                  onPress={() => dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } })}
+                  accessibilityLabel={`Clear status filter: ${STATUS_VALUES.find(s => s.value === state.filters.status)?.label}`}
+                >
+                  <Text style={styles.activeFilterChipText}>
+                    {STATUS_VALUES.find(s => s.value === state.filters.status)?.label}  ×
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {state.filters.status !== null && state.filters.documentType !== null && (
+                <TouchableOpacity
+                  style={[styles.activeFilterChip, styles.clearAllChip]}
+                  onPress={() => {
+                    dispatch({ type: 'SET_FILTER_DOCUMENT_TYPE', payload: { documentType: null } });
+                    dispatch({ type: 'SET_FILTER_STATUS', payload: { status: null } });
+                  }}
+                  accessibilityLabel="Clear all filters"
+                >
+                  <Text style={[styles.activeFilterChipText, styles.clearAllChipText]}>Clear all</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         {state.ui.loading ? (
@@ -744,6 +799,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  activeFilterChip: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  activeFilterChipText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  clearAllChip: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FFF',
+  },
+  clearAllChipText: {
+    color: '#FFF',
   },
   dropdownButton: {
     flex: 1,

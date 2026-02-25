@@ -18,6 +18,26 @@ import type ItemModel from '../../../models/ItemModel';
 import { calculateSiteProgressFromItems } from './progressCalculations';
 
 /**
+ * Returns only the latest revision of each document number.
+ * Revision numbers follow the pattern R0, R1, R2... — higher number wins.
+ * Documents without a matching pattern default to revision 0.
+ */
+export function filterToLatestRevisions(documents: DesignDocumentModel[]): DesignDocumentModel[] {
+  const getRevNum = (rev: string) => {
+    const m = rev?.match(/^R(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const latestByDocNum = new Map<string, DesignDocumentModel>();
+  for (const doc of documents) {
+    const existing = latestByDocNum.get(doc.documentNumber);
+    if (!existing || getRevNum(doc.revisionNumber) > getRevNum(existing.revisionNumber)) {
+      latestByDocNum.set(doc.documentNumber, doc);
+    }
+  }
+  return Array.from(latestByDocNum.values());
+}
+
+/**
  * Get progress percentage from design document status
  *
  * @param status - Design document status
@@ -61,15 +81,18 @@ export function calculateSiteProgressFromDesignDocuments(
 ): number {
   if (!documents || documents.length === 0) return 0;
 
-  const totalWeightage = documents.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
+  // Only the latest revision of each document should count toward progress
+  const docs = filterToLatestRevisions(documents);
+
+  const totalWeightage = docs.reduce((sum, doc) => sum + (doc.weightage || 0), 0);
 
   if (totalWeightage === 0) {
     // Fallback: equal weight per document when no weightage is set
-    const totalProgress = documents.reduce((sum, doc) => sum + getProgressFromStatus(doc.status), 0);
-    return (totalProgress / documents.length) * 100;
+    const totalProgress = docs.reduce((sum, doc) => sum + getProgressFromStatus(doc.status), 0);
+    return (totalProgress / docs.length) * 100;
   }
 
-  const weightedProgress = documents.reduce((sum, doc) => {
+  const weightedProgress = docs.reduce((sum, doc) => {
     const statusProgress = getProgressFromStatus(doc.status);
     return sum + (doc.weightage || 0) * statusProgress;
   }, 0);

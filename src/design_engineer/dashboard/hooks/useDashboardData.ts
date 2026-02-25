@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { database } from '../../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
+import { filterToLatestRevisions } from '../../../planning/utils/designDocumentProgress';
 
 /**
  * useDashboardData Hook - Design Engineer
@@ -77,13 +78,16 @@ const calculateMetrics = (
   doorsPackages: any[],
   rfqs: any[]
 ): DashboardMetrics => {
-  const draftDocs = designDocs.filter((d: any) => d.status === 'draft').length;
-  const submittedDocs = designDocs.filter((d: any) => d.status === 'submitted').length;
-  const approvedDocs = designDocs.filter(
+  // Count only the latest revision of each document number
+  const latestDocs = filterToLatestRevisions(designDocs);
+  const draftDocs = latestDocs.filter((d: any) => d.status === 'draft').length;
+  const submittedDocs = latestDocs.filter((d: any) => d.status === 'submitted').length;
+  const approvedDocs = latestDocs.filter(
     (d: any) => d.status === 'approved' || d.status === 'approved_with_comment'
   ).length;
-  const rejectedDocs = designDocs.filter((d: any) => d.status === 'rejected').length;
-  const revisedDocs = designDocs.filter((d: any) => d.revisionNumber && d.revisionNumber !== 'R0').length;
+  const rejectedDocs = latestDocs.filter((d: any) => d.status === 'rejected').length;
+  // "Revised" = documents where the latest revision is R1 or higher
+  const revisedDocs = latestDocs.filter((d: any) => d.revisionNumber && d.revisionNumber !== 'R0').length;
 
   const pendingDoors = doorsPackages.filter((pkg: any) => pkg.status === 'pending').length;
   const receivedDoors = doorsPackages.filter((pkg: any) => pkg.status === 'received').length;
@@ -112,7 +116,7 @@ const calculateMetrics = (
     processedCount > 0 ? Math.round(totalProcessingDays / processedCount) : 0;
 
   return {
-    totalDesignDocs: designDocs.length,
+    totalDesignDocs: latestDocs.length,
     draftDocs,
     submittedDocs,
     approvedDocs,
@@ -143,9 +147,12 @@ const generateAlerts = (
 ): Alert[] => {
   const alerts: Alert[] = [];
 
+  // Work only with latest revisions to avoid false alerts from superseded revisions
+  const latestDocs = filterToLatestRevisions(designDocs);
+
   // Alert 1: Draft documents pending > 7 days
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const oldDrafts = designDocs.filter(
+  const oldDrafts = latestDocs.filter(
     (doc) => doc.status === 'draft' && doc.createdAt < sevenDaysAgo
   );
 
@@ -160,7 +167,7 @@ const generateAlerts = (
   }
 
   // Alert 2: Rejected documents need attention
-  const rejectedDocs = designDocs.filter((doc) => doc.status === 'rejected');
+  const rejectedDocs = latestDocs.filter((doc) => doc.status === 'rejected');
   if (rejectedDocs.length > 0) {
     alerts.push({
       id: 'rejected-docs',
@@ -195,7 +202,7 @@ const generateAlerts = (
   }
 
   // Alert 5: Submitted documents awaiting approval
-  const submittedDocs = designDocs.filter((doc) => doc.status === 'submitted');
+  const submittedDocs = latestDocs.filter((doc) => doc.status === 'submitted');
   if (submittedDocs.length > 0) {
     alerts.push({
       id: 'submitted-docs',
@@ -206,7 +213,7 @@ const generateAlerts = (
   }
 
   // Alert 6: Documents not linked to any Key Date (progress not tracked)
-  const unlinkedDocs = designDocs.filter((doc: any) => !doc.keyDateId);
+  const unlinkedDocs = latestDocs.filter((doc: any) => !doc.keyDateId);
   if (unlinkedDocs.length > 0) {
     alerts.push({
       id: 'unlinked-docs',
@@ -234,7 +241,7 @@ export const useDashboardData = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silentUpdate = false) => {
     if (!projectId) {
       setLoading(false);
       setMyMetrics(null);
@@ -244,7 +251,7 @@ export const useDashboardData = (
     }
 
     try {
-      setLoading(true);
+      if (!silentUpdate) setLoading(true);
       setError(null);
 
       // Fetch all project-level data
@@ -357,6 +364,12 @@ export const useDashboardData = (
 
   useEffect(() => {
     fetchData();
+    const subscription = database
+      .withChangesForTables(['design_documents', 'doors_packages', 'rfqs', 'key_dates'])
+      .subscribe(() => {
+        fetchData(true);
+      });
+    return () => subscription.unsubscribe();
   }, [fetchData]);
 
   const refresh = useCallback(async () => {
