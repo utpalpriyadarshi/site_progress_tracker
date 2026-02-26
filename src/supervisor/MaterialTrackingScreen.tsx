@@ -473,12 +473,15 @@ const MaterialTrackingScreenComponent = ({
   );
 };
 
-const enhance = withObservables(['projectId'], ({ projectId }: { projectId: string }) => ({
+const enhance = withObservables(['supervisorId', 'projectId'], ({ supervisorId, projectId }: { supervisorId: string; projectId: string }) => ({
   materials: database.collections.get('materials').query(),
   items: database.collections
     .get('items')
     .query(
-      Q.on('sites', 'project_id', projectId)
+      Q.on('sites', Q.and(
+        Q.where('project_id', projectId),
+        Q.where('supervisor_id', supervisorId)
+      ))
     ),
 }));
 
@@ -486,8 +489,8 @@ const EnhancedMaterialTrackingScreen = enhance(MaterialTrackingScreenComponent a
 
 // Wrapper component that provides context
 const MaterialTrackingScreen = () => {
-  const { projectId } = useSiteContext();
-  return <EnhancedMaterialTrackingScreen projectId={projectId} />;
+  const { supervisorId, projectId } = useSiteContext();
+  return <EnhancedMaterialTrackingScreen supervisorId={supervisorId} projectId={projectId} />;
 };
 
 const styles = StyleSheet.create({
