@@ -79,6 +79,7 @@ interface PlanningState {
 
 type PlanningAction =
   | { type: 'SET_PROJECT'; payload: { projectId: string | null; projectName: string | null; startDate?: number | null; endDate?: number | null } }
+  | { type: 'SET_PROJECT_AND_SITES'; payload: { projectId: string; projectName: string; startDate?: number | null; endDate?: number | null; sites: SiteModel[] } }
   | { type: 'SET_SITE'; payload: { siteId: string | null; site: SiteModel | null } }
   | { type: 'SET_SITES'; payload: SiteModel[] }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -122,6 +123,17 @@ function planningReducer(state: PlanningState, action: PlanningAction): Planning
         selectedSiteId: null,
         selectedSite: null,
       };
+    case 'SET_PROJECT_AND_SITES':
+      return {
+        ...state,
+        projectId: action.payload.projectId,
+        projectName: action.payload.projectName,
+        projectStartDate: action.payload.startDate ?? state.projectStartDate,
+        projectEndDate: action.payload.endDate ?? state.projectEndDate,
+        sites: action.payload.sites,
+        selectedSiteId: null,
+        selectedSite: null,
+      };
     case 'SET_SITE':
       return {
         ...state,
@@ -156,7 +168,7 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
   const [state, dispatch] = useReducer(planningReducer, initialState);
   const [dashboardCache, setDashboardCache] = useState<DashboardCache>(initialDashboardCache);
 
-  // Load user's assigned project from database (set by Admin in RoleManagement)
+  // Load user's assigned project + sites from database in a single pass
   const loadUserProject = useCallback(async () => {
     if (!user?.userId) {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -167,43 +179,48 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
-      // Fetch user from database to get project assignment
+      // Fetch user record to get project assignment
       const userRecord = await database.collections
         .get<UserModel>('users')
         .find(user.userId);
 
-      if (userRecord) {
+      if (userRecord?.projectId) {
         const assignedProjectId = userRecord.projectId;
 
-        if (assignedProjectId) {
-          // Fetch project details
-          const project = await database.collections
-            .get<ProjectModel>('projects')
-            .find(assignedProjectId);
-          const projectName = project.name || 'Unknown Project';
+        // Fetch project details + sites in parallel (was sequential before)
+        const [project, projectSites] = await Promise.all([
+          database.collections.get<ProjectModel>('projects').find(assignedProjectId),
+          database.collections.get<SiteModel>('sites')
+            .query(Q.where('project_id', assignedProjectId))
+            .fetch(),
+        ]);
 
-          // Update context state including project dates
-          dispatch({
-            type: 'SET_PROJECT',
-            payload: {
-              projectId: assignedProjectId,
-              projectName,
-              startDate: (project as any).startDate || null,
-              endDate: (project as any).endDate || null,
-            },
-          });
+        const projectName = project.name || 'Unknown Project';
 
-          // Persist to AsyncStorage for offline/fallback
-          await Promise.all([
-            AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, assignedProjectId),
-            AsyncStorage.setItem(STORAGE_KEYS.PROJECT_NAME, projectName),
-          ]);
-        } else {
-          dispatch({
-            type: 'SET_ERROR',
-            payload: 'No project assigned. Please contact Admin.',
-          });
-        }
+        // Dispatch project + sites atomically — single render, no intermediate empty-sites state
+        dispatch({
+          type: 'SET_PROJECT_AND_SITES',
+          payload: {
+            projectId: assignedProjectId,
+            projectName,
+            startDate: (project as any).startDate || null,
+            endDate: (project as any).endDate || null,
+            sites: projectSites,
+          },
+        });
+
+        // Persist to AsyncStorage for offline/fallback
+        await Promise.all([
+          AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, assignedProjectId),
+          AsyncStorage.setItem(STORAGE_KEYS.PROJECT_NAME, projectName),
+        ]);
+      } else {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: 'No project assigned. Please contact Admin.',
+        });
+        // No project — unblock the dashboard so it can show the error state
+        setDashboardCache({ ...initialDashboardCache, dataReady: true });
       }
     } catch (error) {
       logger.error('[PlanningContext] Failed to load user project', error as Error, {
@@ -212,6 +229,8 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
         userId: user?.userId,
       });
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load assigned project' });
+      // On error — unblock the dashboard so it can show the error state
+      setDashboardCache({ ...initialDashboardCache, dataReady: true });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -235,59 +254,12 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
     }
   }, []);
 
-  // Load saved state from AsyncStorage (fallback when user context not available)
-  useEffect(() => {
-    const loadSavedState = async () => {
-      if (user) return; // User context available, will load from DB
-
-      try {
-        const [savedProjectId, savedProjectName, savedSiteId] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.PROJECT_ID),
-          AsyncStorage.getItem(STORAGE_KEYS.PROJECT_NAME),
-          AsyncStorage.getItem(STORAGE_KEYS.SITE_ID),
-        ]);
-
-        if (savedProjectId && savedProjectName) {
-          dispatch({
-            type: 'SET_PROJECT',
-            payload: { projectId: savedProjectId, projectName: savedProjectName },
-          });
-        }
-
-        if (savedSiteId) {
-          // Site object will be loaded when sites are fetched
-          dispatch({
-            type: 'SET_SITE',
-            payload: { siteId: savedSiteId, site: null },
-          });
-        }
-      } catch (error) {
-        logger.warn('[PlanningContext] Failed to load saved state from AsyncStorage', {
-          component: 'PlanningContext',
-          action: 'loadSavedState',
-          error: (error as Error).message,
-        });
-      }
-    };
-
-    loadSavedState();
-  }, [user]);
-
-  // Load user's project when user logs in
+  // Load user's project + sites when user logs in
   useEffect(() => {
     if (user?.userId) {
       loadUserProject();
     }
   }, [user?.userId, loadUserProject]);
-
-  // Load sites when project changes
-  useEffect(() => {
-    if (state.projectId) {
-      loadSites(state.projectId);
-    } else {
-      dispatch({ type: 'SET_SITES', payload: [] });
-    }
-  }, [state.projectId, loadSites]);
 
   // ==================== Dashboard Data Cache ====================
 
@@ -303,8 +275,8 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
    */
   const loadDashboardData = useCallback(async () => {
     if (!state.projectId || state.sites.length === 0) {
-      // Context is done loading but no project/sites — mark ready so widgets show empty state
-      setDashboardCache({ ...initialDashboardCache, dataReady: true });
+      // Not ready yet — skip silently. dataReady is set explicitly by loadUserProject
+      // when no project is found, or will fire again once projectId + sites are both set.
       return;
     }
 
