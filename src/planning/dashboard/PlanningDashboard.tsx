@@ -333,8 +333,8 @@ const PlanningDashboardScreen: React.FC = () => {
     return widgets;
   };
 
-  // Show full-screen spinner while context is loading project/sites from DB
-  if (contextLoading) {
+  // Show full-screen spinner until BOTH context and dashboard cache are fully ready
+  if (contextLoading || !dashboardCache.dataReady) {
     return (
       <View style={styles.container}>
         <SpinnerLoading message="Loading project data..." />
