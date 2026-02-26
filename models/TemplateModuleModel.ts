@@ -13,6 +13,8 @@ export interface TemplateItem {
   isMilestone?: boolean;
   quantity?: number;
   unit?: string;
+  weightage?: number;    // % weightage for the activity
+  categoryName?: string; // category name (resolved to ID on apply)
   dependencyRisk?: string;
   riskNotes?: string;
 }

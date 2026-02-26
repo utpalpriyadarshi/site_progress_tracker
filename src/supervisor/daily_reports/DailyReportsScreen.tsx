@@ -302,7 +302,12 @@ const enhance = withObservables(
     sites: database.collections
       .get('sites')
       .query(Q.where('supervisor_id', supervisorId)),
-    items: database.collections.get('items').query(Q.on('sites', 'project_id', projectId)),
+    items: database.collections.get('items').query(
+      Q.on('sites', Q.and(
+        Q.where('project_id', projectId),
+        Q.where('supervisor_id', supervisorId)
+      ))
+    ),
   })
 );
 

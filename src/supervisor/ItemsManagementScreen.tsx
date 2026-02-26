@@ -27,6 +27,7 @@ import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { CopyItemsDialog, DuplicateItemsDialog } from '../components/dialogs';
+import ApplyTemplateDialog from './templates/ApplyTemplateDialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
@@ -70,7 +71,7 @@ const ItemsManagementScreenComponent = ({
   sites: SiteModel[];
   categories: CategoryModel[];
 }) => {
-  const { selectedSiteId } = useSiteContext();
+  const { selectedSiteId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
 
   // Search, filter, sort state
@@ -88,9 +89,10 @@ const ItemsManagementScreenComponent = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
-  // Copy feature state
+  // Copy / Template feature state
   const [overflowMenuVisible, setOverflowMenuVisible] = useState(false);
   const [copyDialogVisible, setCopyDialogVisible] = useState(false);
+  const [applyTemplateDialogVisible, setApplyTemplateDialogVisible] = useState(false);
   const [duplicateDialogVisible, setDuplicateDialogVisible] = useState(false);
   const [duplicateItems, setDuplicateItems] = useState<string[]>([]);
   const [pendingCopyCallback, setPendingCopyCallback] = useState<
@@ -270,6 +272,14 @@ const ItemsManagementScreenComponent = ({
     }
     setDuplicateDialogVisible(false);
     setPendingCopyCallback(null);
+  };
+
+  const handleApplyTemplateSuccess = (created: number, skipped: number) => {
+    const msg = skipped > 0
+      ? `✓ ${created} activities added (${skipped} duplicates skipped)`
+      : `✓ ${created} activities added from template`;
+    showSnackbar(msg, 'success');
+    setApplyTemplateDialogVisible(false);
   };
 
   const handleDuplicateCancel = () => {
@@ -454,6 +464,19 @@ const ItemsManagementScreenComponent = ({
               title="Copy Items to Another Site"
               leadingIcon="content-copy"
               disabled={!canCopy}
+            />
+            <Menu.Item
+              onPress={() => {
+                setOverflowMenuVisible(false);
+                if (selectedSiteId !== 'all') {
+                  setApplyTemplateDialogVisible(true);
+                } else {
+                  showSnackbar('Please select a specific site first', 'warning');
+                }
+              }}
+              title="Apply Template"
+              leadingIcon="assignment"
+              disabled={selectedSiteId === 'all'}
             />
           </Menu>
         }
@@ -762,6 +785,16 @@ const ItemsManagementScreenComponent = ({
         onCreateAll={handleCreateAllDuplicates}
         onCancel={handleDuplicateCancel}
       />
+
+      {/* Apply Template Dialog */}
+      <ApplyTemplateDialog
+        visible={applyTemplateDialogVisible}
+        siteId={selectedSiteId === 'all' ? '' : selectedSiteId}
+        siteName={_sites.find(s => s.id === selectedSiteId)?.name ?? 'Current Site'}
+        projectId={projectId}
+        onClose={() => setApplyTemplateDialogVisible(false)}
+        onSuccess={handleApplyTemplateSuccess}
+      />
     </View>
   );
 };
@@ -771,7 +804,10 @@ const enhance = withObservables(['supervisorId', 'projectId'], ({ supervisorId, 
   items: database.collections
     .get('items')
     .query(
-      Q.on('sites', 'project_id', projectId)
+      Q.on('sites', Q.and(
+        Q.where('project_id', projectId),
+        Q.where('supervisor_id', supervisorId)
+      ))
     ),
   sites: database.collections
     .get('sites')
