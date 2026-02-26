@@ -7,3 +7,4 @@
 export { MetricCard } from './MetricCard';
 export { QuickActionButton } from './QuickActionButton';
 export { AlertsSection } from './AlertsSection';
+export { SiteProgressSection } from './SiteProgressSection';

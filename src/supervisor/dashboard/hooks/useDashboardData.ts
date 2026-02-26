@@ -5,7 +5,7 @@ import { Q } from '@nozbe/watermelondb';
 /**
  * useDashboardData Hook
  *
- * Fetches and manages dashboard metrics and alerts
+ * Fetches and manages dashboard metrics, alerts, and per-site progress.
  * Part of Phase 3 - Task 3.1: Navigation UX Restructure
  */
 
@@ -24,9 +24,18 @@ interface Alert {
   itemId?: string;
 }
 
+export interface SiteProgressEntry {
+  id: string;
+  name: string;
+  location: string;
+  progress: number;
+  itemCount: number;
+}
+
 interface UseDashboardDataReturn {
   metrics: DashboardMetrics | null;
   alerts: Alert[];
+  siteProgress: SiteProgressEntry[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -83,6 +92,7 @@ const generateAlerts = async (supervisorId: string): Promise<Alert[]> => {
 export const useDashboardData = (supervisorId: string): UseDashboardDataReturn => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [siteProgress, setSiteProgress] = useState<SiteProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,9 +106,10 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
       const startOfTodayTimestamp = startOfToday.getTime();
 
       // Fetch all data in parallel using Promise.all
-      const [sitesCollection, progressLogsCollection, itemsCollection, reportsCollection] =
+      // allSupervisorItems replaces the pending-only items query — we derive pendingItems count from it
+      const [sitesCollection, progressLogsCollection, allSupervisorItems, reportsCollection] =
         await Promise.all([
-          // Active sites
+          // Active sites for this supervisor
           database.collections
             .get('sites')
             .query(Q.where('supervisor_id', supervisorId))
@@ -110,13 +121,10 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
             .query(Q.where('date', Q.gte(startOfTodayTimestamp)))
             .fetch(),
 
-          // Pending items (completed < planned) - ONLY from supervisor's sites
+          // ALL items from supervisor's sites (used for pending count + site progress)
           database.collections
             .get('items')
-            .query(
-              Q.where('completed_quantity', Q.lt(Q.column('planned_quantity'))),
-              Q.on('sites', 'supervisor_id', supervisorId)
-            )
+            .query(Q.on('sites', 'supervisor_id', supervisorId))
             .fetch(),
 
           // Today's submitted reports
@@ -129,12 +137,49 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
             .fetch(),
         ]);
 
+      // Derive pending count from the full items list
+      const pendingCount = (allSupervisorItems as any[]).filter(
+        (item) => item.completedQuantity < item.plannedQuantity
+      ).length;
+
       setMetrics({
         activeSites: sitesCollection.length,
         todayProgress: progressLogsCollection.length,
-        pendingItems: itemsCollection.length,
+        pendingItems: pendingCount,
         reportsSubmitted: reportsCollection.length,
       });
+
+      // Group items by site ID
+      const itemsBySiteId: Record<string, any[]> = {};
+      for (const item of allSupervisorItems as any[]) {
+        if (!itemsBySiteId[item.siteId]) itemsBySiteId[item.siteId] = [];
+        itemsBySiteId[item.siteId].push(item);
+      }
+
+      // Calculate per-site progress (weightage-based, same formula as planning)
+      const siteProgressData: SiteProgressEntry[] = (sitesCollection as any[])
+        .map((site) => {
+          const siteItems: any[] = itemsBySiteId[site.id] || [];
+          const totalWeightage = siteItems.reduce((sum, item) => sum + (item.weightage || 0), 0);
+          let progress = 0;
+          if (totalWeightage > 0) {
+            progress =
+              siteItems.reduce(
+                (sum, item) => sum + (item.weightage || 0) * item.getProgressPercentage(),
+                0
+              ) / totalWeightage;
+          }
+          return {
+            id: site.id,
+            name: site.name || 'Unnamed Site',
+            location: site.location || '',
+            progress: Math.round(progress * 100) / 100,
+            itemCount: siteItems.length,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setSiteProgress(siteProgressData);
 
       // Generate alerts based on data
       const generatedAlerts = await generateAlerts(supervisorId);
@@ -158,6 +203,7 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
   return {
     metrics,
     alerts,
+    siteProgress,
     loading,
     error,
     refresh,
