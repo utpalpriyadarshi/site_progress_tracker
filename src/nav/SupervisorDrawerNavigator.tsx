@@ -26,6 +26,7 @@ import { SiteProvider } from '../supervisor/context/SiteContext';
 import SupervisorTabNavigator from './SupervisorTabNavigator';
 import MaterialTrackingScreen from '../supervisor/MaterialTrackingScreen';
 import HindranceReportScreen from '../supervisor/hindrance_reports/HindranceReportScreen';
+import TemplatesStackNavigator from '../supervisor/templates/TemplatesStackNavigator';
 import SiteInspectionScreen from '../supervisor/SiteInspectionScreen';
 import ReportsHistoryScreen from '../supervisor/ReportsHistoryScreen';
 import { useAuth } from '../auth/AuthContext';
@@ -34,6 +35,7 @@ import TutorialService from '../services/TutorialService';
 export type SupervisorDrawerParamList = {
   SupervisorTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   Materials: undefined;
+  Templates: undefined;
   Issues: undefined;
   Inspection: undefined;
   History: undefined;
@@ -123,6 +125,17 @@ export const SupervisorDrawerNavigator: React.FC = () => {
             drawerLabel: 'Material Tracking',
             drawerIcon: ({ color, size }: { color: string; size: number }) => (
               <Icon name="inventory" size={size} color={color} />
+            ),
+          }}
+        />
+
+        <Drawer.Screen
+          name="Templates"
+          component={TemplatesStackNavigator}
+          options={{
+            drawerLabel: 'Activity Templates',
+            drawerIcon: ({ color, size }: { color: string; size: number }) => (
+              <Icon name="assignment" size={size} color={color} />
             ),
           }}
         />
