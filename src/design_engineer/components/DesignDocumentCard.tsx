@@ -33,6 +33,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
 }) => {
   const statusColor = getStatusColor(doc.status);
   const hasDraftActions = doc.status === 'draft' && (onEdit || onDelete || onSubmit);
+  const hasApprovedEditAction = doc.status === 'approved' && onEdit;
   const hasSubmittedActions = doc.status === 'submitted' && (onApprove || onApproveWithComment || onReject);
   const hasReviseActions = (doc.status === 'rejected' || doc.status === 'approved_with_comment') && onRevise;
 
@@ -129,7 +130,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
           </View>
         )}
 
-        {(hasDraftActions || hasSubmittedActions || hasReviseActions) && (
+        {(hasDraftActions || hasSubmittedActions || hasReviseActions || hasApprovedEditAction) && (
           <View style={styles.actionButtons}>
             {hasReviseActions && (
               <Button
@@ -155,7 +156,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
                 Submit
               </Button>
             )}
-            {doc.status === 'draft' && onEdit && (
+            {(doc.status === 'draft' || doc.status === 'approved') && onEdit && (
               <Button
                 mode="outlined"
                 icon="pencil"
