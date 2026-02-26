@@ -26,7 +26,7 @@ import ItemModel from '../../../models/ItemModel';
 import DesignDocumentModel from '../../../models/DesignDocumentModel';
 import { useAuth } from '../../auth/AuthContext';
 import { logger } from '../../services/LoggingService';
-import { batchLoadItemsBySites, batchLoadDocsByKeyDate } from '../utils/dataLoading';
+import { batchLoadItemsBySites, batchLoadDocsByKeyDate, batchLoadDesignDocsBySites } from '../utils/dataLoading';
 import type { GroupedData } from '../utils/dataLoading';
 
 // ==================== Storage Keys ====================
@@ -50,6 +50,7 @@ export interface DashboardCache {
   allItems: ItemModel[];
   itemsBySite: GroupedData<ItemModel>;
   docsByKeyDate: GroupedData<DesignDocumentModel>;
+  docsBySite: GroupedData<DesignDocumentModel>;
   allProjectDesignDocs: DesignDocumentModel[];
   dataReady: boolean;
 }
@@ -61,6 +62,7 @@ const initialDashboardCache: DashboardCache = {
   allItems: [],
   itemsBySite: {},
   docsByKeyDate: {},
+  docsBySite: {},
   allProjectDesignDocs: [],
   dataReady: false,
 };
@@ -296,10 +298,11 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
    * 1. Key dates for project (1 query)
    * 2. KD-sites for those KDs (1 query)
    * 3. Items for all sites via batchLoadItemsBySites (1 query)
-   * 4. Design docs via batchLoadDocsByKeyDate (1 query)
-   * 5. All design docs for project — unlinked count (1 query)
+   * 4. Design docs by KD via batchLoadDocsByKeyDate (1 query)
+   * 5. Design docs by site via batchLoadDesignDocsBySites (1 query)
+   * 6. All design docs for project — unlinked count (1 query)
    *
-   * Total: 5 queries (down from ~28 across individual hooks)
+   * Total: 6 queries (down from ~28 across individual hooks)
    */
   const loadDashboardData = useCallback(async () => {
     if (!state.projectId || state.sites.length === 0) {
@@ -327,15 +330,16 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
             .fetch()
         : [];
 
-      // 3 & 4. Items for all sites + design docs by KD (parallel)
-      const [itemsBySite, docsByKeyDate] = await Promise.all([
+      // 3, 4 & 5. Items by site + design docs by KD + design docs by site (parallel)
+      const [itemsBySite, docsByKeyDate, docsBySite] = await Promise.all([
         batchLoadItemsBySites(siteIds),
         kdIds.length > 0
           ? batchLoadDocsByKeyDate(kdIds)
           : Promise.resolve({} as GroupedData<DesignDocumentModel>),
+        batchLoadDesignDocsBySites(siteIds),
       ]);
 
-      // 5. All design docs for project (unlinked count)
+      // 6. All design docs for project (unlinked count)
       const allProjectDesignDocs = await database.collections
         .get<DesignDocumentModel>('design_documents')
         .query(Q.where('project_id', projectId))
@@ -360,6 +364,7 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
         allItems,
         itemsBySite,
         docsByKeyDate,
+        docsBySite,
         allProjectDesignDocs,
         dataReady: true,
       });

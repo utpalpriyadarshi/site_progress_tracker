@@ -42,7 +42,7 @@ export function useSiteProgressData(): UseSiteProgressResult {
   const siteProgressItems = useMemo(() => {
     if (!dashboardCache.dataReady || sites.length === 0) return [];
 
-    const { keyDates, kdSitesBySiteId, itemsBySite, docsByKeyDate } = dashboardCache;
+    const { keyDates, kdSitesBySiteId, itemsBySite, docsBySite } = dashboardCache;
     const kdMap = new Map(keyDates.map(kd => [kd.id, kd]));
 
     const result: SiteProgressItem[] = sites.map(site => {
@@ -54,20 +54,12 @@ export function useSiteProgressData(): UseSiteProgressResult {
       // Item progress for this site
       const itemProgress = calculateSiteProgressFromItems(siteItems);
 
-      // Design doc progress: average across all KDs this site is linked to
-      let docProgressSum = 0;
-      let docKdCount = 0;
-      for (const kds of siteKdSites) {
-        const kdDocs = docsByKeyDate[kds.keyDateId] || [];
-        if (kdDocs.length > 0) {
-          docProgressSum += calculateSiteProgressFromDesignDocuments(kdDocs);
-          docKdCount++;
-        }
-      }
-      const docProgress = docKdCount > 0 ? docProgressSum / docKdCount : 0;
+      // Design doc progress: site-specific (matches Design Engineer dashboard)
+      const siteDocs = docsBySite[site.id] || [];
+      const docProgress = calculateSiteProgressFromDesignDocuments(siteDocs);
+      const hasDocs = siteDocs.length > 0;
 
-      // Combined progress using average design weightage across linked KDs
-      const hasDocs = docKdCount > 0;
+      // Combined progress — weight items vs docs using each KD's designWeightage
       let combinedProgress = 0;
 
       if (siteKdSites.length > 0) {
@@ -77,15 +69,12 @@ export function useSiteProgressData(): UseSiteProgressResult {
         for (const kds of siteKdSites) {
           const kd = kdMap.get(kds.keyDateId);
           const designWeightage = kd?.designWeightage || 0;
-          const kdDocs = docsByKeyDate[kds.keyDateId] || [];
-          const kdDocProgress = kdDocs.length > 0 ? calculateSiteProgressFromDesignDocuments(kdDocs) : 0;
-          const kdHasDocs = kdDocs.length > 0;
 
           const effectiveHasSites = hasSupervisor || !hasDE;
-          const effectiveHasDocs = kdHasDocs && hasDE;
+          const effectiveHasDocs = hasDocs && hasDE;
 
           const { combined } = calculateKDProgress(
-            itemProgress, kdDocProgress, designWeightage, effectiveHasSites, effectiveHasDocs
+            itemProgress, docProgress, designWeightage, effectiveHasSites, effectiveHasDocs
           );
 
           const contribution = kds.contributionPercentage;
