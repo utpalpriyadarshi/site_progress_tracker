@@ -124,7 +124,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
     const slug = getCategorySlug(category.name);
     onUpdateField('documentType', slug as string);
     onUpdateField('categoryId', '');
-    if (!SITE_REQUIRED_TYPES.includes(slug as DocumentType)) {
+    if (!SITE_REQUIRED_TYPES.includes(slug as DocumentType) && !hasSiteContext) {
       onUpdateField('siteId', '');
       onUpdateField('keyDateId', '');
     }
@@ -363,7 +363,7 @@ const CreateDesignDocumentDialog: React.FC<CreateDesignDocumentDialogProps> = ({
             <HelperText type="info">
               {isRevising
                 ? 'Weightage is 0 for revisions — the original document retains its weightage'
-                : requiresSite && form.siteId
+                : form.siteId
                   ? 'Total weightage per site should equal 100%'
                   : 'Leave empty for project-wide documents'}
             </HelperText>

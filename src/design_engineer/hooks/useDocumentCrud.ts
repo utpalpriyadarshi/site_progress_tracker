@@ -297,7 +297,7 @@ export const useDocumentCrud = ({
       return;
     }
 
-    if (requiresSite && siteId && weightageNum !== undefined) {
+    if (siteId && weightageNum !== undefined) {
       try {
         const docsCollection = database.collections.get('design_documents');
         const siteDocuments = await docsCollection.query(Q.where('site_id', siteId)).fetch();
@@ -391,11 +391,11 @@ export const useDocumentCrud = ({
             rec.description = state.form.description || null;
             rec.documentType = documentType;
             rec.categoryId = categoryId || null;
-            rec.siteId = requiresSite ? siteId : null;
+            rec.siteId = siteId || null;
             rec.keyDateId = keyDateId || null;
             rec.doorsPackageId = doorsPackageId || null;
             rec.revisionNumber = revisionNumber || 'R0';
-            rec.weightage = weightageNum || null;
+            rec.weightage = weightageNum ?? null;
             rec.updatedAt = Date.now();
           });
         });
@@ -409,7 +409,7 @@ export const useDocumentCrud = ({
           categoryId,
           categoryName,
           projectId,
-          siteId: requiresSite ? siteId : undefined,
+          siteId: siteId || undefined,
           siteName,
           revisionNumber: revisionNumber || 'R0',
           status: (record as any).status,
@@ -438,11 +438,11 @@ export const useDocumentCrud = ({
             rec.documentType = documentType;
             rec.categoryId = categoryId || null;
             rec.projectId = projectId;
-            rec.siteId = requiresSite ? siteId : null;
+            rec.siteId = siteId || null;
             rec.keyDateId = keyDateId || null;
             rec.doorsPackageId = doorsPackageId || null;
             rec.revisionNumber = revisionNumber || 'R0';
-            rec.weightage = weightageNum || null;
+            rec.weightage = weightageNum ?? null;
             rec.status = 'draft';
             rec.createdBy = engineerId;
             rec.createdAt = Date.now();
@@ -455,7 +455,7 @@ export const useDocumentCrud = ({
           let categoryName = '';
           let doorsPackageNameForNew = '';
 
-          if (siteId && requiresSite) {
+          if (siteId) {
             try {
               const site = await database.collections.get('sites').find(siteId);
               siteName = (site as any).name;
@@ -483,7 +483,7 @@ export const useDocumentCrud = ({
             categoryId,
             categoryName,
             projectId,
-            siteId: requiresSite ? siteId : undefined,
+            siteId: siteId || undefined,
             siteName,
             revisionNumber: revisionNumber || 'R0',
             status: 'draft',
