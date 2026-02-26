@@ -13,6 +13,7 @@ import { useDashboardData } from './hooks/useDashboardData';
 import { MetricCard } from './components/MetricCard';
 import { QuickActionButton } from './components/QuickActionButton';
 import { AlertsSection } from './components/AlertsSection';
+import { SiteProgressSection } from './components/SiteProgressSection';
 import { EmptyState, SupervisorHeader } from '../../components/common';
 import TutorialModal from '../../tutorial/TutorialModal';
 import supervisorTutorialSteps from '../../tutorial/supervisorTutorialSteps';
@@ -29,7 +30,7 @@ const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { metrics, alerts, loading, error, refresh } = useDashboardData(supervisorId);
+  const { metrics, alerts, siteProgress, loading, error, refresh } = useDashboardData(supervisorId);
 
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -172,6 +173,9 @@ const DashboardScreen: React.FC = () => {
             onPress={() => navigation.navigate('History')}
           />
         </View>
+
+        {/* Site Progress Section */}
+        <SiteProgressSection sites={siteProgress} loading={loading} />
 
         {/* Quick Actions Section */}
         <View style={styles.section}>
