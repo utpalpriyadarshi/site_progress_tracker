@@ -51,13 +51,13 @@ interface KeyDateSiteManagerInputProps {
 interface SiteProgressEntry {
   siteId: string;
   calculatedProgress: number;
+  docProgress: number;
 }
 
 interface KeyDateSiteManagerObservedProps {
   keyDateSites: KeyDateSiteModel[];
   allSites: SiteModel[];
   siteProgressData: SiteProgressEntry[];
-  designDocProgress: number;
 }
 
 type KeyDateSiteManagerProps = KeyDateSiteManagerInputProps & KeyDateSiteManagerObservedProps;
@@ -204,7 +204,6 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   keyDateSites,
   allSites,
   siteProgressData,
-  designDocProgress,
 }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -233,16 +232,15 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
   // Build a map of siteId -> combined progress (items + design docs)
   // Respects role assignment: only include item track if supervisor is assigned,
   // only include doc track if DE is assigned
-  const hasDesignDocs = designDocProgress > 0;
   const designWeightage = keyDate.designWeightage || 0;
 
   const siteProgressMap = useMemo(() => {
-    const progressMap = new Map<string, { combined: number; itemProgress: number; hasDE: boolean }>();
+    const progressMap = new Map<string, { combined: number; itemProgress: number; docProgress: number; hasDE: boolean }>();
     for (const entry of siteProgressData) {
       const site = allSites.find(s => s.id === entry.siteId);
       const hasSupervisor = !!site?.supervisorId;
       const hasDE = !!site?.designEngineerId;
-      const effectiveHasDocs = hasDesignDocs && hasDE;
+      const effectiveHasDocs = entry.docProgress > 0 && hasDE;
       const effectiveHasSites = hasSupervisor;
 
       let combined: number;
@@ -251,13 +249,13 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
         combined = entry.calculatedProgress;
       } else {
         ({ combined } = calculateKDProgress(
-          entry.calculatedProgress, designDocProgress, designWeightage, effectiveHasSites, effectiveHasDocs
+          entry.calculatedProgress, entry.docProgress, designWeightage, effectiveHasSites, effectiveHasDocs
         ));
       }
-      progressMap.set(entry.siteId, { combined, itemProgress: entry.calculatedProgress, hasDE: effectiveHasDocs });
+      progressMap.set(entry.siteId, { combined, itemProgress: entry.calculatedProgress, docProgress: entry.docProgress, hasDE: effectiveHasDocs });
     }
     return progressMap;
-  }, [siteProgressData, allSites, designDocProgress, designWeightage, hasDesignDocs]);
+  }, [siteProgressData, allSites, designWeightage]);
 
   // Get site by id
   const getSiteById = useCallback(
@@ -378,14 +376,14 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
           site={getSiteById(item.siteId)}
           calculatedProgress={progressEntry?.combined ?? 0}
           itemProgress={progressEntry?.itemProgress ?? 0}
-          docProgress={designDocProgress}
+          docProgress={progressEntry?.docProgress ?? 0}
           hasDesignDocs={progressEntry?.hasDE ?? false}
           onUpdateContribution={handleUpdateContribution}
           onRemove={handleRemoveSite}
         />
       );
     },
-    [getSiteById, siteProgressMap, designDocProgress, handleUpdateContribution, handleRemoveSite]
+    [getSiteById, siteProgressMap, handleUpdateContribution, handleRemoveSite]
   );
 
   return (
@@ -542,28 +540,26 @@ const enhance = withObservables(
         if (sites.length === 0) return of([]);
         return combineLatest(
           sites.map((site) =>
-            database.collections
-              .get<ItemModel>('items')
-              .query(Q.where('site_id', site.siteId))
-              .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage'])
-              .pipe(
-                map((items) => ({
-                  siteId: site.siteId,
-                  calculatedProgress: calculateSiteProgressFromItems(items),
-                }))
-              )
+            combineLatest([
+              database.collections
+                .get<ItemModel>('items')
+                .query(Q.where('site_id', site.siteId))
+                .observeWithColumns(['completed_quantity', 'planned_quantity', 'weightage']),
+              database.collections
+                .get<DesignDocumentModel>('design_documents')
+                .query(Q.where('site_id', site.siteId))
+                .observeWithColumns(['status', 'weightage']),
+            ]).pipe(
+              map(([items, docs]) => ({
+                siteId: site.siteId,
+                calculatedProgress: calculateSiteProgressFromItems(items),
+                docProgress: calculateSiteProgressFromDesignDocuments(docs),
+              }))
+            )
           )
         );
       })
     );
-
-    const designDocProgress$ = database.collections
-      .get<DesignDocumentModel>('design_documents')
-      .query(Q.where('key_date_id', keyDate.id))
-      .observeWithColumns(['status', 'weightage'])
-      .pipe(
-        map((docs) => calculateSiteProgressFromDesignDocuments(docs))
-      );
 
     return {
       keyDateSites: keyDateSites$,
@@ -572,7 +568,6 @@ const enhance = withObservables(
         .query(Q.where('project_id', projectId))
         .observe(),
       siteProgressData: siteProgressData$,
-      designDocProgress: designDocProgress$,
     };
   }
 );
