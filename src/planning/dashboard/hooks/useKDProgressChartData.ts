@@ -45,7 +45,7 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
   const keyDates = useMemo(() => {
     if (!dashboardCache.dataReady) return [];
 
-    const { keyDates: kds, sitesByKdId, itemsBySite, docsByKeyDate } = dashboardCache;
+    const { keyDates: kds, sitesByKdId, itemsBySite, docsByKeyDate, docsBySite } = dashboardCache;
 
     const kdData: KDProgressDataPoint[] = [];
 
@@ -65,7 +65,15 @@ export function useKDProgressChartData(): UseKDProgressChartResult {
       }
 
       const kdSites = sitesByKdId[kd.id] || [];
-      const kdDocs = docsByKeyDate[kd.id] || [];
+
+      // Collect design docs via two paths and deduplicate:
+      // 1. Docs with key_date_id set directly on the document
+      // 2. Docs linked via site_id for any site associated with this KD
+      const directDocs = docsByKeyDate[kd.id] || [];
+      const seenIds = new Set(directDocs.map(d => d.id));
+      const siteDocs = kdSites.flatMap(site => (docsBySite[site.siteId] || []).filter(d => !seenIds.has(d.id)));
+      const kdDocs = [...directDocs, ...siteDocs];
+
       let kdProgress = kd.progressPercentage; // fallback
 
       const hasSites = kdSites.length > 0;
