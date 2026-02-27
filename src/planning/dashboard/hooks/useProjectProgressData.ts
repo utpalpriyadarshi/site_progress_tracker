@@ -148,8 +148,15 @@ export function useProjectProgressData(): UseProjectProgressResult {
       ? Math.round((totalWeightedProgress / totalWeightage) * 100) / 100
       : 0;
 
-    // Count design docs without Key Date linkage across the project
-    const unlinked = allProjectDesignDocs.filter((d: any) => !d.keyDateId).length;
+    // Count docs that are truly unlinked: no direct key_date_id AND no indirect
+    // site linkage (site_id present in key_date_sites). Docs linked only via
+    // site_id have keyDateId = null but are still tracked by the dual-track system.
+    const linkedSiteIds = new Set(
+      Object.values(sitesByKdId).flatMap((sites: any[]) => sites.map((s: any) => s.siteId))
+    );
+    const unlinked = allProjectDesignDocs.filter(
+      (d: any) => !d.keyDateId && (!d.siteId || !linkedSiteIds.has(d.siteId))
+    ).length;
 
     return {
       projectProgress: progress,
