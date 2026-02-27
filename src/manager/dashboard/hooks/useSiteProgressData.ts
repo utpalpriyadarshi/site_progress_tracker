@@ -42,7 +42,7 @@ export function useSiteProgressData(): UseSiteProgressDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
       setData([]);
       setLoading(false);
@@ -50,7 +50,7 @@ export function useSiteProgressData(): UseSiteProgressDataResult {
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Get all sites for this project
@@ -192,6 +192,17 @@ export function useSiteProgressData(): UseSiteProgressDataResult {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Reactive subscription: re-fetch silently when items, sites, or hindrances change
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['items', 'sites', 'hindrances', 'milestone_progress'])
+      .subscribe(() => {
+        fetchData(true);
+      });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }

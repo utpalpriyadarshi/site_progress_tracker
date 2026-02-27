@@ -220,6 +220,26 @@ export const useDashboardData = (projectId: string | null) => {
     }
   }, [projectId, loadDashboardData]);
 
+  // Silent reactive subscription: recalculate stats when items/sites change without showing loading spinner
+  const silentReload = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      await Promise.all([loadProjectInfo(), calculateStats()]);
+    } catch (error) {
+      logger.error('[useDashboardData] Error in silent reload', error as Error);
+    }
+  }, [projectId, loadProjectInfo, calculateStats]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['items', 'sites', 'hindrances', 'site_milestones', 'boms', 'bom_items'])
+      .subscribe(() => {
+        silentReload();
+      });
+    return () => subscription.unsubscribe();
+  }, [projectId, silentReload]);
+
   const onRefresh = useCallback(async () => {
     dispatch(startRefreshAction());
     await loadDashboardData();

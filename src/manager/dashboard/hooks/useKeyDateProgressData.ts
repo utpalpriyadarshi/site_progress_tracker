@@ -101,13 +101,43 @@ export function useKeyDateProgressData(): UseKeyDateProgressDataResult {
             .fetch()
         : [];
 
-      // Query 4: design_documents linked to these key dates (design track)
-      const allDocs = await database.collections
+      // Query 4a: design_documents linked directly to these key dates (key_date_id)
+      const directDocs = await database.collections
         .get<DesignDocumentModel>('design_documents')
         .query(Q.where('key_date_id', Q.oneOf(kdIds)))
         .fetch();
 
-      // Query 5 (derived): build per-KD progress items
+      // Query 4b: design_documents linked via site_id for sites associated with these KDs
+      const siteDocs = siteIds.length > 0
+        ? await database.collections
+            .get<DesignDocumentModel>('design_documents')
+            .query(Q.where('site_id', Q.oneOf(siteIds)))
+            .fetch()
+        : [];
+
+      // Merge both doc sets, deduplicated by doc ID
+      const directDocIds = new Set(directDocs.map(d => d.id));
+      const allDocs = [...directDocs, ...siteDocs.filter(d => !directDocIds.has(d.id))];
+
+      // Build a lookup: siteId → KD IDs (for resolving site-linked docs to their KD)
+      const kdIdsBySiteId: Record<string, string[]> = {};
+      for (const kds of kdSites) {
+        if (!kdIdsBySiteId[kds.siteId]) kdIdsBySiteId[kds.siteId] = [];
+        kdIdsBySiteId[kds.siteId].push(kds.keyDateId);
+      }
+
+      // Build per-KD doc sets: direct link OR via site linkage
+      const docsByKdId: Record<string, DesignDocumentModel[]> = {};
+      for (const kd of keyDates) {
+        const linkedSiteIds = new Set(
+          kdSites.filter(kds => kds.keyDateId === kd.id).map(kds => kds.siteId)
+        );
+        docsByKdId[kd.id] = allDocs.filter(
+          d => d.keyDateId === kd.id || (d.siteId != null && linkedSiteIds.has(d.siteId as string))
+        );
+      }
+
+      // Build per-KD progress items
       const result: KDProgressItem[] = keyDates.map(kd => {
         const progressMode = kd.progressMode ?? 'auto';
         const designWeightage = kd.designWeightage ?? 0;
@@ -132,7 +162,7 @@ export function useKeyDateProgressData(): UseKeyDateProgressDataResult {
         }
 
         // Auto mode: calculate dual-track progress
-        const docsForKD = allDocs.filter(d => d.keyDateId === kd.id);
+        const docsForKD = docsByKdId[kd.id] ?? [];
         const kdSitesForKD = kdSites.filter(kds => kds.keyDateId === kd.id);
 
         const hasDesignDocs = docsForKD.length > 0;
