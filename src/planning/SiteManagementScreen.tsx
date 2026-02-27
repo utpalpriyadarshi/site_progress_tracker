@@ -147,7 +147,7 @@ const SiteCard: React.FC<SiteCardProps> = ({ site, project, onEdit, onDelete, on
                 style={site.supervisorId ? styles.supervisorAssignedChip : styles.unassignedChip}
                 textStyle={styles.chipText}
               >
-                {site.supervisorId ? (supervisorName ?? 'Supervisor') : 'No Supervisor'}
+                {site.supervisorId ? (supervisorName ?? 'Supervisor') : 'No Supv'}
               </Chip>
               <Chip
                 icon={site.designEngineerId ? 'account-edit' : 'account-alert'}
@@ -156,7 +156,7 @@ const SiteCard: React.FC<SiteCardProps> = ({ site, project, onEdit, onDelete, on
                 style={site.designEngineerId ? styles.designerAssignedChip : styles.unassignedChip}
                 textStyle={styles.chipText}
               >
-                {site.designEngineerId ? (designerName ?? 'Designer') : 'No Designer'}
+                {site.designEngineerId ? (designerName ?? 'Designer') : 'No Dsgn'}
               </Chip>
               {linkedKDs.map(kd => (
                 <Chip
@@ -781,6 +781,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
         visible={ui.supervisorPickerVisible}
         selectedUserId={form.selectedSupervisorId}
         projectId={projectId}
+        roleFilter="Supervisor"
         title="Assign Supervisor"
         onDismiss={() => dispatch({ type: 'SET_SUPERVISOR_PICKER_VISIBLE', payload: false })}
         onSelect={handleSupervisorSelect}
