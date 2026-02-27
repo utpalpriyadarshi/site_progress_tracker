@@ -55,7 +55,7 @@ export function useProjectProgressData(): UseProjectProgressResult {
       return { projectProgress: 0, kdBreakdown: [], unlinkedDocCount: 0 };
     }
 
-    const { keyDates, sitesByKdId, itemsBySite, docsByKeyDate, allProjectDesignDocs } = dashboardCache;
+    const { keyDates, sitesByKdId, itemsBySite, docsByKeyDate, docsBySite, allProjectDesignDocs } = dashboardCache;
 
     if (keyDates.length === 0) {
       return { projectProgress: 0, kdBreakdown: [], unlinkedDocCount: 0 };
@@ -90,7 +90,15 @@ export function useProjectProgressData(): UseProjectProgressResult {
       }
 
       const kdSites = sitesByKdId[kd.id] || [];
-      const kdDocs = docsByKeyDate[kd.id] || [];
+
+      // Collect design docs via two paths and deduplicate:
+      // 1. Docs with key_date_id set directly on the document
+      // 2. Docs linked via site_id for any site associated with this KD
+      const directDocs = docsByKeyDate[kd.id] || [];
+      const seenIds = new Set(directDocs.map(d => d.id));
+      const siteDocs = kdSites.flatMap(site => (docsBySite[site.siteId] || []).filter(d => !seenIds.has(d.id)));
+      const kdDocs = [...directDocs, ...siteDocs];
+
       let kdProgress = kd.progressPercentage; // fallback
       let kdItemProgress = 0;
       let kdDocProgress = 0;
