@@ -27,10 +27,18 @@ export interface KDBreakdownItem {
   sequenceOrder: number;
 }
 
+export interface UnlinkedDocInfo {
+  id: string;
+  title: string;
+  documentType: string;
+  siteId: string | null;
+}
+
 interface UseProjectProgressResult {
   projectProgress: number;
   kdBreakdown: KDBreakdownItem[];
   unlinkedDocCount: number;
+  unlinkedDocs: UnlinkedDocInfo[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -148,18 +156,34 @@ export function useProjectProgressData(): UseProjectProgressResult {
       ? Math.round((totalWeightedProgress / totalWeightage) * 100) / 100
       : 0;
 
-    // Count design docs without Key Date linkage across the project
-    const unlinked = allProjectDesignDocs.filter((d: any) => !d.keyDateId).length;
+    // Count docs that are truly unlinked: no direct key_date_id AND no indirect
+    // site linkage (site_id present in key_date_sites). Docs linked only via
+    // site_id have keyDateId = null but are still tracked by the dual-track system.
+    const linkedSiteIds = new Set(
+      Object.values(sitesByKdId).flatMap((sites: any[]) => sites.map((s: any) => s.siteId))
+    );
+    const unlinkedDocs: UnlinkedDocInfo[] = allProjectDesignDocs
+      .filter((d: any) => !d.keyDateId && (!d.siteId || !linkedSiteIds.has(d.siteId)))
+      .map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        documentType: d.documentType,
+        siteId: d.siteId || null,
+      }));
 
     return {
       projectProgress: progress,
       kdBreakdown: breakdown.sort((a, b) => a.sequenceOrder - b.sequenceOrder),
-      unlinkedDocCount: unlinked,
+      unlinkedDocCount: unlinkedDocs.length,
+      unlinkedDocs,
     };
   }, [dashboardCache]);
 
   return {
-    ...result,
+    projectProgress: result.projectProgress,
+    kdBreakdown: result.kdBreakdown,
+    unlinkedDocCount: result.unlinkedDocCount,
+    unlinkedDocs: result.unlinkedDocs ?? [],
     loading: !dashboardCache.dataReady,
     error: null,
     refresh: refreshDashboard,
