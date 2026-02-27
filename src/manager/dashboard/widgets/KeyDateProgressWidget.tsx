@@ -73,7 +73,7 @@ export const KeyDateProgressWidget: React.FC = () => {
     }
   }, [data, loading, announce]);
 
-  const getProgressColor = (status: string) => {
+  const getProgressColor = (status: string, progress: number) => {
     switch (status) {
       case 'completed':
         return '#2E7D32'; // green
@@ -82,12 +82,16 @@ export const KeyDateProgressWidget: React.FC = () => {
       case 'delayed':
         return theme.colors.error; // red
       default:
-        return '#9E9E9E'; // grey
+        // Derive color from progress when status hasn't been explicitly set
+        if (progress >= 100) return '#2E7D32';       // green — fully done
+        if (progress >= 50)  return '#F57C00';       // orange — more than halfway
+        if (progress > 0)    return theme.colors.primary; // blue — started
+        return '#BDBDBD';                            // light grey — truly 0%
     }
   };
 
   const renderKDItem = ({ item }: { item: KDProgressItem }) => {
-    const progressColor = getProgressColor(item.status);
+    const progressColor = getProgressColor(item.status, item.combinedProgress);
     const isAutoMode = item.progressMode === 'auto';
 
     return (
@@ -255,8 +259,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   progressBar: {
-    height: 4,
-    borderRadius: 2,
+    height: 8,
+    borderRadius: 4,
     marginBottom: 8,
   },
   metricsRow: {
