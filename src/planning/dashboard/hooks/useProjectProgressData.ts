@@ -27,10 +27,18 @@ export interface KDBreakdownItem {
   sequenceOrder: number;
 }
 
+export interface UnlinkedDocInfo {
+  id: string;
+  title: string;
+  documentType: string;
+  siteId: string | null;
+}
+
 interface UseProjectProgressResult {
   projectProgress: number;
   kdBreakdown: KDBreakdownItem[];
   unlinkedDocCount: number;
+  unlinkedDocs: UnlinkedDocInfo[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -154,19 +162,28 @@ export function useProjectProgressData(): UseProjectProgressResult {
     const linkedSiteIds = new Set(
       Object.values(sitesByKdId).flatMap((sites: any[]) => sites.map((s: any) => s.siteId))
     );
-    const unlinked = allProjectDesignDocs.filter(
-      (d: any) => !d.keyDateId && (!d.siteId || !linkedSiteIds.has(d.siteId))
-    ).length;
+    const unlinkedDocs: UnlinkedDocInfo[] = allProjectDesignDocs
+      .filter((d: any) => !d.keyDateId && (!d.siteId || !linkedSiteIds.has(d.siteId)))
+      .map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        documentType: d.documentType,
+        siteId: d.siteId || null,
+      }));
 
     return {
       projectProgress: progress,
       kdBreakdown: breakdown.sort((a, b) => a.sequenceOrder - b.sequenceOrder),
-      unlinkedDocCount: unlinked,
+      unlinkedDocCount: unlinkedDocs.length,
+      unlinkedDocs,
     };
   }, [dashboardCache]);
 
   return {
-    ...result,
+    projectProgress: result.projectProgress,
+    kdBreakdown: result.kdBreakdown,
+    unlinkedDocCount: result.unlinkedDocCount,
+    unlinkedDocs: result.unlinkedDocs ?? [],
     loading: !dashboardCache.dataReady,
     error: null,
     refresh: refreshDashboard,

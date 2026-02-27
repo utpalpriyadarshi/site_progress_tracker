@@ -16,9 +16,12 @@ import {
   RefreshControl,
   StyleSheet,
   useWindowDimensions,
+  TouchableOpacity,
 } from 'react-native';
-import { Text, useTheme, Banner } from 'react-native-paper';
+import { Text, useTheme, Portal, Dialog, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { database } from '../../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
@@ -79,6 +82,10 @@ const PlanningDashboardScreen: React.FC = () => {
   // Progressive loading state for staggered widget rendering
   const [loadPriority2, setLoadPriority2] = useState(false);
   const [loadPriority3, setLoadPriority3] = useState(false);
+
+  // Unlinked docs modal
+  const [showUnlinkedModal, setShowUnlinkedModal] = useState(false);
+  const [siteNameMap, setSiteNameMap] = useState<Record<string, string>>({});
 
   // Check if tutorial should be shown on mount or when triggered from drawer
   useEffect(() => {
@@ -151,6 +158,26 @@ const PlanningDashboardScreen: React.FC = () => {
   const resourceUtilization = useResourceUtilizationData();
   const wbsProgress = useWBSProgressData();
   const projectProgressData = useProjectProgressData();
+
+  // Load site names for unlinked docs whenever the list changes
+  useEffect(() => {
+    const siteIds = [...new Set(
+      projectProgressData.unlinkedDocs
+        .map(d => d.siteId)
+        .filter((id): id is string => !!id)
+    )];
+    if (siteIds.length === 0) return;
+    database.collections.get('sites')
+      .query(Q.where('id', Q.oneOf(siteIds)))
+      .fetch()
+      .then(sites => {
+        const map: Record<string, string> = {};
+        (sites as any[]).forEach(s => { map[s.id] = s.name; });
+        setSiteNameMap(map);
+      })
+      .catch(() => {});
+  }, [projectProgressData.unlinkedDocs]);
+
   const kdProgressChart = useKDProgressChartData();
   const kdTimelineProgress = useKDTimelineProgressData();
   const siteProgress = useSiteProgressData();
@@ -388,14 +415,20 @@ const PlanningDashboardScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Unlinked Documents Alert */}
+        {/* Unlinked Documents Alert — tap to see which docs */}
         {projectProgressData.unlinkedDocCount > 0 && (
-          <View style={styles.alertBanner}>
+          <TouchableOpacity
+            style={styles.alertBanner}
+            onPress={() => setShowUnlinkedModal(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`${projectProgressData.unlinkedDocCount} unlinked documents. Tap to view details.`}
+          >
             <Icon name="alert-circle-outline" size={18} color="#E65100" />
             <Text style={styles.alertBannerText}>
-              {projectProgressData.unlinkedDocCount} design document(s) have no Key Date linkage — progress not tracked
+              {projectProgressData.unlinkedDocCount} document(s) not linked to any Key Date — tap to view
             </Text>
-          </View>
+            <Icon name="chevron-right" size={16} color="#E65100" />
+          </TouchableOpacity>
         )}
 
         {renderWidgets()}
@@ -410,6 +443,34 @@ const PlanningDashboardScreen: React.FC = () => {
         onComplete={handleTutorialComplete}
         onStepChange={handleTutorialStepChange}
       />
+
+      {/* Unlinked Documents Detail Modal */}
+      <Portal>
+        <Dialog visible={showUnlinkedModal} onDismiss={() => setShowUnlinkedModal(false)}>
+          <Dialog.Title>Unlinked Design Documents</Dialog.Title>
+          <Dialog.ScrollArea style={{ maxHeight: 360 }}>
+            <ScrollView>
+              {projectProgressData.unlinkedDocs.map(doc => (
+                <View key={doc.id} style={styles.unlinkedDocRow}>
+                  <Icon name="file-document-outline" size={16} color="#E65100" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.unlinkedDocTitle} numberOfLines={2}>{doc.title}</Text>
+                    <Text style={styles.unlinkedDocMeta}>
+                      {doc.documentType}
+                      {doc.siteId
+                        ? ` · ${siteNameMap[doc.siteId] ?? 'Unknown Site'}`
+                        : ' · No site assigned'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setShowUnlinkedModal(false)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -468,6 +529,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#E65100',
+  },
+  unlinkedDocRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  unlinkedDocTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  unlinkedDocMeta: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
   },
   row: {
     flexDirection: 'row',

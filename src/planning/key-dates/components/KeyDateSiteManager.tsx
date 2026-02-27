@@ -285,6 +285,7 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
     }
 
     try {
+      let autoLinkedCount = 0;
       await database.write(async () => {
         await database.collections.get<KeyDateSiteModel>('key_date_sites').create((record: any) => {
           record.keyDateId = keyDate.id;
@@ -306,11 +307,29 @@ const KeyDateSiteManagerComponent: React.FC<KeyDateSiteManagerProps> = ({
             s.plannedEndDate = kdTargetDate;
           }
         });
+
+        // Auto-link existing design docs for this site that have no KD assigned yet
+        const unlinkedDocs = await database.collections
+          .get('design_documents')
+          .query(Q.where('site_id', selectedSiteId), Q.where('key_date_id', Q.eq(null)))
+          .fetch();
+        for (const doc of unlinkedDocs) {
+          await (doc as any).update((d: any) => {
+            d.keyDateId = keyDate.id;
+            d.updatedAt = Date.now();
+            d.appSyncStatus = 'pending';
+          });
+        }
+        autoLinkedCount = unlinkedDocs.length;
       });
       setShowAddDialog(false);
       setSelectedSiteId(null);
       setNewContribution('');
-      setSnackbarMessage('Site added successfully');
+      setSnackbarMessage(
+        autoLinkedCount > 0
+          ? `Site added, ${autoLinkedCount} document(s) linked to ${keyDate.code}`
+          : 'Site added successfully'
+      );
     } catch (error) {
       logger.error('Error adding site to key date', error as Error, {
         component: 'KeyDateSiteManager',
