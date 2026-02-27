@@ -8,7 +8,7 @@
  * @since Phase 2 Code Improvements
  */
 
-import React, { useReducer, useCallback } from 'react';
+import React, { useReducer, useCallback, useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -60,6 +60,142 @@ interface SiteManagementObservedProps {
 }
 
 type SiteManagementScreenProps = SiteManagementInputProps & SiteManagementObservedProps;
+
+// ==================== SiteCard Sub-Component ====================
+
+interface SiteCardProps {
+  site: SiteModel;
+  project?: ProjectModel;
+  onEdit: (site: SiteModel) => void;
+  onDelete: (site: SiteModel) => void;
+  onDuplicate: (site: SiteModel) => void;
+}
+
+const SiteCard: React.FC<SiteCardProps> = ({ site, project, onEdit, onDelete, onDuplicate }) => {
+  const [supervisorName, setSupervisorName] = useState<string | null>(null);
+  const [designerName, setDesignerName] = useState<string | null>(null);
+  const [linkedKDs, setLinkedKDs] = useState<Array<{ id: string; code: string }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        // Load supervisor name
+        let supName: string | null = null;
+        if (site.supervisorId) {
+          try {
+            const sup = await database.collections.get('users').find(site.supervisorId) as UserModel;
+            supName = sup.fullName;
+          } catch { supName = null; }
+        }
+
+        // Load designer name
+        let desName: string | null = null;
+        if (site.designEngineerId) {
+          try {
+            const des = await database.collections.get('users').find(site.designEngineerId) as UserModel;
+            desName = des.fullName;
+          } catch { desName = null; }
+        }
+
+        // Load linked key dates via key_date_sites junction
+        const kdSites = await database.collections
+          .get<KeyDateSiteModel>('key_date_sites')
+          .query(Q.where('site_id', site.id))
+          .fetch();
+
+        let kds: Array<{ id: string; code: string }> = [];
+        if (kdSites.length > 0) {
+          const kdIds = kdSites.map(kds => kds.keyDateId);
+          const keyDates = await database.collections
+            .get<KeyDateModel>('key_dates')
+            .query(Q.where('id', Q.oneOf(kdIds)))
+            .fetch();
+          kds = keyDates
+            .map(kd => ({ id: kd.id, code: kd.code }))
+            .sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        if (!cancelled) {
+          setSupervisorName(supName);
+          setDesignerName(desName);
+          setLinkedKDs(kds);
+        }
+      } catch { /* silently ignore */ }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [site.id, site.supervisorId, site.designEngineerId]);
+
+  return (
+    <Card style={styles.siteCard}>
+      <Card.Content>
+        <View style={styles.siteHeader}>
+          <View style={styles.siteInfo}>
+            <Text style={styles.siteName}>{site.name}</Text>
+            <Text style={styles.siteLocation}>📍 {site.location}</Text>
+            {project && (
+              <Text style={styles.projectName}>Project: {project.name}</Text>
+            )}
+
+            {/* All chips in one wrapping row: supervisor, designer, then linked KDs */}
+            <View style={styles.chipsRow}>
+              <Chip
+                icon={site.supervisorId ? 'account-hard-hat' : 'account-alert'}
+                mode="outlined"
+                compact
+                style={site.supervisorId ? styles.supervisorAssignedChip : styles.unassignedChip}
+                textStyle={styles.chipText}
+              >
+                {site.supervisorId ? (supervisorName ?? 'Supervisor') : 'No Supervisor'}
+              </Chip>
+              <Chip
+                icon={site.designEngineerId ? 'account-edit' : 'account-alert'}
+                mode="outlined"
+                compact
+                style={site.designEngineerId ? styles.designerAssignedChip : styles.unassignedChip}
+                textStyle={styles.chipText}
+              >
+                {site.designEngineerId ? (designerName ?? 'Designer') : 'No Designer'}
+              </Chip>
+              {linkedKDs.map(kd => (
+                <Chip
+                  key={kd.id}
+                  compact
+                  mode="flat"
+                  style={styles.kdChip}
+                  textStyle={styles.kdChipText}
+                >
+                  {kd.code}
+                </Chip>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.actions}>
+            <IconButton
+              icon="content-copy"
+              size={20}
+              onPress={() => onDuplicate(site)}
+              accessibilityLabel="Duplicate site"
+            />
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => onEdit(site)}
+            />
+            <IconButton
+              icon="delete"
+              size={20}
+              iconColor="#FF3B30"
+              onPress={() => onDelete(site)}
+            />
+          </View>
+        </View>
+      </Card.Content>
+    </Card>
+  );
+};
 
 // ==================== Component ====================
 
@@ -401,52 +537,15 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
         ) : (
           sites.map((site) => {
             const project = projects.find((p) => p.id === site.projectId);
-
             return (
-              <Card key={site.id} style={styles.siteCard}>
-                <Card.Content>
-                  <View style={styles.siteHeader}>
-                    <View style={styles.siteInfo}>
-                      <Text style={styles.siteName}>{site.name}</Text>
-                      <Text style={styles.siteLocation}>📍 {site.location}</Text>
-                      {project && (
-                        <Text style={styles.projectName}>
-                          Project: {project.name}
-                        </Text>
-                      )}
-                      <View style={styles.supervisorChip}>
-                        <Chip
-                          icon={site.supervisorId ? 'account-check' : 'account-alert'}
-                          mode="outlined"
-                          compact
-                          style={site.supervisorId ? styles.assignedChip : styles.unassignedChip}
-                        >
-                          {site.supervisorId ? 'Assigned' : 'Unassigned'}
-                        </Chip>
-                      </View>
-                    </View>
-                    <View style={styles.actions}>
-                      <IconButton
-                        icon="content-copy"
-                        size={20}
-                        onPress={() => handleDuplicate(site)}
-                        accessibilityLabel="Duplicate site"
-                      />
-                      <IconButton
-                        icon="pencil"
-                        size={20}
-                        onPress={() => openEditDialog(site)}
-                      />
-                      <IconButton
-                        icon="delete"
-                        size={20}
-                        iconColor="#FF3B30"
-                        onPress={() => openDeleteDialog(site)}
-                      />
-                    </View>
-                  </View>
-                </Card.Content>
-              </Card>
+              <SiteCard
+                key={site.id}
+                site={site}
+                project={project}
+                onEdit={openEditDialog}
+                onDelete={openDeleteDialog}
+                onDuplicate={handleDuplicate}
+              />
             );
           })
         )}
@@ -801,15 +900,31 @@ const styles = StyleSheet.create({
     color: '#999',
     marginBottom: 8,
   },
-  supervisorChip: {
-    marginTop: 4,
+  chipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
   },
-  assignedChip: {
+  supervisorAssignedChip: {
     backgroundColor: COLORS.SUCCESS_BG,
+  },
+  designerAssignedChip: {
+    backgroundColor: '#E3F2FD', // light blue
   },
   unassignedChip: {
     backgroundColor: COLORS.WARNING_BG,
+  },
+  chipText: {
+    fontSize: 11,
+  },
+  kdChip: {
+    backgroundColor: '#EDE7F6', // light purple
+  },
+  kdChipText: {
+    fontSize: 10,
+    color: '#5E35B1',
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',
