@@ -9,7 +9,7 @@
  * @since Planning Phase 3
  */
 
-import React, { useReducer, useEffect, useCallback, useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useState, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -20,8 +20,6 @@ import {
 } from 'react-native';
 import { Text, useTheme, Portal, Dialog, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { database } from '../../../models/database';
-import { Q } from '@nozbe/watermelondb';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
@@ -71,7 +69,7 @@ const PlanningDashboardScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const { announce } = useAccessibility();
   const { user } = useAuth();
-  const { dashboardCache, refreshDashboard, loading: contextLoading, error: contextError } = usePlanningContext();
+  const { dashboardCache, refreshDashboard, loading: contextLoading, error: contextError, sites } = usePlanningContext();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const route = useRoute<any>();
 
@@ -85,7 +83,33 @@ const PlanningDashboardScreen: React.FC = () => {
 
   // Unlinked docs modal
   const [showUnlinkedModal, setShowUnlinkedModal] = useState(false);
-  const [siteNameMap, setSiteNameMap] = useState<Record<string, string>>({});
+
+  // Site name map built from context sites (covers all project sites)
+  const allSiteNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    sites.forEach(s => { map[s.id] = (s as any).name; });
+    return map;
+  }, [sites]);
+
+  // Schedule status drill-down modal
+  const [scheduleModal, setScheduleModal] = useState<{
+    visible: boolean;
+    status: string;
+    title: string;
+    color: string;
+  }>({ visible: false, status: '', title: '', color: '' });
+
+  // Items filtered by the currently selected schedule status
+  const scheduleModalItems = useMemo(() => {
+    if (!scheduleModal.visible || !dashboardCache.allItems) return [];
+    return dashboardCache.allItems.filter(item => {
+      const s = (item as any).status;
+      if (scheduleModal.status === 'completed') return s === 'completed';
+      if (scheduleModal.status === 'delayed') return s === 'delayed';
+      if (scheduleModal.status === 'on_track') return s === 'in_progress' || s === 'not_started';
+      return false;
+    });
+  }, [scheduleModal.visible, scheduleModal.status, dashboardCache.allItems]);
 
   // Check if tutorial should be shown on mount or when triggered from drawer
   useEffect(() => {
@@ -159,25 +183,6 @@ const PlanningDashboardScreen: React.FC = () => {
   const wbsProgress = useWBSProgressData();
   const projectProgressData = useProjectProgressData();
 
-  // Load site names for unlinked docs whenever the list changes
-  useEffect(() => {
-    const siteIds = [...new Set(
-      projectProgressData.unlinkedDocs
-        .map(d => d.siteId)
-        .filter((id): id is string => !!id)
-    )];
-    if (siteIds.length === 0) return;
-    database.collections.get('sites')
-      .query(Q.where('id', Q.oneOf(siteIds)))
-      .fetch()
-      .then(sites => {
-        const map: Record<string, string> = {};
-        (sites as any[]).forEach(s => { map[s.id] = s.name; });
-        setSiteNameMap(map);
-      })
-      .catch(() => {});
-  }, [projectProgressData.unlinkedDocs]);
-
   const kdProgressChart = useKDProgressChartData();
   const kdTimelineProgress = useKDTimelineProgressData();
   const siteProgress = useSiteProgressData();
@@ -241,6 +246,17 @@ const PlanningDashboardScreen: React.FC = () => {
     navigation.navigate('Gantt');
   }, [navigation]);
 
+  // Schedule stat drill-down handlers
+  const handleScheduleCompleted = useCallback(() => {
+    setScheduleModal({ visible: true, status: 'completed', title: 'Completed Items', color: COLORS.SUCCESS });
+  }, []);
+  const handleScheduleOnTrack = useCallback(() => {
+    setScheduleModal({ visible: true, status: 'on_track', title: 'On Track Items', color: '#1976D2' });
+  }, []);
+  const handleScheduleDelayed = useCallback(() => {
+    setScheduleModal({ visible: true, status: 'delayed', title: 'Delayed Items', color: COLORS.ERROR });
+  }, []);
+
   // Render widgets in grid layout with progressive loading
   const renderWidgets = () => {
     // Priority 1: Critical widgets - load immediately
@@ -253,6 +269,9 @@ const PlanningDashboardScreen: React.FC = () => {
         error={scheduleOverview.error}
         onPress={navigateToSchedule}
         onRefresh={scheduleOverview.refresh}
+        onPressCompleted={handleScheduleCompleted}
+        onPressOnTrack={handleScheduleOnTrack}
+        onPressDelayed={handleScheduleDelayed}
       />,
       <ProjectProgressWidget
         key="projectProgress"
@@ -458,7 +477,7 @@ const PlanningDashboardScreen: React.FC = () => {
                     <Text style={styles.unlinkedDocMeta}>
                       {doc.documentType}
                       {doc.siteId
-                        ? ` · ${siteNameMap[doc.siteId] ?? 'Unknown Site'}`
+                        ? ` · ${allSiteNameMap[doc.siteId] ?? 'Unknown Site'}`
                         : ' · No site assigned'}
                     </Text>
                   </View>
@@ -468,6 +487,48 @@ const PlanningDashboardScreen: React.FC = () => {
           </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={() => setShowUnlinkedModal(false)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Schedule Status Drill-Down Modal */}
+      <Portal>
+        <Dialog
+          visible={scheduleModal.visible}
+          onDismiss={() => setScheduleModal(s => ({ ...s, visible: false }))}
+        >
+          <Dialog.Title style={{ color: scheduleModal.color }}>
+            {scheduleModal.title} ({scheduleModalItems.length})
+          </Dialog.Title>
+          <Dialog.ScrollArea style={{ maxHeight: 400 }}>
+            <ScrollView>
+              {scheduleModalItems.length === 0 ? (
+                <Text style={styles.scheduleModalEmpty}>No items in this category.</Text>
+              ) : (
+                scheduleModalItems.map(item => {
+                  const itemAny = item as any;
+                  const siteName = itemAny.siteId
+                    ? (allSiteNameMap[itemAny.siteId] ?? 'Unknown Site')
+                    : 'No site';
+                  const progress = Math.round(item.getProgressPercentage());
+                  return (
+                    <View key={item.id} style={styles.scheduleItemRow}>
+                      <View style={[styles.scheduleItemDot, { backgroundColor: scheduleModal.color }]} />
+                      <View style={styles.scheduleItemInfo}>
+                        <Text style={styles.scheduleItemName} numberOfLines={2}>{itemAny.name}</Text>
+                        <Text style={styles.scheduleItemMeta}>{siteName} · {progress}%</Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setScheduleModal(s => ({ ...s, visible: false }))}>Close</Button>
+            <Button onPress={() => { setScheduleModal(s => ({ ...s, visible: false })); navigateToSchedule(); }}>
+              View Schedule
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -543,6 +604,38 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   unlinkedDocMeta: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+  },
+  scheduleModalEmpty: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#888',
+  },
+  scheduleItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  scheduleItemDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 5,
+    marginRight: 10,
+  },
+  scheduleItemInfo: {
+    flex: 1,
+  },
+  scheduleItemName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  scheduleItemMeta: {
     fontSize: 11,
     color: '#888',
     marginTop: 2,

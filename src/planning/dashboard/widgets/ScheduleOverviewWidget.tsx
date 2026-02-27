@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
@@ -36,6 +36,9 @@ export interface ScheduleOverviewWidgetProps {
   onPress?: () => void;
   onRetry?: () => void;
   onRefresh?: () => void;
+  onPressCompleted?: () => void;
+  onPressOnTrack?: () => void;
+  onPressDelayed?: () => void;
 }
 
 // ==================== Component ====================
@@ -48,6 +51,9 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
   onPress,
   onRetry,
   onRefresh,
+  onPressCompleted,
+  onPressOnTrack,
+  onPressDelayed,
 }) => {
   const theme = useTheme();
 
@@ -114,10 +120,13 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View
+          <TouchableOpacity
             style={styles.statItem}
+            onPress={onPressCompleted}
+            activeOpacity={0.7}
             accessible
-            accessibilityLabel={`${overview.completedItems} completed items`}
+            accessibilityRole="button"
+            accessibilityLabel={`${overview.completedItems} completed items, tap to view list`}
           >
             <Icon name="check-circle" size={20} color={COLORS.SUCCESS} />
             <Text variant="titleMedium" style={styles.statValue}>
@@ -126,12 +135,15 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             <Text variant="labelSmall" style={styles.statLabel}>
               Completed
             </Text>
-          </View>
+          </TouchableOpacity>
 
-          <View
+          <TouchableOpacity
             style={styles.statItem}
+            onPress={onPressOnTrack}
+            activeOpacity={0.7}
             accessible
-            accessibilityLabel={`${overview.onTrackItems} items on track`}
+            accessibilityRole="button"
+            accessibilityLabel={`${overview.onTrackItems} items on track, tap to view list`}
           >
             <Icon name="clock-check-outline" size={20} color={theme.colors.primary} />
             <Text variant="titleMedium" style={styles.statValue}>
@@ -140,12 +152,15 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             <Text variant="labelSmall" style={styles.statLabel}>
               On Track
             </Text>
-          </View>
+          </TouchableOpacity>
 
-          <View
+          <TouchableOpacity
             style={styles.statItem}
+            onPress={onPressDelayed}
+            activeOpacity={0.7}
             accessible
-            accessibilityLabel={`${overview.delayedItems} delayed items`}
+            accessibilityRole="button"
+            accessibilityLabel={`${overview.delayedItems} delayed items, tap to view list`}
           >
             <Icon name="clock-alert-outline" size={20} color={COLORS.ERROR} />
             <Text variant="titleMedium" style={[styles.statValue, overview.delayedItems > 0 && { color: COLORS.ERROR }]}>
@@ -154,7 +169,7 @@ export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
             <Text variant="labelSmall" style={styles.statLabel}>
               Delayed
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Timeline Info */}
