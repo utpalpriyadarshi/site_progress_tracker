@@ -148,14 +148,30 @@ export const ListView: React.FC<ListViewProps> = ({
           <Text style={styles.itemMeta}>
             {item.categoryName} • {item.siteName}
           </Text>
+          {item.assigneeName && (
+            <View style={styles.assigneeRow}>
+              <Icon
+                name={item.assigneeRole === 'designer' ? 'account-edit' : 'account-hard-hat'}
+                size={11}
+                color="#5C6BC0"
+              />
+              <Text style={styles.assigneeText}>{item.assigneeName}</Text>
+            </View>
+          )}
         </View>
 
         {/* Date Column */}
         <View style={styles.dateColumn}>
-          <Text style={styles.dateText}>
-            {formatDate(item.plannedStartDate)}
-          </Text>
-          <Text style={styles.dateLabel}>Start</Text>
+          {item.plannedStartDate ? (
+            <>
+              <Text style={styles.dateText}>{formatDate(item.plannedStartDate)}</Text>
+              {item.plannedEndDate && (
+                <Text style={styles.dateEndText}>{formatDate(item.plannedEndDate)}</Text>
+              )}
+            </>
+          ) : (
+            <Text style={styles.dateText}>TBD</Text>
+          )}
         </View>
 
         {/* Progress Column */}
@@ -183,7 +199,7 @@ export const ListView: React.FC<ListViewProps> = ({
         {/* Critical Path Indicator */}
         {item.isCriticalPath && (
           <View style={styles.criticalIndicator}>
-            <Icon name="alert-circle" size={16} color={COLORS.ERROR} />
+            <Icon name="flag-variant" size={14} color={COLORS.ERROR} />
           </View>
         )}
       </View>
@@ -409,7 +425,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   statusColumn: {
-    width: 100,
+    width: 80,
     minHeight: 32,
     justifyContent: 'center',
   },
@@ -434,9 +450,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
+  dateEndText: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 1,
+  },
   dateLabel: {
     fontSize: 10,
     color: '#999',
+  },
+  assigneeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+    gap: 3,
+  },
+  assigneeText: {
+    fontSize: 11,
+    color: '#5C6BC0',
   },
   progressColumn: {
     width: 60,
