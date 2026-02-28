@@ -263,7 +263,7 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
         isCriticalPath: item.isCriticalPath || false,
         isDelayed,
         status,
-        floatDays: item.floatDays,
+        floatDays: item.floatDays ?? undefined,
         dependencies: parsedDependencies,
         assigneeName,
         assigneeRole,
