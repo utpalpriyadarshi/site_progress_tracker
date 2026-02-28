@@ -162,97 +162,92 @@ const GanttChartScreen: React.FC = () => {
         </Card.Content>
       </Card>
 
-      {/* Content gated on site selection */}
-      {!state.selection.selectedSite ? (
+      {/* Zoom Controls + Baseline Toggle — always visible */}
+      <View style={styles.controlsRow}>
+        <View style={styles.zoomControlsWrapper}>
+          <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
+        </View>
+        <Chip
+          selected={showBaseline}
+          icon="chart-timeline-variant"
+          onPress={() => setShowBaseline(v => !v)}
+          style={styles.baselineChip}
+          accessibilityLabel={showBaseline ? 'Hide baseline overlay' : 'Show baseline overlay'}
+        >
+          Baseline
+        </Chip>
+      </View>
+
+      {/* Legend — always visible */}
+      <GanttLegend showTodayMarker={todayPosition !== null} showBaseline={showBaseline} />
+
+      {/* Gantt Chart content */}
+      {state.ui.loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1976D2" />
+          <Text style={styles.loadingText}>Loading tasks...</Text>
+        </View>
+      ) : !state.selection.selectedSite ? (
         <EmptyState
           icon="map-marker-outline"
           title="Select a Site"
           message="Select a site above to view its Gantt chart"
           variant="default"
         />
-      ) : state.ui.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1976D2" />
-          <Text style={styles.loadingText}>Loading tasks...</Text>
-        </View>
+      ) : state.data.items.length === 0 ? (
+        <EmptyState
+          icon="chart-gantt"
+          title="No Tasks"
+          message="No schedule items found for this site"
+          variant="default"
+        />
       ) : (
-        <>
-          {/* Zoom Controls + Baseline Toggle */}
-          <View style={styles.controlsRow}>
-            <View style={styles.zoomControlsWrapper}>
-              <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
-            </View>
-            <Chip
-              selected={showBaseline}
-              icon="chart-timeline-variant"
-              onPress={() => setShowBaseline(v => !v)}
-              style={styles.baselineChip}
-              accessibilityLabel={showBaseline ? 'Hide baseline overlay' : 'Show baseline overlay'}
-            >
-              Baseline
-            </Chip>
-          </View>
+        <ScrollView
+          style={styles.ganttContainer}
+          accessible
+          accessibilityLabel={`Gantt chart showing ${state.data.items.length} tasks across the project timeline`}
+        >
+          {/* Header */}
+          <GanttHeader
+            timelineColumns={timelineColumns}
+            columnWidth={columnWidth}
+            scrollViewRef={scrollViewRef}
+            onScrollX={handleScrollX}
+          />
 
-          {/* Legend */}
-          <GanttLegend showTodayMarker={todayPosition !== null} showBaseline={showBaseline} />
-
-          {/* Gantt Chart */}
-          {state.data.items.length === 0 ? (
-            <EmptyState
-              icon="chart-gantt"
-              title="No Tasks"
-              message="No schedule items found for this site"
-              variant="default"
+          {/* Tasks */}
+          {state.data.items.map((item, index) => (
+            <TaskRow
+              key={item.id}
+              item={item}
+              timelineStart={timelineBounds.start}
+              zoomLevel={state.selection.zoomLevel}
+              totalTimelineWidth={totalTimelineWidth}
+              todayPosition={todayPosition}
+              showBaseline={showBaseline}
+              scrollRefCallback={makeRowScrollRefCallback(index)}
             />
-          ) : (
-            <ScrollView
-              style={styles.ganttContainer}
-              accessible
-              accessibilityLabel={`Gantt chart showing ${state.data.items.length} tasks across the project timeline`}
-            >
-              {/* Header */}
-              <GanttHeader
-                timelineColumns={timelineColumns}
-                columnWidth={columnWidth}
-                scrollViewRef={scrollViewRef}
-                onScrollX={handleScrollX}
-              />
+          ))}
 
-              {/* Tasks */}
-              {state.data.items.map((item, index) => (
-                <TaskRow
-                  key={item.id}
-                  item={item}
+          {/* Key Date Milestones */}
+          {keyDates.length > 0 && (
+            <>
+              <View style={styles.keyDateSectionHeader}>
+                <Text style={styles.keyDateSectionTitle}>Key Dates</Text>
+              </View>
+              {keyDates.map((keyDate, kdIndex) => (
+                <KeyDateMilestoneRow
+                  key={keyDate.id}
+                  keyDate={keyDate}
                   timelineStart={timelineBounds.start}
                   zoomLevel={state.selection.zoomLevel}
                   totalTimelineWidth={totalTimelineWidth}
-                  todayPosition={todayPosition}
-                  showBaseline={showBaseline}
-                  scrollRefCallback={makeRowScrollRefCallback(index)}
+                  scrollRefCallback={makeRowScrollRefCallback(state.data.items.length + kdIndex)}
                 />
               ))}
-
-              {/* Key Date Milestones */}
-              {keyDates.length > 0 && (
-                <>
-                  <View style={styles.keyDateSectionHeader}>
-                    <Text style={styles.keyDateSectionTitle}>Key Dates</Text>
-                  </View>
-                  {keyDates.map((keyDate, kdIndex) => (
-                    <KeyDateMilestoneRow
-                      key={keyDate.id}
-                      keyDate={keyDate}
-                      timelineStart={timelineBounds.start}
-                      zoomLevel={state.selection.zoomLevel}
-                      totalTimelineWidth={totalTimelineWidth}
-                      scrollRefCallback={makeRowScrollRefCallback(state.data.items.length + kdIndex)}
-                    />
-                  ))}
-                </>
-              )}
-            </ScrollView>
+            </>
           )}
-        </>
+        </ScrollView>
       )}
     </View>
   );
