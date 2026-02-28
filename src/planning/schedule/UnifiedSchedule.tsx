@@ -18,6 +18,7 @@ import ItemModel from '../../../models/ItemModel';
 import ProjectModel from '../../../models/ProjectModel';
 import SiteModel from '../../../models/SiteModel';
 import CategoryModel from '../../../models/CategoryModel';
+import UserModel from '../../../models/UserModel';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useDebounce } from '../../utils/performance';
@@ -45,6 +46,8 @@ export interface ScheduleItem {
   status: string;
   floatDays?: number;
   dependencies?: string[];
+  assigneeName?: string;
+  assigneeRole?: 'supervisor' | 'designer';
 }
 
 export interface ScheduleFilters {
@@ -109,6 +112,7 @@ interface UnifiedScheduleObservedProps {
   projects: ProjectModel[];
   sites: SiteModel[];
   categories: CategoryModel[];
+  users: UserModel[];
 }
 
 const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
@@ -116,6 +120,7 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
   projects,
   sites,
   categories,
+  users,
 }) => {
   const theme = useTheme();
   const { announce } = useAccessibility();
@@ -168,6 +173,12 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
 
   // Filter and transform items with memoization
   const scheduleItems = useMemo((): ScheduleItem[] => {
+    // Build lookup maps for O(1) access
+    const userMap: Record<string, string> = {};
+    users.forEach(u => { userMap[u.id] = u.fullName; });
+    const siteModelMap: Record<string, SiteModel> = {};
+    sites.forEach(s => { siteModelMap[s.id] = s; });
+
     let filtered = items;
 
     // Filter by project
@@ -223,6 +234,21 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
         }
       }
 
+      // Resolve assignee from site's supervisor or designer
+      const siteModel = siteModelMap[item.siteId];
+      const supervisorId = (siteModel as any)?.supervisorId;
+      const designEngineerId = (siteModel as any)?.designEngineerId;
+      const assigneeName = supervisorId
+        ? userMap[supervisorId]
+        : designEngineerId
+          ? userMap[designEngineerId]
+          : undefined;
+      const assigneeRole: 'supervisor' | 'designer' | undefined = supervisorId
+        ? 'supervisor'
+        : designEngineerId
+          ? 'designer'
+          : undefined;
+
       return {
         id: item.id,
         name: item.name,
@@ -239,9 +265,11 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
         status,
         floatDays: item.floatDays,
         dependencies: parsedDependencies,
+        assigneeName,
+        assigneeRole,
       };
     });
-  }, [items, sites, filters, debouncedSearchQuery, getCategoryName, getSiteName]);
+  }, [items, sites, users, filters, debouncedSearchQuery, getCategoryName, getSiteName]);
 
   // Sort by planned start date
   const sortedItems = useMemo(() => {
@@ -383,6 +411,7 @@ const enhance = withObservables([], () => ({
   projects: database.collections.get<ProjectModel>('projects').query(),
   sites: database.collections.get<SiteModel>('sites').query(),
   categories: database.collections.get<CategoryModel>('categories').query(),
+  users: database.collections.get<UserModel>('users').query(),
 }));
 
 // Type assertion: withObservables transforms observable queries to resolved arrays

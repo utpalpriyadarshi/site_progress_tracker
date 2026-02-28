@@ -20,6 +20,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../../models/database';
 import { logger } from '../../../services/LoggingService';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -88,6 +89,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           <View style={styles.itemInfo}>
             <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
             <Text style={styles.itemMeta}>{item.categoryName} · {item.siteName}</Text>
+            {item.assigneeName && (
+              <View style={styles.assigneeRow}>
+                <Icon
+                  name={item.assigneeRole === 'designer' ? 'account-edit' : 'account-hard-hat'}
+                  size={12}
+                  color="#5C6BC0"
+                />
+                <Text style={styles.assigneeText}>{item.assigneeName}</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.headerRight}>
@@ -106,12 +117,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               }
               style={styles.flagButton}
             />
+            <Text style={[
+              styles.progressPct,
+              { color: item.isCriticalPath ? COLORS.ERROR : COLORS.INFO },
+            ]}>
+              {Math.round(item.progress * 100)}%
+            </Text>
           </View>
         </View>
 
-        {/* Progress — inline label + bar */}
+        {/* Progress bar — full width, no inline label */}
         <View style={styles.progressRow}>
-          <Text style={styles.progressPct}>{Math.round(item.progress * 100)}%</Text>
           <ProgressBar
             progress={item.progress}
             color={item.isCriticalPath ? COLORS.ERROR : COLORS.INFO}
@@ -119,18 +135,22 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           />
         </View>
 
-        {/* Dates — compact lines */}
-        <View style={styles.datesBlock}>
-          <Text style={styles.dateText}>
-            Planned: {formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)}
-          </Text>
-          {item.actualStartDate && (
-            <Text style={styles.dateText}>
-              Actual: {formatDate(item.actualStartDate)} →{' '}
-              {item.actualEndDate ? formatDate(item.actualEndDate) : 'ongoing'}
-            </Text>
-          )}
-        </View>
+        {/* Dates — only shown when at least one date is set */}
+        {(item.plannedStartDate || item.plannedEndDate || item.actualStartDate) ? (
+          <View style={styles.datesBlock}>
+            {(item.plannedStartDate || item.plannedEndDate) && (
+              <Text style={styles.dateText}>
+                Planned: {formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)}
+              </Text>
+            )}
+            {item.actualStartDate && (
+              <Text style={styles.dateText}>
+                Actual: {formatDate(item.actualStartDate)} →{' '}
+                {item.actualEndDate ? formatDate(item.actualEndDate) : 'ongoing'}
+              </Text>
+            )}
+          </View>
+        ) : null}
 
         {/* Float / dependencies — single compact line */}
         {(item.floatDays !== undefined || (item.dependencies && item.dependencies.length > 0)) && (
@@ -377,28 +397,36 @@ const styles = StyleSheet.create({
     color: '#777',
     marginTop: 2,
   },
-  headerRight: {
+  assigneeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 3,
+    gap: 4,
+  },
+  assigneeText: {
+    fontSize: 12,
+    color: '#5C6BC0',
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    minWidth: 44,
   },
   flagButton: {
     margin: 0,
   },
   // Progress
   progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 8,
   },
   progressPct: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#444',
-    width: 34,
-    marginRight: 8,
+    textAlign: 'center',
+    marginBottom: 2,
   },
   progressBar: {
-    flex: 1,
     height: 6,
     borderRadius: 3,
   },
