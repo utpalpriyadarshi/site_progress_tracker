@@ -24,7 +24,7 @@ const SyncHeaderButton: React.FC<SyncHeaderButtonProps> = ({ tintColor = '#FFF' 
     });
   }, []);
 
-  // Poll pending sync queue every 10 seconds
+  // Poll pending sync queue every 60 seconds
   useEffect(() => {
     const loadPending = async () => {
       try {
@@ -39,7 +39,7 @@ const SyncHeaderButton: React.FC<SyncHeaderButtonProps> = ({ tintColor = '#FFF' 
     };
 
     loadPending();
-    const interval = setInterval(loadPending, 10000);
+    const interval = setInterval(loadPending, 60000);
     return () => clearInterval(interval);
   }, []);
 

@@ -152,13 +152,12 @@ const PlanningDashboardScreen: React.FC = () => {
     }
   }, [user]);
 
-  // Progressive widget loading: stagger widget rendering for better perceived performance
+  // Progressive widget loading: minimal stagger so priority-1 widgets paint first
   useEffect(() => {
-    // Priority 1 widgets load immediately (ScheduleOverview, ProjectProgress)
-    // Priority 2 widgets load after 500ms (KD Progress Chart, KD Timeline, Upcoming Milestones)
-    const timer1 = setTimeout(() => setLoadPriority2(true), 500);
-    // Priority 3 widgets load after 1000ms (Critical Path, WBS, Resources, Activities)
-    const timer2 = setTimeout(() => setLoadPriority3(true), 1000);
+    // Priority 2 widgets load after first paint (next frame)
+    const timer1 = setTimeout(() => setLoadPriority2(true), 0);
+    // Priority 3 widgets load shortly after
+    const timer2 = setTimeout(() => setLoadPriority3(true), 100);
 
     return () => {
       clearTimeout(timer1);
