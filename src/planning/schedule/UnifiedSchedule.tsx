@@ -13,6 +13,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
+import { Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import ItemModel from '../../../models/ItemModel';
 import ProjectModel from '../../../models/ProjectModel';
@@ -406,19 +407,55 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
 
 // ==================== Database Connection ====================
 
-const enhance = withObservables([], () => ({
-  items: database.collections.get<ItemModel>('items').query(),
-  projects: database.collections.get<ProjectModel>('projects').query(),
-  sites: database.collections.get<SiteModel>('sites').query(),
-  categories: database.collections.get<CategoryModel>('categories').query(),
-  users: database.collections.get<UserModel>('users').query(),
-}));
+// Filter all heavy queries to the assigned project — scopes reactive subscriptions
+// and avoids loading the entire DB when the planner is assigned to one project.
+const enhance = withObservables(
+  ['projectId'],
+  ({ projectId }: { projectId: string | null }) => {
+    if (!projectId) {
+      // No project assigned yet — return empty observables so the UI shows a loading/empty state
+      const empty = <T extends { id: string }>(table: string) =>
+        database.collections.get<any>(table).query(Q.where('id', Q.eq(null)));
+      return {
+        items:      empty('items'),
+        projects:   empty('projects'),
+        sites:      empty('sites'),
+        categories: database.collections.get<CategoryModel>('categories').query(),
+        users:      database.collections.get<UserModel>('users').query(),
+      };
+    }
+    return {
+      // Items belonging to any site in this project (JOIN via belongs_to association)
+      items: database.collections.get<ItemModel>('items').query(
+        Q.on('sites', Q.where('project_id', Q.eq(projectId)))
+      ),
+      // Only the assigned project record
+      projects: database.collections.get<ProjectModel>('projects').query(
+        Q.where('id', Q.eq(projectId))
+      ),
+      // Only sites for this project
+      sites: database.collections.get<SiteModel>('sites').query(
+        Q.where('project_id', Q.eq(projectId))
+      ),
+      // Categories and users are small tables — no filter needed
+      categories: database.collections.get<CategoryModel>('categories').query(),
+      users:      database.collections.get<UserModel>('users').query(),
+    };
+  }
+);
 
 // Type assertion: withObservables transforms observable queries to resolved arrays
 // The HOC injects observed props at runtime, so we need to cast the component type
-const UnifiedSchedule = enhance(
+const UnifiedScheduleEnhanced = enhance(
   UnifiedScheduleComponent as React.ComponentType<unknown>
 );
+
+// Connector: reads projectId from PlanningContext and passes it as a prop so the
+// withObservables HOC can scope its DB queries to the assigned project only.
+const UnifiedScheduleConnector: React.FC = () => {
+  const { projectId } = usePlanningContext();
+  return <UnifiedScheduleEnhanced projectId={projectId} />;
+};
 
 // ==================== Styles ====================
 
@@ -483,7 +520,7 @@ const styles = StyleSheet.create({
 
 const UnifiedScheduleWithBoundary: React.FC = () => (
   <ErrorBoundary name="UnifiedSchedule">
-    <UnifiedSchedule />
+    <UnifiedScheduleConnector />
   </ErrorBoundary>
 );
 
