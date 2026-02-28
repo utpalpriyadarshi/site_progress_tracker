@@ -8,8 +8,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Text, Card, Searchbar, Chip, useTheme, Menu, Button } from 'react-native-paper';
+import { View, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, Card, Searchbar, useTheme, Menu, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StatusBadge } from '../../components/StatusBadge';
 import { EmptyState } from '../../../components/common/EmptyState';
@@ -287,65 +287,50 @@ export const ListView: React.FC<ListViewProps> = ({
           </Menu>
 
           {/* Critical Path Toggle */}
-          <Chip
-            mode={filters.showCriticalPathOnly ? 'flat' : 'outlined'}
-            selected={filters.showCriticalPathOnly}
+          <TouchableOpacity
+            style={[styles.filterPill, filters.showCriticalPathOnly && styles.filterPillCritical]}
             onPress={onCriticalPathToggle}
-            style={styles.filterChip}
-            textStyle={filters.showCriticalPathOnly ? { color: 'white' } : undefined}
-            selectedColor={filters.showCriticalPathOnly ? COLORS.ERROR : undefined}
+            activeOpacity={0.7}
           >
-            Critical Only
-          </Chip>
+            <Text style={[styles.filterPillText, filters.showCriticalPathOnly && styles.filterPillTextActive]}>
+              🚩 Critical Only
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Status Filter Chips */}
-        <View style={styles.statusFilters}>
-          <Chip
-            mode={statusFilter === null ? 'flat' : 'outlined'}
-            selected={statusFilter === null}
-            onPress={() => handleStatusFilter(null)}
-            style={styles.statusChip}
-            compact
-          >
-            All ({items.length})
-          </Chip>
-          <Chip
-            mode={statusFilter === 'in_progress' ? 'flat' : 'outlined'}
-            selected={statusFilter === 'in_progress'}
-            onPress={() => handleStatusFilter('in_progress')}
-            style={styles.statusChip}
-            compact
-          >
-            In Progress ({statusCounts.in_progress})
-          </Chip>
-          <Chip
-            mode={statusFilter === 'completed' ? 'flat' : 'outlined'}
-            selected={statusFilter === 'completed'}
-            onPress={() => handleStatusFilter('completed')}
-            style={styles.statusChip}
-            compact
-          >
-            Completed ({statusCounts.completed})
-          </Chip>
-          <Chip
-            mode={statusFilter === 'delayed' ? 'flat' : 'outlined'}
-            selected={statusFilter === 'delayed'}
-            onPress={() => handleStatusFilter('delayed')}
-            style={styles.statusChip}
-            compact
-          >
-            Delayed ({statusCounts.delayed})
-          </Chip>
-        </View>
+        {/* Status Filter Pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statusFilters} contentContainerStyle={styles.statusFiltersContent}>
+          {([
+            { key: null,           label: 'All',         count: items.length },
+            { key: 'in_progress',  label: 'In Progress', count: statusCounts.in_progress },
+            { key: 'completed',    label: 'Done',        count: statusCounts.completed },
+            { key: 'planned',      label: 'Planned',     count: statusCounts.planned },
+            { key: 'delayed',      label: 'Delayed',     count: statusCounts.delayed },
+          ] as { key: string | null; label: string; count: number }[]).map(({ key, label, count }) => {
+            const active = statusFilter === key;
+            return (
+              <TouchableOpacity
+                key={String(key)}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+                onPress={() => handleStatusFilter(key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                  {label} · {count}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Table Header */}
       <View style={styles.tableHeader}>
-        <Text style={[styles.headerCell, styles.statusColumn]}>Status</Text>
-        <Text style={[styles.headerCell, styles.mainContent]}>Item</Text>
-        <Text style={[styles.headerCell, styles.dateColumn]}>Start</Text>
-        <Text style={[styles.headerCell, styles.progressColumn]}>Progress</Text>
+        <Text style={[styles.headerCell, styles.statusColumn]} numberOfLines={1}>Status</Text>
+        <Text style={[styles.headerCell, styles.mainContent]} numberOfLines={1}>Item</Text>
+        <Text style={[styles.headerCell, styles.dateColumn]} numberOfLines={1}>Start</Text>
+        <Text style={[styles.headerCell, styles.progressColumn]} numberOfLines={1}>Progress</Text>
+        <View style={styles.criticalIndicator} />
       </View>
 
       {/* List */}
@@ -389,20 +374,40 @@ const styles = StyleSheet.create({
   sortButton: {
     borderRadius: 20,
   },
-  filterChip: {
-    backgroundColor: 'transparent',
+  filterPillCritical: {
+    backgroundColor: COLORS.ERROR,
+    borderColor: COLORS.ERROR,
   },
   statusFilters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    marginTop: 8,
   },
-  statusChip: {
-    marginBottom: 4,
+  statusFiltersContent: {
+    gap: 6,
+    paddingBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    backgroundColor: 'white',
+  },
+  filterPillActive: {
+    backgroundColor: COLORS.INFO,
+    borderColor: COLORS.INFO,
+  },
+  filterPillText: {
+    fontSize: 12,
+    color: '#555',
+  },
+  filterPillTextActive: {
+    color: 'white',
+    fontWeight: '600',
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     backgroundColor: '#E0E0E0',
     alignItems: 'center',
