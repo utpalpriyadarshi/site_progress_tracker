@@ -378,8 +378,10 @@ const PlanningDashboardScreen: React.FC = () => {
     return widgets;
   };
 
-  // Show full-screen spinner until BOTH context and dashboard cache are fully ready
-  if (contextLoading || !dashboardCache.dataReady) {
+  // Block only on contextLoading (auth + project lookup). Once the project is known,
+  // let the dashboard render — each widget manages its own loading skeleton via
+  // dashboardCache.dataReady inside its hook, so no full-screen wait is needed.
+  if (contextLoading) {
     return (
       <View style={styles.container}>
         <SpinnerLoading message="Loading project data..." />

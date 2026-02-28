@@ -359,8 +359,10 @@ export const PlanningProvider: React.FC<PlanningProviderProps> = ({ children }) 
     if (!state.projectId || state.sites.length === 0) return;
 
     let debounceTimer: ReturnType<typeof setTimeout>;
+    // progress_logs excluded: useRecentActivitiesData has its own subscription for that table,
+    // so watching it here would trigger a full dashboard reload on every daily progress entry.
     const subscription = database
-      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates', 'progress_logs'])
+      .withChangesForTables(['items', 'design_documents', 'key_date_sites', 'key_dates'])
       .subscribe(() => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => loadDashboardData(), 300);
