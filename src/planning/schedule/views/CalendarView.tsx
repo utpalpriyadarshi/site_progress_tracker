@@ -54,6 +54,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
+  // Get items that overlap with a given date
+  const getItemsForDate = useCallback((date: Date): ScheduleItem[] => {
+    const dateTime = date.getTime();
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDayTime = nextDay.getTime();
+
+    return items.filter((item) => {
+      if (!item.plannedStartDate) return false;
+      const startTime = item.plannedStartDate;
+      const endTime = item.plannedEndDate || startTime;
+      return startTime < nextDayTime && endTime >= dateTime;
+    });
+  }, [items]);
+
   // Generate calendar days
   const calendarDays = useMemo((): CalendarDay[] => {
     const year = currentMonth.getFullYear();
@@ -109,22 +124,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
 
     return days;
-  }, [currentMonth, items]);
+  }, [currentMonth, getItemsForDate]);
 
-  // Get items that overlap with a given date
-  function getItemsForDate(date: Date): ScheduleItem[] {
-    const dateTime = date.getTime();
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const nextDayTime = nextDay.getTime();
-
-    return items.filter((item) => {
-      if (!item.plannedStartDate) return false;
-      const startTime = item.plannedStartDate;
-      const endTime = item.plannedEndDate || startTime;
-      return startTime < nextDayTime && endTime >= dateTime;
-    });
-  }
+  // Distinct item count active in current month
+  const monthItemCount = useMemo(() => {
+    const seen = new Set<string>();
+    calendarDays.filter(d => d.isCurrentMonth).forEach(d => d.items.forEach(i => seen.add(i.id)));
+    return seen.size;
+  }, [calendarDays]);
 
   const goToPreviousMonth = useCallback(() => {
     setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -150,7 +157,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const selectedDayItems = useMemo(() => {
     if (!selectedDate) return [];
     return getItemsForDate(selectedDate);
-  }, [selectedDate, items]);
+  }, [selectedDate, getItemsForDate]);
 
   const renderDay = (day: CalendarDay, index: number) => {
     const isSelected = selectedDate && day.date.getTime() === selectedDate.getTime();
@@ -206,7 +213,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </Text>
           <StatusBadge status={item.status} size="small" />
         </View>
-        <Text style={styles.selectedItemCategory}>{item.categoryName}</Text>
+        <Text style={styles.selectedItemCategory}>
+          {item.categoryName} · {item.siteName}
+        </Text>
+        {item.assigneeName && (
+          <Text style={styles.selectedItemAssignee}>{item.assigneeName}</Text>
+        )}
         <Text style={styles.selectedItemProgress}>
           {Math.round(item.progress * 100)}% complete
         </Text>
@@ -237,7 +249,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Calendar Header */}
       <View style={styles.calendarHeader}>
         <IconButton
@@ -246,10 +258,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           accessible
           accessibilityLabel="Previous month"
         />
-        <TouchableOpacity onPress={goToToday}>
+        <TouchableOpacity onPress={goToToday} style={styles.monthTitleWrap}>
           <Text style={styles.monthTitle}>
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </Text>
+          <Text style={styles.monthItemCount}>{monthItemCount} item{monthItemCount !== 1 ? 's' : ''}</Text>
         </TouchableOpacity>
         <IconButton
           icon="chevron-right"
@@ -289,6 +302,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </View>
       </View>
 
+      {/* Tap hint */}
+      {!selectedDate && (
+        <View style={styles.hint}>
+          <Text style={styles.hintText}>Tap a highlighted day to see items</Text>
+        </View>
+      )}
+
       {/* Selected Day Items */}
       {selectedDate && selectedDayItems.length > 0 && (
         <View style={styles.selectedDaySection}>
@@ -306,7 +326,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           />
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -317,6 +337,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  scrollContent: {
+    paddingBottom: 32,
+  },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -324,9 +347,28 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: 'white',
   },
+  monthTitleWrap: {
+    alignItems: 'center',
+  },
   monthTitle: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  monthItemCount: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 1,
+  },
+  hint: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  hintText: {
+    fontSize: 13,
+    color: '#9E9E9E',
   },
   dayNamesRow: {
     flexDirection: 'row',
@@ -425,10 +467,10 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   selectedDaySection: {
-    flex: 1,
     backgroundColor: 'white',
     marginTop: 8,
     padding: 16,
+    paddingBottom: 8,
   },
   selectedDayTitle: {
     fontSize: 16,
@@ -460,6 +502,11 @@ const styles = StyleSheet.create({
   selectedItemCategory: {
     fontSize: 12,
     color: '#666',
+    marginBottom: 4,
+  },
+  selectedItemAssignee: {
+    fontSize: 11,
+    color: '#5C6BC0',
     marginBottom: 4,
   },
   selectedItemProgress: {
