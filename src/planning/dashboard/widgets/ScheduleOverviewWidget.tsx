@@ -43,7 +43,7 @@ export interface ScheduleOverviewWidgetProps {
 
 // ==================== Component ====================
 
-export const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
+const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
   overview,
   projectProgress = null,
   loading = false,
@@ -279,4 +279,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ScheduleOverviewWidget;
+const ScheduleOverviewWidgetMemo = React.memo(ScheduleOverviewWidget);
+export { ScheduleOverviewWidgetMemo as ScheduleOverviewWidget };
+export default ScheduleOverviewWidgetMemo;

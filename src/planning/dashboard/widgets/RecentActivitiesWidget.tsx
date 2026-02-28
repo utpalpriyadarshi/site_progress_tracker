@@ -39,7 +39,7 @@ export interface RecentActivitiesWidgetProps {
 
 // ==================== Component ====================
 
-export const RecentActivitiesWidget: React.FC<RecentActivitiesWidgetProps> = ({
+const RecentActivitiesWidget: React.FC<RecentActivitiesWidgetProps> = ({
   activities,
   loading = false,
   error = null,
@@ -284,4 +284,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecentActivitiesWidget;
+const RecentActivitiesWidgetMemo = React.memo(RecentActivitiesWidget);
+export { RecentActivitiesWidgetMemo as RecentActivitiesWidget };
+export default RecentActivitiesWidgetMemo;

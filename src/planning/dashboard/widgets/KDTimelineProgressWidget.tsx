@@ -30,7 +30,7 @@ export interface KDTimelineProgressWidgetProps {
 
 // ==================== Component ====================
 
-export const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> = ({
+const KDTimelineProgressWidget: React.FC<KDTimelineProgressWidgetProps> = ({
   timelineData,
   loading = false,
   error = null,
@@ -206,4 +206,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default KDTimelineProgressWidget;
+const KDTimelineProgressWidgetMemo = React.memo(KDTimelineProgressWidget);
+export { KDTimelineProgressWidgetMemo as KDTimelineProgressWidget };
+export default KDTimelineProgressWidgetMemo;

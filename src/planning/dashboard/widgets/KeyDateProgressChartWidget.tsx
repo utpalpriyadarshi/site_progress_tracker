@@ -53,7 +53,7 @@ const calculateExpectedProgress = (
 
 // ==================== Component ====================
 
-export const KeyDateProgressChartWidget: React.FC<KeyDateProgressChartWidgetProps> = ({
+const KeyDateProgressChartWidget: React.FC<KeyDateProgressChartWidgetProps> = ({
   keyDates,
   projectStartDate,
   loading = false,
@@ -220,4 +220,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default KeyDateProgressChartWidget;
+const KeyDateProgressChartWidgetMemo = React.memo(KeyDateProgressChartWidget);
+export { KeyDateProgressChartWidgetMemo as KeyDateProgressChartWidget };
+export default KeyDateProgressChartWidgetMemo;

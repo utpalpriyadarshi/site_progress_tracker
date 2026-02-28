@@ -37,7 +37,7 @@ export interface UpcomingMilestonesWidgetProps {
 
 // ==================== Component ====================
 
-export const UpcomingMilestonesWidget: React.FC<UpcomingMilestonesWidgetProps> = ({
+const UpcomingMilestonesWidget: React.FC<UpcomingMilestonesWidgetProps> = ({
   milestones,
   loading = false,
   error = null,
@@ -214,4 +214,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UpcomingMilestonesWidget;
+const UpcomingMilestonesWidgetMemo = React.memo(UpcomingMilestonesWidget);
+export { UpcomingMilestonesWidgetMemo as UpcomingMilestonesWidget };
+export default UpcomingMilestonesWidgetMemo;

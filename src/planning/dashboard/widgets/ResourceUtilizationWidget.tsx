@@ -45,7 +45,7 @@ export interface ResourceUtilizationWidgetProps {
 
 // ==================== Component ====================
 
-export const ResourceUtilizationWidget: React.FC<ResourceUtilizationWidgetProps> = ({
+const ResourceUtilizationWidget: React.FC<ResourceUtilizationWidgetProps> = ({
   resources,
   summary,
   loading = false,
@@ -265,4 +265,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ResourceUtilizationWidget;
+const ResourceUtilizationWidgetMemo = React.memo(ResourceUtilizationWidget);
+export { ResourceUtilizationWidgetMemo as ResourceUtilizationWidget };
+export default ResourceUtilizationWidgetMemo;

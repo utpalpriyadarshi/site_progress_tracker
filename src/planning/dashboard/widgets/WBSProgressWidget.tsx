@@ -45,7 +45,7 @@ export interface WBSProgressWidgetProps {
 
 // ==================== Component ====================
 
-export const WBSProgressWidget: React.FC<WBSProgressWidgetProps> = ({
+const WBSProgressWidget: React.FC<WBSProgressWidgetProps> = ({
   phases,
   summary,
   loading = false,
@@ -296,4 +296,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WBSProgressWidget;
+const WBSProgressWidgetMemo = React.memo(WBSProgressWidget);
+export { WBSProgressWidgetMemo as WBSProgressWidget };
+export default WBSProgressWidgetMemo;

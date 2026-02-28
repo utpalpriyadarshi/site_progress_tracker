@@ -50,7 +50,7 @@ const getProgressBarColor = (progress: number): string => {
 
 // ==================== Component ====================
 
-export const ProjectProgressWidget: React.FC<ProjectProgressWidgetProps> = ({
+const ProjectProgressWidget: React.FC<ProjectProgressWidgetProps> = ({
   projectProgress,
   kdBreakdown,
   loading = false,
@@ -244,4 +244,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectProgressWidget;
+const ProjectProgressWidgetMemo = React.memo(ProjectProgressWidget);
+export { ProjectProgressWidgetMemo as ProjectProgressWidget };
+export default ProjectProgressWidgetMemo;
