@@ -2,7 +2,7 @@
  * Gantt Chart State Management
  *
  * Consolidates state from:
- * - GanttChartScreen (selectedSite, zoomLevel)
+ * - GanttChartScreen (selectedSite, zoomLevel, activeSubTab)
  * - useGanttData hook (items, loading)
  *
  * Reduction: 4 useState → 1 useReducer (75% reduction)
@@ -12,6 +12,7 @@ import SiteModel from '../../../../models/SiteModel';
 import ItemModel from '../../../../models/ItemModel';
 
 export type ZoomLevel = 'day' | 'week' | 'month';
+export type GanttSubTab = 'tasks' | 'key_dates';
 
 export interface GanttChartState {
   ui: {
@@ -20,6 +21,7 @@ export interface GanttChartState {
   selection: {
     selectedSite: SiteModel | null;
     zoomLevel: ZoomLevel;
+    activeSubTab: GanttSubTab;
   };
   data: {
     items: ItemModel[];
@@ -30,6 +32,7 @@ export type GanttChartAction =
   // Selection actions
   | { type: 'SET_SELECTED_SITE'; payload: { site: SiteModel | null } }
   | { type: 'SET_ZOOM_LEVEL'; payload: { zoomLevel: ZoomLevel } }
+  | { type: 'SET_SUB_TAB'; payload: { tab: GanttSubTab } }
 
   // Data loading actions
   | { type: 'START_LOADING' }
@@ -46,6 +49,7 @@ export const createInitialState = (): GanttChartState => ({
   selection: {
     selectedSite: null,
     zoomLevel: 'week',
+    activeSubTab: 'tasks',
   },
   data: {
     items: [],
@@ -80,6 +84,15 @@ export const ganttChartReducer = (
         selection: {
           ...state.selection,
           zoomLevel: action.payload.zoomLevel,
+        },
+      };
+
+    case 'SET_SUB_TAB':
+      return {
+        ...state,
+        selection: {
+          ...state.selection,
+          activeSubTab: action.payload.tab,
         },
       };
 

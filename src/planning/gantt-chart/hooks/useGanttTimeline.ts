@@ -25,15 +25,18 @@ export interface UseGanttTimelineReturn {
 }
 
 /**
- * Custom hook for timeline calculations and rendering
+ * Custom hook for timeline calculations and rendering.
+ * Pass `externalBounds` to skip the items-based bounds calculation
+ * (used by the Key Dates tab which has its own date range).
  */
 export const useGanttTimeline = (
   items: ItemModel[],
-  zoomLevel: ZoomLevel
+  zoomLevel: ZoomLevel,
+  externalBounds?: TimelineBounds
 ): UseGanttTimelineReturn => {
   const timelineBounds = useMemo(
-    () => calculateTimelineBounds(items),
-    [items]
+    () => externalBounds ?? calculateTimelineBounds(items),
+    [items, externalBounds]
   );
 
   const timelineColumns = useMemo(
