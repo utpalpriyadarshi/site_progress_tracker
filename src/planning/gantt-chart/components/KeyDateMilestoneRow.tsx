@@ -14,7 +14,6 @@ import KeyDateModel from '../../../../models/KeyDateModel';
 import {
   ZoomLevel,
   TASK_HEIGHT,
-  SCREEN_WIDTH,
   LEFT_COLUMN_WIDTH,
   COLUMN_WIDTHS,
 } from '../utils/ganttConstants';
@@ -32,6 +31,7 @@ interface KeyDateMilestoneRowProps {
   timelineStart: dayjs.Dayjs;
   zoomLevel: ZoomLevel;
   totalTimelineWidth: number;
+  scrollRefCallback?: (ref: ScrollView | null) => void;
 }
 
 // ==================== Helper Functions ====================
@@ -155,6 +155,7 @@ export const KeyDateMilestoneRow: React.FC<KeyDateMilestoneRowProps> = ({
   timelineStart,
   zoomLevel,
   totalTimelineWidth,
+  scrollRefCallback,
 }) => {
   const milestonePosition = calculateMilestonePosition(
     keyDate,
@@ -166,10 +167,11 @@ export const KeyDateMilestoneRow: React.FC<KeyDateMilestoneRowProps> = ({
     <View style={styles.wrapper}>
       <MilestoneInfo keyDate={keyDate} />
       <ScrollView
+        ref={scrollRefCallback}
         horizontal
         showsHorizontalScrollIndicator={false}
         scrollEnabled={false}
-        style={{ width: SCREEN_WIDTH - LEFT_COLUMN_WIDTH }}
+        style={{ flex: 1 }}
       >
         <MilestoneMarker
           keyDate={keyDate}

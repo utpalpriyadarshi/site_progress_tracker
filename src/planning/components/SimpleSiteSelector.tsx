@@ -8,6 +8,8 @@ interface SimpleSiteSelectorProps {
   selectedSite: SiteModel | null;
   onSiteChange: (site: SiteModel | null) => void;
   style?: any;
+  /** When false, skip updating the global PlanningContext (use when caller manages its own state) */
+  updateContext?: boolean;
 }
 
 /**
@@ -21,18 +23,21 @@ const SimpleSiteSelector: React.FC<SimpleSiteSelectorProps> = ({
   selectedSite,
   onSiteChange,
   style,
+  updateContext = true,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   // Use sites from PlanningContext (filtered by assigned project)
   const { sites, selectSite, projectName, loading, error } = usePlanningContext();
 
-  // Handle site selection - update both local state and global context
+  // Handle site selection
   const handleSiteSelect = useCallback((site: SiteModel | null) => {
-    onSiteChange(site);
-    selectSite(site?.id || null); // Update global context
     setMenuVisible(false);
-  }, [onSiteChange, selectSite]);
+    onSiteChange(site);
+    if (updateContext) {
+      selectSite(site?.id || null);
+    }
+  }, [onSiteChange, selectSite, updateContext]);
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);

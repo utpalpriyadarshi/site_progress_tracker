@@ -7,18 +7,20 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { TimelineHeader } from './TimelineHeader';
 import { TimelineColumn } from '../utils/ganttCalculations';
-import { LEFT_COLUMN_WIDTH, SCREEN_WIDTH, GANTT_COLORS } from '../utils/ganttConstants';
+import { LEFT_COLUMN_WIDTH, GANTT_COLORS } from '../utils/ganttConstants';
 
 interface GanttHeaderProps {
   timelineColumns: TimelineColumn[];
   columnWidth: number;
   scrollViewRef: React.RefObject<ScrollView | null>;
+  onScrollX: (x: number) => void;
 }
 
 export const GanttHeader: React.FC<GanttHeaderProps> = ({
   timelineColumns,
   columnWidth,
   scrollViewRef,
+  onScrollX,
 }) => {
   return (
     <View style={styles.row}>
@@ -29,7 +31,9 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
         horizontal
         ref={scrollViewRef}
         showsHorizontalScrollIndicator={true}
-        style={{ width: SCREEN_WIDTH - LEFT_COLUMN_WIDTH }}
+        scrollEventThrottle={16}
+        onScroll={(e) => onScrollX(e.nativeEvent.contentOffset.x)}
+        style={{ flex: 1 }}
       >
         <TimelineHeader columns={timelineColumns} columnWidth={columnWidth} />
       </ScrollView>

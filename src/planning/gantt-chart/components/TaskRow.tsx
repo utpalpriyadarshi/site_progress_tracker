@@ -7,7 +7,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import ItemModel from '../../../../models/ItemModel';
 import { TaskInfo } from './TaskInfo';
 import { TaskBar } from './TaskBar';
-import { ZoomLevel, TASK_HEIGHT, SCREEN_WIDTH, LEFT_COLUMN_WIDTH, GANTT_COLORS } from '../utils/ganttConstants';
+import { ZoomLevel, TASK_HEIGHT, GANTT_COLORS } from '../utils/ganttConstants';
 import dayjs from 'dayjs';
 
 interface TaskRowProps {
@@ -17,6 +17,7 @@ interface TaskRowProps {
   totalTimelineWidth: number;
   todayPosition: number | null;
   showBaseline?: boolean;
+  scrollRefCallback?: (ref: ScrollView | null) => void;
 }
 
 export const TaskRow: React.FC<TaskRowProps> = ({
@@ -26,15 +27,17 @@ export const TaskRow: React.FC<TaskRowProps> = ({
   totalTimelineWidth,
   todayPosition,
   showBaseline = false,
+  scrollRefCallback,
 }) => {
   return (
     <View style={styles.wrapper}>
       <TaskInfo item={item} />
       <ScrollView
+        ref={scrollRefCallback}
         horizontal
         showsHorizontalScrollIndicator={false}
         scrollEnabled={false}
-        style={{ width: SCREEN_WIDTH - LEFT_COLUMN_WIDTH }}
+        style={{ flex: 1 }}
       >
         <TaskBar
           item={item}

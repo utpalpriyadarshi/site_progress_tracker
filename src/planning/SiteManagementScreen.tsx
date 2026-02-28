@@ -958,6 +958,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 8,
+    paddingBottom: 4,
   },
   supervisorAssignedChip: {
     backgroundColor: COLORS.SUCCESS_BG,
