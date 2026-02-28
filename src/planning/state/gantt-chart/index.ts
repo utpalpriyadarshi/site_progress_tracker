@@ -9,4 +9,5 @@ export {
   type GanttChartState,
   type GanttChartAction,
   type ZoomLevel,
+  type GanttSubTab,
 } from './ganttChartReducer';

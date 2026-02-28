@@ -14,6 +14,7 @@ interface GanttHeaderProps {
   columnWidth: number;
   scrollViewRef: React.RefObject<ScrollView | null>;
   onScrollX: (x: number) => void;
+  leftColumnLabel?: string;
 }
 
 export const GanttHeader: React.FC<GanttHeaderProps> = ({
@@ -21,11 +22,12 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
   columnWidth,
   scrollViewRef,
   onScrollX,
+  leftColumnLabel = 'Task',
 }) => {
   return (
     <View style={styles.row}>
       <View style={[styles.infoColumn, styles.headerColumn]}>
-        <Text style={styles.text}>Task</Text>
+        <Text style={styles.text}>{leftColumnLabel}</Text>
       </View>
       <ScrollView
         horizontal
