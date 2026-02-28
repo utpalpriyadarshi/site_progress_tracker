@@ -4,7 +4,7 @@
  * Timeline view for schedule items showing items in chronological order
  * with progress bars and schedule details.
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since Planning Phase 3
  */
 
@@ -17,7 +17,7 @@ import {
   Searchbar,
   ProgressBar,
   Switch,
-  Button,
+  IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../../../models/database';
@@ -73,39 +73,45 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return 'TBD';
-    return new Date(timestamp).toLocaleDateString();
+    return new Date(timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   };
 
   const renderItem = ({ item }: { item: ScheduleItem }) => (
     <Card
       style={[styles.itemCard, item.isCriticalPath && styles.criticalPathCard]}
       accessible
-      accessibilityRole="button"
-      accessibilityLabel={`${item.name}, ${item.categoryName}, ${Math.round(item.progress * 100)}% complete, ${item.status}`}
+      accessibilityLabel={`${item.name}, ${Math.round(item.progress * 100)}% complete, ${item.status}`}
     >
       <Card.Content>
+        {/* Header: name + flag toggle */}
         <View style={styles.itemHeader}>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemCategory}>{item.categoryName}</Text>
-            <Text style={styles.itemSite}>📍 {item.siteName}</Text>
+            <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
+            <Text style={styles.itemMeta}>{item.categoryName} · {item.siteName}</Text>
           </View>
 
-          <View style={styles.badgeContainer}>
-            {item.isCriticalPath && (
-              <StatusBadge status="critical" size="small" />
-            )}
+          <View style={styles.headerRight}>
             {item.isDelayed && !item.isCriticalPath && (
               <StatusBadge status="delayed" size="small" />
             )}
+            <IconButton
+              icon="flag-variant"
+              iconColor={item.isCriticalPath ? COLORS.ERROR : '#BDBDBD'}
+              size={20}
+              onPress={() => handleToggleCriticalPath(item.id, item.isCriticalPath)}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={
+                item.isCriticalPath ? 'Remove from critical path' : 'Mark as critical path'
+              }
+              style={styles.flagButton}
+            />
           </View>
         </View>
 
-        {/* Progress */}
-        <View style={styles.progressSection}>
-          <Text style={styles.progressLabel}>
-            Progress: {Math.round(item.progress * 100)}%
-          </Text>
+        {/* Progress — inline label + bar */}
+        <View style={styles.progressRow}>
+          <Text style={styles.progressPct}>{Math.round(item.progress * 100)}%</Text>
           <ProgressBar
             progress={item.progress}
             color={item.isCriticalPath ? COLORS.ERROR : COLORS.INFO}
@@ -113,60 +119,30 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           />
         </View>
 
-        {/* Schedule Dates */}
-        <View style={styles.scheduleSection}>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>📅 Planned:</Text>
-            <Text style={styles.dateValue}>
-              {formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)}
-            </Text>
-          </View>
+        {/* Dates — compact lines */}
+        <View style={styles.datesBlock}>
+          <Text style={styles.dateText}>
+            Planned: {formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)}
+          </Text>
           {item.actualStartDate && (
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>✅ Actual:</Text>
-              <Text style={styles.dateValue}>
-                {formatDate(item.actualStartDate)} →{' '}
-                {item.actualEndDate ? formatDate(item.actualEndDate) : 'In Progress'}
-              </Text>
-            </View>
+            <Text style={styles.dateText}>
+              Actual: {formatDate(item.actualStartDate)} →{' '}
+              {item.actualEndDate ? formatDate(item.actualEndDate) : 'ongoing'}
+            </Text>
           )}
         </View>
 
-        {/* Dependencies & Float */}
-        {(item.dependencies?.length || item.floatDays !== undefined) && (
-          <View style={styles.detailsSection}>
-            {item.dependencies && item.dependencies.length > 0 && (
-              <Text style={styles.detailText}>
-                🔗 Dependencies: {item.dependencies.length} item(s)
-              </Text>
-            )}
-            {item.floatDays !== undefined && (
-              <Text style={[styles.detailText, item.floatDays <= 0 && styles.criticalFloat]}>
-                ⏱️ Float: {item.floatDays} days
-                {item.floatDays <= 0 && ' (Critical!)'}
-              </Text>
-            )}
-          </View>
+        {/* Float / dependencies — single compact line */}
+        {(item.floatDays !== undefined || (item.dependencies && item.dependencies.length > 0)) && (
+          <Text style={[styles.floatText, item.floatDays !== undefined && item.floatDays <= 0 && styles.floatCritical]}>
+            {item.floatDays !== undefined
+              ? `Float: ${item.floatDays}d${item.floatDays <= 0 ? ' ⚠' : ''}`
+              : ''}
+            {item.dependencies && item.dependencies.length > 0
+              ? `${item.floatDays !== undefined ? '  ·  ' : ''}${item.dependencies.length} dep(s)`
+              : ''}
+          </Text>
         )}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <Button
-            mode={item.isCriticalPath ? 'contained' : 'outlined'}
-            onPress={() => handleToggleCriticalPath(item.id, item.isCriticalPath)}
-            style={styles.actionButton}
-            buttonColor={item.isCriticalPath ? COLORS.ERROR : undefined}
-            compact
-            accessible
-            accessibilityLabel={
-              item.isCriticalPath
-                ? 'Remove from critical path'
-                : 'Mark as critical path'
-            }
-          >
-            {item.isCriticalPath ? 'Remove Critical' : 'Mark Critical'}
-          </Button>
-        </View>
       </Card.Content>
     </Card>
   );
@@ -202,19 +178,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         title="No Schedule Items"
         message="Start planning by creating your first schedule item"
         actionText="Create Schedule Item"
-        onAction={() => {
-          navigation.navigate('CreateItem');
-        }}
+        onAction={() => navigation.navigate('CreateItem')}
       />
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header Card with Filters */}
+      {/* Filter Card */}
       <Card style={styles.headerCard}>
         <Card.Content>
-          {/* Project Display (read-only - assigned by Admin) */}
+          {/* Project */}
           <View style={styles.projectHeader}>
             <Text style={styles.projectLabel}>Project:</Text>
             <Chip
@@ -228,24 +202,18 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             </Chip>
           </View>
 
-          {/* Site Selector */}
+          {/* Site */}
           <Text style={styles.label}>Site:</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.chipContainer}
-            accessible
-            accessibilityRole="menubar"
-            accessibilityLabel="Site selector"
           >
             <Chip
               mode={filters.siteId === '' ? 'flat' : 'outlined'}
               selected={filters.siteId === ''}
               onPress={() => onSiteChange('')}
               style={styles.chip}
-              accessible
-              accessibilityRole="menuitem"
-              accessibilityState={{ selected: filters.siteId === '' }}
             >
               All Sites
             </Chip>
@@ -256,9 +224,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 selected={filters.siteId === site.id}
                 onPress={() => onSiteChange(site.id)}
                 style={styles.chip}
-                accessible
-                accessibilityRole="menuitem"
-                accessibilityState={{ selected: filters.siteId === site.id }}
               >
                 {site.name}
               </Chip>
@@ -271,30 +236,24 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             onChangeText={onSearchChange}
             value={filters.searchQuery}
             style={styles.searchBar}
-            accessible
-            accessibilityLabel="Search schedule items"
-            accessibilityHint="Type to filter items by name or category"
           />
 
-          {/* Critical Path Filter */}
+          {/* Critical Path toggle */}
           <View style={styles.filterRow}>
             <View style={styles.filterLeft}>
-              <Text style={styles.filterLabel}>Show Critical Path Only</Text>
+              <Text style={styles.filterLabel}>Critical path only</Text>
               <Chip
                 mode="flat"
-                style={styles.criticalPathBadge}
-                textStyle={styles.criticalPathBadgeText}
+                style={styles.criticalBadge}
+                textStyle={styles.criticalBadgeText}
               >
-                {criticalPathCount} Critical
+                {criticalPathCount}
               </Chip>
             </View>
             <Switch
               value={filters.showCriticalPathOnly}
               onValueChange={onCriticalPathToggle}
               color={COLORS.ERROR}
-              accessible
-              accessibilityLabel="Toggle critical path filter"
-              accessibilityState={{ checked: filters.showCriticalPathOnly }}
             />
           </View>
         </Card.Content>
@@ -309,7 +268,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          accessible
           accessibilityLabel={`Schedule items, ${items.length} items`}
         />
       )}
@@ -325,8 +283,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   headerCard: {
-    margin: 16,
-    marginBottom: 8,
+    margin: 12,
+    marginBottom: 6,
   },
   projectHeader: {
     flexDirection: 'row',
@@ -334,9 +292,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   projectLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '600',
     marginRight: 8,
+    color: '#555',
   },
   projectChip: {
     backgroundColor: COLORS.INFO_BG,
@@ -346,51 +305,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 12,
-    marginBottom: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 6,
+    color: '#555',
   },
   chipContainer: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   chip: {
     marginRight: 8,
   },
   searchBar: {
-    marginTop: 12,
-    marginBottom: 12,
+    marginTop: 8,
+    marginBottom: 8,
   },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
   },
   filterLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   filterLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginRight: 8,
+    fontSize: 13,
+    color: '#555',
   },
-  criticalPathBadge: {
+  criticalBadge: {
     backgroundColor: COLORS.ERROR_BG,
   },
-  criticalPathBadgeText: {
+  criticalBadgeText: {
     color: COLORS.ERROR,
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 16,
   },
+  // Item card
   itemCard: {
-    marginHorizontal: 16,
-    marginVertical: 8,
+    marginHorizontal: 12,
+    marginVertical: 5,
+    borderRadius: 10,
   },
   criticalPathCard: {
     borderLeftWidth: 4,
@@ -400,83 +361,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   itemInfo: {
     flex: 1,
+    paddingRight: 4,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
-  itemCategory: {
+  itemMeta: {
     fontSize: 12,
-    color: '#666',
+    color: '#777',
     marginTop: 2,
   },
-  itemSite: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  flagButton: {
+    margin: 0,
+  },
+  // Progress
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressPct: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-  badgeContainer: {
-    marginLeft: 8,
-    minWidth: 80,
-    alignItems: 'flex-end',
-  },
-  progressSection: {
-    marginBottom: 12,
-  },
-  progressLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: '#333',
+    fontWeight: '700',
+    color: '#444',
+    width: 34,
+    marginRight: 8,
   },
   progressBar: {
-    height: 8,
-    borderRadius: 4,
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
   },
-  scheduleSection: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 4,
-  },
-  dateRow: {
-    flexDirection: 'row',
+  // Dates
+  datesBlock: {
     marginBottom: 4,
   },
-  dateLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    width: 80,
-    color: '#666',
-  },
-  dateValue: {
+  dateText: {
     fontSize: 12,
     color: '#666',
-    flex: 1,
+    lineHeight: 18,
   },
-  detailsSection: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: COLORS.INFO_BG,
-    borderRadius: 4,
+  // Float/deps
+  floatText: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
   },
-  detailText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  criticalFloat: {
+  floatCritical: {
     color: COLORS.ERROR,
-    fontWeight: 'bold',
-  },
-  actions: {
-    marginTop: 8,
-  },
-  actionButton: {
-    width: '100%',
+    fontWeight: '600',
   },
 });
 

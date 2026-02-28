@@ -37,6 +37,7 @@ import ProjectModel from '../../models/ProjectModel';
 import KeyDateSiteModel from '../../models/KeyDateSiteModel';
 import KeyDateModel from '../../models/KeyDateModel';
 import TeamMemberPicker from './components/TeamMemberPicker';
+import KeyDateSelector from './key-dates/components/KeyDateSelector';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
@@ -378,7 +379,7 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
           });
         } else {
           // Create new site
-          await database.collections.get('sites').create((site: any) => {
+          const newSite = await database.collections.get('sites').create((site: any) => {
             site.name = form.siteName.trim();
             site.location = form.siteLocation.trim();
             site.projectId = form.selectedProjectId;
@@ -389,9 +390,30 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
             site.actualStartDate = form.actualStartDate?.getTime() || null;
             site.actualEndDate = form.actualEndDate?.getTime() || null;
           });
+
+          // If a KD was selected, create the key_date_sites link in the same transaction
+          if (form.linkedKDId) {
+            const contribution = Math.min(100, Math.max(0, parseInt(form.kdContribution, 10) || 100));
+            await database.collections.get('key_date_sites').create((record: any) => {
+              record.keyDateId = form.linkedKDId;
+              record.siteId = (newSite as any).id;
+              record.contributionPercentage = contribution;
+              record.progressPercentage = 0;
+              record.status = 'not_started';
+              record.updatedAt = Date.now();
+              record.appSyncStatus = 'pending';
+              record.version = 1;
+            });
+          }
+
           dispatch({
             type: 'SHOW_SNACKBAR',
-            payload: { message: 'Site created successfully', type: 'success' },
+            payload: {
+              message: form.linkedKDId
+                ? `Site created and linked to Key Date (${form.kdContribution}% contribution)`
+                : 'Site created successfully',
+              type: 'success',
+            },
           });
         }
       });
@@ -626,6 +648,36 @@ const SiteManagementScreenComponent: React.FC<SiteManagementScreenProps> = ({
                   {form.designerName}
                 </Button>
               </View>
+
+              {/* Key Date Assignment — only shown when creating a new site */}
+              {!isEditing && form.selectedProjectId ? (
+                <View style={styles.kdSection}>
+                  <Text style={styles.sectionTitle}>Link to Key Date</Text>
+                  <Text style={styles.kdHelperText}>
+                    Optionally assign this site to a Key Date for progress tracking
+                  </Text>
+                  <KeyDateSelector
+                    projectId={form.selectedProjectId}
+                    selectedKeyDateId={form.linkedKDId}
+                    onSelect={(kdId: string | null) => dispatch({ type: 'SET_LINKED_KD', payload: kdId })}
+                    label=""
+                  />
+                  {form.linkedKDId && (
+                    <View style={styles.contributionRow}>
+                      <Text style={styles.dateLabel}>Contribution %:</Text>
+                      <TextInput
+                        value={form.kdContribution}
+                        onChangeText={(text) => dispatch({ type: 'SET_KD_CONTRIBUTION', payload: text })}
+                        keyboardType="number-pad"
+                        mode="outlined"
+                        style={styles.contributionInput}
+                        dense
+                        right={<TextInput.Affix text="%" />}
+                      />
+                    </View>
+                  )}
+                </View>
+              ) : null}
 
               {/* Date Fields */}
               <View style={styles.dateSection}>
@@ -950,6 +1002,26 @@ const styles = StyleSheet.create({
   },
   supervisorButton: {
     marginTop: 4,
+  },
+  kdSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  kdHelperText: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
+  },
+  contributionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  contributionInput: {
+    flex: 1,
+    marginLeft: 8,
   },
   dateSection: {
     marginTop: 16,
