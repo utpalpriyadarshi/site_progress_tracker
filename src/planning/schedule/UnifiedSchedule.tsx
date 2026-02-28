@@ -11,6 +11,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
 import ItemModel from '../../../models/ItemModel';
@@ -57,6 +58,12 @@ export interface ScheduleFilters {
 
 type TabName = 'Timeline' | 'Calendar' | 'List';
 
+const TAB_CONFIG: Record<TabName, { icon: string; subtitle: string }> = {
+  Timeline: { icon: 'chart-gantt',      subtitle: 'Chronological progress view with critical path' },
+  Calendar:  { icon: 'calendar-month',  subtitle: 'Items overlaid on a monthly grid' },
+  List:      { icon: 'view-list',       subtitle: 'Sortable table with status filters' },
+};
+
 interface TabButtonProps {
   name: TabName;
   isActive: boolean;
@@ -66,28 +73,34 @@ interface TabButtonProps {
 
 // ==================== Tab Button Component ====================
 
-const TabButton: React.FC<TabButtonProps> = ({ name, isActive, onPress, theme }) => (
-  <Pressable
-    onPress={onPress}
-    style={[
-      styles.tabButton,
-      isActive && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 },
-    ]}
-    accessible
-    accessibilityRole="tab"
-    accessibilityState={{ selected: isActive }}
-    accessibilityLabel={`${name} view`}
-  >
-    <Text
+const TabButton: React.FC<TabButtonProps> = ({ name, isActive, onPress, theme }) => {
+  const { icon } = TAB_CONFIG[name];
+  const activeColor = theme.colors.primary;
+  const inactiveColor = theme.colors.onSurfaceVariant;
+  return (
+    <Pressable
+      onPress={onPress}
       style={[
-        styles.tabLabel,
-        { color: isActive ? theme.colors.primary : theme.colors.onSurfaceVariant },
+        styles.tabButton,
+        isActive && { borderBottomColor: activeColor, borderBottomWidth: 2 },
       ]}
+      accessible
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`${name} view`}
     >
-      {name}
-    </Text>
-  </Pressable>
-);
+      <Icon name={icon} size={18} color={isActive ? activeColor : inactiveColor} style={styles.tabIcon} />
+      <Text
+        style={[
+          styles.tabLabel,
+          { color: isActive ? activeColor : inactiveColor },
+        ]}
+      >
+        {name}
+      </Text>
+    </Pressable>
+  );
+};
 
 // ==================== Component Props ====================
 
@@ -349,6 +362,12 @@ const UnifiedScheduleComponent: React.FC<UnifiedScheduleObservedProps> = ({
         />
       </View>
 
+      {/* Tab context strip — subtitle + item count */}
+      <View style={styles.contextStrip}>
+        <Text style={styles.contextSubtitle}>{TAB_CONFIG[activeTab].subtitle}</Text>
+        <Text style={styles.contextCount}>{sortedItems.length} item{sortedItems.length !== 1 ? 's' : ''}</Text>
+      </View>
+
       {/* Active View Content */}
       <View style={styles.content}>
         {renderActiveView()}
@@ -389,15 +408,42 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  tabIcon: {
+    // sits next to label
   },
   tabLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+  },
+  contextStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: '#EEF2FF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#D8DFF5',
+  },
+  contextSubtitle: {
+    fontSize: 12,
+    color: '#5C6BC0',
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  contextCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#5C6BC0',
+    marginLeft: 8,
   },
   content: {
     flex: 1,
