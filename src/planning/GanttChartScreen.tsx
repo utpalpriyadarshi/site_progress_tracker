@@ -23,7 +23,6 @@ import ItemModel from '../../models/ItemModel';
 import KeyDateModel from '../../models/KeyDateModel';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
-import { useThrottle } from '../utils/performance';
 import { usePlanningContext } from './context';
 
 // State management
@@ -58,19 +57,34 @@ const GanttChartScreen: React.FC = () => {
   // Baseline overlay toggle
   const [showBaseline, setShowBaseline] = React.useState(false);
 
+  // Synchronized horizontal scroll: header is master, all row ScrollViews are slaves
+  const rowScrollRefs = useRef<(ScrollView | null)[]>([]);
+  const handleScrollX = useCallback((x: number) => {
+    rowScrollRefs.current.forEach((ref) => ref?.scrollTo({ x, animated: false }));
+  }, []);
+  const makeRowScrollRefCallback = useCallback(
+    (index: number) => (ref: ScrollView | null) => {
+      rowScrollRefs.current[index] = ref;
+    },
+    []
+  );
+
   // Load items when site changes
   useEffect(() => {
-    const loadItems = async () => {
-      if (!state.selection.selectedSite) {
-        dispatch({ type: 'SET_ITEMS', payload: { items: [] } });
-        return;
-      }
+    // Clear row refs whenever the selection changes so stale refs don't linger
+    rowScrollRefs.current = [];
 
+    if (!state.selection.selectedSite) {
+      dispatch({ type: 'SET_ITEMS', payload: { items: [] } });
+      return;
+    }
+
+    const loadItems = async () => {
       dispatch({ type: 'START_LOADING' });
       try {
         const siteItems = await database.collections
           .get<ItemModel>('items')
-          .query(Q.where('site_id', state.selection.selectedSite.id))
+          .query(Q.where('site_id', state.selection.selectedSite!.id))
           .fetch();
 
         // Sort by start date, then by WBS code
@@ -143,15 +157,31 @@ const GanttChartScreen: React.FC = () => {
           <SimpleSiteSelector
             selectedSite={state.selection.selectedSite}
             onSiteChange={handleSiteChange}
+            updateContext={false}
           />
         </Card.Content>
       </Card>
 
-      {state.selection.selectedSite && (
+      {/* Content gated on site selection */}
+      {!state.selection.selectedSite ? (
+        <EmptyState
+          icon="map-marker-outline"
+          title="Select a Site"
+          message="Select a site above to view its Gantt chart"
+          variant="default"
+        />
+      ) : state.ui.loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1976D2" />
+          <Text style={styles.loadingText}>Loading tasks...</Text>
+        </View>
+      ) : (
         <>
           {/* Zoom Controls + Baseline Toggle */}
           <View style={styles.controlsRow}>
-            <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
+            <View style={styles.zoomControlsWrapper}>
+              <ZoomControls zoomLevel={state.selection.zoomLevel} onZoomChange={handleZoomChange} />
+            </View>
             <Chip
               selected={showBaseline}
               icon="chart-timeline-variant"
@@ -167,17 +197,11 @@ const GanttChartScreen: React.FC = () => {
           <GanttLegend showTodayMarker={todayPosition !== null} showBaseline={showBaseline} />
 
           {/* Gantt Chart */}
-          {state.ui.loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#1976D2" />
-              <Text style={styles.loadingText}>Loading tasks...</Text>
-            </View>
-          ) : state.data.items.length === 0 ? (
+          {state.data.items.length === 0 ? (
             <EmptyState
               icon="chart-gantt"
-              title="No Tasks for Gantt View"
-              message="Add schedule items with dependencies to see Gantt visualization"
-              helpText="Create items in the WBS tab to see them here"
+              title="No Tasks"
+              message="No schedule items found for this site"
               variant="default"
             />
           ) : (
@@ -191,10 +215,11 @@ const GanttChartScreen: React.FC = () => {
                 timelineColumns={timelineColumns}
                 columnWidth={columnWidth}
                 scrollViewRef={scrollViewRef}
+                onScrollX={handleScrollX}
               />
 
               {/* Tasks */}
-              {state.data.items.map((item) => (
+              {state.data.items.map((item, index) => (
                 <TaskRow
                   key={item.id}
                   item={item}
@@ -203,6 +228,7 @@ const GanttChartScreen: React.FC = () => {
                   totalTimelineWidth={totalTimelineWidth}
                   todayPosition={todayPosition}
                   showBaseline={showBaseline}
+                  scrollRefCallback={makeRowScrollRefCallback(index)}
                 />
               ))}
 
@@ -212,13 +238,14 @@ const GanttChartScreen: React.FC = () => {
                   <View style={styles.keyDateSectionHeader}>
                     <Text style={styles.keyDateSectionTitle}>Key Dates</Text>
                   </View>
-                  {keyDates.map((keyDate) => (
+                  {keyDates.map((keyDate, kdIndex) => (
                     <KeyDateMilestoneRow
                       key={keyDate.id}
                       keyDate={keyDate}
                       timelineStart={timelineBounds.start}
                       zoomLevel={state.selection.zoomLevel}
                       totalTimelineWidth={totalTimelineWidth}
+                      scrollRefCallback={makeRowScrollRefCallback(state.data.items.length + kdIndex)}
                     />
                   ))}
                 </>
@@ -226,15 +253,6 @@ const GanttChartScreen: React.FC = () => {
             </ScrollView>
           )}
         </>
-      )}
-
-      {!state.selection.selectedSite && (
-        <EmptyState
-          icon="office-building-outline"
-          title="Select a Site"
-          message="Please select a site to view the Gantt chart"
-          variant="large"
-        />
       )}
     </View>
   );
@@ -277,8 +295,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingRight: 16,
   },
+  zoomControlsWrapper: {
+    flex: 1,
+  },
   baselineChip: {
-    marginLeft: 8,
+    marginLeft: 4,
+    marginRight: 8,
   },
   keyDateSectionHeader: {
     backgroundColor: '#FFF8E1',
