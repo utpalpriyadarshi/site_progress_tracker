@@ -40,6 +40,9 @@ export interface SiteManagementState {
     supervisorName: string;
     selectedDesignEngineerId: string | undefined;
     designerName: string;
+    // KD assignment (create flow only)
+    linkedKDId: string | null;
+    kdContribution: string;
     // Dates
     plannedStartDate: Date | undefined;
     plannedEndDate: Date | undefined;
@@ -72,6 +75,8 @@ export type SiteManagementAction =
   | { type: 'SET_SELECTED_PROJECT_ID'; payload: string }
   | { type: 'SET_SUPERVISOR'; payload: { id: string | undefined; name: string } }
   | { type: 'SET_DESIGNER'; payload: { id: string | undefined; name: string } }
+  | { type: 'SET_LINKED_KD'; payload: string | null }
+  | { type: 'SET_KD_CONTRIBUTION'; payload: string }
   // Date Actions
   | { type: 'SET_PLANNED_START_DATE'; payload: Date | undefined }
   | { type: 'SET_PLANNED_END_DATE'; payload: Date | undefined }
@@ -109,6 +114,8 @@ export const createInitialState = (): SiteManagementState => ({
     supervisorName: 'Unassigned',
     selectedDesignEngineerId: undefined,
     designerName: 'Unassigned',
+    linkedKDId: null,
+    kdContribution: '100',
     plannedStartDate: undefined,
     plannedEndDate: undefined,
     actualStartDate: undefined,
@@ -143,6 +150,8 @@ export function siteManagementReducer(
           supervisorName: 'Unassigned',
           selectedDesignEngineerId: undefined,
           designerName: 'Unassigned',
+          linkedKDId: null,
+          kdContribution: '100',
           plannedStartDate: undefined,
           plannedEndDate: undefined,
           actualStartDate: undefined,
@@ -170,6 +179,8 @@ export function siteManagementReducer(
           supervisorName: action.payload.supervisorName,
           selectedDesignEngineerId: site.designEngineerId,
           designerName: action.payload.designerName,
+          linkedKDId: null,      // KD assignment is edit-only via Key Dates tab
+          kdContribution: '100',
           plannedStartDate: site.plannedStartDate ? new Date(site.plannedStartDate) : undefined,
           plannedEndDate: site.plannedEndDate ? new Date(site.plannedEndDate) : undefined,
           actualStartDate: site.actualStartDate ? new Date(site.actualStartDate) : undefined,
@@ -196,6 +207,8 @@ export function siteManagementReducer(
           supervisorName: 'Unassigned',
           selectedDesignEngineerId: undefined,
           designerName: 'Unassigned',
+          linkedKDId: null,
+          kdContribution: '100',
           plannedStartDate: undefined,
           plannedEndDate: undefined,
           actualStartDate: undefined,
@@ -318,6 +331,23 @@ export function siteManagementReducer(
           selectedDesignEngineerId: action.payload.id,
           designerName: action.payload.name,
         },
+      };
+
+    case 'SET_LINKED_KD':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          linkedKDId: action.payload,
+          // Reset contribution to 100 when KD changes
+          kdContribution: action.payload ? state.form.kdContribution : '100',
+        },
+      };
+
+    case 'SET_KD_CONTRIBUTION':
+      return {
+        ...state,
+        form: { ...state.form, kdContribution: action.payload },
       };
 
     // ===== Date Actions =====
