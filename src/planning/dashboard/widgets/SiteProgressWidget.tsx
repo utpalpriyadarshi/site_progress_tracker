@@ -40,7 +40,7 @@ const getProgressColor = (progress: number): string => {
 
 // ==================== Component ====================
 
-export const SiteProgressWidget: React.FC<SiteProgressWidgetProps> = ({
+const SiteProgressWidget: React.FC<SiteProgressWidgetProps> = ({
   sites,
   loading,
   error,
@@ -222,3 +222,6 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
 });
+
+const SiteProgressWidgetMemo = React.memo(SiteProgressWidget);
+export { SiteProgressWidgetMemo as SiteProgressWidget };

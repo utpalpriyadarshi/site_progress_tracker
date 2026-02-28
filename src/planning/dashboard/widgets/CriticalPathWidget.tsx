@@ -49,7 +49,7 @@ export interface CriticalPathWidgetProps {
 
 // ==================== Component ====================
 
-export const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
+const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
   items,
   loading = false,
   error = null,
@@ -262,4 +262,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CriticalPathWidget;
+const CriticalPathWidgetMemo = React.memo(CriticalPathWidget);
+export { CriticalPathWidgetMemo as CriticalPathWidget };
+export default CriticalPathWidgetMemo;

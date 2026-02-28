@@ -40,8 +40,10 @@ export function useRecentActivitiesData(): UseRecentActivitiesResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Memoize item IDs and name map to avoid unnecessary re-fetches
+  // Stable key: join IDs into a string so the effect only re-runs when the
+  // actual set of item IDs changes, not on every new array reference.
   const itemIds = useMemo(() => allItems.map(i => i.id), [allItems]);
+  const itemIdsKey = useMemo(() => itemIds.join(','), [itemIds]);
   const itemNameMap = useMemo(() => new Map(allItems.map(i => [i.id, i.name])), [allItems]);
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export function useRecentActivitiesData(): UseRecentActivitiesResult {
     return () => {
       cancelled = true;
     };
-  }, [dataReady, itemIds, itemNameMap]);
+  }, [dataReady, itemIdsKey, itemIds, itemNameMap]);
 
   return { activities, loading, error, refresh: refreshDashboard };
 }
