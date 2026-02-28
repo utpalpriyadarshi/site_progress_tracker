@@ -228,7 +228,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   if (items.length === 0) {
     return (
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         {filters.searchQuery ? (
           <EmptyState
             icon="magnify"
@@ -244,7 +244,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             message="Start planning by creating your first schedule item"
           />
         )}
-      </View>
+      </ScrollView>
     );
   }
 
