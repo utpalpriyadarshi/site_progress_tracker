@@ -55,6 +55,7 @@ export function useCriticalPathData(): UseCriticalPathResult {
         return {
           id: item.id,
           name: item.name,
+          siteId: item.siteId,
           riskLevel,
           delayImpact: isDelayed ? Math.abs(daysUntilDue) : 0,
           progress: item.getProgressPercentage(),

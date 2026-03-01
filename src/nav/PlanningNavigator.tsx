@@ -68,7 +68,7 @@ export type PlanningTabParamList = {
   Dashboard: undefined;
   KeyDates: undefined;
   Schedule: undefined;
-  Gantt: undefined;
+  Gantt: { siteId?: string } | undefined;
 };
 
 export type PlanningDrawerParamList = {
