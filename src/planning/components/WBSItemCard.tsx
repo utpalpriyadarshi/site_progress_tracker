@@ -17,6 +17,7 @@ interface WBSItemCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onAddChild?: () => void;
+  onLinkDocument?: () => void;
 }
 
 const WBSItemCard: React.FC<WBSItemCardProps> = ({
@@ -26,6 +27,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
   onEdit,
   onDelete,
   onAddChild,
+  onLinkDocument,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -92,7 +94,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
               </View>
             )}
           </View>
-          {(onEdit || onDelete || onAddChild) && (
+          {(onEdit || onDelete || onAddChild || onLinkDocument) && (
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
@@ -137,6 +139,16 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
                   title="Delete"
                   disabled={item.isBaselineLocked}
                   titleStyle={{ color: item.isBaselineLocked ? '#ccc' : '#d32f2f' }}
+                />
+              )}
+              {onLinkDocument && (
+                <Menu.Item
+                  leadingIcon={linkedDoc ? 'link-variant-off' : 'link-variant'}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    onLinkDocument();
+                  }}
+                  title={linkedDoc ? 'Change Linked Doc' : 'Link Design Doc'}
                 />
               )}
             </Menu>
