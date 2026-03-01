@@ -1,11 +1,12 @@
-import React, { useReducer, useEffect, useMemo, useCallback } from 'react';
+import React, { useReducer, useEffect, useMemo, useCallback, useState } from 'react';
 import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { Card, Text, FAB, Chip, Button } from 'react-native-paper';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
-import WBSItemCard from './components/WBSItemCard';
+import DesignDocumentModel from '../../models/DesignDocumentModel';
+import WBSItemCard, { LinkedDocSummary } from './components/WBSItemCard';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -57,6 +58,9 @@ const WBSManagementScreen = () => {
   // Initialize reducer state
   const [state, dispatch] = useReducer(wbsManagementReducer, createWBSManagementInitialState());
 
+  // Map of designDocumentId → LinkedDocSummary for items that have a linked doc
+  const [linkedDocsMap, setLinkedDocsMap] = useState<Map<string, LinkedDocSummary>>(new Map());
+
   // Debounce search query for performance (300ms)
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -98,6 +102,24 @@ const WBSManagementScreen = () => {
       });
 
       dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+
+      // Batch-load design documents linked to these items
+      const linkedDocIds = [...new Set(
+        siteItems.map(i => i.designDocumentId).filter((id): id is string => !!id)
+      )];
+      if (linkedDocIds.length > 0) {
+        const docs = await database.collections
+          .get<DesignDocumentModel>('design_documents')
+          .query(Q.where('id', Q.oneOf(linkedDocIds)))
+          .fetch();
+        const map = new Map<string, LinkedDocSummary>();
+        docs.forEach(doc => {
+          map.set(doc.id, { docNumber: doc.documentNumber, title: doc.title, status: doc.status });
+        });
+        setLinkedDocsMap(map);
+      } else {
+        setLinkedDocsMap(new Map());
+      }
     } catch (error) {
       logger.error('[WBS] Error loading items', error as Error);
       showSnackbar('Failed to load items', 'error');
@@ -395,6 +417,7 @@ const WBSManagementScreen = () => {
             renderItem={({ item }) => (
               <WBSItemCard
                 item={item}
+                linkedDoc={item.designDocumentId ? linkedDocsMap.get(item.designDocumentId) ?? null : null}
                 onPress={() => {}}
                 onEdit={() => handleEditItem(item)}
                 onDelete={() => handleDeleteItem(item)}

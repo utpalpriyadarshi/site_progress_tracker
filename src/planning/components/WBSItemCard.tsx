@@ -4,8 +4,15 @@ import { Card, Text, Chip, IconButton, Menu } from 'react-native-paper';
 import ItemModel from '../../../models/ItemModel';
 import { COLORS } from '../../theme/colors';
 
+export interface LinkedDocSummary {
+  docNumber: string;
+  title: string;
+  status: string; // 'draft' | 'submitted' | 'approved' | 'approved_with_comment' | 'rejected'
+}
+
 interface WBSItemCardProps {
   item: ItemModel;
+  linkedDoc?: LinkedDocSummary | null;
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -14,6 +21,7 @@ interface WBSItemCardProps {
 
 const WBSItemCard: React.FC<WBSItemCardProps> = ({
   item,
+  linkedDoc,
   onPress,
   onEdit,
   onDelete,
@@ -25,6 +33,26 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
   const phaseColor = item.getPhaseColor();
   const riskBadgeColor = item.getRiskBadgeColor();
   const isOnCriticalPath = item.isOnCriticalPath();
+
+  const getDocStatusColor = (status: string): string => {
+    switch (status) {
+      case 'approved': return '#2E7D32';
+      case 'approved_with_comment': return '#388E3C';
+      case 'submitted': return '#1565C0';
+      case 'rejected': return '#C62828';
+      default: return '#757575'; // draft
+    }
+  };
+
+  const getDocStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'approved': return 'Approved';
+      case 'approved_with_comment': return 'Approved ✱';
+      case 'submitted': return 'Submitted';
+      case 'rejected': return 'Rejected';
+      default: return 'Draft';
+    }
+  };
 
   return (
     <Card
@@ -195,6 +223,20 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
             ⚠️ {item.riskNotes}
           </Text>
         )}
+
+        {/* Linked Design Document */}
+        {linkedDoc && (
+          <View style={styles.linkedDocRow}>
+            <Chip
+              compact
+              icon="file-document-outline"
+              style={[styles.linkedDocChip, { borderColor: getDocStatusColor(linkedDoc.status) }]}
+              textStyle={{ color: getDocStatusColor(linkedDoc.status), fontSize: 11 }}
+            >
+              {linkedDoc.docNumber} · {getDocStatusLabel(linkedDoc.status)}
+            </Chip>
+          </View>
+        )}
       </Card.Content>
     </Card>
   );
@@ -328,7 +370,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   riskNotes: {
-    marginBottom: 12,
+    marginBottom: 8,
     padding: 8,
     backgroundColor: '#fff3e0',
     borderWidth: 1,
@@ -337,6 +379,14 @@ const styles = StyleSheet.create({
     borderLeftColor: '#ff9800',
     borderRadius: 4,
     color: '#e65100',
+  },
+  linkedDocRow: {
+    marginTop: 6,
+  },
+  linkedDocChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
   },
 });
 

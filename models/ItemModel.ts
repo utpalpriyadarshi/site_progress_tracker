@@ -24,6 +24,7 @@ export default class ItemModel extends Model {
     categories: { type: 'belongs_to', key: 'category_id' },
     sites: { type: 'belongs_to', key: 'site_id' },
     key_dates: { type: 'belongs_to', key: 'key_date_id' },
+    design_documents: { type: 'belongs_to', key: 'design_document_id' },
     progress_logs: { type: 'has_many', foreignKey: 'item_id' },
     materials: { type: 'has_many', foreignKey: 'item_id' },
     hindrances: { type: 'has_many', foreignKey: 'item_id' },
@@ -72,6 +73,9 @@ export default class ItemModel extends Model {
 
   // Key Date linking (v35 - Phase 5a)
   @field('key_date_id') keyDateId?: string; // linked key date
+
+  // Design Document linking (v50)
+  @field('design_document_id') designDocumentId?: string; // linked design document deliverable
 
   // Sync Management (v18 - Activity 2 prep)
   @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column

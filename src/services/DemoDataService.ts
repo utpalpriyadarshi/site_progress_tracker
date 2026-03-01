@@ -1166,6 +1166,46 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
     }
   });
 
+  // Link WBS items (created by planner) to their design document deliverables (v50).
+  // Mappings for the Simulation Studies site only.
+  const simSiteId = projectSites[0]?.id;
+  if (simSiteId) {
+    const WBS_DOC_LINKS: Record<string, string> = {
+      '1.1': 'DD-SIM-001', // Load Flow & Short Circuit Studies
+      '1.2': 'DD-SIM-003', // OCS Engineering Analysis
+      '2.1': 'DD-SIM-002', // Preliminary Design Submission
+      '2.2': 'DD-SIM-004', // Detail Design Review & Approval
+    };
+
+    const simItems = await database.collections
+      .get<ItemModel>('items')
+      .query(Q.where('site_id', simSiteId))
+      .fetch();
+
+    const simDocs = await database.collections
+      .get<DesignDocumentModel>('design_documents')
+      .query(Q.where('site_id', simSiteId), Q.where('project_id', projectId))
+      .fetch();
+
+    const docByNumber: Record<string, string> = {};
+    simDocs.forEach((doc: DesignDocumentModel) => { docByNumber[doc.documentNumber] = doc.id; });
+
+    const itemsToUpdate = simItems.filter(
+      (item: ItemModel) => WBS_DOC_LINKS[item.wbsCode] && !item.designDocumentId
+    );
+
+    if (itemsToUpdate.length > 0) {
+      await database.write(async () => {
+        for (const item of itemsToUpdate) {
+          const docId = docByNumber[WBS_DOC_LINKS[item.wbsCode]];
+          if (docId) {
+            await item.update((i: any) => { i.designDocumentId = docId; });
+          }
+        }
+      });
+    }
+  }
+
   return {
     domainsCreated: domainCount,
     doorsPackagesCreated: createdDoorsPackages.length,
