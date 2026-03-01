@@ -238,8 +238,10 @@ const PlanningDashboardScreen: React.FC = () => {
   }, [navigation]);
 
   const navigateToWBS = useCallback(() => {
-    navigation.navigate('WBS');
-  }, [navigation]);
+    // Pass the first available site so WBS screen can auto-select it.
+    // The widget shows project-wide data, so any site is a reasonable landing point.
+    navigation.navigate('WBS', { siteId: sites[0]?.id });
+  }, [navigation, sites]);
 
   const navigateToGantt = useCallback(() => {
     navigation.navigate('Gantt');

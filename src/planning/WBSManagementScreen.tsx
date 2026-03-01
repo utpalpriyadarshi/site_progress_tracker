@@ -7,9 +7,11 @@ import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
 import WBSItemCard from './components/WBSItemCard';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
+import { usePlanningContext } from './context';
+import type { PlanningDrawerParamList } from '../nav/PlanningNavigator';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
@@ -47,8 +49,10 @@ const SORT_OPTIONS: SortOption[] = [
 
 const WBSManagementScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp<PlanningDrawerParamList, 'WBS'>>();
   const { showSnackbar } = useSnackbar();
   const { announce } = useAccessibility();
+  const { sites } = usePlanningContext();
 
   // Initialize reducer state
   const [state, dispatch] = useReducer(wbsManagementReducer, createWBSManagementInitialState());
@@ -163,6 +167,19 @@ const WBSManagementScreen = () => {
       announce(`Found ${displayedItems.length} items matching "${debouncedSearchQuery}"`);
     }
   }, [displayedItems.length, debouncedSearchQuery, announce]);
+
+  // Auto-select site when navigated from Dashboard with a siteId param.
+  // appliedSiteId ref prevents re-applying on unrelated re-renders.
+  const appliedSiteId = React.useRef<string | null>(null);
+  useEffect(() => {
+    const siteId = route.params?.siteId;
+    if (!siteId || sites.length === 0 || siteId === appliedSiteId.current) return;
+    const site = sites.find(s => s.id === siteId) ?? null;
+    if (site) {
+      dispatch({ type: 'SET_SELECTED_SITE', payload: { site } });
+      appliedSiteId.current = siteId;
+    }
+  }, [route.params?.siteId, sites]);
 
   // Load items when site changes
   useEffect(() => {
