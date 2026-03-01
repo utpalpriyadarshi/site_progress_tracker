@@ -75,7 +75,7 @@ export type PlanningDrawerParamList = {
   MainTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   Resources: undefined;
   Sites: undefined;
-  WBS: undefined;
+  WBS: { siteId?: string } | undefined;
   MilestoneTracking: undefined;
   Baseline: undefined;
 };
