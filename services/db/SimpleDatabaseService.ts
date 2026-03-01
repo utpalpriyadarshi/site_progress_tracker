@@ -4,6 +4,11 @@ import bcrypt from 'react-native-bcrypt';
 
 // A simplified database service that matches the actual schema
 export class SimpleDatabaseService {
+  // Singleton lock: if a concurrent call arrives while init is in-flight,
+  // it awaits the same promise instead of running a second seed pass.
+  // This prevents the React Strict Mode double-mount race condition.
+  private static _initPromise: Promise<void> | null = null;
+
   /**
    * Helper function to hash passwords with bcrypt
    * Salt rounds: 8 (mobile optimized for performance)
@@ -21,6 +26,19 @@ export class SimpleDatabaseService {
   }
 
   static async initializeDefaultData(): Promise<void> {
+    // If already in-flight, join the existing promise instead of starting a second seed.
+    if (SimpleDatabaseService._initPromise) {
+      return SimpleDatabaseService._initPromise;
+    }
+    SimpleDatabaseService._initPromise = SimpleDatabaseService._doInitialize();
+    try {
+      await SimpleDatabaseService._initPromise;
+    } finally {
+      SimpleDatabaseService._initPromise = null;
+    }
+  }
+
+  private static async _doInitialize(): Promise<void> {
     try {
       // Check if we already have data to avoid duplicates
       // Check projects, users, AND roles to be thorough

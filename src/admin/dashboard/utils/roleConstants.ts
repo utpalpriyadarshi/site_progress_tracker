@@ -64,4 +64,10 @@ export const DATABASE_COLLECTIONS = [
   'key_dates', 'key_date_sites',
   // Design Documents (v36)
   'design_document_categories', 'design_documents',
+  // Domains (v44)
+  'domains',
+  // DOORS Revisions (v46)
+  'doors_revisions',
+  // Change Orders (v49)
+  'change_orders',
 ];
