@@ -29,6 +29,8 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
 import { usePlanningContext } from './context';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import type { PlanningTabParamList } from '../nav/PlanningNavigator';
 import { type TimelineBounds } from './gantt-chart/utils/ganttCalculations';
 
 // State management
@@ -55,7 +57,8 @@ const GanttChartScreen: React.FC = () => {
   const [state, dispatch] = useReducer(ganttChartReducer, createGanttChartInitialState());
   const scrollViewRef = useRef<ScrollView>(null);
   const { announce } = useAccessibility();
-  const { projectId } = usePlanningContext();
+  const { projectId, sites } = usePlanningContext();
+  const route = useRoute<RouteProp<PlanningTabParamList, 'Gantt'>>();
 
   // Key dates state
   const [keyDates, setKeyDates] = React.useState<KeyDateModel[]>([]);
@@ -136,6 +139,20 @@ const GanttChartScreen: React.FC = () => {
   const handleSiteChange = useCallback((site: SiteModel | null) => {
     dispatch({ type: 'SET_SELECTED_SITE', payload: { site } });
   }, []);
+
+  // Auto-select site when navigated from another screen with a siteId param
+  // (e.g. tapping a task in the Critical Path widget on the Dashboard).
+  // Track last applied siteId so we don't re-apply on unrelated re-renders.
+  const appliedSiteId = useRef<string | null>(null);
+  useEffect(() => {
+    const siteId = route.params?.siteId;
+    if (!siteId || sites.length === 0 || siteId === appliedSiteId.current) return;
+    const site = sites.find(s => s.id === siteId) ?? null;
+    if (site) {
+      handleSiteChange(site);
+      appliedSiteId.current = siteId;
+    }
+  }, [route.params?.siteId, sites, handleSiteChange]);
 
   // Zoom level handler
   const handleZoomChange = useCallback((zoomLevel: ZoomLevel) => {

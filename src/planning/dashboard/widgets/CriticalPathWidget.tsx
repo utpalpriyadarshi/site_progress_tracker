@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable } from 'react-native';
 import { Text, useTheme, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BaseWidget } from './BaseWidget';
@@ -32,6 +32,7 @@ const RISK_ORDER = {
 export interface CriticalPathItem {
   id: string;
   name: string;
+  siteId: string;
   riskLevel: 'high' | 'medium' | 'low';
   delayImpact: number; // days
   progress: number; // 0-100
@@ -43,6 +44,7 @@ export interface CriticalPathWidgetProps {
   loading?: boolean;
   error?: string | null;
   onPress?: () => void;
+  onItemPress?: (item: CriticalPathItem) => void;
   onRetry?: () => void;
   onRefresh?: () => void;
 }
@@ -54,6 +56,7 @@ const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
   loading = false,
   error = null,
   onPress,
+  onItemPress,
   onRetry,
   onRefresh,
 }) => {
@@ -92,10 +95,12 @@ const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
   );
 
   const renderItem = ({ item }: { item: CriticalPathItem }) => (
-    <View
-      style={styles.itemRow}
+    <Pressable
+      onPress={() => onItemPress?.(item)}
+      style={({ pressed }) => [styles.itemRow, pressed && styles.itemRowPressed]}
       accessible
-      accessibilityLabel={`${item.name}, ${item.riskLevel} risk, ${item.progress}% complete, ${item.delayImpact} day delay impact`}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.name}, ${item.riskLevel} risk, ${item.progress}% complete, ${item.delayImpact} day delay impact. Tap to view in Gantt`}
     >
       <View style={styles.riskIndicator}>
         <Icon
@@ -133,7 +138,7 @@ const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 
   const renderContent = () => {
@@ -174,7 +179,7 @@ const CriticalPathWidget: React.FC<CriticalPathWidgetProps> = ({
         </View>
 
         <FlatList
-          data={sortedItems.slice(0, 4)}
+          data={sortedItems}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           scrollEnabled={false}
@@ -221,6 +226,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E0E0E0',
+  },
+  itemRowPressed: {
+    opacity: 0.6,
   },
   riskIndicator: {
     width: 28,

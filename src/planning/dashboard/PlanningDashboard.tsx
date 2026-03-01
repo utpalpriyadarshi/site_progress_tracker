@@ -330,6 +330,7 @@ const PlanningDashboardScreen: React.FC = () => {
           loading={criticalPath.loading}
           error={criticalPath.error}
           onPress={navigateToGantt}
+          onItemPress={(item) => navigation.navigate('Gantt', { siteId: item.siteId })}
           onRefresh={criticalPath.refresh}
         />,
         <WBSProgressWidget
