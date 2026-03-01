@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 49, // Add change_orders table for Manager change order tracking
+  version: 50, // Add design_document_id to items for WBS-DesignDoc linkage
   tables: [
     tableSchema({
       name: 'projects',
@@ -90,6 +90,8 @@ export default appSchema({
         { name: 'milestone_id', type: 'string', isOptional: true, isIndexed: true }, // linked milestone
         // Key Date linking (v35 - Phase 5a)
         { name: 'key_date_id', type: 'string', isOptional: true, isIndexed: true }, // linked key date
+        // Design Document linking (v50)
+        { name: 'design_document_id', type: 'string', isOptional: true, isIndexed: true }, // linked design doc deliverable
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
       ],

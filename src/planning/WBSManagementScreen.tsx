@@ -1,11 +1,12 @@
-import React, { useReducer, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
-import { Card, Text, FAB, Chip, Button } from 'react-native-paper';
+import React, { useReducer, useEffect, useMemo, useCallback, useState } from 'react';
+import { View, StyleSheet, ScrollView, FlatList, Pressable } from 'react-native';
+import { Card, Text, FAB, Chip, Button, Portal, Dialog } from 'react-native-paper';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import ItemModel, { ProjectPhase } from '../../models/ItemModel';
 import SiteModel from '../../models/SiteModel';
-import WBSItemCard from './components/WBSItemCard';
+import DesignDocumentModel from '../../models/DesignDocumentModel';
+import WBSItemCard, { LinkedDocSummary } from './components/WBSItemCard';
 import SimpleSiteSelector from './components/SimpleSiteSelector';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -57,6 +58,9 @@ const WBSManagementScreen = () => {
   // Initialize reducer state
   const [state, dispatch] = useReducer(wbsManagementReducer, createWBSManagementInitialState());
 
+  // Map of designDocumentId → LinkedDocSummary for items that have a linked doc
+  const [linkedDocsMap, setLinkedDocsMap] = useState<Map<string, LinkedDocSummary>>(new Map());
+
   // Debounce search query for performance (300ms)
   const debouncedSearchQuery = useDebounce(state.filters.searchQuery, 300);
 
@@ -65,32 +69,52 @@ const WBSManagementScreen = () => {
 
     dispatch({ type: 'START_LOADING' });
     try {
-      const query = [Q.where('site_id', state.selection.selectedSite.id)];
-
-      // Note: We don't filter by phase in the query anymore
-      // We'll do it in the displayedItems useMemo for better UX
-
       const siteItems = await database.collections
         .get<ItemModel>('items')
-        .query(...query)
+        .query(Q.where('site_id', state.selection.selectedSite.id))
         .fetch();
 
-      // Fix status for items where status doesn't match progress
-      // This handles items created before auto-status was implemented
+      // Batch-load linked design documents BEFORE the status write so we
+      // can use approval status to drive item completion.
+      const linkedDocIds = [...new Set(
+        siteItems.map(i => i.designDocumentId).filter((id): id is string => !!id)
+      )];
+      let linkedDocs: DesignDocumentModel[] = [];
+      if (linkedDocIds.length > 0) {
+        linkedDocs = await database.collections
+          .get<DesignDocumentModel>('design_documents')
+          .query(Q.where('id', Q.oneOf(linkedDocIds)))
+          .fetch();
+      }
+      const docById = new Map<string, DesignDocumentModel>(linkedDocs.map(d => [d.id, d]));
+
+      // Fix status + sync completedQuantity from linked doc approval status.
+      // Rule: if the item's design-doc deliverable is approved (or approved_with_comment)
+      // and the item has not been manually progressed (completedQuantity === 0),
+      // mark it as 100% complete so the status badge reflects reality.
       await database.write(async () => {
         for (const item of siteItems) {
-          const progress = item.getProgressPercentage();
-          let correctStatus = 'not_started';
+          let newCompletedQty = item.completedQuantity;
 
-          if (progress >= 100) {
-            correctStatus = 'completed';
-          } else if (progress > 0) {
-            correctStatus = 'in_progress';
+          if (item.designDocumentId && item.completedQuantity === 0) {
+            const doc = docById.get(item.designDocumentId);
+            if (doc && (doc.status === 'approved' || doc.status === 'approved_with_comment')) {
+              newCompletedQty = item.plannedQuantity;
+            }
           }
 
-          // Only update if status is incorrect
-          if (item.status !== correctStatus) {
+          const progress = item.plannedQuantity > 0
+            ? Math.min(100, (newCompletedQty / item.plannedQuantity) * 100)
+            : 0;
+          const correctStatus =
+            progress >= 100 ? 'completed' :
+            progress > 0 ? 'in_progress' :
+            'not_started';
+
+          const needsUpdate = newCompletedQty !== item.completedQuantity || item.status !== correctStatus;
+          if (needsUpdate) {
             await item.update((i: any) => {
+              i.completedQuantity = newCompletedQty;
               i.status = correctStatus;
             });
           }
@@ -98,6 +122,13 @@ const WBSManagementScreen = () => {
       });
 
       dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+
+      // Populate the map used for chip display on each card
+      const map = new Map<string, LinkedDocSummary>();
+      linkedDocs.forEach(doc => {
+        map.set(doc.id, { docNumber: doc.documentNumber, title: doc.title, status: doc.status });
+      });
+      setLinkedDocsMap(map);
     } catch (error) {
       logger.error('[WBS] Error loading items', error as Error);
       showSnackbar('Failed to load items', 'error');
@@ -289,6 +320,54 @@ const WBSManagementScreen = () => {
     }
   }, [state.data.itemToDelete, loadItems, showSnackbar]);
 
+  // ── Link Design Document dialog ──────────────────────────────
+  const [linkDocDialogVisible, setLinkDocDialogVisible] = useState(false);
+  const [linkDocItem, setLinkDocItem] = useState<ItemModel | null>(null);
+  const [availableSiteDocs, setAvailableSiteDocs] = useState<
+    Array<{ id: string; docNumber: string; title: string; status: string }>
+  >([]);
+
+  const handleOpenLinkDocDialog = useCallback(async (item: ItemModel) => {
+    try {
+      const docs = await database.collections
+        .get<DesignDocumentModel>('design_documents')
+        .query(Q.where('site_id', item.siteId))
+        .fetch();
+      setAvailableSiteDocs(
+        docs.map(d => ({ id: d.id, docNumber: d.documentNumber, title: d.title, status: d.status }))
+      );
+      setLinkDocItem(item);
+      setLinkDocDialogVisible(true);
+    } catch (e) {
+      showSnackbar('Failed to load documents', 'error');
+    }
+  }, [showSnackbar]);
+
+  const handleSelectDoc = useCallback(async (docId: string | null) => {
+    if (!linkDocItem) return;
+    try {
+      await database.write(async () => {
+        await linkDocItem.update((i: any) => { i.designDocumentId = docId ?? null; });
+      });
+      setLinkDocDialogVisible(false);
+      setLinkDocItem(null);
+      loadItems();
+      showSnackbar(docId ? 'Document linked successfully' : 'Document unlinked', 'success');
+    } catch (e) {
+      showSnackbar('Failed to update document link', 'error');
+    }
+  }, [linkDocItem, loadItems, showSnackbar]);
+
+  const getDocStatusColor = (status: string): string => {
+    switch (status) {
+      case 'approved': return '#2E7D32';
+      case 'approved_with_comment': return '#388E3C';
+      case 'submitted': return '#1565C0';
+      case 'rejected': return '#C62828';
+      default: return '#757575';
+    }
+  };
+
   const phases: Array<{ key: ProjectPhase | 'all'; label: string }> = [
     { key: 'all', label: 'All Phases' },
     { key: 'design', label: 'Design' },
@@ -395,10 +474,12 @@ const WBSManagementScreen = () => {
             renderItem={({ item }) => (
               <WBSItemCard
                 item={item}
+                linkedDoc={item.designDocumentId ? linkedDocsMap.get(item.designDocumentId) ?? null : null}
                 onPress={() => {}}
                 onEdit={() => handleEditItem(item)}
                 onDelete={() => handleDeleteItem(item)}
                 onAddChild={() => handleAddChildItem(item)}
+                onLinkDocument={() => handleOpenLinkDocDialog(item)}
               />
             )}
             ListEmptyComponent={
@@ -474,6 +555,62 @@ const WBSManagementScreen = () => {
         onCancel={() => dispatch({ type: 'CLOSE_DELETE_DIALOG' })}
         destructive={true}
       />
+
+      {/* Link Design Document dialog */}
+      <Portal>
+        <Dialog
+          visible={linkDocDialogVisible}
+          onDismiss={() => setLinkDocDialogVisible(false)}
+        >
+          <Dialog.Title>Link Design Document</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodySmall" style={styles.linkDocHint}>
+              Select a document from this site to attach as the deliverable for this WBS item.
+            </Text>
+            {availableSiteDocs.length === 0 ? (
+              <Text variant="bodyMedium" style={styles.linkDocEmpty}>
+                No documents found for this site
+              </Text>
+            ) : (
+              <ScrollView style={styles.linkDocList} showsVerticalScrollIndicator={false}>
+                {availableSiteDocs.map(doc => {
+                  const isSelected = linkDocItem?.designDocumentId === doc.id;
+                  return (
+                    <Pressable
+                      key={doc.id}
+                      onPress={() => handleSelectDoc(doc.id)}
+                      style={({ pressed }) => [
+                        styles.linkDocRow,
+                        isSelected && styles.linkDocRowSelected,
+                        pressed && styles.linkDocRowPressed,
+                      ]}
+                    >
+                      <View style={styles.linkDocRowContent}>
+                        <View style={[styles.linkDocStatusDot, { backgroundColor: getDocStatusColor(doc.status) }]} />
+                        <View style={styles.linkDocRowText}>
+                          <Text variant="labelMedium" style={styles.linkDocNumber}>{doc.docNumber}</Text>
+                          <Text variant="bodySmall" numberOfLines={1} style={styles.linkDocTitle}>{doc.title}</Text>
+                        </View>
+                        {isSelected && (
+                          <Text variant="labelSmall" style={{ color: '#1565C0' }}>✓ Linked</Text>
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            {linkDocItem?.designDocumentId && (
+              <Button onPress={() => handleSelectDoc(null)} textColor="#C62828">
+                Unlink
+              </Button>
+            )}
+            <Button onPress={() => setLinkDocDialogVisible(false)}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -569,6 +706,51 @@ const styles = StyleSheet.create({
   noSiteSubtext: {
     color: '#999',
     textAlign: 'center',
+  },
+  linkDocHint: {
+    color: '#666',
+    marginBottom: 12,
+  },
+  linkDocEmpty: {
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  linkDocList: {
+    maxHeight: 320,
+  },
+  linkDocRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E0E0E0',
+  },
+  linkDocRowSelected: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 6,
+  },
+  linkDocRowPressed: {
+    opacity: 0.6,
+  },
+  linkDocRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  linkDocStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  linkDocRowText: {
+    flex: 1,
+  },
+  linkDocNumber: {
+    fontWeight: '600',
+  },
+  linkDocTitle: {
+    color: '#666',
+    marginTop: 1,
   },
 });
 
