@@ -1531,14 +1531,17 @@ const ManagerDashboardScreen = () => {
         {/* Row 1 */}
         <View style={styles.kpiRow}>
           {/* KPI 1: Sites Status */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.sitesDelayed > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('TeamPerformance')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Sites Status</Paragraph>
               <Title style={styles.kpiValue}>
                 {stats.sitesOnSchedule}/{stats.totalSites}
               </Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.sitesDelayed > 0 ? `${stats.sitesDelayed} delayed` : 'All on schedule'}
+                {stats.sitesDelayed > 0 ? `${stats.sitesDelayed} delayed · Tap` : 'All on schedule'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1559,12 +1562,15 @@ const ManagerDashboardScreen = () => {
           </Card>
 
           {/* KPI 2: Budget Utilization */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.budgetUtilization > 90 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('FinancialReports')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Budget Used</Paragraph>
               <Title style={styles.kpiValue}>{stats.budgetUtilization.toFixed(1)}%</Title>
               <Paragraph style={styles.kpiSubtext}>
-                of {formatCurrency(projectInfo.budget)}
+                {stats.budgetUtilization > 90 ? 'Over threshold · Tap' : `of ${formatCurrency(projectInfo.budget)}`}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1588,12 +1594,15 @@ const ManagerDashboardScreen = () => {
         {/* Row 2 */}
         <View style={styles.kpiRow}>
           {/* KPI 3: Open Hindrances */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.openHindrances > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('TeamPerformance')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Open Issues</Paragraph>
               <Title style={styles.kpiValue}>{stats.openHindrances}</Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.openHindrances === 0 ? 'No open issues' : 'Requires attention'}
+                {stats.openHindrances === 0 ? 'No open issues' : 'Tap to review'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1614,12 +1623,15 @@ const ManagerDashboardScreen = () => {
           </Card>
 
           {/* KPI 4: Critical Path Risk */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.criticalPathItemsAtRisk > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('Milestones')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Critical Path</Paragraph>
               <Title style={styles.kpiValue}>{stats.criticalPathItemsAtRisk}</Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.criticalPathItemsAtRisk === 0 ? 'No risks' : 'Items at risk'}
+                {stats.criticalPathItemsAtRisk === 0 ? 'No risks' : 'Tap to review'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1643,14 +1655,17 @@ const ManagerDashboardScreen = () => {
         {/* Row 3 */}
         <View style={styles.kpiRow}>
           {/* KPI 5: Delivery Status */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.deliveryDelayed > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('BomManagement')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Deliveries</Paragraph>
               <Title style={styles.kpiValue}>
                 {stats.deliveryOnTrack}/{stats.deliveryOnTrack + stats.deliveryDelayed}
               </Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.deliveryDelayed > 0 ? `${stats.deliveryDelayed} delayed` : 'On track'}
+                {stats.deliveryDelayed > 0 ? `${stats.deliveryDelayed} delayed · Tap` : 'On track'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1671,12 +1686,15 @@ const ManagerDashboardScreen = () => {
           </Card>
 
           {/* KPI 6: Upcoming Milestones */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={styles.kpiCard}
+            onPress={() => (navigation as any).navigate('Milestones')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Next 30 Days</Paragraph>
               <Title style={styles.kpiValue}>{stats.upcomingMilestones}</Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.upcomingMilestones === 0 ? 'No milestones' : 'Milestones due'}
+                {stats.upcomingMilestones === 0 ? 'No milestones' : 'Milestones due · Tap'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1722,12 +1740,15 @@ const ManagerDashboardScreen = () => {
           </Card>
 
           {/* KPI 8: Pending Change Orders */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={[styles.kpiCard, stats.pendingChanges > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('ChangeOrders')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Pending Changes</Paragraph>
               <Title style={styles.kpiValue}>{stats.pendingChanges}</Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.pendingChanges === 0 ? 'None pending' : 'Awaiting approval'}
+                {stats.pendingChanges === 0 ? 'None pending' : 'Tap to review'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1751,7 +1772,10 @@ const ManagerDashboardScreen = () => {
         {/* Row 5 */}
         <View style={styles.kpiRow}>
           {/* KPI 9: Active Supervisors */}
-          <Card style={styles.kpiCard}>
+          <Card
+            style={styles.kpiCard}
+            onPress={() => (navigation as any).navigate('TeamPerformance')}
+          >
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Active Supervisors</Paragraph>
               <Title style={styles.kpiValue}>{stats.activeSupervisors}</Title>
@@ -1772,6 +1796,16 @@ const ManagerDashboardScreen = () => {
         <Paragraph style={styles.sectionSubtitle}>PM200 Milestone + DOORS + RFQ Status</Paragraph>
 
         <EngineeringSection data={engineeringData} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('DesignDocApprovals')}
+        >
+          View Doc Approvals
+        </Button>
       </View>
 
       {/* Section 3: Site Progress */}
@@ -1782,6 +1816,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         <SiteProgressSection sites={sitesProgress} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('TeamPerformance')}
+        >
+          View Team Performance
+        </Button>
       </View>
 
       {/* Section 4: Equipment/Materials Status */}
@@ -1792,6 +1836,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         <EquipmentMaterialsSection data={equipmentData} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('BomManagement')}
+        >
+          View BOM & Purchase Orders
+        </Button>
       </View>
 
       {/* Section 5: Financial Summary */}
@@ -1802,6 +1856,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         <FinancialSection data={financialData} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('FinancialReports')}
+        >
+          View Financial Reports
+        </Button>
       </View>
 
       {/* Section 6: Testing & Commissioning */}
@@ -1812,6 +1876,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         <TestingCommissioningSection data={testingCommissioningData} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('Milestones')}
+        >
+          View Milestones
+        </Button>
       </View>
 
       {/* Section 7: Handover Status */}
@@ -1822,6 +1896,16 @@ const ManagerDashboardScreen = () => {
         </Paragraph>
 
         <HandoverSection data={handoverData} />
+        <Button
+          mode="text"
+          compact
+          icon="chevron-right"
+          contentStyle={styles.viewDetailsContent}
+          style={styles.viewDetailsRow}
+          onPress={() => (navigation as any).navigate('Milestones')}
+        >
+          View Milestones
+        </Button>
       </View>
     </ScrollView>
 
@@ -1972,6 +2056,15 @@ const styles = StyleSheet.create({
   kpiCardActionable: {
     borderWidth: 1.5,
     borderColor: COLORS.PRIMARY + '60',
+  },
+  viewDetailsRow: {
+    alignSelf: 'flex-end',
+    marginRight: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  viewDetailsContent: {
+    flexDirection: 'row-reverse',
   },
   kpiLabel: {
     fontSize: 12,
