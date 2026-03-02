@@ -108,11 +108,12 @@ const ChangeOrdersScreen = () => {
     setSnackbarVisible(true);
   };
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (silent = false) => {
     if (!projectId) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
+    if (!silent) setLoading(true);
     try {
       const col = database.collections.get('change_orders');
       const data = await col.query(Q.where('project_id', projectId)).fetch();
@@ -137,14 +138,23 @@ const ChangeOrdersScreen = () => {
     } catch (err) {
       logger.error('[ChangeOrders] Load failed:', err as Error);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!silent) setLoading(false);
+      if (!silent) setRefreshing(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  // Reactive: auto-reload when change_orders table changes
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['change_orders'])
+      .subscribe(() => loadOrders(true));
+    return () => subscription.unsubscribe();
+  }, [projectId, loadOrders]);
 
   const handleCreate = useCallback(async () => {
     if (!form.title.trim()) {
@@ -435,7 +445,7 @@ const ChangeOrdersScreen = () => {
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
-            onRefresh={() => { setRefreshing(true); loadOrders(); }}
+            onRefresh={() => { setRefreshing(true); loadOrders(false); }}
             refreshing={refreshing}
             ListEmptyComponent={
               <EmptyState

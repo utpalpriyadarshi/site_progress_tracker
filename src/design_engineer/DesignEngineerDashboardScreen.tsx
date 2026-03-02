@@ -12,6 +12,8 @@ import { useSiteDocProgressData } from './dashboard/hooks/useSiteDocProgressData
 import { SiteProgressWidget } from '../planning/dashboard/widgets/SiteProgressWidget';
 import { logger } from '../services/LoggingService';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DesignEngineerTabParamList } from '../nav/DesignEngineerNavigator';
 import { useAuth } from '../auth/AuthContext';
 import { EmptyState } from '../components/common/EmptyState';
 import TutorialModal from '../tutorial/TutorialModal';
@@ -31,7 +33,7 @@ import { COLORS } from '../theme/colors';
 
 const DesignEngineerDashboardScreen = () => {
   const { projectId, projectName, engineerId } = useDesignEngineerContext();
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<DesignEngineerTabParamList>>();
   const route = useRoute<any>();
   const { user } = useAuth();
 
@@ -171,7 +173,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="edit"
                 color={COLORS.DISABLED}
                 loading={loading}
-                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'draft' } as never)}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'draft' })}
               />
             </View>
             <View style={styles.metricsGrid}>
@@ -181,7 +183,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="send"
                 color={COLORS.INFO}
                 loading={loading}
-                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'submitted' } as never)}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'submitted' })}
               />
               <MetricCard
                 title="Approved"
@@ -189,7 +191,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="check-circle"
                 color={COLORS.SUCCESS}
                 loading={loading}
-                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'approved' } as never)}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'approved' })}
               />
             </View>
             <View style={styles.metricsGrid}>
@@ -199,7 +201,7 @@ const DesignEngineerDashboardScreen = () => {
                 icon="cancel"
                 color={COLORS.ERROR}
                 loading={loading}
-                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'rejected' } as never)}
+                onPress={() => navigation.navigate('DesignDocuments', { statusFilter: 'rejected' })}
               />
               <MetricCard
                 title="Revised"

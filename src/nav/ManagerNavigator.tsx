@@ -13,6 +13,7 @@ import MilestoneManagementScreen from '../manager/MilestoneManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import type { ManagerDrawerParamList } from './ManagerDrawerNavigator';
 import { COLORS } from '../theme/colors';
+import SyncHeaderButton from './SyncHeaderButton';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -60,11 +61,14 @@ const ManagerTabNavigator: React.FC = () => {
     </TouchableOpacity>
   ), [handleDrawerToggle]);
 
-  // Logout button
+  // Sync + Logout button
   const HeaderRight = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   ), [handleLogout]);
 
   // Icon getter for tabs
@@ -175,6 +179,10 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     paddingHorizontal: 8,
     paddingVertical: 8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   headerLogoutButton: {
     marginRight: 15,

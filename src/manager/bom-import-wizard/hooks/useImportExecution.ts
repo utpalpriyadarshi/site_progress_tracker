@@ -6,12 +6,14 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import { ImportData } from './useImportData';
+import { useAuth } from '../../../auth/AuthContext';
 
 export const useImportExecution = (
   projectId: string | null,
   importData: ImportData,
   onImportComplete: () => void
 ) => {
+  const { user } = useAuth();
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
 
@@ -38,7 +40,7 @@ export const useImportExecution = (
             (sum, item) => sum + (Number(item.totalCost) || 0),
             0
           );
-          record.createdBy = 'manager'; // TODO: Use actual user ID
+          record.createdBy = user?.userId || '';
         });
 
         // Import BOM items
