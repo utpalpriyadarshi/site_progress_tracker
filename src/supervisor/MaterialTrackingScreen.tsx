@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
@@ -7,12 +7,13 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import MaterialModel from '../../models/MaterialModel';
 import ItemModel from '../../models/ItemModel';
-import { Portal, Dialog, Button, TextInput, Menu, IconButton } from 'react-native-paper';
+import { Portal, Dialog, Button, TextInput, Menu, IconButton, Chip } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
 import { commonStyles } from '../styles/common';
+import { getSuggestionsForItem } from '../services/MaterialSuggestionsService';
 
 // Sample Material Tracking screen for construction supervisors
 const MaterialTrackingScreenComponent = ({
@@ -79,6 +80,16 @@ const MaterialTrackingScreenComponent = ({
     }
     return items.filter(item => item.siteId === selectedSiteId);
   };
+
+  // Suggestion chips for the Add dialog (derived from selected item)
+  const suggestions = useMemo(() => {
+    if (!selectedItemId || editingMaterial) return [];
+    const siteItems = getSiteItems();
+    const found = siteItems.find(i => i.id === selectedItemId);
+    if (!found) return [];
+    return getSuggestionsForItem(found.name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItemId, editingMaterial, items, selectedSiteId]);
 
   // Reset form
   const resetForm = () => {
@@ -377,6 +388,29 @@ const MaterialTrackingScreenComponent = ({
                 ))}
               </Menu>
 
+              {/* Quick suggestion chips (Add mode only) */}
+              {suggestions.length > 0 && (
+                <View style={styles.suggestionsContainer}>
+                  <Text style={styles.suggestionsLabel}>Quick suggestions:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll}>
+                    {suggestions.map((s, i) => (
+                      <Chip
+                        key={i}
+                        onPress={() => {
+                          setMaterialName(s.name);
+                          setUnit(s.unit);
+                          setQuantityRequired(String(s.quantityRequired));
+                        }}
+                        style={styles.suggestionChip}
+                        compact
+                      >
+                        {s.name}
+                      </Chip>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               <TextInput
                 label="Quantity Required *"
                 value={quantityRequired}
@@ -602,6 +636,20 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 12,
+  },
+  suggestionsContainer: {
+    marginBottom: 12,
+  },
+  suggestionsLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 6,
+  },
+  suggestionsScroll: {
+    flexDirection: 'row',
+  },
+  suggestionChip: {
+    marginRight: 6,
   },
 });
 

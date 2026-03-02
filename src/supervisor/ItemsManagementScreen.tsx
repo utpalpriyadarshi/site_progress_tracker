@@ -26,7 +26,7 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
-import { CopyItemsDialog, DuplicateItemsDialog } from '../components/dialogs';
+import { CopyItemsDialog, DuplicateItemsDialog, MaterialSuggestionsDialog } from '../components/dialogs';
 import ApplyTemplateDialog from './templates/ApplyTemplateDialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
@@ -98,6 +98,9 @@ const ItemsManagementScreenComponent = ({
   const [pendingCopyCallback, setPendingCopyCallback] = useState<
     ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
   >(null);
+
+  // Suggest materials state
+  const [suggestMaterialsItem, setSuggestMaterialsItem] = useState<ItemModel | null>(null);
 
   // Form fields
   const [itemName, setItemName] = useState('');
@@ -274,10 +277,11 @@ const ItemsManagementScreenComponent = ({
     setPendingCopyCallback(null);
   };
 
-  const handleApplyTemplateSuccess = (created: number, skipped: number) => {
+  const handleApplyTemplateSuccess = (created: number, skipped: number, materialsCreated: number) => {
+    const materialsMsg = materialsCreated > 0 ? ` + ${materialsCreated} materials` : '';
     const msg = skipped > 0
-      ? `✓ ${created} activities added (${skipped} duplicates skipped)`
-      : `✓ ${created} activities added from template`;
+      ? `✓ ${created} activities${materialsMsg} added (${skipped} duplicates skipped)`
+      : `✓ ${created} activities${materialsMsg} added from template`;
     showSnackbar(msg, 'success');
     setApplyTemplateDialogVisible(false);
   };
@@ -621,6 +625,14 @@ const ItemsManagementScreenComponent = ({
                         {item.status.replace('_', ' ')}
                       </Chip>
                       <View style={styles.actions}>
+                        {selectedSiteId !== 'all' && (
+                          <IconButton
+                            icon="package-variant-plus"
+                            size={20}
+                            iconColor={COLORS.PRIMARY}
+                            onPress={() => setSuggestMaterialsItem(item)}
+                          />
+                        )}
                         <IconButton
                           icon="pencil"
                           size={20}
@@ -795,6 +807,20 @@ const ItemsManagementScreenComponent = ({
         onClose={() => setApplyTemplateDialogVisible(false)}
         onSuccess={handleApplyTemplateSuccess}
       />
+
+      {/* Suggest Materials Dialog */}
+      {suggestMaterialsItem && (
+        <MaterialSuggestionsDialog
+          visible={!!suggestMaterialsItem}
+          item={suggestMaterialsItem}
+          categoryName={getCategoryName(suggestMaterialsItem.categoryId)}
+          onClose={() => setSuggestMaterialsItem(null)}
+          onSuccess={(count) => {
+            setSuggestMaterialsItem(null);
+            showSnackbar(`${count} material${count !== 1 ? 's' : ''} added`, 'success');
+          }}
+        />
+      )}
     </View>
   );
 };

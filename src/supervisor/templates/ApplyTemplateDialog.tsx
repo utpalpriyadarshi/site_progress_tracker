@@ -30,7 +30,7 @@ export interface ApplyTemplateDialogProps {
   siteName: string;
   projectId: string;
   onClose: () => void;
-  onSuccess: (created: number, skipped: number) => void;
+  onSuccess: (created: number, skipped: number, materialsCreated: number) => void;
 }
 
 const CATEGORY_LABELS: Record<TemplateCategory, string> = {
@@ -98,7 +98,7 @@ const ApplyTemplateDialog: React.FC<ApplyTemplateDialogProps> = ({
     setApplying(true);
     try {
       const result = await applyTemplateToSite(selectedId, siteId, projectId);
-      onSuccess(result.created, result.skipped);
+      onSuccess(result.created, result.skipped, result.materialsCreated);
       onClose();
     } catch (error) {
       logger.error('Failed to apply template', error as Error, {
