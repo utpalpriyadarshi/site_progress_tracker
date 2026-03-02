@@ -26,6 +26,7 @@ import {
   ProgressBar,
   Menu,
   Button,
+  Text,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { useManagerContext } from './context/ManagerContext';
@@ -1426,12 +1427,27 @@ const ManagerDashboardScreen = () => {
 
   const health = getHealthStatus();
 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <>
     <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      {/* Welcome Header */}
+      <View style={styles.welcomeHeader}>
+        <Text variant="bodyLarge" style={styles.dateText}>{currentDate}</Text>
+        <Text variant="headlineSmall" style={styles.greeting}>
+          Welcome, {user?.fullName || user?.username || 'Manager'}!
+        </Text>
+      </View>
+
       {/* Project Header */}
       <Card style={styles.headerCard}>
         <Card.Content>
@@ -1853,6 +1869,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  welcomeHeader: {
+    padding: 16,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  dateText: {
+    color: '#666',
+  },
+  greeting: {
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   headerCard: {
     margin: 15,
