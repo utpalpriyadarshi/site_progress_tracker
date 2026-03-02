@@ -198,7 +198,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         title="No Schedule Items"
         message="Start planning by creating your first schedule item"
         actionText="Create Schedule Item"
-        onAction={() => navigation.navigate('CreateItem')}
+        onAction={() => navigation.navigate('ItemCreation')}
       />
     );
   };

@@ -182,6 +182,38 @@ export const useDashboardData = (projectId: string | null) => {
 
       const budgetUtilization = await calculateBudgetUtilization();
 
+      // Pending approvals: submitted change orders + submitted design docs
+      const [pendingChangeOrders, pendingDesignDocs] = await Promise.all([
+        database.collections
+          .get('change_orders')
+          .query(Q.where('project_id', projectId), Q.where('status', 'submitted'))
+          .fetch(),
+        database.collections
+          .get('design_documents')
+          .query(Q.where('project_id', projectId), Q.where('status', 'submitted'))
+          .fetch(),
+      ]);
+      const pendingApprovals = pendingChangeOrders.length + pendingDesignDocs.length;
+
+      // Delivery tracking: POs not yet delivered
+      const allPOs = await database.collections
+        .get('purchase_orders')
+        .query(Q.where('project_id', projectId))
+        .fetch();
+      let deliveryOnTrack = 0;
+      let deliveryDelayed = 0;
+      allPOs.forEach((po: any) => {
+        const expectedDelivery = po.expectedDeliveryDate;
+        const actualDelivery = po.actualDeliveryDate;
+        if (expectedDelivery && !actualDelivery) {
+          if (expectedDelivery >= now) {
+            deliveryOnTrack++;
+          } else {
+            deliveryDelayed++;
+          }
+        }
+      });
+
       dispatch(setStatsAction({
         overallCompletion,
         sitesOnSchedule,
@@ -189,9 +221,9 @@ export const useDashboardData = (projectId: string | null) => {
         totalSites,
         budgetUtilization,
         openHindrances: hindrances.length,
-        pendingApprovals: 0, // TODO: Implement approvals logic
-        deliveryOnTrack: 0, // TODO: Implement delivery tracking
-        deliveryDelayed: 0,
+        pendingApprovals,
+        deliveryOnTrack,
+        deliveryDelayed,
         criticalPathItemsAtRisk,
         upcomingMilestones: upcomingMilestones.length,
         activeSupervisors: sites.length, // Simplified: 1 supervisor per site
@@ -233,7 +265,7 @@ export const useDashboardData = (projectId: string | null) => {
   useEffect(() => {
     if (!projectId) return;
     const subscription = database
-      .withChangesForTables(['items', 'sites', 'hindrances', 'site_milestones', 'boms', 'bom_items'])
+      .withChangesForTables(['items', 'sites', 'hindrances', 'site_milestones', 'boms', 'bom_items', 'change_orders', 'design_documents', 'purchase_orders'])
       .subscribe(() => {
         silentReload();
       });

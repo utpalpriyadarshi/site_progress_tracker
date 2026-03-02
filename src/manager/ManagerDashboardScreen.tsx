@@ -495,6 +495,17 @@ const ManagerDashboardScreen = () => {
         // change_orders table may not exist yet on older installs
       }
 
+      // Count submitted design documents pending manager approval
+      let pendingApprovals = 0;
+      try {
+        const docsCol = database.collections.get('design_documents');
+        pendingApprovals = await docsCol
+          .query(Q.where('project_id', projectId), Q.where('status', 'submitted'))
+          .fetchCount();
+      } catch {
+        // Ignore errors
+      }
+
       setStats({
         overallCompletion,
         sitesOnSchedule,
@@ -502,7 +513,7 @@ const ManagerDashboardScreen = () => {
         totalSites,
         budgetUtilization,
         openHindrances,
-        pendingApprovals: 0,
+        pendingApprovals,
         pendingChanges,
         deliveryOnTrack,
         deliveryDelayed,
@@ -1663,9 +1674,38 @@ const ManagerDashboardScreen = () => {
           </Card>
         </View>
 
-        {/* Row 4 - Placeholder for future */}
+        {/* Row 4 */}
         <View style={styles.kpiRow}>
-          {/* KPI 7: Pending Change Orders */}
+          {/* KPI 7: Pending Doc Approvals — tappable */}
+          <Card
+            style={[styles.kpiCard, stats.pendingApprovals > 0 && styles.kpiCardActionable]}
+            onPress={() => (navigation as any).navigate('DesignDocApprovals')}
+          >
+            <Card.Content>
+              <Paragraph style={styles.kpiLabel}>Pending Approvals</Paragraph>
+              <Title style={styles.kpiValue}>{stats.pendingApprovals}</Title>
+              <Paragraph style={styles.kpiSubtext}>
+                {stats.pendingApprovals === 0 ? 'None pending' : 'Tap to review'}
+              </Paragraph>
+              <View style={styles.kpiIndicator}>
+                <View
+                  style={[
+                    styles.kpiDot,
+                    {
+                      backgroundColor:
+                        stats.pendingApprovals === 0
+                          ? COLORS.SUCCESS
+                          : stats.pendingApprovals <= 3
+                          ? COLORS.WARNING
+                          : COLORS.ERROR,
+                    },
+                  ]}
+                />
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* KPI 8: Pending Change Orders */}
           <Card style={styles.kpiCard}>
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Pending Changes</Paragraph>
@@ -1690,8 +1730,11 @@ const ManagerDashboardScreen = () => {
               </View>
             </Card.Content>
           </Card>
+        </View>
 
-          {/* KPI 8: Active Supervisors */}
+        {/* Row 5 */}
+        <View style={styles.kpiRow}>
+          {/* KPI 9: Active Supervisors */}
           <Card style={styles.kpiCard}>
             <Card.Content>
               <Paragraph style={styles.kpiLabel}>Active Supervisors</Paragraph>
@@ -1895,6 +1938,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     minHeight: 120,
+  },
+  kpiCardActionable: {
+    borderWidth: 1.5,
+    borderColor: COLORS.PRIMARY + '60',
   },
   kpiLabel: {
     fontSize: 12,

@@ -86,10 +86,13 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
               mode="outlined"
               icon="calendar-check"
               style={styles.keyDateChip}
-              textStyle={styles.keyDateText}
+              textStyle={[styles.keyDateText, { maxWidth: 240 }]}
               compact
+              ellipsizeMode="tail"
             >
-              {doc.keyDateCode || 'Key Date'}
+              {doc.keyDateCode
+                ? `${doc.keyDateCode}${doc.keyDateDescription ? ' · ' + doc.keyDateDescription : ''}`
+                : 'Key Date'}
             </Chip>
           )}
           {doc.doorsPackageId && (

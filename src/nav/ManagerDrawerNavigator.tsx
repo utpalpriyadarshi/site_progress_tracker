@@ -29,12 +29,14 @@ import { BomProvider } from '../manager/context/BomContext';
 import ManagerTabNavigator from './ManagerNavigator';
 import BomManagementScreen from '../manager/BomManagementScreen';
 import ChangeOrdersScreen from '../manager/ChangeOrdersScreen';
+import DesignDocumentApprovalsScreen from '../manager/DesignDocumentApprovalsScreen';
 import TutorialService from '../services/TutorialService';
 
 export type ManagerDrawerParamList = {
   ManagerTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   BomManagement: undefined;
   ChangeOrders: undefined;
+  DesignDocApprovals: undefined;
 };
 
 const Drawer = createDrawerNavigator<ManagerDrawerParamList>();
@@ -100,6 +102,8 @@ export const ManagerDrawerNavigator: React.FC = () => {
       iconName = focused ? 'clipboard-list' : 'clipboard-list-outline';
     } else if (routeName === 'ChangeOrders') {
       iconName = focused ? 'file-document-edit' : 'file-document-edit-outline';
+    } else if (routeName === 'DesignDocApprovals') {
+      iconName = focused ? 'file-check' : 'file-check-outline';
     }
     return <Icon name={iconName} size={size} color={color} />;
   }, []);
@@ -148,6 +152,17 @@ export const ManagerDrawerNavigator: React.FC = () => {
             options={{
               title: 'Change Orders',
               drawerLabel: 'Change Orders',
+              headerShown: false,
+            }}
+          />
+
+          {/* Doc Approvals in Drawer */}
+          <Drawer.Screen
+            name="DesignDocApprovals"
+            component={DesignDocumentApprovalsScreen}
+            options={{
+              title: 'Doc Approvals',
+              drawerLabel: 'Doc Approvals',
               headerShown: false,
             }}
           />

@@ -49,15 +49,14 @@ export function useHandoverData(): UseHandoverDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
-      setData(null);
-      setLoading(false);
+      if (!silent) { setData(null); setLoading(false); }
       return;
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Get PM700 (Handover) milestone progress
@@ -240,15 +239,23 @@ export function useHandoverData(): UseHandoverDataResult {
       });
     } catch (err) {
       logger.error('[useHandoverData] Error fetching data', err as Error);
-      setError('Failed to load handover data');
+      if (!silent) setError('Failed to load handover data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['milestones', 'milestone_progress', 'sites'])
+      .subscribe(() => { fetchData(true); });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }

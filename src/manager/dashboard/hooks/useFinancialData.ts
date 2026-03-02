@@ -49,15 +49,14 @@ export function useFinancialData(): UseFinancialDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
-      setData(null);
-      setLoading(false);
+      if (!silent) { setData(null); setLoading(false); }
       return;
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Get project for budget info
@@ -160,15 +159,23 @@ export function useFinancialData(): UseFinancialDataResult {
       });
     } catch (err) {
       logger.error('[useFinancialData] Error fetching data', err as Error);
-      setError('Failed to load financial data');
+      if (!silent) setError('Failed to load financial data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['purchase_orders', 'boms', 'bom_items', 'projects'])
+      .subscribe(() => { fetchData(true); });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }
