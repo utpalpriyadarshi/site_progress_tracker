@@ -49,15 +49,14 @@ export function useTestingData(): UseTestingDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
-      setData(null);
-      setLoading(false);
+      if (!silent) { setData(null); setLoading(false); }
       return;
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Helper function to get milestone progress
@@ -199,15 +198,23 @@ export function useTestingData(): UseTestingDataResult {
       });
     } catch (err) {
       logger.error('[useTestingData] Error fetching data', err as Error);
-      setError('Failed to load testing data');
+      if (!silent) setError('Failed to load testing data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['milestones', 'milestone_progress', 'sites'])
+      .subscribe(() => { fetchData(true); });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }

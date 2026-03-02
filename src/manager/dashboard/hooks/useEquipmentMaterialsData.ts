@@ -47,15 +47,14 @@ export function useEquipmentMaterialsData(): UseEquipmentMaterialsDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
-      setData(null);
-      setLoading(false);
+      if (!silent) { setData(null); setLoading(false); }
       return;
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Helper function to get milestone progress
@@ -178,15 +177,23 @@ export function useEquipmentMaterialsData(): UseEquipmentMaterialsDataResult {
       });
     } catch (err) {
       logger.error('[useEquipmentMaterialsData] Error fetching data', err as Error);
-      setError('Failed to load equipment/materials data');
+      if (!silent) setError('Failed to load equipment/materials data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['purchase_orders', 'milestones', 'milestone_progress'])
+      .subscribe(() => { fetchData(true); });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }

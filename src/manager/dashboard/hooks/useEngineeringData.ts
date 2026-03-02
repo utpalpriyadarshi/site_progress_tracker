@@ -47,15 +47,14 @@ export function useEngineeringData(): UseEngineeringDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) {
-      setData(null);
-      setLoading(false);
+      if (!silent) { setData(null); setLoading(false); }
       return;
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Get PM200 milestone progress
@@ -92,7 +91,7 @@ export function useEngineeringData(): UseEngineeringDataResult {
       }
 
       // Get DOORS packages data
-      const doorsPackages = await database.collections.get('doors_packages').query().fetch();
+      const doorsPackages = await database.collections.get('doors_packages').query(Q.where('project_id', projectId)).fetch();
       const totalDoors = doorsPackages.length;
 
       let doorsApproved = 0;
@@ -109,11 +108,14 @@ export function useEngineeringData(): UseEngineeringDataResult {
         }
       });
 
-      // Get requirements data
-      const allRequirements = await database.collections
-        .get('doors_requirements')
-        .query()
-        .fetch();
+      // Get requirements data (scoped to project's packages)
+      const packageIds = doorsPackages.map((p: any) => p.id);
+      const allRequirements = packageIds.length > 0
+        ? await database.collections
+            .get('doors_requirements')
+            .query(Q.where('doors_package_id', Q.oneOf(packageIds)))
+            .fetch()
+        : [];
       const totalRequirements = allRequirements.length;
       const compliantRequirements = allRequirements.filter(
         (req: any) => req.complianceStatus === 'compliant'
@@ -123,7 +125,7 @@ export function useEngineeringData(): UseEngineeringDataResult {
         : 0;
 
       // Get RFQ data
-      const allRfqs = await database.collections.get('rfqs').query().fetch();
+      const allRfqs = await database.collections.get('rfqs').query(Q.where('project_id', projectId)).fetch();
       const totalRfqs = allRfqs.length;
 
       let rfqsQuotesReceived = 0;
@@ -157,15 +159,23 @@ export function useEngineeringData(): UseEngineeringDataResult {
       });
     } catch (err) {
       logger.error('[useEngineeringData] Error fetching data', err as Error);
-      setError('Failed to load engineering data');
+      if (!silent) setError('Failed to load engineering data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['doors_packages', 'doors_requirements', 'rfqs', 'milestones', 'milestone_progress'])
+      .subscribe(() => { fetchData(true); });
+    return () => subscription.unsubscribe();
+  }, [projectId, fetchData]);
 
   return { data, loading, error, refresh: fetchData };
 }
