@@ -264,35 +264,6 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
     }
   };
 
-  const handleDelete = (site: SiteModel) => {
-    Alert.alert(
-      'Delete Site',
-      `Are you sure you want to delete "${site.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await database.write(async () => {
-                await site.markAsDeleted();
-              });
-              showSnackbar('Site deleted successfully', 'success');
-              logger.info('Site deleted', { component: 'DesignerSitesScreen', siteId: site.id });
-            } catch (error) {
-              logger.error('Failed to delete site', error as Error, {
-                component: 'DesignerSitesScreen',
-                siteId: site.id,
-              });
-              showSnackbar('Failed to delete site: ' + (error as Error).message, 'error');
-            }
-          },
-        },
-      ],
-    );
-  };
-
   return (
     <ErrorBoundary>
       <View style={styles.container}>
@@ -445,13 +416,6 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
                           iconColor={COLORS.PRIMARY}
                           onPress={() => openEditDialog(site)}
                           accessibilityLabel={`Edit ${site.name}`}
-                        />
-                        <IconButton
-                          icon="delete"
-                          size={20}
-                          iconColor={COLORS.ERROR}
-                          onPress={() => handleDelete(site)}
-                          accessibilityLabel={`Delete ${site.name}`}
                         />
                       </View>
                     </View>
