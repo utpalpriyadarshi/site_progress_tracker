@@ -116,6 +116,11 @@ const ChangeOrdersScreen = () => {
     if (!silent) setLoading(true);
     try {
       const col = database.collections.get('change_orders');
+      // Table may not exist on older installs (pre-v49 migration)
+      if (!col) {
+        if (!silent) setLoading(false);
+        return;
+      }
       const data = await col.query(Q.where('project_id', projectId)).fetch();
       const mapped: ChangeOrder[] = (data as any[]).map((rec) => ({
         id: rec.id,
@@ -150,6 +155,8 @@ const ChangeOrdersScreen = () => {
   // Reactive: auto-reload when change_orders table changes
   useEffect(() => {
     if (!projectId) return;
+    // Guard: table may not exist on pre-v49 installs
+    if (!database.collections.get('change_orders')) return;
     const subscription = database
       .withChangesForTables(['change_orders'])
       .subscribe(() => loadOrders(true));
