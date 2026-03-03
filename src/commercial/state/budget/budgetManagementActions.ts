@@ -53,9 +53,4 @@ export const budgetManagementActions = {
   resetForm: (): BudgetManagementAction => ({
     type: 'RESET_FORM',
   }),
-
-  setEditingBudget: (budget: Budget | null): BudgetManagementAction => ({
-    type: 'SET_EDITING_BUDGET',
-    payload: budget,
-  }),
 };

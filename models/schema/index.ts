@@ -702,6 +702,7 @@ export default appSchema({
         { name: 'invoice_date', type: 'number' },
         { name: 'amount', type: 'number' },
         { name: 'payment_status', type: 'string', isIndexed: true }, // pending, paid
+        { name: 'due_date', type: 'number', isOptional: true }, // explicit payment due date (v51)
         { name: 'payment_date', type: 'number', isOptional: true },
         { name: 'vendor_id', type: 'string', isIndexed: true },
         { name: 'vendor_name', type: 'string', isOptional: true }, // Manual vendor name entry (v2.11 fix)

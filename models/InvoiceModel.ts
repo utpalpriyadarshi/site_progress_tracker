@@ -17,6 +17,7 @@ export default class InvoiceModel extends Model {
   @field('invoice_date') invoiceDate!: number;
   @field('amount') amount!: number;
   @field('payment_status') paymentStatus!: string; // 'pending' | 'paid'
+  @field('due_date') dueDate?: number; // explicit payment due date (v51); null falls back to 30-day rule
   @field('payment_date') paymentDate?: number;
   @field('vendor_id') vendorId!: string;
   @field('vendor_name') vendorName?: string; // Manual vendor name entry

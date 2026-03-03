@@ -1,6 +1,7 @@
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { FAB, Searchbar } from 'react-native-paper';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -16,6 +17,8 @@ import {
   CostFormDialog,
   CategoryFilterMenu,
 } from './cost-tracking/components';
+import type { CommercialTabParamList } from '../nav/CommercialNavigator';
+import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
 
 /**
  * CostTrackingScreen (v2.20 - Refactored)
@@ -37,17 +40,36 @@ const CostTrackingScreen = () => {
   const { projectId, projectName, selectedCostCategory, setSelectedCostCategory, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const route = useRoute<RouteProp<CommercialTabParamList, 'CostTracking'>>();
   const [state, dispatch] = useReducer(costTrackingReducer, initialCostTrackingState);
 
+  const { searchQuery, setSearchQuery, filteredItems: textSearchedCosts } = useDebounceSearch<Cost>({
+    items: state.data.costs,
+    searchFields: ['description', 'category', 'poId'],
+  });
+
+  const displayedCosts = useMemo(() => {
+    if (!selectedCostCategory) return textSearchedCosts;
+    return textSearchedCosts.filter((c) => c.category === selectedCostCategory);
+  }, [textSearchedCosts, selectedCostCategory]);
+
+  // Apply drill-down filter from dashboard navigation
+  useEffect(() => {
+    const filterCategory = route.params?.filterCategory;
+    if (filterCategory) {
+      setSelectedCostCategory(filterCategory);
+    }
+  }, [route.params?.filterCategory]);
+
   // Load costs and budgets from database
-  const loadCosts = useCallback(async () => {
+  const loadCosts = useCallback(async (silent = false) => {
     if (!projectId) {
       dispatch(costTrackingActions.setLoading(false));
       return;
     }
 
     try {
-      dispatch(costTrackingActions.setLoading(true));
+      if (!silent) dispatch(costTrackingActions.setLoading(true));
       logger.debug('[Cost] Loading costs for project', { projectId });
 
       const costsCollection = database.collections.get('costs');
@@ -95,32 +117,18 @@ const CostTrackingScreen = () => {
     }
   }, [projectId]);
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...state.data.costs];
-
-    // Search filter
-    if (state.filters.searchQuery) {
-      const query = state.filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (cost) =>
-          cost.category.toLowerCase().includes(query) ||
-          cost.description.toLowerCase().includes(query) ||
-          (cost.poId && cost.poId.toLowerCase().includes(query))
-      );
-    }
-
-    // Category filter
-    if (selectedCostCategory) {
-      filtered = filtered.filter((cost) => cost.category === selectedCostCategory);
-    }
-
-    dispatch(costTrackingActions.setFilteredCosts(filtered));
-  }, [state.data.costs, state.filters.searchQuery, selectedCostCategory]);
-
   useEffect(() => {
     loadCosts();
   }, [loadCosts, refreshTrigger]);
+
+  // Reactive subscription — silently refresh when costs or budgets change (e.g. after sync)
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['costs', 'budgets'])
+      .subscribe(() => loadCosts(true));
+    return () => subscription.unsubscribe();
+  }, [projectId, loadCosts]);
 
   // Helper functions
   const getBudgetForCategory = (category: string): number => {
@@ -272,8 +280,8 @@ const CostTrackingScreen = () => {
       <View style={styles.controls}>
         <Searchbar
           placeholder="Search costs..."
-          onChangeText={(query) => dispatch(costTrackingActions.setSearchQuery(query))}
-          value={state.filters.searchQuery}
+          onChangeText={setSearchQuery}
+          value={searchQuery}
           style={styles.searchbar}
         />
         <CategoryFilterMenu
@@ -290,17 +298,17 @@ const CostTrackingScreen = () => {
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading costs...</Text>
         </View>
-      ) : state.data.filteredCosts.length === 0 ? (
+      ) : displayedCosts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {state.filters.searchQuery || selectedCostCategory
+            {searchQuery || selectedCostCategory
               ? 'No costs match your filters'
               : 'No cost entries yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={state.data.filteredCosts}
+          data={displayedCosts}
           renderItem={({ item }) => (
             <CostCard
               cost={item}

@@ -14,6 +14,7 @@ import InvoiceManagementScreen from '../commercial/InvoiceManagementScreen';
 import { useAuth } from '../auth/AuthContext';
 import type { CommercialDrawerParamList } from './CommercialDrawerNavigator';
 import { COLORS } from '../theme/colors';
+import SyncHeaderButton from './SyncHeaderButton';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -29,8 +30,8 @@ export type RootStackParamList = {
 export type CommercialTabParamList = {
   Dashboard: { showTutorial?: boolean } | undefined;
   BudgetManagement: undefined;
-  CostTracking: undefined;
-  InvoiceManagement: undefined;
+  CostTracking: { filterCategory?: string } | undefined;
+  InvoiceManagement: { filterStatus?: 'pending' | 'paid' | 'overdue' } | undefined;
 };
 
 type CommercialNavigatorProps = {
@@ -66,9 +67,12 @@ const CommercialTabNavigator: React.FC = memo(() => {
   ), [handleDrawerToggle]);
 
   const HeaderRight = useCallback(() => (
-    <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
-      <Text style={styles.headerLogoutText}>Logout</Text>
-    </TouchableOpacity>
+    <View style={styles.headerButtons}>
+      <SyncHeaderButton />
+      <TouchableOpacity onPress={handleLogout} style={styles.headerLogoutButton}>
+        <Text style={styles.headerLogoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   ), [handleLogout]);
 
   const screenOptions = useMemo(() => ({
@@ -159,8 +163,12 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     padding: 5,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+  },
   headerLogoutButton: {
-    marginRight: 15,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

@@ -1,9 +1,12 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { FAB } from 'react-native-paper';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import type { CommercialTabParamList } from '../nav/CommercialNavigator';
+import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../services/LoggingService';
@@ -52,17 +55,36 @@ const InvoiceManagementScreen = () => {
   const { projectId, projectName, selectedInvoiceStatus, setSelectedInvoiceStatus, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const route = useRoute<RouteProp<CommercialTabParamList, 'InvoiceManagement'>>();
   const [state, dispatch] = useReducer(invoiceManagementReducer, initialInvoiceManagementState);
 
+  const { searchQuery, setSearchQuery, filteredItems: textSearchedInvoices } = useDebounceSearch<Invoice>({
+    items: state.data.invoices,
+    searchFields: ['invoiceNumber', 'vendorName', 'poId'],
+  });
+
+  const displayedInvoices = useMemo(() => {
+    if (!selectedInvoiceStatus) return textSearchedInvoices;
+    return textSearchedInvoices.filter((inv) => inv.paymentStatus === selectedInvoiceStatus);
+  }, [textSearchedInvoices, selectedInvoiceStatus]);
+
+  // Apply drill-down filter from dashboard navigation
+  useEffect(() => {
+    const filterStatus = route.params?.filterStatus;
+    if (filterStatus) {
+      setSelectedInvoiceStatus(filterStatus);
+    }
+  }, [route.params?.filterStatus]);
+
   // Load invoices from database
-  const loadInvoices = useCallback(async () => {
+  const loadInvoices = useCallback(async (silent = false) => {
     if (!projectId) {
       dispatch(invoiceManagementActions.setLoading(false));
       return;
     }
 
     try {
-      dispatch(invoiceManagementActions.setLoading(true));
+      if (!silent) dispatch(invoiceManagementActions.setLoading(true));
       logger.debug('[Invoice] Loading invoices for project:', { projectId });
 
       const invoicesCollection = database.collections.get('invoices');
@@ -71,7 +93,7 @@ const InvoiceManagementScreen = () => {
         .fetch();
 
       const invoicesWithVendors = invoicesData.map((invoice: any) => {
-        const isOverdue = isInvoiceOverdue(invoice.invoiceDate, invoice.paymentStatus);
+        const isOverdue = isInvoiceOverdue(invoice.invoiceDate, invoice.paymentStatus, invoice.dueDate);
 
         return {
           id: invoice.id,
@@ -79,6 +101,7 @@ const InvoiceManagementScreen = () => {
           poId: invoice.poId,
           invoiceNumber: invoice.invoiceNumber,
           invoiceDate: invoice.invoiceDate,
+          dueDate: invoice.dueDate,
           amount: invoice.amount,
           paymentStatus: isOverdue ? 'overdue' : invoice.paymentStatus,
           paymentDate: invoice.paymentDate,
@@ -99,29 +122,8 @@ const InvoiceManagementScreen = () => {
     }
   }, [projectId]);
 
-  // Apply filters and calculate summary
+  // Calculate summary against the full unfiltered list
   useEffect(() => {
-    let filtered = [...state.data.invoices];
-
-    // Search filter
-    if (state.filters.searchQuery) {
-      const query = state.filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (invoice) =>
-          invoice.invoiceNumber.toLowerCase().includes(query) ||
-          invoice.poId.toLowerCase().includes(query) ||
-          (invoice.vendorName && invoice.vendorName.toLowerCase().includes(query))
-      );
-    }
-
-    // Status filter
-    if (selectedInvoiceStatus) {
-      filtered = filtered.filter((invoice) => invoice.paymentStatus === selectedInvoiceStatus);
-    }
-
-    dispatch(invoiceManagementActions.setFilteredInvoices(filtered));
-
-    // Calculate summary
     const totalInvoices = state.data.invoices.length;
     const totalAmount = state.data.invoices.reduce((sum, inv) => sum + inv.amount, 0);
     const paidAmount = state.data.invoices
@@ -137,12 +139,21 @@ const InvoiceManagementScreen = () => {
       pendingAmount,
       overdueCount,
     }));
-  }, [state.data.invoices, state.filters.searchQuery, selectedInvoiceStatus]);
+  }, [state.data.invoices]);
 
   // Load invoices on mount and refresh
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices, refreshTrigger]);
+
+  // Reactive subscription — silently refresh when invoices change (e.g. after sync)
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['invoices'])
+      .subscribe(() => loadInvoices(true));
+    return () => subscription.unsubscribe();
+  }, [projectId, loadInvoices]);
 
   const createInvoice = async (formData: InvoiceFormData): Promise<boolean> => {
     try {
@@ -155,6 +166,7 @@ const InvoiceManagementScreen = () => {
           record.poId = formData.poId.trim();
           record.invoiceNumber = formData.invoiceNumber.trim();
           record.invoiceDate = formData.invoiceDate.getTime();
+          record.dueDate = formData.dueDate ? formData.dueDate.getTime() : null;
           record.amount = amount;
           record.paymentStatus = formData.paymentStatus;
           record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;
@@ -187,6 +199,7 @@ const InvoiceManagementScreen = () => {
           record.poId = formData.poId.trim();
           record.invoiceNumber = formData.invoiceNumber.trim();
           record.invoiceDate = formData.invoiceDate.getTime();
+          record.dueDate = formData.dueDate ? formData.dueDate.getTime() : null;
           record.amount = amount;
           record.paymentStatus = formData.paymentStatus;
           record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;
@@ -283,8 +296,8 @@ const InvoiceManagementScreen = () => {
 
       {/* Search and filter */}
       <FiltersBar
-        searchQuery={state.filters.searchQuery}
-        onSearchChange={(query) => dispatch(invoiceManagementActions.setSearchQuery(query))}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         selectedStatus={selectedInvoiceStatus}
         onStatusChange={setSelectedInvoiceStatus}
       />
@@ -292,17 +305,17 @@ const InvoiceManagementScreen = () => {
       {/* Invoice list */}
       {state.ui.loading ? (
         <InvoiceListSkeleton />
-      ) : state.data.filteredInvoices.length === 0 ? (
+      ) : displayedInvoices.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {state.filters.searchQuery || selectedInvoiceStatus
+            {searchQuery || selectedInvoiceStatus
               ? 'No invoices match your filters'
               : 'No invoices yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={state.data.filteredInvoices}
+          data={displayedInvoices}
           renderItem={({ item }) => (
             <InvoiceCard
               invoice={item}

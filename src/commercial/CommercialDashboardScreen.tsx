@@ -34,6 +34,7 @@ import {
   CategorySpendingWidget,
   RecentTransactionsWidget,
   formatPeriodLabel,
+  getPeriodDateRange,
   Period,
   Transaction,
   CategorySpendingData,
@@ -76,21 +77,28 @@ const CommercialDashboardScreen = () => {
   const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
 
   const loadDashboardData = useCallback(
-    async (isRefresh = false) => {
+    async (isRefresh = false, isSilent = false, periodOverride?: Period) => {
       if (!projectId) {
         dispatch(dashboardActions.setLoading(false));
         return;
       }
 
       try {
-        if (isRefresh) {
-          dispatch(dashboardActions.setRefreshing(true));
-        } else {
-          dispatch(dashboardActions.setLoading(true));
+        if (!isSilent) {
+          if (isRefresh) {
+            dispatch(dashboardActions.setRefreshing(true));
+          } else {
+            dispatch(dashboardActions.setLoading(true));
+          }
         }
-        logger.debug('[Dashboard] Loading dashboard data for project:', { projectId });
 
-        // Load all data in parallel
+        const activePeriod = periodOverride ?? state.ui.selectedPeriod;
+        const { startDate, endDate } = getPeriodDateRange(activePeriod);
+        const startTs = startDate.getTime();
+        const endTs = endDate.getTime();
+        logger.debug('[Dashboard] Loading dashboard data for project:', { projectId, period: activePeriod });
+
+        // Load all data in parallel; budgets are project-level totals (no date filter)
         const budgetsCollection = database.collections.get('budgets');
         const costsCollection = database.collections.get('costs');
         const invoicesCollection = database.collections.get('invoices');
@@ -98,9 +106,20 @@ const CommercialDashboardScreen = () => {
         const [budgets, costs, invoices] = await Promise.all([
           budgetsCollection.query(Q.where('project_id', projectId)).fetch(),
           costsCollection
-            .query(Q.where('project_id', projectId), Q.sortBy('cost_date', Q.desc))
+            .query(
+              Q.where('project_id', projectId),
+              Q.where('cost_date', Q.gte(startTs)),
+              Q.where('cost_date', Q.lte(endTs)),
+              Q.sortBy('cost_date', Q.desc)
+            )
             .fetch(),
-          invoicesCollection.query(Q.where('project_id', projectId)).fetch(),
+          invoicesCollection
+            .query(
+              Q.where('project_id', projectId),
+              Q.where('invoice_date', Q.gte(startTs)),
+              Q.where('invoice_date', Q.lte(endTs))
+            )
+            .fetch(),
         ]);
 
         // Calculate all metrics
@@ -155,12 +174,21 @@ const CommercialDashboardScreen = () => {
         dispatch(dashboardActions.setRefreshing(false));
       }
     },
-    [projectId]
+    [projectId, state.ui.selectedPeriod]
   );
 
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData, refreshTrigger]);
+
+  // Reactive subscription — silently refresh when budgets/costs/invoices change (e.g. after sync)
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['budgets', 'costs', 'invoices'])
+      .subscribe(() => loadDashboardData(false, true));
+    return () => subscription.unsubscribe();
+  }, [projectId, loadDashboardData]);
 
   // Tutorial auto-show logic
   useEffect(() => {
@@ -200,11 +228,11 @@ const CommercialDashboardScreen = () => {
     loadDashboardData(true);
   }, [loadDashboardData]);
 
-  // Handle period change
+  // Handle period change — dispatch new period and reload with explicit period
+  // (state.ui.selectedPeriod hasn't updated yet at call time, so pass it directly)
   const handlePeriodChange = useCallback((period: Period) => {
     dispatch(dashboardActions.setPeriod(period));
-    // In production, this would reload data for the selected period
-    loadDashboardData();
+    loadDashboardData(false, false, period);
   }, [loadDashboardData]);
 
   // Navigation handlers for drill-down
