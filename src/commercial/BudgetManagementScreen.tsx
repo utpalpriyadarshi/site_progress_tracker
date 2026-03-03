@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,9 @@ import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
 import { budgetManagementReducer, initialBudgetManagementState } from './state/budget/budgetManagementReducer';
 import { budgetManagementActions } from './state/budget/budgetManagementActions';
 import type { Budget } from './state/budget/budgetManagementReducer';
+import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
 import { COLORS } from '../theme/colors';
+import { formatCurrencySmart } from '../utils/currencyFormatter';
 
 /**
  * BudgetManagementScreen (v2.11 Phase 5 - Sprint 4)
@@ -50,14 +52,24 @@ const BudgetManagementScreen = () => {
   const [pendingDeleteBudget, setPendingDeleteBudget] = useState<Budget | null>(null);
   const { show: showSnackbar, snackbarProps } = useSnackbar();
 
-  const loadBudgets = useCallback(async () => {
+  const { searchQuery, setSearchQuery, filteredItems: textSearchedBudgets } = useDebounceSearch<Budget>({
+    items: state.data.budgets,
+    searchFields: ['description', 'category'],
+  });
+
+  const displayedBudgets = useMemo(() => {
+    if (!selectedBudgetCategory) return textSearchedBudgets;
+    return textSearchedBudgets.filter((b) => b.category === selectedBudgetCategory);
+  }, [textSearchedBudgets, selectedBudgetCategory]);
+
+  const loadBudgets = useCallback(async (silent = false) => {
     if (!projectId) {
       dispatch(budgetManagementActions.setLoading(false));
       return;
     }
 
     try {
-      dispatch(budgetManagementActions.setLoading(true));
+      if (!silent) dispatch(budgetManagementActions.setLoading(true));
       logger.debug('[Budget] Loading budgets for project:', { projectId });
 
       const budgetsCollection = database.collections.get('budgets');
@@ -99,34 +111,18 @@ const BudgetManagementScreen = () => {
     }
   }, [projectId]);
 
-  const applyFilters = useCallback(() => {
-    let filtered = [...state.data.budgets];
-
-    // Search filter
-    if (state.filters.searchQuery) {
-      const query = state.filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (budget) =>
-          budget.category.toLowerCase().includes(query) ||
-          budget.description.toLowerCase().includes(query)
-      );
-    }
-
-    // Category filter
-    if (selectedBudgetCategory) {
-      filtered = filtered.filter((budget) => budget.category === selectedBudgetCategory);
-    }
-
-    dispatch(budgetManagementActions.setFilteredBudgets(filtered));
-  }, [state.data.budgets, state.filters.searchQuery, selectedBudgetCategory]);
-
   useEffect(() => {
     loadBudgets();
   }, [loadBudgets, refreshTrigger]);
 
+  // Reactive subscription — silently refresh when budgets or costs change (e.g. after sync)
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['budgets', 'costs'])
+      .subscribe(() => loadBudgets(true));
+    return () => subscription.unsubscribe();
+  }, [projectId, loadBudgets]);
 
   const handleCreateBudget = async () => {
     if (!state.form.description.trim()) {
@@ -288,17 +284,17 @@ const BudgetManagementScreen = () => {
           <View style={styles.amountsContainer}>
             <View style={styles.amountRow}>
               <Text style={styles.amountLabel}>Allocated:</Text>
-              <Text style={styles.amountValue}>${item.allocatedAmount.toLocaleString()}</Text>
+              <Text style={styles.amountValue}>{formatCurrencySmart(item.allocatedAmount)}</Text>
             </View>
             <View style={styles.amountRow}>
               <Text style={styles.amountLabel}>Actual Spent:</Text>
-              <Text style={styles.amountValue}>${(item.actualSpent || 0).toLocaleString()}</Text>
+              <Text style={styles.amountValue}>{formatCurrencySmart(item.actualSpent || 0)}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.amountRow}>
               <Text style={styles.amountLabel}>Variance:</Text>
               <Text style={[styles.varianceValue, isOverBudget && styles.overBudget]}>
-                ${Math.abs(variance).toLocaleString()} ({percentage}%)
+                {formatCurrencySmart(Math.abs(variance))} ({percentage}%)
               </Text>
             </View>
           </View>
@@ -345,7 +341,7 @@ const BudgetManagementScreen = () => {
         keyboardType="numeric"
         mode="outlined"
         style={styles.input}
-        left={<TextInput.Affix text="$" />}
+        left={<TextInput.Affix text="₹" />}
       />
 
       <TextInput
@@ -380,16 +376,16 @@ const BudgetManagementScreen = () => {
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Budget</Text>
-            <Text style={styles.summaryValue}>${totalAllocated.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>{formatCurrencySmart(totalAllocated)}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Spent</Text>
-            <Text style={styles.summaryValue}>${totalSpent.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>{formatCurrencySmart(totalSpent)}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Variance</Text>
             <Text style={[styles.summaryValue, totalVariance < 0 && styles.overBudget]}>
-              ${Math.abs(totalVariance).toLocaleString()}
+              {formatCurrencySmart(Math.abs(totalVariance))}
             </Text>
           </View>
         </View>
@@ -399,8 +395,8 @@ const BudgetManagementScreen = () => {
       <View style={styles.controls}>
         <Searchbar
           placeholder="Search budgets..."
-          onChangeText={(query) => dispatch(budgetManagementActions.setSearchQuery(query))}
-          value={state.filters.searchQuery}
+          onChangeText={setSearchQuery}
+          value={searchQuery}
           style={styles.searchbar}
         />
         <Menu
@@ -442,17 +438,17 @@ const BudgetManagementScreen = () => {
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading budgets...</Text>
         </View>
-      ) : state.data.filteredBudgets.length === 0 ? (
+      ) : displayedBudgets.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {state.filters.searchQuery || selectedBudgetCategory
+            {searchQuery || selectedBudgetCategory
               ? 'No budgets match your filters'
               : 'No budget entries yet. Tap + to create one.'}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={state.data.filteredBudgets}
+          data={displayedBudgets}
           renderItem={renderBudgetCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}

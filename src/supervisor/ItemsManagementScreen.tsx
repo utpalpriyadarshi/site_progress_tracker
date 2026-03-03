@@ -28,6 +28,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { CopyItemsDialog, DuplicateItemsDialog, MaterialSuggestionsDialog } from '../components/dialogs';
 import ApplyTemplateDialog from './templates/ApplyTemplateDialog';
+import { useNavigation } from '@react-navigation/native';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { SupervisorHeader, EmptyState } from '../components/common';
@@ -73,6 +74,7 @@ const ItemsManagementScreenComponent = ({
 }) => {
   const { selectedSiteId, projectId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
+  const navigation = useNavigation<any>();
 
   // Search, filter, sort state
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,6 +239,18 @@ const ItemsManagementScreenComponent = ({
            !selectedStatus.includes('all') ||
            !selectedPhases.includes('all');
   }, [debouncedSearchQuery, selectedStatus, selectedPhases]);
+
+  // Total weightage of currently displayed items
+  const totalWeightage = useMemo(() => {
+    return filteredItems.reduce((sum, item) => sum + (item.weightage || 0), 0);
+  }, [filteredItems]);
+
+  const weightageColor = useMemo(() => {
+    if (selectedSiteId === 'all' || hasActiveFilters) return '#888';
+    if (Math.abs(totalWeightage - 100) <= 1) return COLORS.SUCCESS;
+    if (totalWeightage > 100) return COLORS.ERROR;
+    return '#f57c00'; // orange — under-allocated
+  }, [totalWeightage, selectedSiteId, hasActiveFilters]);
 
   // Check if copy is available (need items in current site)
   const canCopy = useMemo(() => {
@@ -535,6 +549,12 @@ const ItemsManagementScreenComponent = ({
           Showing {filteredItems.length} of {items.filter(item => selectedSiteId === 'all' || item.siteId === selectedSiteId).length} items
         </Text>
 
+        <View style={[styles.weightageTag, { borderColor: weightageColor }]}>
+          <Text style={[styles.weightageText, { color: weightageColor }]}>
+            Wt: {totalWeightage.toFixed(0)}%
+          </Text>
+        </View>
+
         {hasActiveFilters ? (
           <Button mode="text" onPress={clearAllFilters} compact>
             Clear All
@@ -607,7 +627,11 @@ const ItemsManagementScreenComponent = ({
             const progress = getProgressPercentage(item);
 
             return (
-              <Card key={item.id} style={styles.itemCard}>
+              <Card
+                key={item.id}
+                style={styles.itemCard}
+                onPress={() => navigation.navigate('DailyWork', { focusItemId: item.id })}
+              >
                 <Card.Content>
                   <View style={styles.itemHeader}>
                     <View style={styles.itemInfo}>
@@ -915,6 +939,17 @@ const styles = StyleSheet.create({
   resultCount: {
     flex: 1,
     color: '#666',
+  },
+  weightageTag: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 4,
+  },
+  weightageText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BaseWidget } from './BaseWidget';
 import { COLORS } from '../../../theme/colors';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 /**
  * InvoiceStatusWidget Component
@@ -82,15 +83,6 @@ export const InvoiceStatusWidget: React.FC<InvoiceStatusWidgetProps> = ({
 }) => {
   const isEmpty = total === 0;
 
-  const formatCurrency = (value: number): string => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
-    }
-    return `$${value.toLocaleString()}`;
-  };
-
   // Calculate percentages for stacked bar
   const { pendingPercent, paidPercent, overduePercent } = useMemo(() => {
     if (total === 0) return { pendingPercent: 0, paidPercent: 0, overduePercent: 0 };
@@ -134,7 +126,7 @@ export const InvoiceStatusWidget: React.FC<InvoiceStatusWidgetProps> = ({
         </View>
         <Text style={[styles.statusCount, { color }]}>{count}</Text>
         {amount !== undefined && (
-          <Text style={styles.statusAmount}>{formatCurrency(amount)}</Text>
+          <Text style={styles.statusAmount}>{formatCurrencySmart(amount)}</Text>
         )}
       </View>
     );
@@ -146,7 +138,7 @@ export const InvoiceStatusWidget: React.FC<InvoiceStatusWidgetProps> = ({
           style={styles.statusTouchable}
           onPress={() => onStatusPress(status)}
           accessibilityRole="button"
-          accessibilityLabel={`${count} ${label.toLowerCase()} invoices${amount ? `, ${formatCurrency(amount)}` : ''}. Tap to filter.`}
+          accessibilityLabel={`${count} ${label.toLowerCase()} invoices${amount ? `, ${formatCurrencySmart(amount)}` : ''}. Tap to filter.`}
         >
           {content}
         </TouchableOpacity>

@@ -11,6 +11,7 @@ export interface Invoice {
   poId: string;
   invoiceNumber: string;
   invoiceDate: number;
+  dueDate?: number;
   amount: number;
   paymentStatus: string;
   paymentDate?: number;

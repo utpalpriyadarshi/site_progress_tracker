@@ -11,6 +11,7 @@ import {
   OptionsMenuItem,
 } from './InteractiveChart';
 import { COLORS } from '../../../theme/colors';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 /**
  * CashFlowWidget Component
@@ -82,16 +83,6 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
   const isPositive = netCashFlow >= 0;
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
 
-  const formatCurrency = (value: number): string => {
-    const absValue = Math.abs(value);
-    if (absValue >= 1000000) {
-      return `$${(absValue / 1000000).toFixed(1)}M`;
-    } else if (absValue >= 1000) {
-      return `$${(absValue / 1000).toFixed(0)}K`;
-    }
-    return `$${absValue.toLocaleString()}`;
-  };
-
   // Calculate sparkline points
   const sparklinePoints = useMemo(() => {
     if (trendData.length < 2) return null;
@@ -132,9 +123,9 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
   const accessibilityLabel = useMemo(() => {
     const parts = [
       `Cash flow widget`,
-      `Net cash flow: ${isPositive ? '' : 'negative '}${formatCurrency(netCashFlow)}`,
-      `Inflow: ${formatCurrency(inflow)}`,
-      `Outflow: ${formatCurrency(outflow)}`,
+      `Net cash flow: ${isPositive ? '' : 'negative '}${formatCurrencySmart(netCashFlow)}`,
+      `Inflow: ${formatCurrencySmart(inflow)}`,
+      `Outflow: ${formatCurrencySmart(outflow)}`,
       chartDescription,
     ];
     return parts.filter(Boolean).join('. ');
@@ -214,7 +205,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
                 }}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel={`${point.label}: ${formatCurrency(point.value)}`}
+                accessibilityLabel={`${point.label}: ${formatCurrencySmart(point.value)}`}
               >
                 <View
                   style={[
@@ -233,7 +224,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
         </View>
       );
     },
-    [trendData, handleTrendPointPress, formatCurrency]
+    [trendData, handleTrendPointPress]
   );
 
   // Render tooltip content
@@ -247,11 +238,11 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
           </TouchableOpacity>
         </View>
         <Text style={[styles.tooltipValue, { color: item.value >= 0 ? COLORS.SUCCESS : '#ff6b6b' }]}>
-          {item.value >= 0 ? '' : '-'}{formatCurrency(item.value)}
+          {item.value >= 0 ? '' : '-'}{formatCurrencySmart(item.value)}
         </Text>
       </View>
     ),
-    [formatCurrency]
+    []
   );
 
   // Render simple sparkline using View components (non-interactive fallback)
@@ -278,7 +269,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
             enablePan={false}
             height={40}
             accessibilityLabel={chartDescription}
-            formatValueForAccessibility={(v) => formatCurrency(v)}
+            formatValueForAccessibility={(v) => formatCurrencySmart(v)}
             showAccessibleDataTable={false}
           />
         </View>
@@ -346,7 +337,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
           <View style={styles.netValueRow}>
             <Text style={[styles.netValue, { color: isPositive ? COLORS.SUCCESS : '#ff6b6b' }]}>
               {isPositive ? '' : '-'}
-              {formatCurrency(netCashFlow)}
+              {formatCurrencySmart(netCashFlow)}
             </Text>
             {previousNetCashFlow !== undefined && (
               <TrendIndicator
@@ -370,7 +361,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
               <View style={[styles.indicator, styles.inflowIndicator]} />
               <Text style={styles.breakdownLabel}>Inflow</Text>
             </View>
-            <Text style={styles.breakdownValue}>{formatCurrency(inflow)}</Text>
+            <Text style={styles.breakdownValue}>{formatCurrencySmart(inflow)}</Text>
           </View>
           <View style={styles.breakdownDivider} />
           <View style={styles.breakdownItem}>
@@ -378,7 +369,7 @@ export const CashFlowWidget: React.FC<CashFlowWidgetProps> = ({
               <View style={[styles.indicator, styles.outflowIndicator]} />
               <Text style={styles.breakdownLabel}>Outflow</Text>
             </View>
-            <Text style={styles.breakdownValue}>{formatCurrency(outflow)}</Text>
+            <Text style={styles.breakdownValue}>{formatCurrencySmart(outflow)}</Text>
           </View>
         </View>
       </View>

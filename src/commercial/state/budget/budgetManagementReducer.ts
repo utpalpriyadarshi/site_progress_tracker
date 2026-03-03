@@ -48,8 +48,7 @@ export type BudgetManagementAction =
   | { type: 'OPEN_EDIT_DIALOG'; payload: Budget }
   | { type: 'CLOSE_DIALOGS' }
   | { type: 'SET_FORM_FIELD'; payload: { field: 'category' | 'amount' | 'description'; value: string } }
-  | { type: 'RESET_FORM' }
-  | { type: 'SET_EDITING_BUDGET'; payload: Budget | null };
+  | { type: 'RESET_FORM' };
 
 export const initialBudgetManagementState: BudgetManagementState = {
   ui: {
@@ -180,15 +179,6 @@ export function budgetManagementReducer(
           category: 'labor',
           amount: '',
           description: '',
-        },
-      };
-
-    case 'SET_EDITING_BUDGET':
-      return {
-        ...state,
-        data: {
-          ...state.data,
-          editingBudget: action.payload,
         },
       };
 

@@ -35,6 +35,8 @@ const RoleSelectionScreen = ({ navigation, route }: Props) => {
     { id: 'manager' as UserRole, name: 'Manager', description: 'Oversee projects and generate reports' },
     { id: 'planning' as UserRole, name: 'Planning', description: 'Create schedules and Gantt charts' },
     { id: 'logistics' as UserRole, name: 'Logistics', description: 'Handle material and equipment logistics' },
+    { id: 'design_engineer' as UserRole, name: 'Design Engineer', description: 'Manage design documents and DOORS packages' },
+    { id: 'commercial_manager' as UserRole, name: 'Commercial Manager', description: 'Track budgets, costs and invoices' },
   ];
 
   // Filter roles to only show roles available to the current user

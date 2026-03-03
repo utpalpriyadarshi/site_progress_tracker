@@ -11,6 +11,7 @@ export interface Invoice {
   poId: string;
   invoiceNumber: string;
   invoiceDate: number;
+  dueDate?: number;
   amount: number;
   paymentStatus: string;
   paymentDate?: number;
@@ -26,6 +27,7 @@ export interface InvoiceFormData {
   poId: string;
   vendorName: string;
   invoiceDate: Date;
+  dueDate?: Date;
   paymentDate?: Date;
   paymentStatus: string;
 }
@@ -51,7 +53,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
 
       // Map invoices with vendor names and overdue calculation
       const invoicesWithVendors = invoicesData.map((invoice: any) => {
-        const isOverdue = isInvoiceOverdue(invoice.invoiceDate, invoice.paymentStatus);
+        const isOverdue = isInvoiceOverdue(invoice.invoiceDate, invoice.paymentStatus, invoice.dueDate);
 
         return {
           id: invoice.id,
@@ -59,6 +61,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
           poId: invoice.poId,
           invoiceNumber: invoice.invoiceNumber,
           invoiceDate: invoice.invoiceDate,
+          dueDate: invoice.dueDate,
           amount: invoice.amount,
           paymentStatus: isOverdue ? 'overdue' : invoice.paymentStatus,
           paymentDate: invoice.paymentDate,
@@ -90,6 +93,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
           record.poId = formData.poId.trim();
           record.invoiceNumber = formData.invoiceNumber.trim();
           record.invoiceDate = formData.invoiceDate.getTime();
+          record.dueDate = formData.dueDate ? formData.dueDate.getTime() : null;
           record.amount = amount;
           record.paymentStatus = formData.paymentStatus;
           record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;
@@ -122,6 +126,7 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
           record.poId = formData.poId.trim();
           record.invoiceNumber = formData.invoiceNumber.trim();
           record.invoiceDate = formData.invoiceDate.getTime();
+          record.dueDate = formData.dueDate ? formData.dueDate.getTime() : null;
           record.amount = amount;
           record.paymentStatus = formData.paymentStatus;
           record.paymentDate = formData.paymentDate ? formData.paymentDate.getTime() : null;

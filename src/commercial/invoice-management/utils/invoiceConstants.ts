@@ -32,8 +32,14 @@ export const calculateDueDate = (invoiceDate: number): number => {
   return invoiceDate + OVERDUE_DAYS * 24 * 60 * 60 * 1000;
 };
 
-export const isInvoiceOverdue = (invoiceDate: number, paymentStatus: string): boolean => {
+/**
+ * Returns true if a pending invoice has passed its due date.
+ * Uses the stored `dueDate` if present; falls back to the legacy 30-day calculation
+ * for records that pre-date v51.
+ */
+export const isInvoiceOverdue = (invoiceDate: number, paymentStatus: string, dueDate?: number | null): boolean => {
+  if (paymentStatus !== 'pending') return false;
   const today = Date.now();
-  const dueDate = calculateDueDate(invoiceDate);
-  return paymentStatus === 'pending' && today > dueDate;
+  const effectiveDueDate = dueDate ?? calculateDueDate(invoiceDate);
+  return today > effectiveDueDate;
 };

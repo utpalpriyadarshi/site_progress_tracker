@@ -4,6 +4,7 @@ import { BaseWidget } from './BaseWidget';
 import { CATEGORY_COLORS, getCategoryLabel, getCategoryColor } from '../utils/dashboardConstants';
 import { OptionsMenuItem, chartOptionMenus } from './InteractiveChart';
 import { COLORS } from '../../../theme/colors';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 /**
  * CategorySpendingWidget Component
@@ -177,24 +178,15 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
 
   const isEmpty = categories.length === 0 || totalSpent === 0;
 
-  const formatCurrency = (value: number): string => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
-    }
-    return `$${value.toLocaleString()}`;
-  };
-
   const accessibilityLabel = useMemo(() => {
     if (isEmpty) return 'Category spending widget, no spending data';
 
-    const parts = [`Spending by category, total ${formatCurrency(totalSpent)}`];
+    const parts = [`Spending by category, total ${formatCurrencySmart(totalSpent)}`];
     displayCategories.forEach((cat) => {
       const label = getCategoryLabel(cat.category);
       const percentage = ((cat.spent / totalSpent) * 100).toFixed(0);
       const status = cat.spent > cat.budget ? 'over budget' : 'within budget';
-      parts.push(`${label}: ${formatCurrency(cat.spent)}, ${percentage} percent, ${status}`);
+      parts.push(`${label}: ${formatCurrencySmart(cat.spent)}, ${percentage} percent, ${status}`);
     });
 
     return parts.join('. ');
@@ -223,10 +215,10 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
           </View>
           <View style={styles.categoryValues}>
             <Text style={[styles.spentValue, isOverBudget && styles.overBudgetValue]}>
-              {formatCurrency(spent)}
+              {formatCurrencySmart(spent)}
             </Text>
             {budget > 0 && (
-              <Text style={styles.budgetValue}>/ {formatCurrency(budget)}</Text>
+              <Text style={styles.budgetValue}>/ {formatCurrencySmart(budget)}</Text>
             )}
           </View>
         </View>
@@ -257,7 +249,7 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
         {/* Over budget indicator */}
         {isOverBudget && (
           <Text style={styles.overBudgetText}>
-            +{formatCurrency(spent - budget)} over budget
+            +{formatCurrencySmart(spent - budget)} over budget
           </Text>
         )}
       </View>
@@ -271,7 +263,7 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
           onLongPress={() => handleCategoryLongPress(data)}
           delayLongPress={500}
           accessibilityRole="button"
-          accessibilityLabel={`${label}, spent ${formatCurrency(spent)}${budget > 0 ? ` of ${formatCurrency(budget)} budget` : ''}. Tap to filter costs. Long press for options.`}
+          accessibilityLabel={`${label}, spent ${formatCurrencySmart(spent)}${budget > 0 ? ` of ${formatCurrencySmart(budget)} budget` : ''}. Tap to filter costs. Long press for options.`}
           accessibilityHint="Double tap to filter, long press for more options"
         >
           {content}
@@ -310,9 +302,9 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
                 <View style={styles.optionsMenuHeaderText}>
                   <Text style={styles.optionsMenuTitle}>{categoryLabel}</Text>
                   <Text style={styles.optionsMenuSubtitle}>
-                    {formatCurrency(optionsMenu.category.spent)}
+                    {formatCurrencySmart(optionsMenu.category.spent)}
                     {optionsMenu.category.budget > 0 &&
-                      ` / ${formatCurrency(optionsMenu.category.budget)}`}
+                      ` / ${formatCurrencySmart(optionsMenu.category.budget)}`}
                   </Text>
                 </View>
               </View>
@@ -373,7 +365,7 @@ export const CategorySpendingWidget: React.FC<CategorySpendingWidgetProps> = ({
         accessibilityHint="Tap to view cost tracking. Long press on a category for more options."
         headerRight={
           totalSpent > 0 ? (
-            <Text style={styles.totalSpent}>{formatCurrency(totalSpent)}</Text>
+            <Text style={styles.totalSpent}>{formatCurrencySmart(totalSpent)}</Text>
           ) : null
         }
       >

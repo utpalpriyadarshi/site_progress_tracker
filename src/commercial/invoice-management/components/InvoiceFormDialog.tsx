@@ -27,9 +27,15 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
   const [formPoId, setFormPoId] = useState('');
   const [formVendorName, setFormVendorName] = useState('');
   const [formInvoiceDate, setFormInvoiceDate] = useState<Date>(new Date());
+  const [formDueDate, setFormDueDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d;
+  });
   const [formPaymentDate, setFormPaymentDate] = useState<Date | undefined>(undefined);
   const [formPaymentStatus, setFormPaymentStatus] = useState('pending');
   const [showInvoiceDatePicker, setShowInvoiceDatePicker] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [showPaymentDatePicker, setShowPaymentDatePicker] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -73,6 +79,13 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
       setFormPoId(editingInvoice.poId);
       setFormVendorName(editingInvoice.vendorName || '');
       setFormInvoiceDate(new Date(editingInvoice.invoiceDate));
+      if (editingInvoice.dueDate) {
+        setFormDueDate(new Date(editingInvoice.dueDate));
+      } else {
+        const d = new Date(editingInvoice.invoiceDate);
+        d.setDate(d.getDate() + 30);
+        setFormDueDate(d);
+      }
       setFormPaymentDate(
         editingInvoice.paymentDate ? new Date(editingInvoice.paymentDate) : undefined
       );
@@ -90,9 +103,33 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
     setFormPoId('');
     setFormVendorName('');
     setFormInvoiceDate(new Date());
+    const defaultDue = new Date();
+    defaultDue.setDate(defaultDue.getDate() + 30);
+    setFormDueDate(defaultDue);
     setFormPaymentDate(undefined);
     setFormPaymentStatus('pending');
     setValidationErrors({});
+  };
+
+  // When invoice date changes, shift the due date by the same offset to preserve terms
+  const handleInvoiceDateChangeWithDueDate = (event: any, selectedDate?: Date) => {
+    setShowInvoiceDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const daysDiff = Math.round((formDueDate.getTime() - formInvoiceDate.getTime()) / (24 * 60 * 60 * 1000));
+      const newDue = new Date(selectedDate);
+      newDue.setDate(newDue.getDate() + daysDiff);
+      setFormInvoiceDate(selectedDate);
+      setFormDueDate(newDue);
+      announce(`Invoice date set to ${selectedDate.toLocaleDateString()}, due date updated to ${newDue.toLocaleDateString()}`);
+    }
+  };
+
+  const handleDueDateChange = (event: any, selectedDate?: Date) => {
+    setShowDueDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFormDueDate(selectedDate);
+      announce(`Due date set to ${selectedDate.toLocaleDateString()}`);
+    }
   };
 
   const handleSubmit = async () => {
@@ -102,6 +139,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
       poId: formPoId,
       vendorName: formVendorName,
       invoiceDate: formInvoiceDate,
+      dueDate: formDueDate,
       paymentDate: formPaymentDate,
       paymentStatus: formPaymentStatus,
     };
@@ -139,15 +177,6 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
     setFormPaymentStatus(status);
     const statusLabel = PAYMENT_STATUSES.find(s => s.value === status)?.label || status;
     announce(`Payment status changed to ${statusLabel}`);
-  };
-
-  // Handle date selection with announcement
-  const handleInvoiceDateChange = (event: any, selectedDate?: Date) => {
-    setShowInvoiceDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setFormInvoiceDate(selectedDate);
-      announce(`Invoice date set to ${selectedDate.toLocaleDateString()}`);
-    }
   };
 
   const handlePaymentDateChange = (event: any, selectedDate?: Date) => {
@@ -241,7 +270,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
               keyboardType="numeric"
               mode="outlined"
               style={styles.input}
-              left={<TextInput.Affix text="$" />}
+              left={<TextInput.Affix text="₹" />}
               error={!!validationErrors.amount}
               accessibilityLabel="Invoice Amount in dollars, required field"
               accessibilityHint="Enter the invoice amount"
@@ -276,7 +305,33 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
                 value={formInvoiceDate}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleInvoiceDateChange}
+                onChange={handleInvoiceDateChangeWithDueDate}
+              />
+            )}
+
+            <Text
+              style={styles.dialogLabel}
+              accessibilityRole="text"
+            >
+              Due Date
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() => setShowDueDatePicker(true)}
+              style={styles.dateButton}
+              accessibilityLabel={`Due date: ${formDueDate.toLocaleDateString()}`}
+              accessibilityHint="Tap to change the payment due date"
+              accessibilityRole="button"
+            >
+              {formDueDate.toLocaleDateString()}
+            </Button>
+
+            {showDueDatePicker && (
+              <DateTimePicker
+                value={formDueDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDueDateChange}
               />
             )}
 

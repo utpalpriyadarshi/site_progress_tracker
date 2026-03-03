@@ -20,6 +20,7 @@ import { v47Migration } from './v47_add_report_images';
 import { v48Migration } from './v48_add_doors_package_link';
 import { v49Migration } from './v49_add_change_orders';
 import { v50Migration } from './v50_link_item_design_document';
+import { v51Migration } from './v51_add_due_date_to_invoices';
 
 export default schemaMigrations({
   migrations: [
@@ -619,5 +620,7 @@ export default schemaMigrations({
     v49Migration,
     // v50: Add design_document_id to items for WBS-DesignDoc linkage
     v50Migration,
+    // v51: Add due_date to invoices for explicit payment-terms-aware overdue tracking
+    v51Migration,
   ],
 });
