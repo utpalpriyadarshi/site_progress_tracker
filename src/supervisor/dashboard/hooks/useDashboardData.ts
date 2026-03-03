@@ -14,6 +14,8 @@ interface DashboardMetrics {
   todayProgress: number;
   pendingItems: number;
   reportsSubmitted: number;
+  materialsShortage: number;
+  openHindrances: number;
 }
 
 interface Alert {
@@ -107,7 +109,7 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
 
       // Fetch all data in parallel using Promise.all
       // allSupervisorItems replaces the pending-only items query — we derive pendingItems count from it
-      const [sitesCollection, progressLogsCollection, allSupervisorItems, reportsCollection] =
+      const [sitesCollection, progressLogsCollection, allSupervisorItems, reportsCollection, hindrancesCollection] =
         await Promise.all([
           // Active sites for this supervisor
           database.collections
@@ -135,11 +137,34 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
               Q.where('submitted_at', Q.gte(startOfTodayTimestamp))
             )
             .fetch(),
+
+          // Open hindrances reported by this supervisor
+          database.collections
+            .get('hindrances')
+            .query(Q.where('reported_by', supervisorId))
+            .fetch(),
         ]);
+
+      // Materials shortage — query after we have item IDs
+      const supervisorItemIds = (allSupervisorItems as any[]).map(i => i.id);
+      const materialsCollection = supervisorItemIds.length > 0
+        ? await database.collections
+            .get('materials')
+            .query(Q.where('item_id', Q.oneOf(supervisorItemIds)))
+            .fetch()
+        : [];
 
       // Derive pending count from the full items list
       const pendingCount = (allSupervisorItems as any[]).filter(
         (item) => item.completedQuantity < item.plannedQuantity
+      ).length;
+
+      const materialsShortage = (materialsCollection as any[]).filter(
+        m => (m as any).status === 'shortage'
+      ).length;
+
+      const openHindrances = (hindrancesCollection as any[]).filter(
+        h => (h as any).status === 'open' || (h as any).status === 'in_progress'
       ).length;
 
       setMetrics({
@@ -147,6 +172,8 @@ export const useDashboardData = (supervisorId: string): UseDashboardDataReturn =
         todayProgress: progressLogsCollection.length,
         pendingItems: pendingCount,
         reportsSubmitted: reportsCollection.length,
+        materialsShortage,
+        openHindrances,
       });
 
       // Group items by site ID

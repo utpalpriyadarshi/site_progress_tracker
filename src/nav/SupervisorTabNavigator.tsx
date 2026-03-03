@@ -31,7 +31,7 @@ export type SupervisorTabParamList = {
   Dashboard: undefined;
   Sites: undefined;
   Items: undefined;
-  DailyWork: undefined;
+  DailyWork: { focusItemId?: string } | undefined;
   More: undefined;
 };
 

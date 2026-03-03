@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Image } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Button, Text, IconButton } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import { database } from '../../../models/database';
@@ -41,6 +42,8 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
 }) => {
   const { selectedSiteId, supervisorId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [isOnline, setIsOnline] = useState(true);
 
   // Monitor network status
@@ -138,6 +141,17 @@ const DailyReportsScreenComponent: React.FC<DailyReportsScreenComponentProps> = 
     onError: message => showSnackbar(message, 'error'),
     onWarning: message => showSnackbar(message, 'warning'),
   });
+
+  // Auto-open update dialog when navigated from Items tab with a focusItemId
+  useEffect(() => {
+    const focusItemId = route.params?.focusItemId;
+    if (!focusItemId || items.length === 0) return;
+    const target = items.find(i => i.id === focusItemId);
+    if (target) {
+      openUpdateDialog(target);
+      navigation.setParams({ focusItemId: undefined });
+    }
+  }, [route.params?.focusItemId, items]);
 
   // Filter sites based on selection
   const displayedSites =

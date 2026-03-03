@@ -174,6 +174,25 @@ const DashboardScreen: React.FC = () => {
           />
         </View>
 
+        <View style={styles.metricsGrid}>
+          <MetricCard
+            title="Material Shortage"
+            value={metrics?.materialsShortage || 0}
+            icon="warning"
+            color="#e53935"
+            loading={loading}
+            onPress={() => navigation.navigate('Materials')}
+          />
+          <MetricCard
+            title="Open Hindrances"
+            value={metrics?.openHindrances || 0}
+            icon="report-problem"
+            color="#ff6f00"
+            loading={loading}
+            onPress={() => navigation.navigate('Issues')}
+          />
+        </View>
+
         {/* Site Progress Section */}
         <SiteProgressSection sites={siteProgress} loading={loading} />
 
