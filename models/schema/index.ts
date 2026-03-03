@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 50, // Add design_document_id to items for WBS-DesignDoc linkage
+  version: 51, // Add due_date to invoices for explicit payment-terms-aware overdue tracking
   tables: [
     tableSchema({
       name: 'projects',
