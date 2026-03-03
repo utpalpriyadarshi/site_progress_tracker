@@ -270,7 +270,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
               keyboardType="numeric"
               mode="outlined"
               style={styles.input}
-              left={<TextInput.Affix text="$" />}
+              left={<TextInput.Affix text="₹" />}
               error={!!validationErrors.amount}
               accessibilityLabel="Invoice Amount in dollars, required field"
               accessibilityHint="Enter the invoice amount"

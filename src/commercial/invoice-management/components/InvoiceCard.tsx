@@ -4,6 +4,7 @@ import { Card, Chip, Button } from 'react-native-paper';
 import { Invoice } from '../hooks';
 import { StatusChip } from './StatusChip';
 import { COLORS } from '../../../theme/colors';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -35,7 +36,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
         <View style={styles.detailsContainer}>
           <View style={styles.detailsRow}>
             <Text style={styles.detailLabel}>Amount:</Text>
-            <Text style={styles.detailValue}>${invoice.amount.toLocaleString()}</Text>
+            <Text style={styles.detailValue}>{formatCurrencySmart(invoice.amount)}</Text>
           </View>
 
           <View style={styles.detailsRow}>

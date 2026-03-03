@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { formatCurrencySmart } from '../../../utils/currencyFormatter';
 
 interface InvoiceSummaryCardsProps {
   totalInvoices: number;
@@ -22,12 +23,12 @@ export const InvoiceSummaryCards: React.FC<InvoiceSummaryCardsProps> = ({
       </View>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Total Amount</Text>
-        <Text style={styles.summaryValue}>${totalAmount.toLocaleString()}</Text>
+        <Text style={styles.summaryValue}>{formatCurrencySmart(totalAmount)}</Text>
       </View>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Pending</Text>
         <Text style={[styles.summaryValue, { color: '#FFA500' }]}>
-          ${pendingAmount.toLocaleString()}
+          {formatCurrencySmart(pendingAmount)}
         </Text>
       </View>
       <View style={styles.summaryCard}>

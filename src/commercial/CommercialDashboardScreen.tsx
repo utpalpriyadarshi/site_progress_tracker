@@ -364,6 +364,9 @@ const CommercialDashboardScreen = () => {
       >
       {/* Header */}
       <View style={styles.header}>
+        <Text style={styles.welcomeText}>
+          Welcome, {user?.fullName || user?.username || 'Commercial Manager'}!
+        </Text>
         <Text style={styles.projectName}>{projectName}</Text>
         <PeriodSelector
           selectedPeriod={state.ui.selectedPeriod}
@@ -452,6 +455,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  welcomeText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
   },
   projectName: {
     fontSize: 20,
