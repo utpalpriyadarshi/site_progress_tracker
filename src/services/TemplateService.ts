@@ -6,7 +6,8 @@
  * Responsibilities:
  * 1. seedPredefinedTemplates() — checks if predefined templates exist,
  *    seeds TSS Substation and OHE Zone templates if not.
- *    On upgrade: if existing templates are missing material data, updates them.
+ *    On upgrade: if existing templates are missing material data or have
+ *    outdated activity lists, updates them in-place.
  * 2. applyTemplateToSite() — bulk-creates items (and their materials) from a
  *    template on a target site inside a single database.write() transaction.
  */
@@ -21,10 +22,10 @@ import { logger } from './LoggingService';
 
 const TSS_ITEMS: TemplateItem[] = [
   // site_prep
-  { name: 'Site Marking & Clearing',       phase: 'site_prep',    duration: 3,  dependencies: [], wbsCode: '1.1', quantity: 1,  unit: 'nos',    weightage: 3,  categoryName: 'Civil' },
-  { name: 'Foundation Excavation',          phase: 'site_prep',    duration: 5,  dependencies: [], wbsCode: '1.2', quantity: 50, unit: 'm³',     weightage: 4,  categoryName: 'Civil' },
+  { name: 'Site Marking & Clearing',         phase: 'site_prep',     duration: 3,  dependencies: [], wbsCode: '1.1', quantity: 1,    unit: 'nos',  weightage: 3,  categoryName: 'Civil Works' },
+  { name: 'Foundation Excavation',            phase: 'site_prep',     duration: 5,  dependencies: [], wbsCode: '1.2', quantity: 50,   unit: 'm³',   weightage: 4,  categoryName: 'Civil Works' },
   {
-    name: 'Foundation Casting',             phase: 'site_prep',    duration: 7,  dependencies: [], wbsCode: '1.3', quantity: 30, unit: 'm³',     weightage: 5,  categoryName: 'Civil',
+    name: 'Foundation Casting',               phase: 'site_prep',     duration: 7,  dependencies: [], wbsCode: '1.3', quantity: 30,   unit: 'm³',   weightage: 5,  categoryName: 'Foundation Work',
     materials: [
       { name: 'Concrete M30', quantityRequired: 30, unit: 'm³' },
       { name: 'Rebar', quantityRequired: 3, unit: 'tons' },
@@ -33,14 +34,14 @@ const TSS_ITEMS: TemplateItem[] = [
   },
   // construction
   {
-    name: 'Structural Steel Erection',      phase: 'construction', duration: 10, dependencies: [], wbsCode: '2.1', quantity: 15, unit: 'tons',   weightage: 6,  categoryName: 'Civil',
+    name: 'Structural Steel Erection',        phase: 'construction',  duration: 10, dependencies: [], wbsCode: '2.1', quantity: 15,   unit: 'tons', weightage: 6,  categoryName: 'Installation',
     materials: [
       { name: 'Structural Steel', quantityRequired: 15, unit: 'tons' },
       { name: 'Anchor Bolts', quantityRequired: 200, unit: 'nos' },
     ],
   },
   {
-    name: 'Transformer Installation',       phase: 'construction', duration: 5,  dependencies: [], wbsCode: '2.2', quantity: 2,  unit: 'nos',    weightage: 8,  categoryName: 'OHE',
+    name: 'Transformer Installation',         phase: 'construction',  duration: 5,  dependencies: [], wbsCode: '2.2', quantity: 2,    unit: 'nos',  weightage: 8,  categoryName: 'Installation',
     materials: [
       { name: 'Power Transformer 100MVA', quantityRequired: 2, unit: 'nos', supplier: 'VND-PT-001' },
       { name: 'Transformer Oil', quantityRequired: 4000, unit: 'L', supplier: 'VND-PT-001' },
@@ -48,15 +49,19 @@ const TSS_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'HV Switchgear Installation',     phase: 'construction', duration: 7,  dependencies: [], wbsCode: '2.3', quantity: 4,  unit: 'nos',    weightage: 8,  categoryName: 'OHE',
+    name: 'HV Switchgear Installation',       phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.3', quantity: 4,    unit: 'nos',  weightage: 8,  categoryName: 'Installation',
     materials: [
       { name: 'HV Switchgear Panel', quantityRequired: 4, unit: 'nos', supplier: 'VND-SG-002' },
       { name: 'SF6 Gas', quantityRequired: 20, unit: 'kg', supplier: 'VND-SG-002' },
       { name: 'Control Cable', quantityRequired: 200, unit: 'm', supplier: 'VND-CC-003' },
     ],
   },
+  { name: 'Lightening Arrester Installation', phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.4', quantity: 4,    unit: 'nos',  weightage: 8,  categoryName: 'Installation' },
+  { name: 'Isolator Installation',            phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.5', quantity: 4,    unit: 'nos',  weightage: 8,  categoryName: 'Installation' },
+  { name: 'CT Installation',                  phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.6', quantity: 3,    unit: 'nos',  weightage: 8,  categoryName: 'Installation' },
+  { name: 'PT Installation',                  phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.7', quantity: 3,    unit: 'nos',  weightage: 8,  categoryName: 'Installation' },
   {
-    name: 'Control Panels Installation',    phase: 'construction', duration: 4,  dependencies: [], wbsCode: '2.4', quantity: 3,  unit: 'nos',    weightage: 6,  categoryName: 'OHE',
+    name: 'Control Panels Installation',      phase: 'construction',  duration: 4,  dependencies: [], wbsCode: '2.8', quantity: 3,    unit: 'nos',  weightage: 6,  categoryName: 'Installation',
     materials: [
       { name: 'Control Panel', quantityRequired: 3, unit: 'nos', supplier: 'VND-SG-002' },
       { name: 'Control Cable', quantityRequired: 500, unit: 'm', supplier: 'VND-CC-003' },
@@ -64,7 +69,7 @@ const TSS_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Cable Tray Installation',        phase: 'construction', duration: 6,  dependencies: [], wbsCode: '2.5', quantity: 500, unit: 'm',     weightage: 5,  categoryName: 'Civil',
+    name: 'Cable Tray Installation',          phase: 'construction',  duration: 6,  dependencies: [], wbsCode: '2.9',  quantity: 500,  unit: 'm',    weightage: 5,  categoryName: 'Installation',
     materials: [
       { name: 'Cable Tray 150mm', quantityRequired: 500, unit: 'm' },
       { name: 'Perforated Tray', quantityRequired: 200, unit: 'm' },
@@ -72,7 +77,7 @@ const TSS_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'HT/LT Cable Laying',            phase: 'construction', duration: 8,  dependencies: [], wbsCode: '2.6', quantity: 800, unit: 'm',     weightage: 7,  categoryName: 'OHE',
+    name: 'HT/LT Cable Laying',              phase: 'construction',  duration: 8,  dependencies: [], wbsCode: '2.10', quantity: 800,  unit: 'm',    weightage: 7,  categoryName: 'Installation',
     materials: [
       { name: 'HT Cable 11kV', quantityRequired: 800, unit: 'm', supplier: 'VND-CC-003' },
       { name: 'LT Cable 1.1kV', quantityRequired: 400, unit: 'm', supplier: 'VND-CC-003' },
@@ -80,33 +85,33 @@ const TSS_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Earthing Grid Installation',     phase: 'construction', duration: 4,  dependencies: [], wbsCode: '2.7', quantity: 1,  unit: 'nos',    weightage: 5,  categoryName: 'Civil',
+    name: 'Earthing Grid Installation',       phase: 'construction',  duration: 4,  dependencies: [], wbsCode: '2.11', quantity: 1,    unit: 'nos',  weightage: 5,  categoryName: 'Installation',
     materials: [
       { name: 'Earthing Electrode', quantityRequired: 10, unit: 'nos' },
       { name: 'Earthing Strip 40x6mm', quantityRequired: 200, unit: 'm' },
       { name: 'Earth Clamps', quantityRequired: 40, unit: 'nos' },
     ],
   },
-  { name: 'Transformer Oil Filling',        phase: 'construction', duration: 2,  dependencies: [], wbsCode: '2.8', quantity: 2,  unit: 'nos',    weightage: 3,  categoryName: 'OHE' },
+  { name: 'Transformer Oil Filling',          phase: 'construction',  duration: 2,  dependencies: [], wbsCode: '2.12', quantity: 2,    unit: 'nos',  weightage: 3,  categoryName: 'Installation' },
   // testing
-  { name: 'IR / Megger Tests',             phase: 'testing',      duration: 3,  dependencies: [], wbsCode: '3.1', quantity: 1,  unit: 'nos',    weightage: 6,  categoryName: 'OHE' },
-  { name: 'Protection Relay Testing',       phase: 'testing',      duration: 5,  dependencies: [], wbsCode: '3.2', quantity: 1,  unit: 'nos',    weightage: 8,  categoryName: 'OHE' },
-  { name: 'Pre-commissioning Tests',        phase: 'testing',      duration: 4,  dependencies: [], wbsCode: '3.3', quantity: 1,  unit: 'nos',    weightage: 7,  categoryName: 'OHE' },
+  { name: 'IR / Megger Tests',               phase: 'testing',       duration: 3,  dependencies: [], wbsCode: '3.1',  quantity: 1,    unit: 'nos',  weightage: 6,  categoryName: 'Testing' },
+  { name: 'Protection Relay Testing',         phase: 'testing',       duration: 5,  dependencies: [], wbsCode: '3.2',  quantity: 1,    unit: 'nos',  weightage: 8,  categoryName: 'Testing' },
+  { name: 'Pre-commissioning Tests',          phase: 'testing',       duration: 4,  dependencies: [], wbsCode: '3.3',  quantity: 1,    unit: 'nos',  weightage: 7,  categoryName: 'Testing' },
   // commissioning
-  { name: 'Energization Trials',            phase: 'commissioning', duration: 3, dependencies: [], wbsCode: '4.1', quantity: 1,  unit: 'nos',    weightage: 8,  categoryName: 'OHE' },
-  { name: 'Load Trials',                    phase: 'commissioning', duration: 4, dependencies: [], wbsCode: '4.2', quantity: 1,  unit: 'nos',    weightage: 6,  categoryName: 'OHE' },
+  { name: 'Energization Trials',              phase: 'commissioning', duration: 3,  dependencies: [], wbsCode: '4.1',  quantity: 1,    unit: 'nos',  weightage: 8,  categoryName: 'Commissioning' },
+  { name: 'Load Trials',                      phase: 'commissioning', duration: 4,  dependencies: [], wbsCode: '4.2',  quantity: 1,    unit: 'nos',  weightage: 6,  categoryName: 'Commissioning' },
   // sat
-  { name: 'Site Acceptance Test',           phase: 'sat',          duration: 5,  dependencies: [], wbsCode: '5.1', quantity: 1,  unit: 'nos',    weightage: 8,  categoryName: 'OHE', isMilestone: true },
+  { name: 'Site Acceptance Test',             phase: 'sat',           duration: 5,  dependencies: [], wbsCode: '5.1',  quantity: 1,    unit: 'nos',  weightage: 8,  categoryName: 'Handing Over',  isMilestone: true },
   // handover
-  { name: 'Punch List & Handover',          phase: 'handover',     duration: 3,  dependencies: [], wbsCode: '6.1', quantity: 1,  unit: 'nos',    weightage: 5,  categoryName: 'Civil', isMilestone: true },
+  { name: 'Punch List & Handover',            phase: 'handover',      duration: 3,  dependencies: [], wbsCode: '6.1',  quantity: 1,    unit: 'nos',  weightage: 5,  categoryName: 'Punch List',    isMilestone: true },
 ];
 
 const OHE_ITEMS: TemplateItem[] = [
   // site_prep
-  { name: 'Survey & Marking',               phase: 'site_prep',    duration: 3,  dependencies: [], wbsCode: '1.1', quantity: 1,  unit: 'nos',    weightage: 4,  categoryName: 'OHE' },
-  { name: 'Foundation Excavation',          phase: 'site_prep',    duration: 7,  dependencies: [], wbsCode: '1.2', quantity: 60, unit: 'm³',     weightage: 5,  categoryName: 'Civil' },
+  { name: 'Survey & Marking',                 phase: 'site_prep',     duration: 3,  dependencies: [], wbsCode: '1.1', quantity: 1,     unit: 'nos',  weightage: 4,  categoryName: 'Civil' },
+  { name: 'Foundation Excavation',            phase: 'site_prep',     duration: 7,  dependencies: [], wbsCode: '1.2', quantity: 60,    unit: 'm³',   weightage: 5,  categoryName: 'Civil' },
   {
-    name: 'Foundation Casting',             phase: 'site_prep',    duration: 8,  dependencies: [], wbsCode: '1.3', quantity: 40, unit: 'm³',     weightage: 6,  categoryName: 'Civil',
+    name: 'Foundation Casting',               phase: 'site_prep',     duration: 8,  dependencies: [], wbsCode: '1.3', quantity: 40,    unit: 'm³',   weightage: 6,  categoryName: 'Foundation Work',
     materials: [
       { name: 'Concrete M30', quantityRequired: 40, unit: 'm³' },
       { name: 'Rebar', quantityRequired: 4, unit: 'tons' },
@@ -115,7 +120,7 @@ const OHE_ITEMS: TemplateItem[] = [
   },
   // construction
   {
-    name: 'Mast Erection',                  phase: 'construction', duration: 10, dependencies: [], wbsCode: '2.1', quantity: 80, unit: 'nos',    weightage: 10, categoryName: 'OHE',
+    name: 'Mast Erection',                    phase: 'construction',  duration: 10, dependencies: [], wbsCode: '2.1', quantity: 80,    unit: 'nos',  weightage: 10, categoryName: 'Installation',
     materials: [
       { name: 'OHE Mast 9.6m', quantityRequired: 80, unit: 'nos', supplier: 'VND-SS-004' },
       { name: 'Foundation Bolts M30', quantityRequired: 640, unit: 'nos', supplier: 'VND-SS-004' },
@@ -123,7 +128,7 @@ const OHE_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Bracket & Arm Installation',     phase: 'construction', duration: 7,  dependencies: [], wbsCode: '2.2', quantity: 80, unit: 'nos',    weightage: 8,  categoryName: 'OHE',
+    name: 'Bracket & Arm Installation',       phase: 'construction',  duration: 7,  dependencies: [], wbsCode: '2.2', quantity: 80,    unit: 'nos',  weightage: 8,  categoryName: 'Installation',
     materials: [
       { name: 'Cantilever Assembly', quantityRequired: 80, unit: 'nos', supplier: 'VND-SS-004' },
       { name: 'Steady Arm', quantityRequired: 80, unit: 'nos', supplier: 'VND-SS-004' },
@@ -131,7 +136,7 @@ const OHE_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Catenary Wire Stringing',        phase: 'construction', duration: 10, dependencies: [], wbsCode: '2.3', quantity: 15500, unit: 'm',   weightage: 12, categoryName: 'OHE',
+    name: 'Catenary Wire Stringing',          phase: 'construction',  duration: 10, dependencies: [], wbsCode: '2.3', quantity: 15500, unit: 'm',    weightage: 12, categoryName: 'Installation',
     materials: [
       { name: 'Catenary Wire 107mm²', quantityRequired: 16000, unit: 'm', supplier: 'VND-CC-003' },
       { name: 'Tension Clamps', quantityRequired: 100, unit: 'nos' },
@@ -139,7 +144,7 @@ const OHE_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Contact Wire Stringing',         phase: 'construction', duration: 8,  dependencies: [], wbsCode: '2.4', quantity: 15500, unit: 'm',   weightage: 12, categoryName: 'OHE',
+    name: 'Contact Wire Stringing',           phase: 'construction',  duration: 8,  dependencies: [], wbsCode: '2.4', quantity: 15500, unit: 'm',    weightage: 12, categoryName: 'Installation',
     materials: [
       { name: 'Contact Wire 107mm²', quantityRequired: 16000, unit: 'm', supplier: 'VND-CC-003' },
       { name: 'Section Insulators', quantityRequired: 20, unit: 'nos' },
@@ -147,7 +152,7 @@ const OHE_ITEMS: TemplateItem[] = [
     ],
   },
   {
-    name: 'Dropper & Clip Fixing',          phase: 'construction', duration: 5,  dependencies: [], wbsCode: '2.5', quantity: 500, unit: 'nos',   weightage: 6,  categoryName: 'OHE',
+    name: 'Dropper & Clip Fixing',            phase: 'construction',  duration: 5,  dependencies: [], wbsCode: '2.5', quantity: 500,   unit: 'nos',  weightage: 6,  categoryName: 'Installation',
     materials: [
       { name: 'Dropper Assembly', quantityRequired: 500, unit: 'nos' },
       { name: 'Stitch Wire', quantityRequired: 600, unit: 'm', supplier: 'VND-CC-003' },
@@ -155,16 +160,17 @@ const OHE_ITEMS: TemplateItem[] = [
     ],
   },
   // testing
-  { name: 'OCS Geometry Measurement',       phase: 'testing',      duration: 4,  dependencies: [], wbsCode: '3.1', quantity: 1,  unit: 'nos',    weightage: 8,  categoryName: 'OHE' },
-  { name: 'Stagger & Height Verification',  phase: 'testing',      duration: 3,  dependencies: [], wbsCode: '3.2', quantity: 1,  unit: 'nos',    weightage: 7,  categoryName: 'OHE' },
-  { name: 'Dynamic Test Run',               phase: 'testing',      duration: 3,  dependencies: [], wbsCode: '3.3', quantity: 1,  unit: 'nos',    weightage: 8,  categoryName: 'OHE' },
+  { name: 'OCS Geometry Measurement',         phase: 'testing',       duration: 4,  dependencies: [], wbsCode: '3.1', quantity: 1,     unit: 'nos',  weightage: 8,  categoryName: 'Testing' },
+  { name: 'Stagger & Height Verification',    phase: 'testing',       duration: 3,  dependencies: [], wbsCode: '3.2', quantity: 1,     unit: 'nos',  weightage: 7,  categoryName: 'Testing' },
+  { name: 'Dynamic Test Run',                 phase: 'testing',       duration: 3,  dependencies: [], wbsCode: '3.3', quantity: 1,     unit: 'nos',  weightage: 8,  categoryName: 'Testing' },
   // commissioning
-  { name: 'Section Insulators Installation',phase: 'commissioning', duration: 3, dependencies: [], wbsCode: '4.1', quantity: 10, unit: 'nos',    weightage: 5,  categoryName: 'OHE' },
-  { name: 'Section Energization',           phase: 'commissioning', duration: 2, dependencies: [], wbsCode: '4.2', quantity: 1,  unit: 'nos',    weightage: 5,  categoryName: 'OHE' },
+  { name: 'Section Insulators Installation',  phase: 'commissioning', duration: 3,  dependencies: [], wbsCode: '4.1', quantity: 10,    unit: 'nos',  weightage: 5,  categoryName: 'Testing' },
+  { name: 'Section Energization',             phase: 'commissioning', duration: 2,  dependencies: [], wbsCode: '4.2', quantity: 1,     unit: 'nos',  weightage: 5,  categoryName: 'Testing' },
   // sat
-  { name: 'SAT & Clearance',               phase: 'sat',          duration: 4,  dependencies: [], wbsCode: '5.1', quantity: 1,  unit: 'nos',    weightage: 6,  categoryName: 'OHE', isMilestone: true },
+  { name: 'SAT & Clearance',                 phase: 'sat',           duration: 4,  dependencies: [], wbsCode: '5.1', quantity: 1,     unit: 'nos',  weightage: 6,  categoryName: 'Commissioning', isMilestone: true },
   // handover
-  { name: 'As-Built Survey & Handover',     phase: 'handover',     duration: 3,  dependencies: [], wbsCode: '6.1', quantity: 1,  unit: 'nos',    weightage: 4,  categoryName: 'OHE', isMilestone: true },
+  { name: 'Punch List & Handover',            phase: 'handover',      duration: 3,  dependencies: [], wbsCode: '6.1', quantity: 1,     unit: 'nos',  weightage: 5,  categoryName: 'Punch List',    isMilestone: true },
+  { name: 'As-Built Survey & Handover',       phase: 'handover',      duration: 3,  dependencies: [], wbsCode: '6.2', quantity: 1,     unit: 'nos',  weightage: 4,  categoryName: 'Handover',      isMilestone: true },
 ];
 
 const PREDEFINED_TEMPLATES: Array<{
@@ -191,7 +197,8 @@ const PREDEFINED_TEMPLATES: Array<{
 
 /**
  * Seeds predefined templates if none exist yet.
- * On upgrade: if existing predefined templates are missing material data, updates them in-place.
+ * On upgrade: if existing predefined templates have outdated items (detected by
+ * item count mismatch or missing materials), updates them in-place.
  * Safe to call multiple times.
  */
 export async function seedPredefinedTemplates(): Promise<void> {
@@ -202,10 +209,13 @@ export async function seedPredefinedTemplates(): Promise<void> {
       .fetch();
 
     if (existing.length > 0) {
-      // Check if any predefined template's items are missing materials (upgrade path)
-      const needsUpdate = existing.some(t => {
-        const items = t.getItems();
-        return items.length > 0 && items.every(i => !i.materials || i.materials.length === 0);
+      // Detect stale templates: item count changed OR materials missing
+      const needsUpdate = existing.some(tpl => {
+        const def = PREDEFINED_TEMPLATES.find(p => p.name === tpl.name);
+        if (!def) return false;
+        const currentItems = tpl.getItems();
+        if (currentItems.length !== def.items.length) return true;
+        return currentItems.every(i => !i.materials || i.materials.length === 0);
       });
 
       if (!needsUpdate) {
@@ -216,7 +226,6 @@ export async function seedPredefinedTemplates(): Promise<void> {
         return;
       }
 
-      // Update existing predefined templates with new items JSON (materials added)
       await database.write(async () => {
         for (const tpl of existing) {
           const def = PREDEFINED_TEMPLATES.find(p => p.name === tpl.name);
@@ -226,7 +235,7 @@ export async function seedPredefinedTemplates(): Promise<void> {
         }
       });
 
-      logger.info('Predefined templates upgraded with material data', {
+      logger.info('Predefined templates upgraded', {
         service: 'TemplateService',
         count: existing.length,
       });
@@ -282,7 +291,7 @@ export async function applyTemplateToSite(
 
   const templateItems = template.getItems();
 
-  // 2. Load categories for this project's sites
+  // 2. Load categories
   const allCategories = await database.collections
     .get<CategoryModel>('categories')
     .query()
@@ -294,7 +303,7 @@ export async function applyTemplateToSite(
   }
   const fallbackCategoryId = allCategories[0]?.id ?? '';
 
-  // 3. Load existing item names on the target site to detect duplicates
+  // 3. Load existing item names on target site (duplicate detection)
   const existingItems = await database.collections
     .get('items')
     .query(Q.where('site_id', siteId))
@@ -304,7 +313,7 @@ export async function applyTemplateToSite(
     (existingItems as any[]).map((i: any) => (i.name as string).toLowerCase())
   );
 
-  // 4. Partition items
+  // 4. Partition
   const toCreate: TemplateItem[] = [];
   const skippedNames: string[] = [];
 

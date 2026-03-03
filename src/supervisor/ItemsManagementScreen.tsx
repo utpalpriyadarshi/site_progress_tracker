@@ -112,7 +112,9 @@ const ItemsManagementScreenComponent = ({
   const [plannedEndDate, setPlannedEndDate] = useState('');
   const [weightage, setWeightage] = useState('');
   const [status, setStatus] = useState('not_started');
+  const [projectPhase, setProjectPhase] = useState('construction');
   const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+  const [phaseMenuVisible, setPhaseMenuVisible] = useState(false);
 
   // Common units
   const commonUnits = [
@@ -308,6 +310,7 @@ const ItemsManagementScreenComponent = ({
     setPlannedEndDate('');
     setWeightage('');
     setStatus('not_started');
+    setProjectPhase('construction');
     setDialogVisible(true);
   };
 
@@ -322,6 +325,7 @@ const ItemsManagementScreenComponent = ({
     setPlannedEndDate(item.plannedEndDate?.toString() || '');
     setWeightage(item.weightage?.toString() || '');
     setStatus(item.status);
+    setProjectPhase(item.projectPhase || 'construction');
     setDialogVisible(true);
   };
 
@@ -348,6 +352,7 @@ const ItemsManagementScreenComponent = ({
             item.categoryId = selectedCategoryId;
             item.weightage = parseFloat(weightage) || 0;
             item.status = status;
+            item.projectPhase = projectPhase as ProjectPhase;
 
             if (plannedStartDate) {
               item.plannedStartDate = parseInt(plannedStartDate, 10);
@@ -368,6 +373,7 @@ const ItemsManagementScreenComponent = ({
             item.unitOfMeasurement = unitOfMeasurement;
             item.weightage = parseFloat(weightage) || 0;
             item.status = status;
+            item.projectPhase = projectPhase;
 
             if (plannedStartDate) {
               item.plannedStartDate = parseInt(plannedStartDate, 10);
@@ -750,6 +756,33 @@ const ItemsManagementScreenComponent = ({
                 ]}
                 style={styles.segmentedButtons}
               />
+
+              <Text style={styles.label}>Phase</Text>
+              <Menu
+                visible={phaseMenuVisible}
+                onDismiss={() => setPhaseMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    onPress={() => setPhaseMenuVisible(true)}
+                    style={styles.dropdownButton}
+                  >
+                    {PHASE_FILTERS.find(p => p.id === projectPhase)?.label || projectPhase}
+                  </Button>
+                }
+              >
+                {PHASE_FILTERS.filter(p => p.id !== 'all').map(p => (
+                  <Menu.Item
+                    key={p.id}
+                    title={p.label}
+                    onPress={() => {
+                      setProjectPhase(p.id);
+                      setPhaseMenuVisible(false);
+                    }}
+                    leadingIcon={projectPhase === p.id ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
