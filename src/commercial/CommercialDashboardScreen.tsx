@@ -325,6 +325,12 @@ const CommercialDashboardScreen = () => {
   }, [state.data.dashboardData]);
 
   const periodLabel = formatPeriodLabel(state.ui.selectedPeriod);
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   if (!projectId) {
     return (
@@ -364,7 +370,8 @@ const CommercialDashboardScreen = () => {
       >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>
+        <Text style={styles.dateText}>{currentDate}</Text>
+        <Text style={styles.greeting}>
           Welcome, {user?.fullName || user?.username || 'Commercial Manager'}!
         </Text>
         <Text style={styles.projectName}>{projectName}</Text>
@@ -456,15 +463,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  welcomeText: {
+  dateText: {
     fontSize: 14,
     color: '#666',
+  },
+  greeting: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 4,
     marginBottom: 4,
   },
   projectName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 15,
+    color: '#555',
     marginBottom: 12,
   },
   periodSelector: {
