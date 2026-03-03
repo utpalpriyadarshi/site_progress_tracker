@@ -26,7 +26,7 @@ import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
-import { CopyItemsDialog, DuplicateItemsDialog } from '../components/dialogs';
+import { CopyItemsDialog, DuplicateItemsDialog, MaterialSuggestionsDialog } from '../components/dialogs';
 import ApplyTemplateDialog from './templates/ApplyTemplateDialog';
 import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
@@ -99,6 +99,9 @@ const ItemsManagementScreenComponent = ({
     ((skipDuplicates: boolean, selectedDuplicates: string[]) => void) | null
   >(null);
 
+  // Suggest materials state
+  const [suggestMaterialsItem, setSuggestMaterialsItem] = useState<ItemModel | null>(null);
+
   // Form fields
   const [itemName, setItemName] = useState('');
   const [plannedQuantity, setPlannedQuantity] = useState('');
@@ -109,7 +112,9 @@ const ItemsManagementScreenComponent = ({
   const [plannedEndDate, setPlannedEndDate] = useState('');
   const [weightage, setWeightage] = useState('');
   const [status, setStatus] = useState('not_started');
+  const [projectPhase, setProjectPhase] = useState('construction');
   const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+  const [phaseMenuVisible, setPhaseMenuVisible] = useState(false);
 
   // Common units
   const commonUnits = [
@@ -274,10 +279,11 @@ const ItemsManagementScreenComponent = ({
     setPendingCopyCallback(null);
   };
 
-  const handleApplyTemplateSuccess = (created: number, skipped: number) => {
+  const handleApplyTemplateSuccess = (created: number, skipped: number, materialsCreated: number) => {
+    const materialsMsg = materialsCreated > 0 ? ` + ${materialsCreated} materials` : '';
     const msg = skipped > 0
-      ? `✓ ${created} activities added (${skipped} duplicates skipped)`
-      : `✓ ${created} activities added from template`;
+      ? `✓ ${created} activities${materialsMsg} added (${skipped} duplicates skipped)`
+      : `✓ ${created} activities${materialsMsg} added from template`;
     showSnackbar(msg, 'success');
     setApplyTemplateDialogVisible(false);
   };
@@ -304,6 +310,7 @@ const ItemsManagementScreenComponent = ({
     setPlannedEndDate('');
     setWeightage('');
     setStatus('not_started');
+    setProjectPhase('construction');
     setDialogVisible(true);
   };
 
@@ -318,6 +325,7 @@ const ItemsManagementScreenComponent = ({
     setPlannedEndDate(item.plannedEndDate?.toString() || '');
     setWeightage(item.weightage?.toString() || '');
     setStatus(item.status);
+    setProjectPhase(item.projectPhase || 'construction');
     setDialogVisible(true);
   };
 
@@ -344,6 +352,7 @@ const ItemsManagementScreenComponent = ({
             item.categoryId = selectedCategoryId;
             item.weightage = parseFloat(weightage) || 0;
             item.status = status;
+            item.projectPhase = projectPhase as ProjectPhase;
 
             if (plannedStartDate) {
               item.plannedStartDate = parseInt(plannedStartDate, 10);
@@ -364,6 +373,7 @@ const ItemsManagementScreenComponent = ({
             item.unitOfMeasurement = unitOfMeasurement;
             item.weightage = parseFloat(weightage) || 0;
             item.status = status;
+            item.projectPhase = projectPhase;
 
             if (plannedStartDate) {
               item.plannedStartDate = parseInt(plannedStartDate, 10);
@@ -621,6 +631,14 @@ const ItemsManagementScreenComponent = ({
                         {item.status.replace('_', ' ')}
                       </Chip>
                       <View style={styles.actions}>
+                        {selectedSiteId !== 'all' && (
+                          <IconButton
+                            icon="package-variant-plus"
+                            size={20}
+                            iconColor={COLORS.PRIMARY}
+                            onPress={() => setSuggestMaterialsItem(item)}
+                          />
+                        )}
                         <IconButton
                           icon="pencil"
                           size={20}
@@ -738,6 +756,33 @@ const ItemsManagementScreenComponent = ({
                 ]}
                 style={styles.segmentedButtons}
               />
+
+              <Text style={styles.label}>Phase</Text>
+              <Menu
+                visible={phaseMenuVisible}
+                onDismiss={() => setPhaseMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    onPress={() => setPhaseMenuVisible(true)}
+                    style={styles.dropdownButton}
+                  >
+                    {PHASE_FILTERS.find(p => p.id === projectPhase)?.label || projectPhase}
+                  </Button>
+                }
+              >
+                {PHASE_FILTERS.filter(p => p.id !== 'all').map(p => (
+                  <Menu.Item
+                    key={p.id}
+                    title={p.label}
+                    onPress={() => {
+                      setProjectPhase(p.id);
+                      setPhaseMenuVisible(false);
+                    }}
+                    leadingIcon={projectPhase === p.id ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
@@ -795,6 +840,20 @@ const ItemsManagementScreenComponent = ({
         onClose={() => setApplyTemplateDialogVisible(false)}
         onSuccess={handleApplyTemplateSuccess}
       />
+
+      {/* Suggest Materials Dialog */}
+      {suggestMaterialsItem && (
+        <MaterialSuggestionsDialog
+          visible={!!suggestMaterialsItem}
+          item={suggestMaterialsItem}
+          categoryName={getCategoryName(suggestMaterialsItem.categoryId)}
+          onClose={() => setSuggestMaterialsItem(null)}
+          onSuccess={(count) => {
+            setSuggestMaterialsItem(null);
+            showSnackbar(`${count} material${count !== 1 ? 's' : ''} added`, 'success');
+          }}
+        />
+      )}
     </View>
   );
 };

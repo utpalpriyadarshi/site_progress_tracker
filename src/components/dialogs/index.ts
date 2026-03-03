@@ -25,3 +25,6 @@ export type { CopyItemsDialogProps } from './CopyItemsDialog';
 
 export { DuplicateItemsDialog } from './DuplicateItemsDialog';
 export type { DuplicateItemsDialogProps } from './DuplicateItemsDialog';
+
+export { MaterialSuggestionsDialog } from './MaterialSuggestionsDialog';
+export type { MaterialSuggestionsDialogProps } from './MaterialSuggestionsDialog';

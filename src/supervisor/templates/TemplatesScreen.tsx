@@ -270,10 +270,14 @@ const TemplatesScreen: React.FC = () => {
                     </Text>
                     <Divider style={styles.groupDivider} />
                   </View>
-                  {group.items.map(item => renderTemplate({ item }))}
+                  {group.items.map(item => (
+                    <React.Fragment key={item.id}>{renderTemplate({ item })}</React.Fragment>
+                  ))}
                 </View>
               ))}
-              {otherTemplates.map(item => renderTemplate({ item }))}
+              {otherTemplates.map(item => (
+                <React.Fragment key={item.id}>{renderTemplate({ item })}</React.Fragment>
+              ))}
             </>
           }
           contentContainerStyle={styles.listContent}

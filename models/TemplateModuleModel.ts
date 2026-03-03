@@ -4,6 +4,13 @@ import { field } from '@nozbe/watermelondb/decorators';
 export type TemplateCategory = 'substation' | 'ohe' | 'third_rail' | 'building' | 'interface';
 export type VoltageLevel = '220kV' | '132kV' | '66kV' | '33kV' | '25kV' | '650VDC';
 
+export interface TemplateMaterial {
+  name: string;
+  quantityRequired: number;
+  unit: string;
+  supplier?: string;
+}
+
 export interface TemplateItem {
   name: string;
   phase: string;
@@ -17,6 +24,7 @@ export interface TemplateItem {
   categoryName?: string; // category name (resolved to ID on apply)
   dependencyRisk?: string;
   riskNotes?: string;
+  materials?: TemplateMaterial[]; // materials bundled with this activity
 }
 
 export default class TemplateModuleModel extends Model {
