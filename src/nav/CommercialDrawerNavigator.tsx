@@ -33,6 +33,8 @@ import RetentionMonitorScreen from '../commercial/retention/RetentionMonitorScre
 import VariationOrderScreen from '../commercial/variation-orders/VariationOrderScreen';
 import VendorPaymentScreen from '../commercial/vendor-payment/VendorPaymentScreen';
 import CashFlowForecastScreen from '../commercial/cash-flow/CashFlowForecastScreen';
+import MilestoneReadinessScreen from '../commercial/ipc-readiness/MilestoneReadinessScreen';
+import FinalBillScreen from '../commercial/final-bill/FinalBillScreen';
 import TutorialService from '../services/TutorialService';
 
 export type CommercialDrawerParamList = {
@@ -45,6 +47,8 @@ export type CommercialDrawerParamList = {
   VariationOrders: undefined;
   VendorPayments: undefined;
   CashFlowForecast: undefined;
+  IPCReadiness: undefined;
+  FinalBill: undefined;
 };
 
 const Drawer = createDrawerNavigator<CommercialDrawerParamList>();
@@ -114,6 +118,8 @@ export const CommercialDrawerNavigator: React.FC = () => {
       VariationOrders: ['file-edit', 'file-edit-outline'],
       VendorPayments: ['account-cash', 'account-cash-outline'],
       CashFlowForecast: ['chart-waterfall', 'chart-waterfall'],
+      IPCReadiness: ['clipboard-check', 'clipboard-check-outline'],
+      FinalBill: ['flag-checkered', 'flag-outline'],
     };
     const [activeIcon, inactiveIcon] = icons[routeName] ?? ['file-document', 'file-document-outline'];
     return <Icon name={focused ? activeIcon : inactiveIcon} size={size} color={color} />;
@@ -236,6 +242,30 @@ export const CommercialDrawerNavigator: React.FC = () => {
             drawerLabel: 'Cash Flow Forecast',
             headerShown: true,
             headerTitle: 'Cash Flow Forecast',
+          }}
+        />
+
+        {/* IPC Readiness in Drawer */}
+        <Drawer.Screen
+          name="IPCReadiness"
+          component={MilestoneReadinessScreen}
+          options={{
+            title: 'IPC Readiness',
+            drawerLabel: 'IPC Readiness',
+            headerShown: true,
+            headerTitle: 'IPC Pre-Flight Checklist',
+          }}
+        />
+
+        {/* Final Bill Closure in Drawer */}
+        <Drawer.Screen
+          name="FinalBill"
+          component={FinalBillScreen}
+          options={{
+            title: 'Final Bill Closure',
+            drawerLabel: 'Final Bill & DLP',
+            headerShown: true,
+            headerTitle: 'DLP & Final Bill Closure',
           }}
         />
       </Drawer.Navigator>

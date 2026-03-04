@@ -44,6 +44,7 @@ import TutorialService from '../services/TutorialService';
 import commercialManagerTutorialSteps from '../tutorial/commercialManagerTutorialSteps';
 import type { CommercialTabParamList } from '../nav/CommercialNavigator';
 import { COLORS } from '../theme/colors';
+import CommercialRiskWidget from './dashboard/CommercialRiskWidget';
 
 // ── Contract KPI types (Sprint 1 additions) ──────────────────────────────────
 interface ContractKPIs {
@@ -516,6 +517,9 @@ const CommercialDashboardScreen = () => {
           </View>
         </View>
       )}
+
+      {/* Sprint 4: Commercial Risk Early Warning */}
+      {contractKPIs.contractValue > 0 && <CommercialRiskWidget />}
 
       {/* Budget Health Widget */}
       <BudgetHealthWidget
