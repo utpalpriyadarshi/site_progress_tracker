@@ -23,6 +23,7 @@ import { v50Migration } from './v50_link_item_design_document';
 import { v51Migration } from './v51_add_due_date_to_invoices';
 import { v52Migration } from './v52_commercial_billing_fields';
 import { v53Migration } from './v53_add_advances_retentions';
+import { v54Migration } from './v54_add_variation_orders';
 
 export default schemaMigrations({
   migrations: [
@@ -628,5 +629,7 @@ export default schemaMigrations({
     v52Migration,
     // v53: Add advances and retentions tables
     v53Migration,
+    // v54: Add variation_orders table
+    v54Migration,
   ],
 });

@@ -30,6 +30,9 @@ import KDBillingScreen from '../commercial/kd-billing/KDBillingScreen';
 import LDRiskScreen from '../commercial/ld-risk/LDRiskScreen';
 import AdvanceRecoveryScreen from '../commercial/advance-recovery/AdvanceRecoveryScreen';
 import RetentionMonitorScreen from '../commercial/retention/RetentionMonitorScreen';
+import VariationOrderScreen from '../commercial/variation-orders/VariationOrderScreen';
+import VendorPaymentScreen from '../commercial/vendor-payment/VendorPaymentScreen';
+import CashFlowForecastScreen from '../commercial/cash-flow/CashFlowForecastScreen';
 import TutorialService from '../services/TutorialService';
 
 export type CommercialDrawerParamList = {
@@ -39,6 +42,9 @@ export type CommercialDrawerParamList = {
   LDRisk: undefined;
   AdvanceRecovery: undefined;
   RetentionMonitor: undefined;
+  VariationOrders: undefined;
+  VendorPayments: undefined;
+  CashFlowForecast: undefined;
 };
 
 const Drawer = createDrawerNavigator<CommercialDrawerParamList>();
@@ -105,6 +111,9 @@ export const CommercialDrawerNavigator: React.FC = () => {
       LDRisk: ['alert-octagon', 'alert-octagon-outline'],
       AdvanceRecovery: ['bank-transfer', 'bank-transfer'],
       RetentionMonitor: ['shield-lock', 'shield-lock-outline'],
+      VariationOrders: ['file-edit', 'file-edit-outline'],
+      VendorPayments: ['account-cash', 'account-cash-outline'],
+      CashFlowForecast: ['chart-waterfall', 'chart-waterfall'],
     };
     const [activeIcon, inactiveIcon] = icons[routeName] ?? ['file-document', 'file-document-outline'];
     return <Icon name={focused ? activeIcon : inactiveIcon} size={size} color={color} />;
@@ -191,6 +200,42 @@ export const CommercialDrawerNavigator: React.FC = () => {
             drawerLabel: 'Retention Monitor',
             headerShown: true,
             headerTitle: 'Retention Monitor',
+          }}
+        />
+
+        {/* Variation Orders in Drawer */}
+        <Drawer.Screen
+          name="VariationOrders"
+          component={VariationOrderScreen}
+          options={{
+            title: 'Variation Orders',
+            drawerLabel: 'Variation Orders',
+            headerShown: true,
+            headerTitle: 'Variation Orders',
+          }}
+        />
+
+        {/* Vendor Payments in Drawer */}
+        <Drawer.Screen
+          name="VendorPayments"
+          component={VendorPaymentScreen}
+          options={{
+            title: 'Vendor Payments',
+            drawerLabel: 'Vendor Payments',
+            headerShown: true,
+            headerTitle: 'Vendor Payments',
+          }}
+        />
+
+        {/* Cash Flow Forecast in Drawer */}
+        <Drawer.Screen
+          name="CashFlowForecast"
+          component={CashFlowForecastScreen}
+          options={{
+            title: 'Cash Flow Forecast',
+            drawerLabel: 'Cash Flow Forecast',
+            headerShown: true,
+            headerTitle: 'Cash Flow Forecast',
           }}
         />
       </Drawer.Navigator>

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 53, // v53: Add advances and retentions tables (Sprint 2)
+  version: 54, // v54: Add variation_orders table (Sprint 3)
   tables: [
     tableSchema({
       name: 'projects',
@@ -882,6 +882,31 @@ export default appSchema({
         { name: 'total_recovered', type: 'number' },
         { name: 'issued_date', type: 'number' },
         { name: 'fully_recovered_date', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v54: Variation Orders
+    tableSchema({
+      name: 'variation_orders',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'vo_number', type: 'string', isIndexed: true },
+        { name: 'description', type: 'string' },
+        { name: 'value', type: 'number' },
+        { name: 'approval_status', type: 'string', isIndexed: true },
+        { name: 'execution_pct', type: 'number' },
+        { name: 'billable_amount', type: 'number' },
+        { name: 'revenue_at_risk', type: 'number' },
+        { name: 'margin_impact', type: 'number' },
+        { name: 'include_in_next_ipc', type: 'boolean' },
+        { name: 'linked_kd_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'raised_date', type: 'number' },
+        { name: 'approved_date', type: 'number', isOptional: true },
         { name: 'notes', type: 'string', isOptional: true },
         { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },

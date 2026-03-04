@@ -2254,7 +2254,68 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
       });
     }
 
-    // 5. Create demo Retention records (linked to first 3 demo invoices)
+    // 5. Create demo Variation Orders (3 VOs: approved, pending, under_review)
+    const vosCollection = database.collections.get('variation_orders');
+    const demoVOs = [
+      {
+        voNumber: 'VO-001',
+        description: 'Additional OHE mast foundations — rocky terrain discovered during earthwork at Ch 5+200',
+        value: 2_50_00_000, // ₹2.5 Cr
+        approvalStatus: 'approved',
+        executionPct: 75,
+        marginImpact: 20_00_000, // ₹20 L
+        notes: 'Approved by client vide letter CM/VO/001 dt 2025-06-10',
+        raisedDate: new Date('2025-05-20').getTime(),
+        approvedDate: new Date('2025-06-10').getTime(),
+      },
+      {
+        voNumber: 'VO-002',
+        description: 'SCADA integration scope enhancement — additional I/O points at TSS-01 control room',
+        value: 1_75_00_000, // ₹1.75 Cr
+        approvalStatus: 'under_review',
+        executionPct: 0,
+        marginImpact: -10_00_000,
+        notes: 'Submitted to client; awaiting technical evaluation',
+        raisedDate: new Date('2025-09-01').getTime(),
+        approvedDate: undefined,
+      },
+      {
+        voNumber: 'VO-003',
+        description: 'Supply of additional surge arresters for OHE protection — spec upgrade per revised client standard',
+        value: 80_00_000, // ₹80 L
+        approvalStatus: 'pending',
+        executionPct: 0,
+        marginImpact: 5_00_000,
+        notes: 'DRB meeting scheduled for Q4 2025',
+        raisedDate: new Date('2025-11-15').getTime(),
+        approvedDate: undefined,
+      },
+    ];
+    for (const vo of demoVOs) {
+      const billable = (vo.value * vo.executionPct) / 100;
+      const atRisk = vo.approvalStatus !== 'approved' ? vo.value : 0;
+      await vosCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.voNumber = vo.voNumber;
+        record.description = vo.description;
+        record.value = vo.value;
+        record.approvalStatus = vo.approvalStatus;
+        record.executionPct = vo.executionPct;
+        record.billableAmount = billable;
+        record.revenueAtRisk = atRisk;
+        record.marginImpact = vo.marginImpact;
+        record.includeInNextIpc = vo.approvalStatus === 'approved';
+        record.raisedDate = vo.raisedDate;
+        record.approvedDate = vo.approvedDate || null;
+        record.notes = vo.notes;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+    }
+
+    // 6. Create demo Retention records (linked to first 3 demo invoices)
     const retentionsCollection = database.collections.get('retentions');
     const createdInvoices = await invoicesCollection
       .query(Q.where('project_id', projectId))
