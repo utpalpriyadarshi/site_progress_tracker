@@ -28,6 +28,8 @@ import CommercialTabNavigator from './CommercialNavigator';
 import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
 import KDBillingScreen from '../commercial/kd-billing/KDBillingScreen';
 import LDRiskScreen from '../commercial/ld-risk/LDRiskScreen';
+import AdvanceRecoveryScreen from '../commercial/advance-recovery/AdvanceRecoveryScreen';
+import RetentionMonitorScreen from '../commercial/retention/RetentionMonitorScreen';
 import TutorialService from '../services/TutorialService';
 
 export type CommercialDrawerParamList = {
@@ -35,6 +37,8 @@ export type CommercialDrawerParamList = {
   FinancialReports: undefined;
   KDBilling: undefined;
   LDRisk: undefined;
+  AdvanceRecovery: undefined;
+  RetentionMonitor: undefined;
 };
 
 const Drawer = createDrawerNavigator<CommercialDrawerParamList>();
@@ -99,6 +103,8 @@ export const CommercialDrawerNavigator: React.FC = () => {
       FinancialReports: ['file-document', 'file-document-outline'],
       KDBilling: ['calendar-check', 'calendar-check-outline'],
       LDRisk: ['alert-octagon', 'alert-octagon-outline'],
+      AdvanceRecovery: ['bank-transfer', 'bank-transfer'],
+      RetentionMonitor: ['shield-lock', 'shield-lock-outline'],
     };
     const [activeIcon, inactiveIcon] = icons[routeName] ?? ['file-document', 'file-document-outline'];
     return <Icon name={focused ? activeIcon : inactiveIcon} size={size} color={color} />;
@@ -161,6 +167,30 @@ export const CommercialDrawerNavigator: React.FC = () => {
             drawerLabel: 'LD Risk Calculator',
             headerShown: true,
             headerTitle: 'LD Risk Calculator',
+          }}
+        />
+
+        {/* Advance Recovery in Drawer */}
+        <Drawer.Screen
+          name="AdvanceRecovery"
+          component={AdvanceRecoveryScreen}
+          options={{
+            title: 'Advance Recovery',
+            drawerLabel: 'Advance Recovery',
+            headerShown: true,
+            headerTitle: 'Advance Recovery',
+          }}
+        />
+
+        {/* Retention Monitor in Drawer */}
+        <Drawer.Screen
+          name="RetentionMonitor"
+          component={RetentionMonitorScreen}
+          options={{
+            title: 'Retention Monitor',
+            drawerLabel: 'Retention Monitor',
+            headerShown: true,
+            headerTitle: 'Retention Monitor',
           }}
         />
       </Drawer.Navigator>

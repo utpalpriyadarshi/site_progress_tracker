@@ -64,6 +64,7 @@ interface ContractSummary {
   advanceRecoveryPct: number;
   advanceMobilization: number;
   nextIpcNumber: number;
+  dlpMonths: number;
 }
 
 interface IPCFormState {
@@ -118,6 +119,7 @@ const KDBillingScreen: React.FC = () => {
     advanceRecoveryPct: 10,
     advanceMobilization: 0,
     nextIpcNumber: 1,
+    dlpMonths: 24,
   });
 
   // IPC generation dialog
@@ -197,8 +199,9 @@ const KDBillingScreen: React.FC = () => {
         };
       });
 
+      const dlpMonths = project?.dlpMonths ?? 24;
       setKdRows(rows);
-      setSummary({ contractValue, totalBilled, retentionPct, advanceRecoveryPct, advanceMobilization, nextIpcNumber });
+      setSummary({ contractValue, totalBilled, retentionPct, advanceRecoveryPct, advanceMobilization, nextIpcNumber, dlpMonths });
     } catch (err) {
       logger.error('[KDBillingScreen] Load error:', err as Error);
       Alert.alert('Error', 'Failed to load Key Date billing data');
@@ -268,14 +271,18 @@ const KDBillingScreen: React.FC = () => {
     try {
       await database.write(async () => {
         const invoicesCol = database.collections.get('invoices');
-        await invoicesCol.create((rec: any) => {
+        const retentionsCol = database.collections.get('retentions');
+
+        // 1. Create IPC invoice
+        const retentionAmt = parseFloat(ipcForm.retentionDeducted) || 0;
+        const invoice = await invoicesCol.create((rec: any) => {
           rec.projectId = projectId;
           rec.poId = '';
           rec.invoiceNumber = `IPC-${String(ipcForm.ipcNumber).padStart(3, '0')}`;
           rec.invoiceDate = ipcForm.invoiceDate.getTime();
           rec.amount = ipcForm.netAmount; // legacy field = net
           rec.grossAmount = gross;
-          rec.retentionDeducted = parseFloat(ipcForm.retentionDeducted) || 0;
+          rec.retentionDeducted = retentionAmt;
           rec.advanceRecovered = parseFloat(ipcForm.advanceRecovered) || 0;
           rec.ldDeducted = parseFloat(ipcForm.ldDeducted) || 0;
           rec.tdsDeducted = parseFloat(ipcForm.tdsDeducted) || 0;
@@ -292,6 +299,26 @@ const KDBillingScreen: React.FC = () => {
           rec.appSyncStatus = 'pending';
           rec.version = 1;
         });
+
+        // 2. Auto-create client retention record
+        if (retentionAmt > 0) {
+          const dlpEnd = ipcForm.invoiceDate.getTime() +
+            (summary.dlpMonths ?? 24) * 30 * 24 * 60 * 60 * 1000;
+          await retentionsCol.create((rec: any) => {
+            rec.projectId = projectId;
+            rec.invoiceId = invoice.id;
+            rec.partyType = 'client';
+            rec.grossInvoiceAmount = gross;
+            rec.retentionPct = summary.retentionPct;
+            rec.retentionAmount = retentionAmt;
+            rec.dlpEndDate = dlpEnd;
+            rec.bgInLieu = false;
+            rec.createdBy = user.userId;
+            rec.updatedAt = Date.now();
+            rec.appSyncStatus = 'pending';
+            rec._version = 1;
+          });
+        }
       });
 
       setDialogVisible(false);

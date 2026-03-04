@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 52, // v52: Add KD billing fields to invoices + commercial config fields to projects
+  version: 53, // v53: Add advances and retentions tables (Sprint 2)
   tables: [
     tableSchema({
       name: 'projects',
@@ -864,6 +864,48 @@ export default appSchema({
         { name: 'approved_by_id', type: 'string', isOptional: true },
         { name: 'submitted_at', type: 'number', isOptional: true },
         { name: 'approved_at', type: 'number', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v53: Advance tracking
+    tableSchema({
+      name: 'advances',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'advance_type', type: 'string', isIndexed: true },
+        { name: 'advance_amount', type: 'number' },
+        { name: 'recovery_pct', type: 'number' },
+        { name: 'total_recovered', type: 'number' },
+        { name: 'issued_date', type: 'number' },
+        { name: 'fully_recovered_date', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'created_by', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'sync_status', type: 'string' },
+        { name: '_version', type: 'number' },
+      ],
+    }),
+    // v53: Per-invoice retention audit trail
+    tableSchema({
+      name: 'retentions',
+      columns: [
+        { name: 'project_id', type: 'string', isIndexed: true },
+        { name: 'invoice_id', type: 'string', isIndexed: true },
+        { name: 'party_type', type: 'string', isIndexed: true },
+        { name: 'party_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'gross_invoice_amount', type: 'number' },
+        { name: 'retention_pct', type: 'number' },
+        { name: 'retention_amount', type: 'number' },
+        { name: 'dlp_end_date', type: 'number', isOptional: true },
+        { name: 'released_date', type: 'number', isOptional: true },
+        { name: 'released_amount', type: 'number', isOptional: true },
+        { name: 'bg_in_lieu', type: 'boolean' },
+        { name: 'bg_reference', type: 'string', isOptional: true },
         { name: 'created_by', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

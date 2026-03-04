@@ -2217,6 +2217,67 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
       });
       invoicesCount++;
     }
+
+    // 4. Create demo Advances (mobilization + performance)
+    const advancesCollection = database.collections.get('advances');
+    const demoAdvances = [
+      {
+        advanceType: 'mobilization',
+        advanceAmount: 15_00_00_000, // ₹15 Crore
+        recoveryPct: 10,
+        totalRecovered: 3_00_00_000, // ₹3 Crore recovered so far
+        issuedDate: new Date('2025-01-15').getTime(),
+        notes: 'Mobilization advance on contract signing',
+      },
+      {
+        advanceType: 'performance',
+        advanceAmount: 5_00_00_000,  // ₹5 Crore
+        recoveryPct: 5,
+        totalRecovered: 0,
+        issuedDate: new Date('2025-03-01').getTime(),
+        notes: 'Performance advance for OHE Zone works',
+      },
+    ];
+    for (const adv of demoAdvances) {
+      await advancesCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.advanceType = adv.advanceType;
+        record.advanceAmount = adv.advanceAmount;
+        record.recoveryPct = adv.recoveryPct;
+        record.totalRecovered = adv.totalRecovered;
+        record.issuedDate = adv.issuedDate;
+        record.notes = adv.notes;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+    }
+
+    // 5. Create demo Retention records (linked to first 3 demo invoices)
+    const retentionsCollection = database.collections.get('retentions');
+    const createdInvoices = await invoicesCollection
+      .query(Q.where('project_id', projectId))
+      .fetch();
+    const dlpEnd = Date.now() + 24 * 30 * 24 * 60 * 60 * 1000; // 24 months from now
+    for (const inv of (createdInvoices as any[]).slice(0, 3)) {
+      const gross = inv.amount;
+      const retAmt = gross * 0.05;
+      await retentionsCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.invoiceId = inv.id;
+        record.partyType = 'client';
+        record.grossInvoiceAmount = gross;
+        record.retentionPct = 5;
+        record.retentionAmount = retAmt;
+        record.dlpEndDate = dlpEnd;
+        record.bgInLieu = false;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+    }
   });
 
   return {
