@@ -214,6 +214,13 @@ export class SimpleDatabaseService {
           project.endDate = new Date('2025-12-31').getTime();
           project.status = 'active';
           project.budget = 1000000;
+          // v52: commercial contract configuration
+          project.contractValue = 150_00_00_000;      // ₹150 Crore
+          project.commencementDate = new Date('2025-01-01').getTime();
+          project.advanceMobilization = 15_00_00_000;  // ₹15 Crore (10%)
+          project.advanceRecoveryPct = 10;              // 10% per IPC
+          project.retentionPct = 5;                     // 5% retention
+          project.dlpMonths = 24;                       // 2-year DLP
         });
       });
 
