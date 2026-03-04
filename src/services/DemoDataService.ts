@@ -2128,6 +2128,21 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
   let invoicesCount = 0;
 
   await database.write(async () => {
+    // 0. Set commercial contract config on the project (v52 fields)
+    const projectsCollection = database.collections.get('projects');
+    const projectArr = await projectsCollection.query().fetch();
+    const project = (projectArr as any[]).find((p: any) => p.id === projectId);
+    if (project) {
+      await project.update((p: any) => {
+        p.contractValue = 150_00_00_000;     // ₹150 Crore
+        p.commencementDate = new Date('2024-04-01').getTime();
+        p.advanceMobilization = 15_00_00_000; // ₹15 Crore (10%)
+        p.advanceRecoveryPct = 10;            // 10% recovery per IPC
+        p.retentionPct = 5;                   // 5% retention
+        p.dlpMonths = 24;                     // 2-year DLP
+      });
+    }
+
     const budgetsCollection = database.collections.get<BudgetModel>('budgets');
     const costsCollection = database.collections.get<CostModel>('costs');
     const invoicesCollection = database.collections.get<InvoiceModel>('invoices');

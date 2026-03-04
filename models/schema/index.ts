@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 51, // Add due_date to invoices for explicit payment-terms-aware overdue tracking
+  version: 52, // v52: Add KD billing fields to invoices + commercial config fields to projects
   tables: [
     tableSchema({
       name: 'projects',
@@ -14,6 +14,13 @@ export default appSchema({
         { name: 'budget', type: 'number' },
         { name: 'sync_status', type: 'string' }, // pending, synced, failed
         { name: '_version', type: 'number' }, // conflict resolution version tracking
+        // v52: Commercial contract configuration
+        { name: 'contract_value', type: 'number', isOptional: true },
+        { name: 'commencement_date', type: 'number', isOptional: true },
+        { name: 'advance_mobilization', type: 'number', isOptional: true },
+        { name: 'advance_recovery_pct', type: 'number', isOptional: true },
+        { name: 'retention_pct', type: 'number', isOptional: true },
+        { name: 'dlp_months', type: 'number', isOptional: true },
       ],
     }),
     tableSchema({
@@ -711,6 +718,17 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
         { name: 'sync_status', type: 'string' },
         { name: '_version', type: 'number' },
+        // v52: KD billing breakdown fields
+        { name: 'gross_amount', type: 'number', isOptional: true },
+        { name: 'retention_deducted', type: 'number', isOptional: true },
+        { name: 'advance_recovered', type: 'number', isOptional: true },
+        { name: 'ld_deducted', type: 'number', isOptional: true },
+        { name: 'tds_deducted', type: 'number', isOptional: true },
+        { name: 'net_amount', type: 'number', isOptional: true },
+        { name: 'key_date_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'invoice_type', type: 'string', isOptional: true },
+        { name: 'ipc_number', type: 'number', isOptional: true },
+        { name: 'cumulative_billed', type: 'number', isOptional: true },
       ],
     }),
     // v35: Key Dates tables (Phase 5a - Planning Key Dates Architecture)

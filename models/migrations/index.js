@@ -21,6 +21,7 @@ import { v48Migration } from './v48_add_doors_package_link';
 import { v49Migration } from './v49_add_change_orders';
 import { v50Migration } from './v50_link_item_design_document';
 import { v51Migration } from './v51_add_due_date_to_invoices';
+import { v52Migration } from './v52_commercial_billing_fields';
 
 export default schemaMigrations({
   migrations: [
@@ -622,5 +623,7 @@ export default schemaMigrations({
     v50Migration,
     // v51: Add due_date to invoices for explicit payment-terms-aware overdue tracking
     v51Migration,
+    // v52: Add KD billing fields to invoices + commercial config fields to projects
+    v52Migration,
   ],
 });

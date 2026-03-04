@@ -26,11 +26,15 @@ import { useAuth } from '../auth/AuthContext';
 import { CommercialProvider } from '../commercial/context/CommercialContext';
 import CommercialTabNavigator from './CommercialNavigator';
 import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
+import KDBillingScreen from '../commercial/kd-billing/KDBillingScreen';
+import LDRiskScreen from '../commercial/ld-risk/LDRiskScreen';
 import TutorialService from '../services/TutorialService';
 
 export type CommercialDrawerParamList = {
   CommercialTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   FinancialReports: undefined;
+  KDBilling: undefined;
+  LDRisk: undefined;
 };
 
 const Drawer = createDrawerNavigator<CommercialDrawerParamList>();
@@ -91,11 +95,13 @@ export const CommercialDrawerNavigator: React.FC = () => {
   );
 
   const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
-    let iconName = 'file-document';
-    if (routeName === 'FinancialReports') {
-      iconName = focused ? 'file-document' : 'file-document-outline';
-    }
-    return <Icon name={iconName} size={size} color={color} />;
+    const icons: Record<string, [string, string]> = {
+      FinancialReports: ['file-document', 'file-document-outline'],
+      KDBilling: ['calendar-check', 'calendar-check-outline'],
+      LDRisk: ['alert-octagon', 'alert-octagon-outline'],
+    };
+    const [activeIcon, inactiveIcon] = icons[routeName] ?? ['file-document', 'file-document-outline'];
+    return <Icon name={focused ? activeIcon : inactiveIcon} size={size} color={color} />;
   }, []);
 
   const screenOptions = useCallback(({ route }: { route: { name: string } }) => ({
@@ -131,6 +137,30 @@ export const CommercialDrawerNavigator: React.FC = () => {
             title: 'Financial Reports',
             drawerLabel: 'Financial Reports',
             headerShown: false,
+          }}
+        />
+
+        {/* KD Billing in Drawer */}
+        <Drawer.Screen
+          name="KDBilling"
+          component={KDBillingScreen}
+          options={{
+            title: 'KD Billing',
+            drawerLabel: 'KD Billing',
+            headerShown: true,
+            headerTitle: 'Key Date Billing',
+          }}
+        />
+
+        {/* LD Risk Calculator in Drawer */}
+        <Drawer.Screen
+          name="LDRisk"
+          component={LDRiskScreen}
+          options={{
+            title: 'LD Risk',
+            drawerLabel: 'LD Risk Calculator',
+            headerShown: true,
+            headerTitle: 'LD Risk Calculator',
           }}
         />
       </Drawer.Navigator>
