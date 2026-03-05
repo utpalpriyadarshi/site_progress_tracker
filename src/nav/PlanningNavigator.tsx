@@ -65,7 +65,7 @@ export type RootStackParamList = {
 };
 
 export type PlanningTabParamList = {
-  Dashboard: undefined;
+  Dashboard: { showTutorial?: boolean } | undefined;
   KeyDates: undefined;
   Schedule: undefined;
   Gantt: { siteId?: string } | undefined;
