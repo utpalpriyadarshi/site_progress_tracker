@@ -41,13 +41,15 @@ export class SimpleDatabaseService {
   private static async _doInitialize(): Promise<void> {
     try {
       // Check if we already have data to avoid duplicates
-      // Check projects, users, AND roles to be thorough
       const projects = await database.collections.get('projects').query().fetch();
       const users = await database.collections.get('users').query().fetch();
       const roles = await database.collections.get('roles').query().fetch();
 
-      // Skip if ANY of the core data already exists (prevents duplicates)
-      if (projects.length > 0 || users.length > 0 || roles.length > 0) {
+      // Guard: skip only if USERS already exist (fully seeded).
+      // Previously checking roles/projects caused a partial-seed trap: if a prior
+      // run created roles but failed before users, the guard fired every launch
+      // leaving the DB with roles but zero users → "User not found" on login.
+      if (users.length > 0) {
         console.log('Default data already exists, skipping initialization');
         console.log(`  - Found ${projects.length} projects, ${users.length} users, ${roles.length} roles`);
         return;
@@ -55,62 +57,52 @@ export class SimpleDatabaseService {
 
       console.log('🚀 Initializing default data...');
 
-      // ✅ Create default roles
-      const adminRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'Admin';
-          role.description = 'Administrator with full system access';
-          role.permissions = JSON.stringify(['all']);
-        });
-      });
+      // Helper: reuse an existing role by name, or create it fresh.
+      // This handles the partial-seed case where roles exist but users do not.
+      const getOrCreateRole = async (
+        name: string,
+        description: string,
+        permissions: string[]
+      ) => {
+        const existing = (roles as any[]).find((r: any) => r.name === name);
+        if (existing) return existing;
+        return database.write(async () =>
+          database.collections.get('roles').create((role: any) => {
+            role.name = name;
+            role.description = description;
+            role.permissions = JSON.stringify(permissions);
+          })
+        );
+      };
 
-      const supervisorRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'Supervisor';
-          role.description = 'Site supervisor managing daily operations';
-          role.permissions = JSON.stringify(['view_sites', 'manage_items', 'create_reports', 'view_materials']);
-        });
-      });
-
-      const managerRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'Manager';
-          role.description = 'Project manager overseeing multiple sites';
-          role.permissions = JSON.stringify(['view_projects', 'view_sites', 'view_reports', 'manage_team']);
-        });
-      });
-
-      const plannerRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'Planner';
-          role.description = 'Planning specialist for project scheduling';
-          role.permissions = JSON.stringify(['view_projects', 'manage_schedule', 'view_items']);
-        });
-      });
-
-      const logisticsRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'Logistics';
-          role.description = 'Logistics coordinator for materials and equipment';
-          role.permissions = JSON.stringify(['view_materials', 'manage_materials', 'view_suppliers']);
-        });
-      });
-
-      const designEngineerRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'DesignEngineer';
-          role.description = 'Design engineer managing DOORS packages and design RFQs';
-          role.permissions = JSON.stringify(['view_doors', 'manage_doors', 'manage_design_rfqs', 'view_projects']);
-        });
-      });
-
-      const commercialManagerRole = await database.write(async () => {
-        return await database.collections.get('roles').create((role: any) => {
-          role.name = 'CommercialManager';
-          role.description = 'Commercial manager for budget, cost tracking, and financial reporting';
-          role.permissions = JSON.stringify(['view_budgets', 'manage_budgets', 'manage_costs', 'manage_invoices', 'view_financial_reports']);
-        });
-      });
+      // ✅ Create (or reuse) default roles
+      const adminRole = await getOrCreateRole(
+        'Admin', 'Administrator with full system access', ['all']
+      );
+      const supervisorRole = await getOrCreateRole(
+        'Supervisor', 'Site supervisor managing daily operations',
+        ['view_sites', 'manage_items', 'create_reports', 'view_materials']
+      );
+      const managerRole = await getOrCreateRole(
+        'Manager', 'Project manager overseeing multiple sites',
+        ['view_projects', 'view_sites', 'view_reports', 'manage_team']
+      );
+      const plannerRole = await getOrCreateRole(
+        'Planner', 'Planning specialist for project scheduling',
+        ['view_projects', 'manage_schedule', 'view_items']
+      );
+      const logisticsRole = await getOrCreateRole(
+        'Logistics', 'Logistics coordinator for materials and equipment',
+        ['view_materials', 'manage_materials', 'view_suppliers']
+      );
+      const designEngineerRole = await getOrCreateRole(
+        'DesignEngineer', 'Design engineer managing DOORS packages and design RFQs',
+        ['view_doors', 'manage_doors', 'manage_design_rfqs', 'view_projects']
+      );
+      const commercialManagerRole = await getOrCreateRole(
+        'CommercialManager', 'Commercial manager for budget, cost tracking, and financial reporting',
+        ['view_budgets', 'manage_budgets', 'manage_costs', 'manage_invoices', 'view_financial_reports']
+      );
 
       // ✅ Hash passwords for demo users (one-time cost during initialization)
       // Using strong passwords with special characters for better security
@@ -222,6 +214,13 @@ export class SimpleDatabaseService {
           project.endDate = new Date('2025-12-31').getTime();
           project.status = 'active';
           project.budget = 1000000;
+          // v52: commercial contract configuration
+          project.contractValue = 150_00_00_000;      // ₹150 Crore
+          project.commencementDate = new Date('2025-01-01').getTime();
+          project.advanceMobilization = 15_00_00_000;  // ₹15 Crore (10%)
+          project.advanceRecoveryPct = 10;              // 10% per IPC
+          project.retentionPct = 5;                     // 5% retention
+          project.dlpMonths = 24;                       // 2-year DLP
         });
       });
 

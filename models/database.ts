@@ -42,6 +42,10 @@ import DesignDocumentCategoryModel from './DesignDocumentCategoryModel';
 import DesignDocumentModel from './DesignDocumentModel';
 import DomainModel from './DomainModel';
 import DoorsRevisionModel from './DoorsRevisionModel';
+import ChangeOrderModel from './ChangeOrderModel';
+import AdvanceModel from './AdvanceModel';
+import RetentionModel from './RetentionModel';
+import VariationOrderModel from './VariationOrderModel';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -91,5 +95,9 @@ export const database = new Database({
     DesignDocumentModel,
     DomainModel,
     DoorsRevisionModel,
+    ChangeOrderModel,
+    AdvanceModel,
+    RetentionModel,
+    VariationOrderModel,
   ],
 });

@@ -15,6 +15,31 @@ export default class ProjectModel extends Model {
   @field('end_date') endDate!: number; // timestamp
   @field('status') status!: string; // active, completed, on_hold, cancelled
   @field('budget') budget!: number;
-  @field('sync_status') appSyncStatus!: string; // pending, synced, failed - maps to sync_status column
-  @field('_version') version!: number; // conflict resolution version tracking
+  @field('sync_status') appSyncStatus!: string;
+  @field('_version') version!: number;
+
+  // v52: Commercial contract configuration
+  @field('contract_value') contractValue?: number;       // Total contract value (INR)
+  @field('commencement_date') commencementDate?: number; // Project start for LD calc
+  @field('advance_mobilization') advanceMobilization?: number; // Mobilization advance
+  @field('advance_recovery_pct') advanceRecoveryPct?: number;  // % recovery per bill
+  @field('retention_pct') retentionPct?: number;         // Retention % (default 5)
+  @field('dlp_months') dlpMonths?: number;               // Defect Liability Period months
+
+  // ==================== Helpers ====================
+
+  /** Retention % to apply to each KD invoice (defaults to 5%). */
+  getRetentionPct(): number {
+    return this.retentionPct ?? 5;
+  }
+
+  /** Advance recovery % per running bill (defaults to 10%). */
+  getAdvanceRecoveryPct(): number {
+    return this.advanceRecoveryPct ?? 10;
+  }
+
+  /** Remaining advance balance given amount already recovered. */
+  getAdvanceBalance(totalRecovered: number): number {
+    return Math.max(0, (this.advanceMobilization ?? 0) - totalRecovered);
+  }
 }

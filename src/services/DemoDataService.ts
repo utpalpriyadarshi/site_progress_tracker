@@ -2128,6 +2128,21 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
   let invoicesCount = 0;
 
   await database.write(async () => {
+    // 0. Set commercial contract config on the project (v52 fields)
+    const projectsCollection = database.collections.get('projects');
+    const projectArr = await projectsCollection.query().fetch();
+    const project = (projectArr as any[]).find((p: any) => p.id === projectId);
+    if (project) {
+      await project.update((p: any) => {
+        p.contractValue = 150_00_00_000;     // ₹150 Crore
+        p.commencementDate = new Date('2024-04-01').getTime();
+        p.advanceMobilization = 15_00_00_000; // ₹15 Crore (10%)
+        p.advanceRecoveryPct = 10;            // 10% recovery per IPC
+        p.retentionPct = 5;                   // 5% retention
+        p.dlpMonths = 24;                     // 2-year DLP
+      });
+    }
+
     const budgetsCollection = database.collections.get<BudgetModel>('budgets');
     const costsCollection = database.collections.get<CostModel>('costs');
     const invoicesCollection = database.collections.get<InvoiceModel>('invoices');
@@ -2201,6 +2216,128 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
         record._version = 1;
       });
       invoicesCount++;
+    }
+
+    // 4. Create demo Advances (mobilization + performance)
+    const advancesCollection = database.collections.get('advances');
+    const demoAdvances = [
+      {
+        advanceType: 'mobilization',
+        advanceAmount: 15_00_00_000, // ₹15 Crore
+        recoveryPct: 10,
+        totalRecovered: 3_00_00_000, // ₹3 Crore recovered so far
+        issuedDate: new Date('2025-01-15').getTime(),
+        notes: 'Mobilization advance on contract signing',
+      },
+      {
+        advanceType: 'performance',
+        advanceAmount: 5_00_00_000,  // ₹5 Crore
+        recoveryPct: 5,
+        totalRecovered: 0,
+        issuedDate: new Date('2025-03-01').getTime(),
+        notes: 'Performance advance for OHE Zone works',
+      },
+    ];
+    for (const adv of demoAdvances) {
+      await advancesCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.advanceType = adv.advanceType;
+        record.advanceAmount = adv.advanceAmount;
+        record.recoveryPct = adv.recoveryPct;
+        record.totalRecovered = adv.totalRecovered;
+        record.issuedDate = adv.issuedDate;
+        record.notes = adv.notes;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+    }
+
+    // 5. Create demo Variation Orders (3 VOs: approved, pending, under_review)
+    const vosCollection = database.collections.get('variation_orders');
+    const demoVOs = [
+      {
+        voNumber: 'VO-001',
+        description: 'Additional OHE mast foundations — rocky terrain discovered during earthwork at Ch 5+200',
+        value: 2_50_00_000, // ₹2.5 Cr
+        approvalStatus: 'approved',
+        executionPct: 75,
+        marginImpact: 20_00_000, // ₹20 L
+        notes: 'Approved by client vide letter CM/VO/001 dt 2025-06-10',
+        raisedDate: new Date('2025-05-20').getTime(),
+        approvedDate: new Date('2025-06-10').getTime(),
+      },
+      {
+        voNumber: 'VO-002',
+        description: 'SCADA integration scope enhancement — additional I/O points at TSS-01 control room',
+        value: 1_75_00_000, // ₹1.75 Cr
+        approvalStatus: 'under_review',
+        executionPct: 0,
+        marginImpact: -10_00_000,
+        notes: 'Submitted to client; awaiting technical evaluation',
+        raisedDate: new Date('2025-09-01').getTime(),
+        approvedDate: undefined,
+      },
+      {
+        voNumber: 'VO-003',
+        description: 'Supply of additional surge arresters for OHE protection — spec upgrade per revised client standard',
+        value: 80_00_000, // ₹80 L
+        approvalStatus: 'pending',
+        executionPct: 0,
+        marginImpact: 5_00_000,
+        notes: 'DRB meeting scheduled for Q4 2025',
+        raisedDate: new Date('2025-11-15').getTime(),
+        approvedDate: undefined,
+      },
+    ];
+    for (const vo of demoVOs) {
+      const billable = (vo.value * vo.executionPct) / 100;
+      const atRisk = vo.approvalStatus !== 'approved' ? vo.value : 0;
+      await vosCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.voNumber = vo.voNumber;
+        record.description = vo.description;
+        record.value = vo.value;
+        record.approvalStatus = vo.approvalStatus;
+        record.executionPct = vo.executionPct;
+        record.billableAmount = billable;
+        record.revenueAtRisk = atRisk;
+        record.marginImpact = vo.marginImpact;
+        record.includeInNextIpc = vo.approvalStatus === 'approved';
+        record.raisedDate = vo.raisedDate;
+        record.approvedDate = vo.approvedDate || null;
+        record.notes = vo.notes;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
+    }
+
+    // 6. Create demo Retention records (linked to first 3 demo invoices)
+    const retentionsCollection = database.collections.get('retentions');
+    const createdInvoices = await invoicesCollection
+      .query(Q.where('project_id', projectId))
+      .fetch();
+    const dlpEnd = Date.now() + 24 * 30 * 24 * 60 * 60 * 1000; // 24 months from now
+    for (const inv of (createdInvoices as any[]).slice(0, 3)) {
+      const gross = inv.amount;
+      const retAmt = gross * 0.05;
+      await retentionsCollection.create((record: any) => {
+        record.projectId = projectId;
+        record.invoiceId = inv.id;
+        record.partyType = 'client';
+        record.grossInvoiceAmount = gross;
+        record.retentionPct = 5;
+        record.retentionAmount = retAmt;
+        record.dlpEndDate = dlpEnd;
+        record.bgInLieu = false;
+        record.createdBy = 'commercial_manager';
+        record.updatedAt = Date.now();
+        record.appSyncStatus = 'pending';
+        record._version = 1;
+      });
     }
   });
 
