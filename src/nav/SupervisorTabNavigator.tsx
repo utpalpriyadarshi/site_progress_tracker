@@ -28,7 +28,7 @@ import { COLORS } from '../theme/colors';
  */
 
 export type SupervisorTabParamList = {
-  Dashboard: undefined;
+  Dashboard: { showTutorial?: boolean } | undefined;
   Sites: undefined;
   Items: undefined;
   DailyWork: { focusItemId?: string } | undefined;
