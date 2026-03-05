@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { Text, useTheme, Portal, Dialog, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useAuth } from '../../auth/AuthContext';
@@ -71,8 +71,6 @@ const PlanningDashboardScreen: React.FC = () => {
   const { user } = useAuth();
   const { dashboardCache, refreshDashboard, loading: contextLoading, error: contextError, sites } = usePlanningContext();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
-  const route = useRoute<any>();
-
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
@@ -111,26 +109,26 @@ const PlanningDashboardScreen: React.FC = () => {
     });
   }, [scheduleModal.visible, scheduleModal.status, dashboardCache.allItems]);
 
-  // Check if tutorial should be shown on mount or when triggered from drawer
-  useEffect(() => {
+  // Check if tutorial should be shown on focus.
+  // useFocusEffect ensures this runs when the drawer closes and Dashboard regains
+  // focus — which is what happens after the drawer Tutorial button calls
+  // TutorialService.resetTutorial() and navigates back to MainTabs.
+  useFocusEffect(useCallback(() => {
+    if (!user) return;
+    let cancelled = false;
     const checkTutorial = async () => {
-      if (!user) return;
-      // Triggered from drawer "Tutorial" item
-      if (route.params?.showTutorial) {
-        setTutorialInitialStep(0);
-        setShowTutorial(true);
-        return;
-      }
-      // First-login auto-show
       const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'planner');
+      if (cancelled) return;
       if (shouldShow) {
         const progress = await TutorialService.getTutorialProgress(user.userId, 'planner');
+        if (cancelled) return;
         setTutorialInitialStep(progress.currentStep);
         setShowTutorial(true);
       }
     };
     checkTutorial();
-  }, [user, route.params?.showTutorial]);
+    return () => { cancelled = true; };
+  }, [user]));
 
   const handleTutorialDismiss = useCallback(async () => {
     if (user) {
