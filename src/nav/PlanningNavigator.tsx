@@ -115,10 +115,9 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = memo((props) 
     if (user) {
       await TutorialService.resetTutorial(user.userId, 'planner');
     }
-    props.navigation.navigate('MainTabs', {
-      screen: 'Dashboard',
-      params: { showTutorial: true },
-    });
+    // Close drawer — Dashboard regains focus, useFocusEffect fires,
+    // shouldShowTutorial returns true (just reset), tutorial opens.
+    props.navigation.closeDrawer();
   }, [user, props.navigation]);
 
   return (
