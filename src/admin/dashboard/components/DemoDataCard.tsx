@@ -17,6 +17,7 @@
  * @updated v2.15 - Supervisor Demo Data
  * @updated v2.16 - Manager Demo Data
  * @updated v2.17 - Logistics Demo Data
+ * @updated v2.25 - Commercial Manager Demo Data (advances, retentions, variation orders)
  */
 
 import React, { useState, useEffect } from 'react';
