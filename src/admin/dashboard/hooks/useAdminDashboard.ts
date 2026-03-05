@@ -8,7 +8,7 @@ import PasswordMigrationService from '../../../../services/auth/PasswordMigratio
 import { migrateCategoryNames, verifyCategoryMigration } from '../../../../scripts/migrateCategoryNames';
 import { logger } from '../../../services/LoggingService';
 import { AdminRole } from '../../context/AdminContext';
-import { ROLE_NAVIGATION_MAP, DATABASE_COLLECTIONS } from '../utils';
+import { ROLE_NAVIGATION_MAP } from '../utils';
 import {
   adminDashboardReducer,
   createInitialState,
@@ -199,40 +199,25 @@ export const useAdminDashboard = (
             try {
               logger.info('Starting database reset...');
 
-              // Clear database FIRST (most important)
-              let totalDeleted = 0;
-              for (const collectionName of DATABASE_COLLECTIONS) {
-                try {
-                  const collection = database.collections.get(collectionName);
-                  const records = await collection.query().fetch();
-                  if (records.length > 0) {
-                    await database.write(async () => {
-                      await database.batch(
-                        ...records.map((record: any) => record.prepareDestroyPermanently())
-                      );
-                    });
-                    totalDeleted += records.length;
-                    logger.info(`Deleted ${records.length} records from ${collectionName}`);
-                  }
-                } catch (error) {
-                  logger.warn(`Collection ${collectionName} error:`, { error });
-                }
-              }
+              // Use unsafeResetDatabase to wipe both SQLite store AND
+              // WatermelonDB's in-memory cache in one atomic operation.
+              // Manual batch-delete leaves the cache stale, causing
+              // initializeDefaultData to reuse deleted role IDs → login error.
+              await database.unsafeResetDatabase();
+              logger.info('WatermelonDB reset complete');
 
-              logger.info(`Total records deleted: ${totalDeleted}`);
-
-              // Clear AsyncStorage (this will force re-login)
+              // Clear AsyncStorage so no stale session/role IDs remain
               await AsyncStorage.clear();
               logger.info('AsyncStorage cleared');
 
-              // IMPORTANT: Re-initialize default data after reset
+              // Re-seed default roles, users and project config
               logger.info('Re-initializing database with default data...');
               await SimpleDatabaseService.initializeDefaultData();
               logger.info('Database re-initialization complete!');
 
               Alert.alert(
                 'Success',
-                `Database reset complete!\n\nDeleted ${totalDeleted} records and re-initialized with default users.\n\nYou can now login with:\n• designer / Designer@2025\n• admin / Admin@2025\n• supervisor / Supervisor@2025\n• manager / Manager@2025\n• planner / Planner@2025\n• logistics / Logistics@2025`,
+                `Database reset complete!\n\nRe-initialized with 7 default users.\n\nLogin credentials:\n• admin / Admin@2025\n• planner / Planner@2025\n• designer / Designer@2025\n• supervisor / Supervisor@2025\n• manager / Manager@2025\n• logistics / Logistics@2025\n• commercial / Commercial@2025`,
                 [
                   {
                     text: 'Go to Login',
