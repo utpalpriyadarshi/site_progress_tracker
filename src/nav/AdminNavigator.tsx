@@ -9,9 +9,6 @@ import ProjectManagementScreen from '../admin/ProjectManagementScreen';
 import RoleManagementScreen from '../admin/RoleManagementScreen';
 import { AdminProvider } from '../admin/context/AdminContext';
 import { useAuth } from '../auth/AuthContext';
-import SnackbarTestScreen from '../test/SnackbarTestScreen';
-import { Phase1TestUtility } from '../utils/Phase1TestUtility';
-import { ManagerTestDataUtility } from '../utils/ManagerTestDataUtility';
 import { COLORS } from '../theme/colors';
 
 export type RootStackParamList = {
@@ -29,9 +26,6 @@ export type AdminTabParamList = {
   AdminDashboard: undefined;
   ProjectManagement: undefined;
   RoleManagement: undefined;
-  SnackbarTest: undefined;
-  Phase1Test: undefined;
-  ManagerTestData: undefined;
 };
 
 type AdminNavigatorProps = {
@@ -66,12 +60,6 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
               iconSymbol = '📁';
             } else if (route.name === 'RoleManagement') {
               iconSymbol = '👥';
-            } else if (route.name === 'SnackbarTest') {
-              iconSymbol = '🧪';
-            } else if (route.name === 'Phase1Test') {
-              iconSymbol = '🔬';
-            } else if (route.name === 'ManagerTestData') {
-              iconSymbol = '🎲';
             }
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
@@ -119,33 +107,6 @@ const AdminNavigator: React.FC<AdminNavigatorProps> = ({ navigation: parentNavig
             title: 'Users',
             headerShown: true,
             headerTitle: 'User & Role Management',
-          }}
-        />
-        <Tab.Screen
-          name="SnackbarTest"
-          component={SnackbarTestScreen}
-          options={{
-            title: 'Snackbar',
-            headerShown: true,
-            headerTitle: 'Snackbar & Dialog Tests',
-          }}
-        />
-        <Tab.Screen
-          name="Phase1Test"
-          component={Phase1TestUtility}
-          options={{
-            title: 'Phase 1',
-            headerShown: true,
-            headerTitle: 'Phase 1 v2.10 Tests',
-          }}
-        />
-        <Tab.Screen
-          name="ManagerTestData"
-          component={ManagerTestDataUtility}
-          options={{
-            title: 'Test Data',
-            headerShown: true,
-            headerTitle: 'Manager Test Data',
           }}
         />
       </Tab.Navigator>
