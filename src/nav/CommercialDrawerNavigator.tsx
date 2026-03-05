@@ -26,11 +26,29 @@ import { useAuth } from '../auth/AuthContext';
 import { CommercialProvider } from '../commercial/context/CommercialContext';
 import CommercialTabNavigator from './CommercialNavigator';
 import FinancialReportsScreen from '../commercial/FinancialReportsScreen';
+import KDBillingScreen from '../commercial/kd-billing/KDBillingScreen';
+import LDRiskScreen from '../commercial/ld-risk/LDRiskScreen';
+import AdvanceRecoveryScreen from '../commercial/advance-recovery/AdvanceRecoveryScreen';
+import RetentionMonitorScreen from '../commercial/retention/RetentionMonitorScreen';
+import VariationOrderScreen from '../commercial/variation-orders/VariationOrderScreen';
+import VendorPaymentScreen from '../commercial/vendor-payment/VendorPaymentScreen';
+import CashFlowForecastScreen from '../commercial/cash-flow/CashFlowForecastScreen';
+import MilestoneReadinessScreen from '../commercial/ipc-readiness/MilestoneReadinessScreen';
+import FinalBillScreen from '../commercial/final-bill/FinalBillScreen';
 import TutorialService from '../services/TutorialService';
 
 export type CommercialDrawerParamList = {
   CommercialTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   FinancialReports: undefined;
+  KDBilling: undefined;
+  LDRisk: undefined;
+  AdvanceRecovery: undefined;
+  RetentionMonitor: undefined;
+  VariationOrders: undefined;
+  VendorPayments: undefined;
+  CashFlowForecast: undefined;
+  IPCReadiness: undefined;
+  FinalBill: undefined;
 };
 
 const Drawer = createDrawerNavigator<CommercialDrawerParamList>();
@@ -91,11 +109,20 @@ export const CommercialDrawerNavigator: React.FC = () => {
   );
 
   const getDrawerIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
-    let iconName = 'file-document';
-    if (routeName === 'FinancialReports') {
-      iconName = focused ? 'file-document' : 'file-document-outline';
-    }
-    return <Icon name={iconName} size={size} color={color} />;
+    const icons: Record<string, [string, string]> = {
+      FinancialReports: ['file-document', 'file-document-outline'],
+      KDBilling: ['calendar-check', 'calendar-check-outline'],
+      LDRisk: ['alert-octagon', 'alert-octagon-outline'],
+      AdvanceRecovery: ['bank-transfer', 'bank-transfer'],
+      RetentionMonitor: ['shield-lock', 'shield-lock-outline'],
+      VariationOrders: ['file-edit', 'file-edit-outline'],
+      VendorPayments: ['account-cash', 'account-cash-outline'],
+      CashFlowForecast: ['chart-waterfall', 'chart-waterfall'],
+      IPCReadiness: ['clipboard-check', 'clipboard-check-outline'],
+      FinalBill: ['flag-checkered', 'flag-outline'],
+    };
+    const [activeIcon, inactiveIcon] = icons[routeName] ?? ['file-document', 'file-document-outline'];
+    return <Icon name={focused ? activeIcon : inactiveIcon} size={size} color={color} />;
   }, []);
 
   const screenOptions = useCallback(({ route }: { route: { name: string } }) => ({
@@ -131,6 +158,114 @@ export const CommercialDrawerNavigator: React.FC = () => {
             title: 'Financial Reports',
             drawerLabel: 'Financial Reports',
             headerShown: false,
+          }}
+        />
+
+        {/* KD Billing in Drawer */}
+        <Drawer.Screen
+          name="KDBilling"
+          component={KDBillingScreen}
+          options={{
+            title: 'KD Billing',
+            drawerLabel: 'KD Billing',
+            headerShown: true,
+            headerTitle: 'Key Date Billing',
+          }}
+        />
+
+        {/* LD Risk Calculator in Drawer */}
+        <Drawer.Screen
+          name="LDRisk"
+          component={LDRiskScreen}
+          options={{
+            title: 'LD Risk',
+            drawerLabel: 'LD Risk Calculator',
+            headerShown: true,
+            headerTitle: 'LD Risk Calculator',
+          }}
+        />
+
+        {/* Advance Recovery in Drawer */}
+        <Drawer.Screen
+          name="AdvanceRecovery"
+          component={AdvanceRecoveryScreen}
+          options={{
+            title: 'Advance Recovery',
+            drawerLabel: 'Advance Recovery',
+            headerShown: true,
+            headerTitle: 'Advance Recovery',
+          }}
+        />
+
+        {/* Retention Monitor in Drawer */}
+        <Drawer.Screen
+          name="RetentionMonitor"
+          component={RetentionMonitorScreen}
+          options={{
+            title: 'Retention Monitor',
+            drawerLabel: 'Retention Monitor',
+            headerShown: true,
+            headerTitle: 'Retention Monitor',
+          }}
+        />
+
+        {/* Variation Orders in Drawer */}
+        <Drawer.Screen
+          name="VariationOrders"
+          component={VariationOrderScreen}
+          options={{
+            title: 'Variation Orders',
+            drawerLabel: 'Variation Orders',
+            headerShown: true,
+            headerTitle: 'Variation Orders',
+          }}
+        />
+
+        {/* Vendor Payments in Drawer */}
+        <Drawer.Screen
+          name="VendorPayments"
+          component={VendorPaymentScreen}
+          options={{
+            title: 'Vendor Payments',
+            drawerLabel: 'Vendor Payments',
+            headerShown: true,
+            headerTitle: 'Vendor Payments',
+          }}
+        />
+
+        {/* Cash Flow Forecast in Drawer */}
+        <Drawer.Screen
+          name="CashFlowForecast"
+          component={CashFlowForecastScreen}
+          options={{
+            title: 'Cash Flow Forecast',
+            drawerLabel: 'Cash Flow Forecast',
+            headerShown: true,
+            headerTitle: 'Cash Flow Forecast',
+          }}
+        />
+
+        {/* IPC Readiness in Drawer */}
+        <Drawer.Screen
+          name="IPCReadiness"
+          component={MilestoneReadinessScreen}
+          options={{
+            title: 'IPC Readiness',
+            drawerLabel: 'IPC Readiness',
+            headerShown: true,
+            headerTitle: 'IPC Pre-Flight Checklist',
+          }}
+        />
+
+        {/* Final Bill Closure in Drawer */}
+        <Drawer.Screen
+          name="FinalBill"
+          component={FinalBillScreen}
+          options={{
+            title: 'Final Bill Closure',
+            drawerLabel: 'Final Bill & DLP',
+            headerShown: true,
+            headerTitle: 'DLP & Final Bill Closure',
           }}
         />
       </Drawer.Navigator>

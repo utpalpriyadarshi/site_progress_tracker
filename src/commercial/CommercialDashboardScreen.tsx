@@ -44,6 +44,15 @@ import TutorialService from '../services/TutorialService';
 import commercialManagerTutorialSteps from '../tutorial/commercialManagerTutorialSteps';
 import type { CommercialTabParamList } from '../nav/CommercialNavigator';
 import { COLORS } from '../theme/colors';
+import CommercialRiskWidget from './dashboard/CommercialRiskWidget';
+
+// ── Contract KPI types (Sprint 1 additions) ──────────────────────────────────
+interface ContractKPIs {
+  contractValue: number;
+  totalBilledGross: number;
+  weightedKDProgress: number; // weighted avg of KD progress
+  ldExposureLakhs: number;
+}
 
 /**
  * CommercialDashboardScreen (v3.0 Phase 3)
@@ -75,6 +84,13 @@ const CommercialDashboardScreen = () => {
   const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+  // Sprint 1: Contract KPIs (contract value, KD billing progress, LD exposure)
+  const [contractKPIs, setContractKPIs] = useState<ContractKPIs>({
+    contractValue: 0,
+    totalBilledGross: 0,
+    weightedKDProgress: 0,
+    ldExposureLakhs: 0,
+  });
 
   const loadDashboardData = useCallback(
     async (isRefresh = false, isSilent = false, periodOverride?: Period) => {
@@ -190,6 +206,61 @@ const CommercialDashboardScreen = () => {
     return () => subscription.unsubscribe();
   }, [projectId, loadDashboardData]);
 
+  // Sprint 1: Load contract KPIs from project + key_dates
+  useEffect(() => {
+    if (!projectId) return;
+    const loadContractKPIs = async () => {
+      try {
+        const projectsCol = database.collections.get('projects');
+        const keyDatesCol = database.collections.get('key_dates');
+        const invoicesCol = database.collections.get('invoices');
+
+        const [projectArr, keyDates, kdInvoices] = await Promise.all([
+          projectsCol.query(Q.where('id', projectId)).fetch(),
+          keyDatesCol.query(Q.where('project_id', projectId)).fetch(),
+          invoicesCol.query(
+            Q.where('project_id', projectId),
+            Q.where('key_date_id', Q.notEq(null))
+          ).fetch(),
+        ]);
+
+        const project: any = projectArr[0];
+        const contractValue = project?.contractValue ?? 0;
+
+        // Total billed (gross) from KD invoices
+        const totalBilledGross = (kdInvoices as any[]).reduce(
+          (s: number, inv: any) => s + (inv.grossAmount ?? inv.amount ?? 0),
+          0
+        );
+
+        // Weighted average KD progress
+        const kds = keyDates as any[];
+        const totalWeight = kds.reduce((s: number, k: any) => s + (k.weightage ?? 0), 0);
+        const weightedKDProgress = totalWeight > 0
+          ? kds.reduce((s: number, k: any) =>
+              s + (k.progressPercentage ?? 0) * (k.weightage ?? 0) / totalWeight, 0)
+          : 0;
+
+        // LD exposure from delayed KDs
+        const ldExposureLakhs = kds
+          .filter((k: any) => k.status === 'delayed')
+          .reduce((s: number, k: any) => {
+            const end = k.actualDate ?? Date.now();
+            if (!k.targetDate) return s;
+            const daysDelayed = Math.max(0, Math.ceil((end - k.targetDate) / 86_400_000));
+            const initialDays = Math.min(daysDelayed, 28);
+            const extDays = Math.max(0, daysDelayed - 28);
+            return s + initialDays * (k.delayDamagesInitial ?? 1) + extDays * (k.delayDamagesExtended ?? 10);
+          }, 0);
+
+        setContractKPIs({ contractValue, totalBilledGross, weightedKDProgress, ldExposureLakhs });
+      } catch (err) {
+        logger.error('[Dashboard] Contract KPIs load error:', err as Error);
+      }
+    };
+    loadContractKPIs();
+  }, [projectId, refreshTrigger]);
+
   // Tutorial auto-show logic
   useEffect(() => {
     const checkTutorial = async () => {
@@ -265,6 +336,14 @@ const CommercialDashboardScreen = () => {
     },
     [navigation]
   );
+
+  const handleKDBillingPress = useCallback(() => {
+    navigation.navigate('KDBilling');
+  }, [navigation]);
+
+  const handleLDRiskPress = useCallback(() => {
+    navigation.navigate('LDRisk');
+  }, [navigation]);
 
   // Tutorial handlers
   const handleTutorialDismiss = useCallback(async () => {
@@ -387,6 +466,61 @@ const CommercialDashboardScreen = () => {
       {/* Alerts */}
       {alerts.length > 0 && <AlertsCard alerts={alerts} />}
 
+      {/* Sprint 1: Contract KPIs */}
+      {contractKPIs.contractValue > 0 && (
+        <View style={styles.contractCard}>
+          <Text style={styles.contractCardTitle}>Contract Billing</Text>
+          <View style={styles.contractKPIRow}>
+            <View style={styles.contractKPIItem}>
+              <Text style={styles.contractKPILabel}>Contract Value</Text>
+              <Text style={styles.contractKPIValue}>
+                ₹{(contractKPIs.contractValue / 1_00_00_000).toFixed(2)} Cr
+              </Text>
+            </View>
+            <View style={styles.contractKPIItem}>
+              <Text style={styles.contractKPILabel}>Billed (Gross)</Text>
+              <Text style={[styles.contractKPIValue, { color: COLORS.SUCCESS }]}>
+                ₹{(contractKPIs.totalBilledGross / 1_00_00_000).toFixed(2)} Cr
+              </Text>
+            </View>
+            <View style={styles.contractKPIItem}>
+              <Text style={styles.contractKPILabel}>KD Progress</Text>
+              <Text style={[styles.contractKPIValue, { color: COLORS.INFO }]}>
+                {contractKPIs.weightedKDProgress.toFixed(1)}%
+              </Text>
+            </View>
+          </View>
+          <View style={styles.contractActions}>
+            <View
+              style={[
+                styles.contractActionBtn,
+                { backgroundColor: COLORS.PRIMARY + '15' },
+              ]}
+            >
+              <Text
+                style={[styles.contractActionText, { color: COLORS.PRIMARY }]}
+                onPress={handleKDBillingPress}
+              >
+                KD Billing →
+              </Text>
+            </View>
+            {contractKPIs.ldExposureLakhs > 0 && (
+              <View style={[styles.contractActionBtn, { backgroundColor: COLORS.ERROR + '15' }]}>
+                <Text
+                  style={[styles.contractActionText, { color: COLORS.ERROR }]}
+                  onPress={handleLDRiskPress}
+                >
+                  LD: ₹{contractKPIs.ldExposureLakhs.toFixed(1)}L →
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Sprint 4: Commercial Risk Early Warning */}
+      {contractKPIs.contractValue > 0 && <CommercialRiskWidget />}
+
       {/* Budget Health Widget */}
       <BudgetHealthWidget
         totalBudget={budgetSummary.totalBudget}
@@ -495,6 +629,44 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 32,
+  },
+  // Sprint 1: Contract KPI card styles
+  contractCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 14,
+    elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.PRIMARY,
+  },
+  contractCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 10,
+  },
+  contractKPIRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  contractKPIItem: { flex: 1 },
+  contractKPILabel: { fontSize: 10, color: '#888', marginBottom: 2 },
+  contractKPIValue: { fontSize: 15, fontWeight: '800', color: '#333' },
+  contractActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  contractActionBtn: {
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  contractActionText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 
