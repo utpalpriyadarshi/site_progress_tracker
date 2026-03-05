@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   voCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   voNumber: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
-  statusChip: { height: 28 },
+  statusChip: {},
   voDesc: { fontSize: 13, color: '#555', marginBottom: 10 },
   voMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   voMetricItem: { alignItems: 'center', minWidth: '22%' },

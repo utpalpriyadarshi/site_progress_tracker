@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   vendorName: { fontSize: 14, fontWeight: '700', color: '#333' },
   vendorCategory: { fontSize: 11, color: '#555', marginTop: 2 },
   vendorRight: { alignItems: 'flex-end', gap: 4 },
-  recChip: { height: 26 },
+  recChip: {},
   netPayable: { fontSize: 15, fontWeight: '700', color: '#007AFF', marginTop: 4 },
   netPayableLabel: { fontSize: 10, color: '#888' },
 
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   invoiceNum: { fontSize: 12, fontWeight: '600', color: '#333' },
   invoiceDate: { fontSize: 11, color: '#888' },
   invoiceAmount: { fontSize: 12, fontWeight: '600', color: '#333' },
-  statusChip: { height: 22 },
+  statusChip: {},
 
   emptyList: { alignItems: 'center', paddingVertical: 40 },
   emptyListText: { fontSize: 14, color: '#999', marginTop: 12 },

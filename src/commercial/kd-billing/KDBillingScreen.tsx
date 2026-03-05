@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   kdCodeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   kdCode: { fontSize: 15, fontWeight: '700', color: '#333' },
   kdDesc: { fontSize: 13, color: '#555', lineHeight: 18 },
-  statusChip: { height: 26 },
+  statusChip: {},
   statusChipText: { fontSize: 11, lineHeight: 14 },
 
   kdMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },

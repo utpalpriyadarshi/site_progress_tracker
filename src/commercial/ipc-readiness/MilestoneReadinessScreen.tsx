@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   kdMeta: { flexDirection: 'row' },
   kdMetaText: { fontSize: 11, color: '#888' },
   kdHeaderRight: { alignItems: 'flex-end' },
-  readinessChip: { height: 28 },
+  readinessChip: {},
 
   checklist: { paddingHorizontal: 14, paddingBottom: 14 },
 

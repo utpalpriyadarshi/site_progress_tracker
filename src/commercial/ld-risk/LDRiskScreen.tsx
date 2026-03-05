@@ -378,8 +378,8 @@ const styles = StyleSheet.create({
   },
   ldCode: { fontSize: 15, fontWeight: '700', color: '#333' },
   ldDesc: { fontSize: 12, color: '#555', marginTop: 2, maxWidth: 220 },
-  eotChip: { height: 26 },
-  warningChip: { height: 26, backgroundColor: COLORS.WARNING + '22' },
+  eotChip: {},
+  warningChip: { backgroundColor: COLORS.WARNING + '22' },
 
   ldMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 6 },
   ldMetaItem: { minWidth: 80 },

@@ -473,9 +473,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 10, padding: 14, elevation: 1,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  typeChip: { height: 26 },
+  typeChip: {},
   typeChipText: { fontSize: 11 },
-  recoveredChip: { height: 26, backgroundColor: COLORS.SUCCESS + '20' },
+  recoveredChip: { backgroundColor: COLORS.SUCCESS + '20' },
   recoveredChipText: { fontSize: 11, color: COLORS.SUCCESS },
 
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },

@@ -410,9 +410,9 @@ const styles = StyleSheet.create({
   invoiceRef: { fontSize: 14, fontWeight: '700', color: '#333' },
   grossText: { fontSize: 11, color: '#888', marginTop: 2 },
   retBadges: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  agingChip: { height: 24 },
+  agingChip: {},
   agingChipText: { fontSize: 10 },
-  bgChip: { height: 24, backgroundColor: COLORS.INFO + '20' },
+  bgChip: { backgroundColor: COLORS.INFO + '20' },
   bgChipText: { fontSize: 10, color: COLORS.INFO },
 
   retAmounts: { flexDirection: 'row', gap: 16, marginBottom: 10 },
