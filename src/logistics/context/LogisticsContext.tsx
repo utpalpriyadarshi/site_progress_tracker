@@ -358,31 +358,42 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
         .query()
         .fetch();
 
-      // Only keep projects that have at least one site — eliminates empty test/sample projects
+      // Primary filter: projects that have BOMs (logistics-specific seeded data).
+      // "Sample Construction Project" has sites but no BOMs → excluded.
+      // Fallback: projects with sites (for fresh installs before Manager demo runs).
+      const bomsCol = database.collections.get('boms');
       const sitesCol = database.collections.get('sites');
+
+      const projectsWithBoms: ProjectModel[] = [];
       const projectsWithSites: ProjectModel[] = [];
+
       for (const project of allProjects) {
-        const count = await sitesCol.query(Q.where('project_id', project.id)).fetchCount();
-        if (count > 0) projectsWithSites.push(project);
+        const bomCount = await bomsCol.query(Q.where('project_id', project.id)).fetchCount();
+        if (bomCount > 0) {
+          projectsWithBoms.push(project);
+        } else {
+          const siteCount = await sitesCol.query(Q.where('project_id', project.id)).fetchCount();
+          if (siteCount > 0) projectsWithSites.push(project);
+        }
       }
 
-      dispatch({ type: 'SET_PROJECTS', payload: projectsWithSites });
+      const projectsList = projectsWithBoms.length > 0 ? projectsWithBoms : projectsWithSites;
 
-      // Validate saved selection — if the stored project ID is not in the valid list
-      // (e.g. "Sample Construction Project" was filtered out), switch to first valid project
-      const savedIdIsValid = projectsWithSites.some(p => p.id === state.selectedProjectId);
+      dispatch({ type: 'SET_PROJECTS', payload: projectsList });
 
-      if (!savedIdIsValid && projectsWithSites.length > 0) {
-        // Stale or missing selection — pick first valid project
-        const firstProject = projectsWithSites[0];
+      // Validate saved selection — if stored ID is not in the valid list, switch to first valid
+      const savedIdIsValid = projectsList.some(p => p.id === state.selectedProjectId);
+
+      if (!savedIdIsValid && projectsList.length > 0) {
+        const firstProject = projectsList[0];
         dispatch({
           type: 'SET_PROJECT',
           payload: { projectId: firstProject.id, project: firstProject },
         });
         await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
-      } else if (state.selectedProjectId && projectsWithSites.length > 0) {
-        // Selection is valid but project object may be null (restored from AsyncStorage)
-        const project = projectsWithSites.find(p => p.id === state.selectedProjectId) || null;
+      } else if (state.selectedProjectId && projectsList.length > 0) {
+        // Selection valid but project object may be null (restored from AsyncStorage without object)
+        const project = projectsList.find(p => p.id === state.selectedProjectId) || null;
         if (project && !state.selectedProject) {
           dispatch({
             type: 'SET_PROJECT',
