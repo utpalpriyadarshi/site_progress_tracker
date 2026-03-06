@@ -496,7 +496,7 @@ const ManagerDashboardScreen = () => {
         // change_orders table may not exist yet on older installs
       }
 
-      // Count submitted design documents pending manager approval
+      // Count submitted design documents awaiting customer review
       let pendingApprovals = 0;
       try {
         const docsCol = database.collections.get('design_documents');
@@ -1710,16 +1710,16 @@ const ManagerDashboardScreen = () => {
 
         {/* Row 4 */}
         <View style={styles.kpiRow}>
-          {/* KPI 7: Pending Doc Approvals — tappable */}
+          {/* KPI 7: Docs awaiting customer review — tappable */}
           <Card
             style={[styles.kpiCard, stats.pendingApprovals > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('DesignDocApprovals')}
           >
             <Card.Content>
-              <Paragraph style={styles.kpiLabel}>Pending Approvals</Paragraph>
+              <Paragraph style={styles.kpiLabel}>Customer Review</Paragraph>
               <Title style={styles.kpiValue}>{stats.pendingApprovals}</Title>
               <Paragraph style={styles.kpiSubtext}>
-                {stats.pendingApprovals === 0 ? 'None pending' : 'Tap to review'}
+                {stats.pendingApprovals === 0 ? 'None pending' : 'Tap to monitor'}
               </Paragraph>
               <View style={styles.kpiIndicator}>
                 <View
@@ -1804,7 +1804,7 @@ const ManagerDashboardScreen = () => {
           style={styles.viewDetailsRow}
           onPress={() => (navigation as any).navigate('DesignDocApprovals')}
         >
-          View Doc Approvals
+          View Customer Review Queue
         </Button>
       </View>
 
