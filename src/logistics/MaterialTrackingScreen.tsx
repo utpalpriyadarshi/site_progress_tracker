@@ -35,7 +35,6 @@ import { useAccessibility } from '../utils/accessibility';
 
 // Import Material Tracking components
 import {
-  ProjectSelector,
   SearchAndFilters,
   ViewModeTabs,
   StatCards,
@@ -80,8 +79,6 @@ interface MaterialTrackingScreenProps {
 const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigation }) => {
   const {
     selectedProjectId,
-    selectProject: setSelectedProjectId,
-    projects,
     materials,
     loading: contextLoading,
     refresh: refreshContext,
@@ -95,7 +92,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDiscipline, setSelectedDiscipline] = useState<'all' | 'tss' | 'ohe' | 'general'>('all');
   const [loading, setLoading] = useState(false);
   const [appMode, setAppModeState] = useState(AppMode.getMode());
@@ -330,14 +326,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       );
     }
 
-    // Category filter (Metro Railway categories)
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter((req) => {
-        return req.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-               req.subCategory?.toLowerCase() === selectedCategory.toLowerCase();
-      });
-    }
-
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -349,7 +337,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedCategory, selectedDiscipline]);
+  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedDiscipline]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
@@ -385,7 +373,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const renderRequirementsEmptyState = () => {
     const hasNoData = materialRequirements.length === 0;
     const hasSearchQuery = debouncedSearchQuery.trim().length > 0;
-    const hasFilter = selectedCategory !== null && selectedCategory !== 'all';
+    const hasDisciplineFilter = selectedDiscipline !== 'all';
     const noFilteredResults = filteredRequirements.length === 0;
 
     // No BOM requirements linked at all
@@ -418,15 +406,15 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       );
     }
 
-    // No filter results
-    if (hasFilter && noFilteredResults && materialRequirements.length > 0) {
+    // No discipline filter results
+    if (hasDisciplineFilter && noFilteredResults && materialRequirements.length > 0) {
       return (
         <EmptyState
           icon="filter-off"
-          title={`No ${selectedCategory} Materials`}
-          message="Try selecting a different category filter."
-          actionText="Clear Filter"
-          onAction={() => setSelectedCategory(null)}
+          title={`No ${selectedDiscipline.toUpperCase()} Materials`}
+          message="Try selecting a different discipline filter."
+          actionText="Show All"
+          onAction={() => setSelectedDiscipline('all')}
         />
       );
     }
@@ -482,33 +470,22 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
         showWhenPending={true}
       />
 
-      {/* Project Selector */}
-      <ProjectSelector
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onProjectSelect={setSelectedProjectId}
+      {/* View Mode Tabs */}
+      <ViewModeTabs
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        stats={stats}
       />
 
-      {/* View Mode Tabs */}
-      {stats.total > 0 && (
-        <ViewModeTabs
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          stats={stats}
-        />
-      )}
+      {/* Compact stat summary */}
+      <StatCards stats={stats} />
 
-      {/* Stat Cards */}
-      {stats.total > 0 && <StatCards stats={stats} />}
-
-      {/* Search and Filters - always shown for requirements/shortages */}
+      {/* Discipline filter + search — always shown for requirements/shortages */}
       {(viewMode === 'requirements' || viewMode === 'shortages') && (
         <SearchAndFilters
           searchQuery={searchQuery}
-          selectedCategory={selectedCategory}
           selectedDiscipline={selectedDiscipline}
           onSearchChange={setSearchQuery}
-          onCategoryChange={setSelectedCategory}
           onDisciplineChange={setSelectedDiscipline}
         />
       )}

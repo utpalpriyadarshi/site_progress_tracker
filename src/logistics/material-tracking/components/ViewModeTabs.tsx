@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ViewMode } from '../utils/materialTrackingConstants';
 import { COLORS } from '../../../theme/colors';
 
@@ -31,11 +31,7 @@ export const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <View style={styles.scrollContent}>
         {/* Requirements Tab */}
         <TouchableOpacity
           style={[styles.tab, viewMode === 'requirements' && styles.tabActive]}
@@ -70,7 +66,7 @@ export const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
           onPress={() => onViewModeChange('procurement')}
         >
           <Text style={[styles.tabText, viewMode === 'procurement' && styles.tabTextActive]}>
-            Procurement
+            Procure
           </Text>
           {stats.procurementPending > 0 && (
             <View style={[styles.tabBadge, styles.tabBadgeWarning]}>
@@ -88,7 +84,7 @@ export const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
             Analytics
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -101,23 +97,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexDirection: 'row',
-    paddingHorizontal: 4,
   },
   tab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
-    gap: 6,
+    gap: 4,
   },
   tabActive: {
     borderBottomColor: COLORS.INFO,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },

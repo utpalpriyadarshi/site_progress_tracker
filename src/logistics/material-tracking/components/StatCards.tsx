@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../../../theme/colors';
 
 interface StatCardsProps {
@@ -13,91 +13,61 @@ interface StatCardsProps {
 }
 
 /**
- * StatCards Component
- *
- * Displays summary statistics in horizontal scrollable cards:
- * - Total Items
- * - Critical Items
- * - Shortages
- * - Sufficient Stock
- * - Procurement Pending
- *
- * Extracted from MaterialTrackingScreen for reusability.
+ * StatCards — compact single-row summary bar for material requirements.
+ * Replaces the previous large scrollable square cards.
  */
 export const StatCards: React.FC<StatCardsProps> = ({ stats }) => {
+  if (stats.total === 0) return null;
+
+  const items = [
+    { label: 'Total',    value: stats.total,            color: '#555' },
+    { label: 'Critical', value: stats.critical,         color: COLORS.ERROR },
+    { label: 'Shortage', value: stats.shortageCount,    color: COLORS.WARNING },
+    { label: 'OK',       value: stats.sufficient,       color: COLORS.SUCCESS },
+    { label: 'Procure',  value: stats.procurementPending, color: COLORS.INFO },
+  ];
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.container}
-    >
-      {/* Total Items Card */}
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{stats.total}</Text>
-        <Text style={styles.statLabel}>Total Items</Text>
-      </View>
-
-      {/* Critical Items Card */}
-      <View style={[styles.statCard, styles.statCardCritical]}>
-        <Text style={styles.statValue}>{stats.critical}</Text>
-        <Text style={styles.statLabel}>Critical</Text>
-      </View>
-
-      {/* Shortages Card */}
-      <View style={[styles.statCard, styles.statCardWarning]}>
-        <Text style={styles.statValue}>{stats.shortageCount}</Text>
-        <Text style={styles.statLabel}>Shortages</Text>
-      </View>
-
-      {/* Sufficient Stock Card */}
-      <View style={[styles.statCard, styles.statCardSuccess]}>
-        <Text style={styles.statValue}>{stats.sufficient}</Text>
-        <Text style={styles.statLabel}>Sufficient</Text>
-      </View>
-
-      {/* Procurement Pending Card */}
-      <View style={[styles.statCard, styles.statCardInfo]}>
-        <Text style={styles.statValue}>{stats.procurementPending}</Text>
-        <Text style={styles.statLabel}>To Procure</Text>
-      </View>
-    </ScrollView>
+    <View style={styles.row}>
+      {items.map((item, idx) => (
+        <React.Fragment key={item.label}>
+          {idx > 0 && <View style={styles.divider} />}
+          <View style={styles.pill}>
+            <Text style={[styles.value, { color: item.color }]}>{item.value}</Text>
+            <Text style={styles.label}>{item.label}</Text>
+          </View>
+        </React.Fragment>
+      ))}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  row: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    paddingVertical: 16,
-  },
-  statCard: {
-    minWidth: 100,
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    marginRight: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8e8e8',
     alignItems: 'center',
   },
-  statCardCritical: {
-    backgroundColor: COLORS.ERROR_BG,
+  pill: {
+    flex: 1,
+    alignItems: 'center',
   },
-  statCardWarning: {
-    backgroundColor: COLORS.WARNING_BG,
+  value: {
+    fontSize: 18,
+    fontWeight: '700',
   },
-  statCardSuccess: {
-    backgroundColor: COLORS.SUCCESS_BG,
+  label: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 1,
   },
-  statCardInfo: {
-    backgroundColor: COLORS.INFO_BG,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+  divider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#e8e8e8',
   },
 });
