@@ -312,7 +312,7 @@ For each:
 4. Return to dashboard → observe progress bar update
 
 ### Step 4.3 — Log a Daily Report
-1. **Daily Reports** tab → tap **+** FAB
+1. **Daily Reports** tab → tap **Submit Progress Reports** button
 2. Fill:
    - Date: today
    - Site: TSS-01
