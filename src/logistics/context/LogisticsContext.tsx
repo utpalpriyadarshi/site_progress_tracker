@@ -353,15 +353,24 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
   const refreshProjects = useCallback(async () => {
     try {
-      const projectsList = await database.collections
+      const allProjects = await database.collections
         .get<ProjectModel>('projects')
         .query()
         .fetch();
-      dispatch({ type: 'SET_PROJECTS', payload: projectsList });
+
+      // Only keep projects that have at least one site — eliminates empty test/sample projects
+      const sitesCol = database.collections.get('sites');
+      const projectsWithSites: ProjectModel[] = [];
+      for (const project of allProjects) {
+        const count = await sitesCol.query(Q.where('project_id', project.id)).fetchCount();
+        if (count > 0) projectsWithSites.push(project);
+      }
+
+      dispatch({ type: 'SET_PROJECTS', payload: projectsWithSites });
 
       // Auto-select first project if none selected
-      if (!state.selectedProjectId && projectsList.length > 0) {
-        const firstProject = projectsList[0];
+      if (!state.selectedProjectId && projectsWithSites.length > 0) {
+        const firstProject = projectsWithSites[0];
         dispatch({
           type: 'SET_PROJECT',
           payload: { projectId: firstProject.id, project: firstProject },
@@ -392,20 +401,16 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
   const refreshMaterials = useCallback(async () => {
     try {
-      let query = database.collections.get<MaterialModel>('materials').query();
-
-      if (state.selectedProjectId) {
-        query = database.collections
-          .get<MaterialModel>('materials')
-          .query(Q.where('project_id', state.selectedProjectId));
-      }
-
-      const materialsList = await query.fetch();
+      // materials table has no project_id column — load all and let UI filter by context
+      const materialsList = await database.collections
+        .get<MaterialModel>('materials')
+        .query()
+        .fetch();
       dispatch({ type: 'SET_MATERIALS', payload: materialsList });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load materials' });
     }
-  }, [state.selectedProjectId]);
+  }, []);
 
   const refreshLogisticsStats = useCallback(async () => {
     if (!state.selectedProjectId) return;

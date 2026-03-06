@@ -362,25 +362,31 @@ For each:
 
 ### Step 5.1 — Review Dashboard
 1. Login as `logistics`
-2. Dashboard → observe delivery summary: ordered, in-transit, delivered, overdue counts
-3. Note any shortage flags
+2. Dashboard → observe 7 widget cards: Inventory Status, Delivery Status, Purchase Orders,
+   Material Requirements, DOORS Packages, RFQ Status, Recent Activity
+3. Pull down to refresh all widgets — confirm they populate with real project data
+4. Note any shortage or low-stock alerts in the Inventory Status widget
 
-### Step 5.2 — Review Materials by Site
-1. **Materials** tab
-2. Filter by TSS discipline → observe 8 TSS materials
-3. Filter by OHE discipline → observe 8 OHE materials
-4. Note: Contact Wire status = `shortage` (aligns with Supervisor hindrance in Phase 4)
+### Step 5.2 — Review Materials by Discipline
+1. **Materials** tab → observe BOM-grouped requirements list
+2. Discipline filter row at top: tap **TSS** → observe 8 TSS-discipline materials
+3. Tap **OHE** → observe 8 OHE-discipline materials; note shortage items (Section Insulator, Anchor Bolt)
+4. Tap **All** to reset; use search bar to find "Contact Wire"
+5. Note: Cu-Mg Contact Wire 107mm² has `in_use` status with only 5000 of 16000m available
 
-### Step 5.3 — Review Inventory
-1. **Inventory** tab
-2. Check stock levels → identify low-stock items
-3. Flag Contact Wire for urgent reorder
+### Step 5.3 — Review Inventory Stock Levels
+1. **Inventory** tab → observe stat cards: In Stock / Low / Ordered / Shortage counts
+2. Filter by **Shortage** → see Section Insulator OHE and Anchor Bolt Set flagged
+3. Filter by **Ordered** → see materials pending delivery (HV Bushing Assembly, Catenary Wire, etc.)
+4. Filter by **Low** → see partially received materials below 70% of requirement
+5. Note the stock fill bar on each card showing available vs required ratio
 
 ### Step 5.4 — Mark a Delivery as Received
-1. **Deliveries** tab
-2. Find pending delivery (Transformer Oil or Silica Gel)
-3. Tap → **Mark as Received** → enter actual receipt date
-4. Observe material status changes from `ordered` → `delivered`
+1. **Deliveries** tab → observe materials grouped by delivery status
+2. Filter chips: tap **Pending** → shows materials with `ordered` status
+3. Find **HV Bushing Assembly 33kV** (ordered, 0 of 12 nos available)
+4. Tap **✓ Mark as Received** → confirm in the alert dialog
+5. Observe: card moves to Received filter; Inventory tab now shows it In Stock
 
 ### Step 5.5 — Review DOORS Register
 1. Drawer → **DOORS Register**

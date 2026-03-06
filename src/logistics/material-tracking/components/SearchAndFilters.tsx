@@ -3,11 +3,22 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 
 import { METRO_MATERIAL_CATEGORIES } from '../utils/materialTrackingConstants';
 import { COLORS } from '../../../theme/colors';
 
+type Discipline = 'all' | 'tss' | 'ohe' | 'general';
+
+const DISCIPLINE_CHIPS: { id: Discipline; label: string; icon: string }[] = [
+  { id: 'all',     label: 'All',     icon: '📦' },
+  { id: 'tss',     label: 'TSS',     icon: '⚡' },
+  { id: 'ohe',     label: 'OHE',     icon: '🔌' },
+  { id: 'general', label: 'General', icon: '🔧' },
+];
+
 interface SearchAndFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedCategory: string | null;
   onCategoryChange: (category: string | null) => void;
+  selectedDiscipline?: Discipline;
+  onDisciplineChange?: (discipline: Discipline) => void;
 }
 
 /**
@@ -21,9 +32,35 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   onSearchChange,
   selectedCategory,
   onCategoryChange,
+  selectedDiscipline = 'all',
+  onDisciplineChange,
 }) => {
   return (
     <View style={styles.container}>
+      {/* Discipline filter chips — TSS / OHE / General */}
+      {onDisciplineChange && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersScroll}
+          contentContainerStyle={styles.disciplineRow}
+        >
+          {DISCIPLINE_CHIPS.map((chip) => {
+            const isActive = selectedDiscipline === chip.id;
+            return (
+              <TouchableOpacity
+                key={chip.id}
+                style={[styles.filterChip, styles.disciplineChip, isActive && styles.disciplineChipActive]}
+                onPress={() => onDisciplineChange(chip.id)}
+              >
+                <Text style={styles.filterIcon}>{chip.icon}</Text>
+                <Text style={[styles.filterText, isActive && styles.filterTextActive]}>{chip.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
       {/* Search bar - compact with clear button */}
       <View style={styles.searchContainer}>
         <TextInput
@@ -126,6 +163,18 @@ const styles = StyleSheet.create({
   },
   filterChipActive: {
     backgroundColor: COLORS.INFO,
+  },
+  disciplineRow: {
+    paddingBottom: 6,
+  },
+  disciplineChip: {
+    borderWidth: 1,
+    borderColor: '#d0d0d0',
+    backgroundColor: '#f8f8f8',
+  },
+  disciplineChipActive: {
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
   },
   filterIcon: {
     fontSize: 14,

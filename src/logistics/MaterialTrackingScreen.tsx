@@ -96,6 +96,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDiscipline, setSelectedDiscipline] = useState<'all' | 'tss' | 'ohe' | 'general'>('all');
   const [loading, setLoading] = useState(false);
   const [appMode, setAppModeState] = useState(AppMode.getMode());
 
@@ -305,7 +306,16 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     );
   }, [materialRequirements]);
 
-  // Filter by category and search
+  // Derive discipline from BOM name (e.g. "TSS Main Equipment BOM" → 'tss')
+  const getDisciplineFromBomName = (bomName?: string): 'tss' | 'ohe' | 'general' => {
+    if (!bomName) return 'general';
+    const lower = bomName.toLowerCase();
+    if (lower.includes('tss')) return 'tss';
+    if (lower.includes('ohe')) return 'ohe';
+    return 'general';
+  };
+
+  // Filter by discipline, category and search
   const filteredRequirements = React.useMemo(() => {
     let filtered = materialRequirements;
 
@@ -313,11 +323,16 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       filtered = shortages;
     }
 
+    // Discipline filter (TSS / OHE / General derived from BOM name)
+    if (selectedDiscipline !== 'all') {
+      filtered = filtered.filter(
+        (req) => getDisciplineFromBomName(req.bomName) === selectedDiscipline
+      );
+    }
+
     // Category filter (Metro Railway categories)
     if (selectedCategory && selectedCategory !== 'all') {
       filtered = filtered.filter((req) => {
-        // Check if the requirement's category matches
-        // Category is stored in the BOM item's subCategory field
         return req.category?.toLowerCase() === selectedCategory.toLowerCase() ||
                req.subCategory?.toLowerCase() === selectedCategory.toLowerCase();
       });
@@ -334,7 +349,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedCategory]);
+  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedCategory, selectedDiscipline]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
@@ -486,13 +501,15 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       {/* Stat Cards */}
       {stats.total > 0 && <StatCards stats={stats} />}
 
-      {/* Search and Filters - Show only for requirements/shortages */}
-      {(viewMode === 'requirements' || viewMode === 'shortages') && stats.total > 0 && (
+      {/* Search and Filters - always shown for requirements/shortages */}
+      {(viewMode === 'requirements' || viewMode === 'shortages') && (
         <SearchAndFilters
           searchQuery={searchQuery}
           selectedCategory={selectedCategory}
+          selectedDiscipline={selectedDiscipline}
           onSearchChange={setSearchQuery}
           onCategoryChange={setSelectedCategory}
+          onDisciplineChange={setSelectedDiscipline}
         />
       )}
 
