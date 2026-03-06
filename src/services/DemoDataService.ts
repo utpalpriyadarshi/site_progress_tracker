@@ -325,6 +325,17 @@ function daysFromNow(days: number): number {
  * All records are created in a single atomic database.write() transaction.
  */
 export async function generatePlannerDemoData(projectId: string): Promise<DemoDataResult> {
+  // Guard: prevent duplicate generation
+  const existingKeyDates = await database.collections
+    .get<KeyDateModel>('key_dates')
+    .query(Q.where('project_id', projectId))
+    .fetch();
+  if (existingKeyDates.length > 0) {
+    throw new Error(
+      'Planner demo data already exists for this project. Use Admin → Reset Database to start fresh.'
+    );
+  }
+
   const createdKeyDates: KeyDateModel[] = [];
   const createdSites: SiteModel[] = [];
   const createdCategories: CategoryModel[] = [];

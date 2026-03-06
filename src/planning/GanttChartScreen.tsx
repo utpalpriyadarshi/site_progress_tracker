@@ -261,11 +261,7 @@ const GanttChartScreen: React.FC = () => {
             variant="default"
           />
         ) : (
-          <ScrollView
-            style={styles.ganttContainer}
-            accessible
-            accessibilityLabel={`Key dates Gantt showing ${keyDates.length} milestones`}
-          >
+          <View style={styles.ganttContainer}>
             <GanttHeader
               timelineColumns={kdTimeline.timelineColumns}
               columnWidth={kdTimeline.columnWidth}
@@ -273,17 +269,22 @@ const GanttChartScreen: React.FC = () => {
               onScrollX={handleScrollX}
               leftColumnLabel="Key Date"
             />
-            {keyDates.map((keyDate, kdIndex) => (
-              <KeyDateMilestoneRow
-                key={keyDate.id}
-                keyDate={keyDate}
-                timelineStart={kdTimeline.timelineBounds.start}
-                zoomLevel={state.selection.zoomLevel}
-                totalTimelineWidth={kdTimeline.totalTimelineWidth}
-                scrollRefCallback={makeRowScrollRefCallback(kdIndex)}
-              />
-            ))}
-          </ScrollView>
+            <ScrollView
+              accessible
+              accessibilityLabel={`Key dates Gantt showing ${keyDates.length} milestones`}
+            >
+              {keyDates.map((keyDate, kdIndex) => (
+                <KeyDateMilestoneRow
+                  key={keyDate.id}
+                  keyDate={keyDate}
+                  timelineStart={kdTimeline.timelineBounds.start}
+                  zoomLevel={state.selection.zoomLevel}
+                  totalTimelineWidth={kdTimeline.totalTimelineWidth}
+                  scrollRefCallback={makeRowScrollRefCallback(kdIndex)}
+                />
+              ))}
+            </ScrollView>
+          </View>
         )
       ) : (
         // ── Tasks tab ──
@@ -295,11 +296,7 @@ const GanttChartScreen: React.FC = () => {
             variant="default"
           />
         ) : (
-          <ScrollView
-            style={styles.ganttContainer}
-            accessible
-            accessibilityLabel={`Gantt chart showing ${state.data.items.length} tasks across the project timeline`}
-          >
+          <View style={styles.ganttContainer}>
             <GanttHeader
               timelineColumns={taskTimeline.timelineColumns}
               columnWidth={taskTimeline.columnWidth}
@@ -307,19 +304,24 @@ const GanttChartScreen: React.FC = () => {
               onScrollX={handleScrollX}
               leftColumnLabel="Task"
             />
-            {state.data.items.map((item, index) => (
-              <TaskRow
-                key={item.id}
-                item={item}
-                timelineStart={taskTimeline.timelineBounds.start}
-                zoomLevel={state.selection.zoomLevel}
-                totalTimelineWidth={taskTimeline.totalTimelineWidth}
-                todayPosition={taskTimeline.todayPosition}
-                showBaseline={showBaseline}
-                scrollRefCallback={makeRowScrollRefCallback(index)}
-              />
-            ))}
-          </ScrollView>
+            <ScrollView
+              accessible
+              accessibilityLabel={`Gantt chart showing ${state.data.items.length} tasks across the project timeline`}
+            >
+              {state.data.items.map((item, index) => (
+                <TaskRow
+                  key={item.id}
+                  item={item}
+                  timelineStart={taskTimeline.timelineBounds.start}
+                  zoomLevel={state.selection.zoomLevel}
+                  totalTimelineWidth={taskTimeline.totalTimelineWidth}
+                  todayPosition={taskTimeline.todayPosition}
+                  showBaseline={showBaseline}
+                  scrollRefCallback={makeRowScrollRefCallback(index)}
+                />
+              ))}
+            </ScrollView>
+          </View>
         )
       )}
     </View>
