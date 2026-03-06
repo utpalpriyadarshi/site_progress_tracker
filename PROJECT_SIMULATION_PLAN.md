@@ -242,33 +242,39 @@ For each:
 ### Step 3.1 — Review Dashboard KPIs
 1. Login as `manager`
 2. Dashboard → observe:
-   - Pending Approvals badge (should show count > 0 — highlighted in orange border)
+   - **Customer Review** KPI badge (should show count > 0 — highlighted in orange border)
    - Contract/budget overview
    - Milestone progress
 
-### Step 3.2 — Approve Design Documents
-1. Tap **Pending Approvals** KPI card → opens Doc Approvals screen
+### Step 3.2 — Monitor Design Document Approvals
+> **Note**: The approving authority is the **Customer (Metro Rail Corporation)**, not the Manager.
+> The Manager's role here is **monitoring only** — no approve/reject actions.
+> Status changes (submitted → approved / rejected) are made by the Design Engineer based on customer response.
+
+1. Tap **Customer Review** KPI card → opens Doc Approvals screen
    (or Drawer → **Doc Approvals**)
-2. Review submitted documents
-3. **Approve** DD-SIM-001 (tap Approve → no comment)
-4. **Approve with Comment** DD-SIM-002 (tap Approve★ → enter comment)
-5. **Reject** one document (tap Reject → enter reason)
-6. Return to dashboard → Pending Approvals count decreases
+2. Observe submitted documents with aging chips:
+   - Green chip (< 7 days): within normal review window
+   - Amber chip (7–14 days): follow-up recommended
+   - Red chip (≥ 14 days): overdue — escalate with the Design Engineer
+3. Note the info banner: "Submitted to customer for review. Status is updated by the Design Engineer when the customer responds."
+4. Return to dashboard
 
-### Step 3.3 — Review Vendors
-1. Tabs → **Finance** → or navigate via drawer → review 4 vendors
-2. Observe vendor scores: SwitchGear (92%), PowerTech (88%), Structural Systems (83%), CableCo (75%)
-3. Note: PO-MGR-2026-005 (SCADA RTU) is **OVERDUE** — flag for action
+### Step 3.3 — Review Purchase Orders
+1. Tabs → **Finance**
+2. Observe 5 Purchase Orders showing aggregate totals: total value, statuses (delivered, in_progress, issued, overdue)
+3. Note the PO summary section — individual PO details are tracked in the Logistics module
 
-### Step 3.4 — Review Purchase Orders
-1. Finance tab → Purchase Orders section
-2. Observe 5 POs with statuses: delivered, in_progress, issued, overdue
-3. Tap PO-MGR-2026-005 → note overdue status
+### Step 3.4 — Review Finance Overview
+1. Finance tab → observe aggregate metrics: total PO value ₹90,00,000, active supplier count
+2. Note: Detailed vendor scorecards and individual PO tracking are in the **Logistics** module (accessible to the Logistics role)
 
 ### Step 3.5 — Review BOM
 1. Drawer → **BOM Management**
-2. Tap TSS Main Equipment BOM → review 12 BOM items
-3. Observe material, labor, equipment, and subcontractor line items
+2. Tap **TSS Main Equipment BOM v2.0** → observe 4 line items:
+   - Material, Labor, Equipment, Subcontractor (one each)
+3. Tap another BOM (OHE or Simulation Studies) to see their respective items
+   - Total across all 3 BOMs: ~12 items
 
 ### Step 3.6 — Create a Change Order
 1. Drawer → **Change Orders**
@@ -284,7 +290,7 @@ For each:
 2. Confirm KD-G-01 shows as complete (updated by Planner in Phase 1)
 3. Note KD-A-01 (Design Approval, Day 60) — target upcoming
 
-**Expected outcome**: Approved docs reflect in Design Engineer dashboard. Change order visible to commercial.
+**Expected outcome**: Manager can monitor document submission aging and track project financials. Customer approval status changes are reflected when the Design Engineer updates them. Change order visible to commercial.
 
 ---
 

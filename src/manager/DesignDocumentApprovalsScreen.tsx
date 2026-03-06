@@ -1,25 +1,22 @@
 /**
- * DesignDocumentApprovalsScreen — Manager approval queue for submitted design docs
+ * DesignDocumentApprovalsScreen — Manager monitoring view for submitted design docs
  *
- * Features:
- * - Lists all submitted design documents for the current project
- * - Approve / Approve with comment / Reject inline actions
- * - Reactive via withChangesForTables (auto-refreshes without flicker)
+ * Shows documents submitted by the Design Engineer that are awaiting customer
+ * approval. Manager role is read-only monitoring — status changes (approve /
+ * reject / approve with comment) are made by the Design Engineer based on
+ * customer response. Manager uses this view to track aging and escalate delays.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
-  Alert,
   StyleSheet,
 } from 'react-native';
 import {
   Text,
   Card,
   Chip,
-  Button,
-  Snackbar,
   ActivityIndicator,
 } from 'react-native-paper';
 import { database } from '../../models/database';
@@ -67,13 +64,6 @@ const DesignDocumentApprovalsScreen = () => {
 
   const [docs, setDocs] = useState<PendingDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-
-  const showSnack = (msg: string) => {
-    setSnackbarMsg(msg);
-    setSnackbarVisible(true);
-  };
 
   // Load submitted docs, optionally silently (no loading skeleton flash)
   const loadDocs = useCallback(async (silent = false) => {
@@ -143,89 +133,20 @@ const DesignDocumentApprovalsScreen = () => {
     return () => subscription.unsubscribe();
   }, [projectId, loadDocs]);
 
-  // ==================== Actions ====================
-
-  const handleApprove = useCallback(async (docId: string) => {
-    try {
-      const col = database.collections.get('design_documents');
-      const record = await col.find(docId);
-      await database.write(async () => {
-        await record.update((rec: any) => {
-          rec.status = 'approved';
-          rec.approvedDate = Date.now();
-          rec.approvalComment = null;
-          rec.appSyncStatus = 'pending';
-          rec._version = (rec._version || 1) + 1;
-        });
-      });
-      showSnack('Document approved');
-    } catch (err) {
-      logger.error('[DocApprovals] Approve failed:', err as Error);
-      Alert.alert('Error', 'Failed to approve document');
-    }
-  }, []);
-
-  const handleApproveWithComment = useCallback((docId: string) => {
-    Alert.prompt(
-      'Approve with Comment',
-      'Enter an optional comment for the engineer:',
-      async (comment) => {
-        try {
-          const col = database.collections.get('design_documents');
-          const record = await col.find(docId);
-          await database.write(async () => {
-            await record.update((rec: any) => {
-              rec.status = 'approved_with_comment';
-              rec.approvedDate = Date.now();
-              rec.approvalComment = comment || null;
-              rec.appSyncStatus = 'pending';
-              rec._version = (rec._version || 1) + 1;
-            });
-          });
-          showSnack('Document approved with comment');
-        } catch (err) {
-          logger.error('[DocApprovals] Approve-with-comment failed:', err as Error);
-          Alert.alert('Error', 'Failed to approve document');
-        }
-      },
-      'plain-text',
-      '',
-    );
-  }, []);
-
-  const handleReject = useCallback((docId: string) => {
-    Alert.prompt(
-      'Reject Document',
-      'Please provide a reason for rejection:',
-      async (comment) => {
-        try {
-          const col = database.collections.get('design_documents');
-          const record = await col.find(docId);
-          await database.write(async () => {
-            await record.update((rec: any) => {
-              rec.status = 'rejected';
-              rec.approvedDate = Date.now();
-              rec.approvalComment = comment || null;
-              rec.appSyncStatus = 'pending';
-              rec._version = (rec._version || 1) + 1;
-            });
-          });
-          showSnack('Document rejected');
-        } catch (err) {
-          logger.error('[DocApprovals] Reject failed:', err as Error);
-          Alert.alert('Error', 'Failed to reject document');
-        }
-      },
-      'plain-text',
-      '',
-    );
-  }, []);
-
   // ==================== Render ====================
 
   const renderItem = ({ item }: { item: PendingDoc }) => {
     const typeLabel = DOC_TYPE_LABELS[item.documentType] || item.documentType;
     const typeColor = DOC_TYPE_COLORS[item.documentType] || '#555';
+
+    const daysPending = item.submittedDate
+      ? Math.floor((Date.now() - item.submittedDate) / (1000 * 60 * 60 * 24))
+      : null;
+    const agingColor =
+      daysPending === null ? '#888'
+      : daysPending >= 14 ? COLORS.ERROR
+      : daysPending >= 7  ? COLORS.WARNING
+      : COLORS.SUCCESS;
 
     return (
       <Card style={styles.card}>
@@ -249,41 +170,22 @@ const DesignDocumentApprovalsScreen = () => {
             <Text style={styles.siteName}>Site: {item.siteName}</Text>
           ) : null}
 
-          {item.submittedDate ? (
-            <Text style={styles.submittedDate}>
-              Submitted: {new Date(item.submittedDate).toLocaleDateString()}
-            </Text>
-          ) : null}
-
-          <View style={styles.actionRow}>
-            <Button
-              compact
-              mode="contained"
-              onPress={() => handleApprove(item.id)}
-              style={[styles.actionBtn, { backgroundColor: COLORS.SUCCESS }]}
-              labelStyle={styles.actionBtnLabel}
-            >
-              Approve
-            </Button>
-            <Button
-              compact
-              mode="contained"
-              onPress={() => handleApproveWithComment(item.id)}
-              style={[styles.actionBtn, { backgroundColor: '#FF9800' }]}
-              labelStyle={styles.actionBtnLabel}
-            >
-              Approve ✱
-            </Button>
-            <Button
-              compact
-              mode="outlined"
-              onPress={() => handleReject(item.id)}
-              textColor={COLORS.ERROR}
-              style={styles.actionBtn}
-              labelStyle={styles.actionBtnLabel}
-            >
-              Reject
-            </Button>
+          <View style={styles.agingRow}>
+            {item.submittedDate ? (
+              <Text style={styles.submittedDate}>
+                Submitted: {new Date(item.submittedDate).toLocaleDateString()}
+              </Text>
+            ) : null}
+            {daysPending !== null && (
+              <Chip
+                compact
+                mode="flat"
+                style={{ backgroundColor: agingColor + '20' }}
+                textStyle={{ color: agingColor, fontSize: 10, fontWeight: 'bold' }}
+              >
+                {daysPending === 0 ? 'Today' : `${daysPending}d pending`}
+              </Chip>
+            )}
           </View>
         </Card.Content>
       </Card>
@@ -301,11 +203,18 @@ const DesignDocumentApprovalsScreen = () => {
   return (
     <ErrorBoundary>
       <View style={commonStyles.screen}>
+        {/* Info banner — explain read-only role */}
+        <View style={styles.infoBanner}>
+          <Text style={styles.infoText}>
+            Submitted to customer for review. Status is updated by the Design Engineer when the customer responds.
+          </Text>
+        </View>
+
         {/* Header count bar */}
         {!loading && docs.length > 0 && (
           <View style={styles.headerBar}>
             <Text style={styles.headerText}>
-              {docs.length} document{docs.length !== 1 ? 's' : ''} pending review
+              {docs.length} document{docs.length !== 1 ? 's' : ''} awaiting customer response
             </Text>
           </View>
         )}
@@ -323,21 +232,12 @@ const DesignDocumentApprovalsScreen = () => {
             ListEmptyComponent={
               <EmptyState
                 icon="file-check-outline"
-                title="No Pending Approvals"
-                message="No design documents are awaiting approval. Documents submitted by the design engineer will appear here."
+                title="No Documents Pending"
+                message="No design documents are currently awaiting customer response. Documents submitted by the Design Engineer will appear here."
               />
             }
           />
         )}
-
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={3000}
-          action={{ label: 'Dismiss', onPress: () => setSnackbarVisible(false) }}
-        >
-          {snackbarMsg}
-        </Snackbar>
       </View>
     </ErrorBoundary>
   );
@@ -346,6 +246,18 @@ const DesignDocumentApprovalsScreen = () => {
 // ==================== Styles ====================
 
 const styles = StyleSheet.create({
+  infoBanner: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#BBDEFB',
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#1565C0',
+    lineHeight: 17,
+  },
   headerBar: {
     backgroundColor: COLORS.PRIMARY + '15',
     paddingHorizontal: 16,
@@ -392,24 +304,17 @@ const styles = StyleSheet.create({
   siteName: {
     fontSize: 12,
     color: '#555',
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+  agingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
   submittedDate: {
     fontSize: 11,
     color: '#888',
-    marginBottom: 8,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
-    flexWrap: 'wrap',
-  },
-  actionBtn: {
-    borderRadius: 6,
-  },
-  actionBtnLabel: {
-    fontSize: 11,
   },
   center: {
     flex: 1,
