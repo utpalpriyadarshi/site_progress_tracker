@@ -20,7 +20,8 @@ import {
 } from 'react-native';
 import { Text, useTheme, Portal, Dialog, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
+import type { PlanningTabParamList } from '../../nav/PlanningNavigator';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useAccessibility } from '../../utils/accessibility';
 import { useAuth } from '../../auth/AuthContext';
@@ -65,6 +66,7 @@ import { SpinnerLoading } from '../../components/common/LoadingState';
 
 const PlanningDashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<PlanningTabParamList, 'Dashboard'>>();
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const { announce } = useAccessibility();
@@ -109,10 +111,8 @@ const PlanningDashboardScreen: React.FC = () => {
     });
   }, [scheduleModal.visible, scheduleModal.status, dashboardCache.allItems]);
 
-  // Check if tutorial should be shown on focus.
-  // useFocusEffect ensures this runs when the drawer closes and Dashboard regains
-  // focus — which is what happens after the drawer Tutorial button calls
-  // TutorialService.resetTutorial() and navigates back to MainTabs.
+  // Auto-show on first login: check AsyncStorage on every focus event.
+  // This handles the initial tutorial on login (no route params needed).
   useFocusEffect(useCallback(() => {
     if (!user) return;
     let cancelled = false;
@@ -129,6 +129,18 @@ const PlanningDashboardScreen: React.FC = () => {
     checkTutorial();
     return () => { cancelled = true; };
   }, [user]));
+
+  // Drawer "Tutorial" button restart: navigate with showTutorial param triggers this.
+  // This is needed because drawerType:'front' overlays the screen without changing
+  // focus state — useFocusEffect alone never re-fires when the drawer closes.
+  useEffect(() => {
+    if (route.params?.showTutorial) {
+      setTutorialInitialStep(0);
+      setShowTutorial(true);
+      // Clear param so it doesn't re-trigger on subsequent focus events
+      navigation.setParams({ showTutorial: undefined } as any);
+    }
+  }, [route.params?.showTutorial, navigation]);
 
   const handleTutorialDismiss = useCallback(async () => {
     if (user) {

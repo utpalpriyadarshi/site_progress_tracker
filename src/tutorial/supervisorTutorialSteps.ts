@@ -18,6 +18,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       "Welcome to the Supervisor Module! This tutorial will guide you through managing construction sites, tracking daily progress, and reporting issues.",
     icon: 'hand-wave',
+    emoji: '👋',
   },
   {
     id: 2,
@@ -25,6 +26,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'This is your Supervisor Dashboard. It shows Active Sites, Today\'s Progress, Pending Items, and Reports Submitted. Quick action buttons let you navigate to key tasks.',
     icon: 'view-dashboard',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
   {
@@ -33,6 +35,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Navigate to the Sites tab. Create construction sites for your project by tapping the + button. Each site has a name and location.',
     icon: 'office-building',
+    emoji: '🏢',
     screenHint: 'Sites',
     actionHint: 'Tap the + button to add a site',
   },
@@ -42,6 +45,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Go to the Items tab. First select a site, then create work items to track. Set category, quantity, unit, weightage, and planned dates.',
     icon: 'clipboard-list',
+    emoji: '📋',
     screenHint: 'Items',
     actionHint: 'Select a site, then tap + to add an item',
   },
@@ -51,6 +55,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Open the Daily Work tab. Select a site and update item progress by tapping Update. Add completed quantity, notes, and photos.',
     icon: 'progress-check',
+    emoji: '✅',
     screenHint: 'DailyWork',
     actionHint: 'Tap Update on any item',
   },
@@ -60,6 +65,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'After updating items, tap "Submit Progress Reports" to create a daily report. PDF reports are generated automatically for sharing.',
     icon: 'file-document-check',
+    emoji: '📄',
     screenHint: 'DailyWork',
     actionHint: 'Tap Submit Progress Reports',
   },
@@ -69,6 +75,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer menu and tap Site Inspection. Create inspections with checklists, ratings, and photos. Flag safety issues if needed.',
     icon: 'clipboard-check',
+    emoji: '🔍',
     screenHint: 'Inspection',
     actionHint: 'Open drawer \u2192 Site Inspection',
   },
@@ -78,6 +85,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'From the drawer, open Hindrance Reports. Report construction issues with title, description, priority, and photos. Link issues to specific items.',
     icon: 'alert-circle',
+    emoji: '⚠️',
     screenHint: 'Issues',
     actionHint: 'Open drawer \u2192 Hindrance Reports',
   },
@@ -87,6 +95,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Open Material Tracking from the drawer. Track materials for your items including required quantities, availability, usage, and supplier details.',
     icon: 'package-variant',
+    emoji: '📦',
     screenHint: 'Materials',
     actionHint: 'Open drawer \u2192 Material Tracking',
   },
@@ -96,6 +105,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       'Open Reports History from the drawer. View past daily reports, filter by date, and download or share PDF reports.',
     icon: 'history',
+    emoji: '🕐',
     screenHint: 'History',
     actionHint: 'Open drawer \u2192 Reports History',
   },
@@ -105,6 +115,7 @@ const supervisorTutorialSteps: TutorialStep[] = [
     description:
       "Return to the Dashboard to see your updated metrics. The app works offline too - your data syncs when you're back online. You're all set!",
     icon: 'chart-line',
+    emoji: '📈',
     screenHint: 'Dashboard',
   },
 ];

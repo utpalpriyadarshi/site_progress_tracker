@@ -18,6 +18,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       "Welcome to the Logistics Module! This tutorial will guide you through material tracking, inventory management, delivery scheduling, and more.",
     icon: 'hand-wave',
+    emoji: '👋',
   },
   {
     id: 2,
@@ -25,6 +26,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'This is your Logistics Dashboard. View key widgets including material status, inventory levels, upcoming deliveries, and equipment availability at a glance.',
     icon: 'view-dashboard',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
   {
@@ -33,6 +35,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Navigate to the Materials tab. Track material requests, approvals, and deliveries across all sites. Monitor material categories: Electrical, Mechanical, Civil, and Piping.',
     icon: 'package-variant',
+    emoji: '📦',
     screenHint: 'Materials',
     actionHint: 'Tap the Materials tab',
   },
@@ -42,6 +45,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Open the Inventory tab. Manage stock levels across warehouses and sites. Track item quantities, locations, reorder points, and movement history.',
     icon: 'warehouse',
+    emoji: '🏭',
     screenHint: 'Inventory',
     actionHint: 'Tap the Inventory tab',
   },
@@ -51,6 +55,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Go to the Deliveries tab. Schedule deliveries, assign vehicles, track delivery status, and coordinate with vendors. View upcoming, in-progress, and completed deliveries.',
     icon: 'truck-delivery',
+    emoji: '🚚',
     screenHint: 'Deliveries',
     actionHint: 'Tap the Deliveries tab',
   },
@@ -60,6 +65,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer menu (tap ☰) and select Analytics. View detailed reports including material consumption trends, inventory turnover, delivery performance, and cost analysis.',
     icon: 'chart-line',
+    emoji: '📈',
     screenHint: 'Analytics',
     actionHint: 'Tap hamburger menu → Analytics',
   },
@@ -69,6 +75,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'From the drawer, access Equipment Management. Track heavy machinery, tools, vehicles, and their assignments. Monitor equipment status, location, maintenance schedules, and utilization.',
     icon: 'hammer-wrench',
+    emoji: '🔧',
     screenHint: 'Equipment',
     actionHint: 'Tap hamburger menu → Equipment',
   },
@@ -78,6 +85,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Navigate to Purchase Orders from the drawer. Create, review, and track purchase orders. Monitor PO status: Draft, Issued, In Progress, Delivered, and Closed.',
     icon: 'clipboard-list',
+    emoji: '📋',
     screenHint: 'PurchaseOrders',
     actionHint: 'Tap hamburger menu → Purchase Orders',
   },
@@ -87,6 +95,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Access the DOORS Register from the drawer. View design requirements packages, compliance status, and link requirements to procurement. Track package approvals and requirement traceability.',
     icon: 'door',
+    emoji: '🚪',
     screenHint: 'DoorsRegister',
     actionHint: 'Tap hamburger menu → DOORS Register',
   },
@@ -96,6 +105,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Open RFQ Management from the drawer. Create Request for Quotations, invite vendors, evaluate quotes, and award contracts. Link RFQs to DOORS packages for requirements traceability.',
     icon: 'file-document-outline',
+    emoji: '📄',
     screenHint: 'RfqList',
     actionHint: 'Tap hamburger menu → RFQ Management',
   },
@@ -105,6 +115,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       'Logistics supports offline work. When disconnected, you can view data and make changes. All updates will automatically sync when you reconnect to the network.',
     icon: 'cloud-off-outline',
+    emoji: '☁️',
     screenHint: 'Dashboard',
   },
   {
@@ -113,6 +124,7 @@ const logisticsTutorialSteps: TutorialStep[] = [
     description:
       "Return to the Dashboard to see your updated metrics and widgets. Use the hamburger menu (☰) to access all Logistics features. You're all set!",
     icon: 'chart-line-variant',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
 ];

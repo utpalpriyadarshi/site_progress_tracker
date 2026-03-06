@@ -14,6 +14,7 @@ export interface TutorialStep {
   title: string;
   description: string;
   icon: string;          // MaterialCommunityIcons name
+  emoji: string;         // Unicode emoji fallback for Modal rendering
   screenHint?: string;   // Which screen/tab to navigate to
   actionHint?: string;   // What button/action to look for
 }
@@ -25,6 +26,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       "Welcome to the Planning Module! Let's walk through how to set up your project. This tutorial will guide you through the key workflows step by step.",
     icon: 'hand-wave',
+    emoji: '👋',
   },
   {
     id: 2,
@@ -32,6 +34,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'This is your Planning Dashboard. It shows project health, Key Date progress, schedule overview, and resource status at a glance.',
     icon: 'view-dashboard',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
   {
@@ -40,6 +43,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Navigate to the Key Dates tab. Key Dates are major milestones your project must hit. Tap the + button to create one.',
     icon: 'calendar-star',
+    emoji: '⭐',
     screenHint: 'KeyDates',
     actionHint: 'Tap the + button',
   },
@@ -49,6 +53,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Set the KD code, category, description, target days from commencement, and weightage (%) for progress rollup.',
     icon: 'cog',
+    emoji: '⚙️',
     screenHint: 'KeyDates',
     actionHint: 'Fill in the Key Date form',
   },
@@ -58,6 +63,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Go to the Sites screen (drawer menu). Create construction sites for your project with location and planned dates.',
     icon: 'map-marker-plus',
+    emoji: '📍',
     screenHint: 'Sites',
     actionHint: 'Open drawer menu \u2192 Sites',
   },
@@ -67,6 +73,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       "Back on Key Dates, tap a KD card \u2192 'Manage Sites'. Link sites and set each site's contribution percentage (should total 100%).",
     icon: 'link-variant',
+    emoji: '🔗',
     screenHint: 'KeyDates',
     actionHint: 'Tap a KD card \u2192 Manage Sites',
   },
@@ -76,6 +83,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Open the WBS screen (drawer menu). Select a site, then create Work Breakdown Structure items with phases, quantities, and dates.',
     icon: 'file-tree',
+    emoji: '📂',
     screenHint: 'WBS',
     actionHint: 'Open drawer menu \u2192 WBS',
   },
@@ -85,6 +93,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Go to Baseline screen. Set item dependencies, then tap "Calculate Critical Path" to identify the longest path. Items on the critical path are highlighted with red borders.',
     icon: 'chart-timeline-variant',
+    emoji: '📈',
     screenHint: 'Baseline',
     actionHint: 'Open drawer menu \u2192 Baseline',
   },
@@ -94,6 +103,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Open Milestones screen. View project milestones (PM100-PM700) covering Requirements, Design, Procurement, Manufacturing, Testing, Commissioning, and Handover. Select a site to track progress.',
     icon: 'flag-checkered',
+    emoji: '🏁',
     screenHint: 'Milestones',
     actionHint: 'Open drawer menu \u2192 Milestones',
   },
@@ -103,6 +113,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       'Check the Schedule and Gantt tabs to see your timeline. Items appear based on their planned dates.',
     icon: 'chart-gantt',
+    emoji: '📅',
     screenHint: 'Schedule',
   },
   {
@@ -111,6 +122,7 @@ const plannerTutorialSteps: TutorialStep[] = [
     description:
       "Return to Dashboard. The Project Progress widget shows weighted rollup from your Key Dates. You're all set!",
     icon: 'chart-line',
+    emoji: '📉',
     screenHint: 'Dashboard',
   },
 ];

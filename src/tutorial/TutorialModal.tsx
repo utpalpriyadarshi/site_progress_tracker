@@ -14,13 +14,16 @@ import {
   View,
   StyleSheet,
   Modal,
-  Animated,
   Dimensions,
 } from 'react-native';
 import { Text, Button, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TutorialStep } from './plannerTutorialSteps';
 import { COLORS } from '../theme/colors';
+
+// Note: react-native-vector-icons does not render reliably inside React Native
+// Modal on Android. We use emoji Text as the primary icon in the circle, and
+// keep <Icon> only for the hint row (outside the Modal circle) where it works.
 
 interface TutorialModalProps {
   visible: boolean;
@@ -41,8 +44,6 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 }) => {
   const theme = useTheme();
   const [currentStepIndex, setCurrentStepIndex] = useState(initialStep);
-  const [fadeAnim] = useState(() => new Animated.Value(1));
-
   // Reset step when modal becomes visible
   useEffect(() => {
     if (visible) {
@@ -55,42 +56,21 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
-  const animateTransition = (callback: () => void) => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      callback();
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    });
-  };
-
   const handleNext = () => {
     if (isLastStep) {
       onComplete();
       return;
     }
-
-    animateTransition(() => {
-      const nextIndex = currentStepIndex + 1;
-      setCurrentStepIndex(nextIndex);
-      onStepChange?.(nextIndex);
-    });
+    const nextIndex = currentStepIndex + 1;
+    setCurrentStepIndex(nextIndex);
+    onStepChange?.(nextIndex);
   };
 
   const handleBack = () => {
     if (isFirstStep) return;
-
-    animateTransition(() => {
-      const prevIndex = currentStepIndex - 1;
-      setCurrentStepIndex(prevIndex);
-      onStepChange?.(prevIndex);
-    });
+    const prevIndex = currentStepIndex - 1;
+    setCurrentStepIndex(prevIndex);
+    onStepChange?.(prevIndex);
   };
 
   if (!currentStep) return null;
@@ -104,7 +84,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
     >
       <View style={styles.overlay}>
         <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Animated.View style={{ opacity: fadeAnim }}>
+          <View>
             {/* Step Indicator */}
             <Text style={[styles.stepIndicator, { color: theme.colors.primary }]}>
               Step {currentStepIndex + 1} of {totalSteps}
@@ -113,11 +93,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
             {/* Icon */}
             <View style={styles.iconContainer}>
               <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
-                <Icon
-                  name={currentStep.icon}
-                  size={48}
-                  color={theme.colors.primary}
-                />
+                <Text style={styles.emojiIcon}>{currentStep.emoji}</Text>
               </View>
             </View>
 
@@ -134,7 +110,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
                 <Text style={styles.hintText}>{currentStep.actionHint}</Text>
               </View>
             )}
-          </Animated.View>
+          </View>
 
           {/* Progress Dots */}
           <View style={styles.dotsContainer}>
@@ -232,6 +208,10 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emojiIcon: {
+    fontSize: 44,
+    textAlign: 'center',
   },
   title: {
     fontSize: 20,
