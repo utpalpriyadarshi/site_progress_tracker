@@ -211,12 +211,16 @@ For each:
 ### Step 2.4 — Review DOORS Packages
 1. Tap **DOORS Packages** tab
 2. Review 5 packages — note TSS and OHE discipline separation
-3. Tap DOORS-TSS-AUX-TRF-001 → review linked documents and quantities
+3. On the **DOORS-TSS-AUX-TRF-001** card, observe: Linked Docs count, quantity, compliance bars, and status timeline
+4. Tap **Mark Received** → then **Mark Reviewed** → then **Approve** to advance the status through the workflow
+   > Note: All details are shown inline on the card. Tap the action buttons (not the card itself) to update status.
 
 ### Step 2.5 — Review Design RFQs
 1. Tap **Design RFQs** tab
 2. Observe statuses: draft, issued, evaluated, awarded, cancelled
-3. Tap RFQ-DE-2026-003 (Contact Wire — awarded) → view vendor evaluation
+3. On the **RFQ-DE-2026-003** (Contact Wire Supply — awarded) card, tap **Quotes (5)**
+4. In the Vendor Quotes sheet: observe 5 vendor quotes with scores and ranks — CableCo is L1 (awarded)
+5. Switch to **Compare** view to see price, lead time, and compliance side-by-side
 
 ### Step 2.6 — Create a New Document (TSS Installation)
 1. Tap **+** FAB → Create Design Document

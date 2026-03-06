@@ -35,6 +35,7 @@ import BudgetModel from '../../models/BudgetModel';
 import CostModel from '../../models/CostModel';
 import InvoiceModel from '../../models/InvoiceModel';
 import DomainModel from '../../models/DomainModel';
+import RfqVendorQuoteModel from '../../models/RfqVendorQuoteModel';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -901,6 +902,7 @@ const CATEGORY_TO_DOMAIN: Record<string, string> = {
 export async function generateDesignerDemoData(projectId: string): Promise<DesignerDemoDataResult> {
   const createdDoorsPackages: DoorsPackageModel[] = [];
   const createdCategories: DesignDocumentCategoryModel[] = [];
+  let awardedRfqModel: RfqModel | null = null;
   let rfqCount = 0;
   let docCount = 0;
   let domainCount = 0;
@@ -1079,7 +1081,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
       const rfqDomainName = CATEGORY_TO_DOMAIN[pkgDef.category] || 'Civil';
       const rfqDomainId = domainsByName[rfqDomainName] || null;
 
-      await rfqsCollection.create((record: any) => {
+      const createdRfq = await rfqsCollection.create((record: any) => {
         record.rfqNumber = rfqDef.rfqNumber;
         record.doorsId = doorsPackage.doorsId;
         record.doorsPackageId = doorsPackage.id;
@@ -1101,7 +1103,7 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         }
         if (rfqDef.status === 'awarded') {
           record.awardDate = daysFromNow(-7);
-          record.awardedValue = 1500000 + Math.floor(Math.random() * 500000);
+          record.awardedValue = 1450000; // CableCo L1 quote — matches seeded vendor quotes
         }
         if (rfqDef.status === 'cancelled') {
           record.description = `${rfqDef.description}\n\nCancellation Reason: Vendor requirements changed`;
@@ -1109,6 +1111,9 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         record.appSyncStatus = 'pending';
         record.version = 1;
       });
+      if (rfqDef.status === 'awarded') {
+        awardedRfqModel = createdRfq;
+      }
       rfqCount++;
     }
 
@@ -1215,6 +1220,82 @@ export async function generateDesignerDemoData(projectId: string): Promise<Desig
         }
       });
     }
+  }
+
+  // Seed vendor quotes for the awarded RFQ (RFQ-DE-2026-003 — Contact Wire Supply).
+  // 5 cable vendors compete; CableCo is L1 (awarded). Creates vendor records for
+  // quote purposes since manager demo data (which creates procurement vendors) runs later.
+  if (awardedRfqModel) {
+    const QUOTE_VENDORS = [
+      { code: 'DE-VND-001', name: 'CableCo International Ltd', category: 'Cables' },
+      { code: 'DE-VND-002', name: 'Elcowire Group', category: 'Cables' },
+      { code: 'DE-VND-003', name: 'Ravin Cables Pvt Ltd', category: 'Cables' },
+      { code: 'DE-VND-004', name: 'Finolex Cables Ltd', category: 'Cables' },
+      { code: 'DE-VND-005', name: 'Polycab India Ltd', category: 'Cables' },
+    ];
+    const QUOTE_DEFS = [
+      { vi: 0, price: 1450000, lead: 90,  compliance: 92, techScore: 88, commScore: 90, overall: 89, rank: 1, status: 'awarded'      },
+      { vi: 1, price: 1580000, lead: 85,  compliance: 88, techScore: 82, commScore: 78, overall: 80, rank: 2, status: 'shortlisted'  },
+      { vi: 2, price: 1620000, lead: 100, compliance: 85, techScore: 78, commScore: 72, overall: 75, rank: 3, status: 'submitted'    },
+      { vi: 3, price: 1700000, lead: 120, compliance: 80, techScore: 72, commScore: 68, overall: 70, rank: 4, status: 'submitted'    },
+      { vi: 4, price: 1850000, lead: 110, compliance: 75, techScore: 62, commScore: 75, overall: 68, rank: 5, status: 'rejected'     },
+    ];
+
+    await database.write(async () => {
+      const vendorsCollection = database.collections.get<VendorModel>('vendors');
+      const quotesCollection = database.collections.get<RfqVendorQuoteModel>('rfq_vendor_quotes');
+
+      // Create quote-specific vendor records
+      const quoteVendors: VendorModel[] = [];
+      for (const vDef of QUOTE_VENDORS) {
+        const vendor = await vendorsCollection.create((rec: any) => {
+          rec.vendorCode = vDef.code;
+          rec.vendorName = vDef.name;
+          rec.category = vDef.category;
+          rec.contactPerson = '';
+          rec.email = '';
+          rec.phone = '';
+          rec.isApproved = true;
+          rec.performanceScore = 0;
+          rec.totalOrders = 0;
+          rec.appSyncStatus = 'pending';
+          rec.version = 1;
+        });
+        quoteVendors.push(vendor);
+      }
+
+      // Create vendor quotes for the awarded RFQ
+      for (const qDef of QUOTE_DEFS) {
+        const vendor = quoteVendors[qDef.vi];
+        await quotesCollection.create((rec: any) => {
+          rec.rfqId = awardedRfqModel!.id;
+          rec.vendorId = vendor.id;
+          rec.quoteReference = `Q-${vendor.vendorCode}-2026`;
+          rec.quotedPrice = qDef.price;
+          rec.currency = 'INR';
+          rec.leadTimeDays = qDef.lead;
+          rec.validityDays = 90;
+          rec.paymentTerms = '30% advance, 70% on delivery';
+          rec.warrantyMonths = 24;
+          rec.technicalCompliancePercentage = qDef.compliance;
+          rec.status = qDef.status;
+          rec.technicalScore = qDef.techScore;
+          rec.commercialScore = qDef.commScore;
+          rec.overallScore = qDef.overall;
+          rec.rank = qDef.rank;
+          rec.submittedAt = daysFromNow(-21);
+          rec.evaluatedAt = daysFromNow(-14);
+          rec.evaluatedById = designerId;
+          rec.appSyncStatus = 'pending';
+          rec.version = 1;
+        });
+      }
+
+      // Update awarded RFQ with winning vendor reference
+      await awardedRfqModel!.update((rec: any) => {
+        rec.winningVendorId = quoteVendors[0].id; // CableCo is L1
+      });
+    });
   }
 
   return {
