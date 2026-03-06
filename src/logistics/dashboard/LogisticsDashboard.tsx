@@ -24,7 +24,6 @@ import { useRoute } from '@react-navigation/native';
 import { useLogisticsContext } from '../context/LogisticsContext';
 import { useAuth } from '../../auth/AuthContext';
 import { EmptyState } from '../../components/common/EmptyState';
-import { OfflineIndicator } from '../../components/common/OfflineIndicator';
 import { dashboardReducer, initialDashboardState } from './dashboardReducer';
 import TutorialModal from '../../tutorial/TutorialModal';
 import logisticsTutorialSteps from '../../tutorial/logisticsTutorialSteps';
@@ -66,9 +65,6 @@ export const LogisticsDashboard: React.FC<LogisticsDashboardProps> = ({
   const {
     selectedProjectId,
     selectedProject,
-    isOffline,
-    pendingSyncCount,
-    triggerSync,
     refresh: refreshContext,
   } = useLogisticsContext();
 
@@ -152,14 +148,6 @@ export const LogisticsDashboard: React.FC<LogisticsDashboardProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Offline Indicator - positioned absolutely at top */}
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={true}
-      />
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}

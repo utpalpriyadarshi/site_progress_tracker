@@ -220,7 +220,7 @@ const LogisticsTabs = memo(() => {
 // ==================== Custom Drawer Content ====================
 
 const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, state }) => {
-  const { isOffline, selectedProject } = useLogisticsContext();
+  const { selectedProject } = useLogisticsContext();
   const { user } = useAuth();
   const projectName = selectedProject ? (selectedProject as any).name : 'No Project Selected';
 
@@ -240,21 +240,6 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
 
   return (
     <DrawerContentScrollView style={styles.drawerContent}>
-      {/* Offline Banner */}
-      {isOffline && (
-        <View
-          style={styles.offlineBanner}
-          accessible
-          accessibilityRole="alert"
-          accessibilityLabel="You are offline. Changes will sync when connected."
-        >
-          <Icon name="cloud-off-outline" size={16} color="#000" />
-          <Text style={styles.offlineText}>
-            Offline Mode - Changes will sync when connected
-          </Text>
-        </View>
-      )}
-
       {/* Project Header */}
       <View style={styles.drawerHeader}>
         <Icon name="truck-fast" size={32} color={COLORS.PRIMARY} />
