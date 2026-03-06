@@ -368,19 +368,32 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
       dispatch({ type: 'SET_PROJECTS', payload: projectsWithSites });
 
-      // Auto-select first project if none selected
-      if (!state.selectedProjectId && projectsWithSites.length > 0) {
+      // Validate saved selection — if the stored project ID is not in the valid list
+      // (e.g. "Sample Construction Project" was filtered out), switch to first valid project
+      const savedIdIsValid = projectsWithSites.some(p => p.id === state.selectedProjectId);
+
+      if (!savedIdIsValid && projectsWithSites.length > 0) {
+        // Stale or missing selection — pick first valid project
         const firstProject = projectsWithSites[0];
         dispatch({
           type: 'SET_PROJECT',
           payload: { projectId: firstProject.id, project: firstProject },
         });
         await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
+      } else if (state.selectedProjectId && projectsWithSites.length > 0) {
+        // Selection is valid but project object may be null (restored from AsyncStorage)
+        const project = projectsWithSites.find(p => p.id === state.selectedProjectId) || null;
+        if (project && !state.selectedProject) {
+          dispatch({
+            type: 'SET_PROJECT',
+            payload: { projectId: state.selectedProjectId, project },
+          });
+        }
       }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load projects' });
     }
-  }, [state.selectedProjectId]);
+  }, [state.selectedProjectId, state.selectedProject]);
 
   const refreshSites = useCallback(async () => {
     if (!state.selectedProjectId) {
