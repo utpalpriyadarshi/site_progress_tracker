@@ -115,7 +115,7 @@ const InventoryManagementScreen: React.FC = () => {
         isOnline={!isOffline}
         pendingCount={pendingSyncCount}
         onSync={triggerSync}
-        showWhenPending
+        showWhenPending={false}
       />
 
       {/* Stat Cards */}

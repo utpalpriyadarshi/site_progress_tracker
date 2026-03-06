@@ -302,16 +302,16 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     );
   }, [materialRequirements]);
 
-  // Derive discipline from BOM name (e.g. "TSS Main Equipment BOM" → 'tss')
-  const getDisciplineFromBomName = (bomName?: string): 'tss' | 'ohe' | 'general' => {
-    if (!bomName) return 'general';
-    const lower = bomName.toLowerCase();
-    if (lower.includes('tss')) return 'tss';
-    if (lower.includes('ohe')) return 'ohe';
+  // Derive discipline from BOM name OR item code
+  // calculateMaterialRequirements doesn't populate bomName, but itemCode always has TSS/OHE
+  const getDiscipline = (bomName?: string, itemCode?: string): 'tss' | 'ohe' | 'general' => {
+    const src = `${bomName || ''} ${itemCode || ''}`.toLowerCase();
+    if (src.includes('tss')) return 'tss';
+    if (src.includes('ohe')) return 'ohe';
     return 'general';
   };
 
-  // Filter by discipline, category and search
+  // Filter by discipline and search
   const filteredRequirements = React.useMemo(() => {
     let filtered = materialRequirements;
 
@@ -319,10 +319,10 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       filtered = shortages;
     }
 
-    // Discipline filter (TSS / OHE / General derived from BOM name)
+    // Discipline filter — check both bomName and itemCode
     if (selectedDiscipline !== 'all') {
       filtered = filtered.filter(
-        (req) => getDisciplineFromBomName(req.bomName) === selectedDiscipline
+        (req) => getDiscipline(req.bomName, req.itemCode) === selectedDiscipline
       );
     }
 
@@ -462,12 +462,12 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   return (
     <View style={styles.container}>
-      {/* Offline Indicator */}
+      {/* Offline Indicator — only show when truly offline; header SyncHeaderButton handles pending */}
       <OfflineIndicator
         isOnline={!isOffline}
         pendingCount={pendingSyncCount}
         onSync={triggerSync}
-        showWhenPending={true}
+        showWhenPending={false}
       />
 
       {/* View Mode Tabs */}
