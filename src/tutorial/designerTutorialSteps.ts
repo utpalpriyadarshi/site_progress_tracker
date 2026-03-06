@@ -18,6 +18,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       "Welcome to the Design Engineer Module! This tutorial will guide you through managing DOORS packages, Design RFQs, and Design Documents for your project.",
     icon: 'hand-wave',
+    emoji: '👋',
   },
   {
     id: 2,
@@ -25,6 +26,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'This is your Design Engineer Dashboard. It shows DOORS package status, RFQ metrics, design document progress, compliance rates, and processing times at a glance.',
     icon: 'view-dashboard',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
   {
@@ -33,6 +35,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'Navigate to the DOORS Packages tab. Each package contains 100 engineering requirements per equipment/material. Tap the + button to create a new package.',
     icon: 'package-variant',
+    emoji: '📦',
     screenHint: 'DoorsPackages',
     actionHint: 'Tap the + button',
   },
@@ -42,6 +45,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'Each DOORS package tracks 100 requirements through stages: Pending, Received, Under Review, and Approved. Update requirement status as you progress.',
     icon: 'clipboard-check-outline',
+    emoji: '✅',
     screenHint: 'DoorsPackages',
     actionHint: 'Tap a package to view requirements',
   },
@@ -51,6 +55,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'Go to the Design RFQs tab. Create RFQs during the engineering phase (pre-PM200) to request quotes from vendors. Track RFQs from Draft to Issued to Awarded.',
     icon: 'file-document-edit',
+    emoji: '📝',
     screenHint: 'DesignRfqs',
     actionHint: 'Tap the + button',
   },
@@ -60,6 +65,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'Open the Design Docs tab. Manage technical documents including submissions, customer comments, and approvals. Organize by categories for easy tracking.',
     icon: 'file-cad-box',
+    emoji: '📐',
     screenHint: 'DesignDocuments',
     actionHint: 'Tap the + button',
   },
@@ -69,6 +75,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'Use document categories to organize your design documents. Categories help filter and manage documents efficiently across the project lifecycle.',
     icon: 'folder-multiple',
+    emoji: '📁',
     screenHint: 'DesignDocuments',
     actionHint: 'Use the Manage Categories option',
   },
@@ -78,6 +85,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       'The Compliance widget on your dashboard shows the percentage of requirements meeting standards. Monitor processing times to identify bottlenecks.',
     icon: 'shield-check',
+    emoji: '🛡️',
     screenHint: 'Dashboard',
   },
   {
@@ -86,6 +94,7 @@ const designerTutorialSteps: TutorialStep[] = [
     description:
       "Return to the Dashboard to see your overall progress. The Recent Activity widget shows latest updates. You're all set to manage engineering workflows!",
     icon: 'chart-line',
+    emoji: '📈',
     screenHint: 'Dashboard',
   },
 ];

@@ -22,6 +22,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'This module covers the full commercial lifecycle of your project — from Key Date billing and advance tracking to retention management, variation orders, vendor payments, and final bill closure. Let\'s walk through each feature.',
     icon: 'currency-usd-circle',
+    emoji: '💰',
   },
 
   // ── 2. Dashboard Overview ────────────────────────────────────────────────
@@ -31,6 +32,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Your dashboard shows three layers of insight: (1) the Contract Billing KPI card — contract value, gross billed, and KD progress; (2) the Commercial Risk Alerts widget — up to 5 auto-detected risks; and (3) the standard budget, cash flow, and invoice widgets. Use the period selector (MTD / QTD / YTD) to filter the lower widgets.',
     icon: 'view-dashboard',
+    emoji: '📊',
     screenHint: 'Dashboard',
   },
 
@@ -41,6 +43,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'The Contract Billing card shows your Contract Value (₹ Crore), Gross Amount Billed so far, and weighted Key Date progress %. A red LD alert appears if any Key Date is delayed and LD exposure exists. Tap "KD Billing →" to raise an IPC, or "LD →" to review your delay exposure.',
     icon: 'cash-multiple',
+    emoji: '💵',
     screenHint: 'Dashboard',
     actionHint: 'View Contract Billing card on Dashboard',
   },
@@ -52,6 +55,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'The Risk Alerts widget auto-detects up to 5 risks — Billing Lag (billed % well below work progress %), Advance Pressure (outstanding advance > 15% of contract value), Retention Excess (held > 8% CV), Pending VOs (unapproved variation value), and Slow-Paying Client (invoices >60 days). Tap any risk row to jump directly to the relevant screen.',
     icon: 'alert-decagram',
+    emoji: '🚨',
     screenHint: 'Dashboard',
     actionHint: 'View Risk Alerts widget on Dashboard',
   },
@@ -63,6 +67,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "KD Billing". This screen lists every project Key Date with its billing weightage %. Completed but unbilled KDs are highlighted in orange — tap "Generate IPC" to open the IPC dialog. It pre-fills Gross = Contract Value × KD weightage, then deducts Retention (5%), Advance Recovery (10% of gross), LD (if any), and TDS to show the Net Payable. Saving the IPC automatically creates a Retention record.',
     icon: 'calendar-check',
+    emoji: '🗓️',
     screenHint: 'KDBilling',
     actionHint: 'Open drawer → KD Billing',
   },
@@ -74,6 +79,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "LD Risk Calculator". This screen shows all delayed Key Dates with their LD exposure in Lakhs — calculated using the tiered rate: Days 1–28 at the initial rate, Day 29+ at the extended rate. The top banner shows total LD exposure and its % of contract value. Use the EOT status toggle (None / Pending / Filed) per KD to track your Extension of Time claims.',
     icon: 'alert-octagon',
+    emoji: '⚠️',
     screenHint: 'LDRisk',
     actionHint: 'Open drawer → LD Risk Calculator',
   },
@@ -85,6 +91,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Advance Recovery". This screen tracks mobilization and performance advances issued to you. Each advance card shows: Amount Issued, Total Recovered, Balance Outstanding, and a % progress bar. The "Impact on Next 3 Pending KD Bills" section projects how much will be deducted from upcoming IPCs. Use the FAB (+) to add a new advance record.',
     icon: 'bank-transfer',
+    emoji: '🏦',
     screenHint: 'AdvanceRecovery',
     actionHint: 'Open drawer → Advance Recovery',
   },
@@ -96,6 +103,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Retention Monitor". Switch between Client tab (retention held from your KD invoices) and Vendor tab (retention you hold from subcontractors). Each row shows the invoice reference, gross amount, retention %, and an aging badge — green (<6 months), orange (6–12 months), red (>12 months). When a DLP end date has passed, a "Release" button appears to record the release.',
     icon: 'shield-lock',
+    emoji: '🔒',
     screenHint: 'RetentionMonitor',
     actionHint: 'Open drawer → Retention Monitor',
   },
@@ -107,6 +115,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Variation Orders". This screen tracks all VOs with status chips — Pending (amber), Under Review (blue), Approved (green), Rejected (red). The summary card shows Total VO Value, Approved Value, and Revenue at Risk. For approved VOs, toggle "Include in next IPC" to queue them for billing. Tap a status chip on a pending VO to advance it through the workflow. Use the FAB (+) to raise a new VO.',
     icon: 'file-edit',
+    emoji: '📝',
     screenHint: 'VariationOrders',
     actionHint: 'Open drawer → Variation Orders',
   },
@@ -118,6 +127,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Vendor Payments". This screen shows all active vendors with POs or invoices on your project. For each vendor you see: PO Value, Invoiced, Paid, Retention Held, TDS, and Net Payable. A payment recommendation chip — Full (green), Partial (amber), or Hold (red) — is computed automatically. Hold triggers include overdue invoices, excessive advance deductions, or zero prior payments. Use the filters: All / Due This Week / Overdue.',
     icon: 'account-cash',
+    emoji: '💳',
     screenHint: 'VendorPayments',
     actionHint: 'Open drawer → Vendor Payments',
   },
@@ -129,6 +139,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Cash Flow Forecast". This screen projects the next 6 months of inflows (pending KD target dates × weightage × contract value) vs outflows (pending vendor invoices + projected advance recovery). A horizontal bar chart shows each month\'s inflow and outflow side-by-side. Months with a funding gap are highlighted in red. The working capital requirement (peak gap) is shown prominently.',
     icon: 'chart-waterfall',
+    emoji: '📉',
     screenHint: 'CashFlowForecast',
     actionHint: 'Open drawer → Cash Flow Forecast',
   },
@@ -140,6 +151,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "IPC Readiness". This screen shows a pre-submission checklist for each Key Date before you raise an IPC. Three items are auto-checked from your data — VO approvals, LD status, and whether the previous IPC was paid. Five items require manual confirmation — engineer certificate, Measurement Book, BOQ reconciliation, hindrance review, and GST compliance. The readiness badge shows Safe (all mandatory items pass), Conditional (optional items missing), or Hold (mandatory items incomplete).',
     icon: 'clipboard-check',
+    emoji: '✅',
     screenHint: 'IPCReadiness',
     actionHint: 'Open drawer → IPC Readiness',
   },
@@ -151,6 +163,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'The four tabs give you the core financial workflow: Budgets — create category budgets and track allocation vs spend. Costs — record project expenditure, assign to budget categories. Invoices — create client and vendor invoices, track payment status and due dates. Dashboard — all KPIs consolidated with period filtering and pull-to-refresh.',
     icon: 'wallet',
+    emoji: '👛',
     screenHint: 'BudgetManagement',
     actionHint: 'Explore the tab bar',
   },
@@ -162,6 +175,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Financial Reports". This screen gives a date-filtered deep-dive: Profitability Overview (budget remaining, profit margin), Budget Variance by category, Cost Distribution (pie breakdown), Cash Flow Analysis (revenue vs costs), and Invoice Summary (paid, pending, overdue). Use the date range picker to analyze any period.',
     icon: 'file-chart',
+    emoji: '📊',
     screenHint: 'FinancialReports',
     actionHint: 'Open drawer → Financial Reports',
   },
@@ -173,6 +187,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'Open the drawer and tap "Final Bill & DLP". This screen tracks project commercial closure: the DLP Status banner (Open → DLP Running → Closure Ready) shows when the Defect Liability Period ends. The Retention Register lists every client retention with a one-tap "Release" button that activates once the DLP end date passes. The Closure Checklist (7 items: VOs settled, advances recovered, BGs returned, etc.) must be fully checked to mark the project as Commercially Closed.',
     icon: 'flag-checkered',
+    emoji: '🏁',
     screenHint: 'FinalBill',
     actionHint: 'Open drawer → Final Bill & DLP',
   },
@@ -184,6 +199,7 @@ const commercialManagerTutorialSteps: TutorialStep[] = [
     description:
       'You now have the full Commercial Manager toolkit: KD Billing → IPC generation, LD Risk tracking, Advance Recovery scheduling, Retention monitoring, Variation Order approvals, Vendor Payment recommendations, Cash Flow forecasting, IPC Readiness pre-checks, and Final Bill closure. Pull-to-refresh anywhere to update data. Restart this tutorial anytime from the drawer menu.',
     icon: 'check-decagram',
+    emoji: '🎉',
     screenHint: 'Dashboard',
   },
 ];

@@ -21,6 +21,10 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TutorialStep } from './plannerTutorialSteps';
 import { COLORS } from '../theme/colors';
 
+// Note: react-native-vector-icons does not render reliably inside React Native
+// Modal on Android. We use emoji Text as the primary icon in the circle, and
+// keep <Icon> only for the hint row (outside the Modal circle) where it works.
+
 interface TutorialModalProps {
   visible: boolean;
   steps: TutorialStep[];
@@ -89,11 +93,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
             {/* Icon */}
             <View style={styles.iconContainer}>
               <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
-                <Icon
-                  name={currentStep.icon}
-                  size={48}
-                  color={theme.colors.primary}
-                />
+                <Text style={styles.emojiIcon}>{currentStep.emoji}</Text>
               </View>
             </View>
 
@@ -208,6 +208,10 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emojiIcon: {
+    fontSize: 44,
+    textAlign: 'center',
   },
   title: {
     fontSize: 20,
