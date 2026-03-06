@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { COLORS } from '../theme/colors';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -70,7 +69,7 @@ const getStockLabel = (cat: StockFilter) => {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const InventoryManagementScreen: React.FC = () => {
-  const { materials, isOffline, pendingSyncCount, triggerSync, refresh } = useLogistics();
+  const { materials, refresh } = useLogistics();
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -111,12 +110,6 @@ const InventoryManagementScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={false}
-      />
 
       {/* Stat Cards */}
       <View style={styles.statsRow}>

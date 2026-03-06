@@ -29,7 +29,6 @@ import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
 
@@ -82,9 +81,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     materials,
     loading: contextLoading,
     refresh: refreshContext,
-    isOffline,
-    pendingSyncCount,
-    triggerSync,
   } = useLogistics();
 
   const { user } = useAuth();
@@ -462,13 +458,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   return (
     <View style={styles.container}>
-      {/* Offline Indicator — only show when truly offline; header SyncHeaderButton handles pending */}
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={false}
-      />
 
       {/* View Mode Tabs */}
       <ViewModeTabs

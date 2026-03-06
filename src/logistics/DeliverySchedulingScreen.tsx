@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { COLORS } from '../theme/colors';
 import MaterialModel from '../../models/MaterialModel';
 import { database } from '../../models/database';
@@ -59,7 +58,7 @@ const getStatusLabel = (status: string) => {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const DeliverySchedulingScreen: React.FC = () => {
-  const { materials, isOffline, pendingSyncCount, triggerSync, refresh } = useLogistics();
+  const { materials, refresh } = useLogistics();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [markingId, setMarkingId] = useState<string | null>(null);
@@ -117,12 +116,6 @@ const DeliverySchedulingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={false}
-      />
 
       {/* Stat Cards */}
       <View style={styles.statsRow}>
