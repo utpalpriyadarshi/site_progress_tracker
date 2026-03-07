@@ -41,7 +41,6 @@ import MaterialTrackingScreen from '../logistics/MaterialTrackingScreen';
 import InventoryManagementScreen from '../logistics/InventoryManagementScreen';
 import DeliverySchedulingScreen from '../logistics/DeliverySchedulingScreen';
 import LogisticsAnalyticsScreen from '../logistics/LogisticsAnalyticsScreen';
-import EquipmentManagementScreen from '../logistics/EquipmentManagementScreen';
 import PurchaseOrderManagementScreen from '../logistics/PurchaseOrderManagementScreen';
 import DoorsRegisterScreen from '../logistics/DoorsRegisterScreen';
 import DoorsDetailScreen from '../logistics/DoorsDetailScreen';
@@ -76,7 +75,6 @@ export type LogisticsTabParamList = {
 export type LogisticsDrawerParamList = {
   MainTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   Analytics: undefined;
-  Equipment: undefined;
   PurchaseOrders: undefined;
   DoorsRegister: undefined;
   RfqList: undefined;
@@ -276,18 +274,10 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           accessibilityLabel="Navigate to Analytics Reports"
         />
         <DrawerItem
-          label="Equipment"
-          icon={({ color, size }) => <Icon name="hammer-wrench" color={color} size={size} />}
-          onPress={() => handleNavigation('Equipment')}
-          focused={state.index === 2}
-          activeTintColor={COLORS.PRIMARY}
-          accessibilityLabel="Navigate to Equipment Management"
-        />
-        <DrawerItem
           label="Purchase Orders"
           icon={({ color, size }) => <Icon name="clipboard-list" color={color} size={size} />}
           onPress={() => handleNavigation('PurchaseOrders')}
-          focused={state.index === 3}
+          focused={state.index === 2}
           activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to Purchase Orders"
         />
@@ -295,7 +285,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           label="DOORS Register"
           icon={({ color, size }) => <Icon name="door" color={color} size={size} />}
           onPress={() => handleNavigation('DoorsRegister')}
-          focused={state.index === 4}
+          focused={state.index === 3}
           activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to DOORS Register"
         />
@@ -303,7 +293,7 @@ const CustomDrawerContent = memo<DrawerContentComponentProps>(({ navigation, sta
           label="RFQ Management"
           icon={({ color, size }) => <Icon name="file-document-outline" color={color} size={size} />}
           onPress={() => handleNavigation('RfqList')}
-          focused={state.index === 5}
+          focused={state.index === 4}
           activeTintColor={COLORS.PRIMARY}
           accessibilityLabel="Navigate to RFQ Management"
         />
@@ -360,14 +350,6 @@ const LogisticsDrawer = memo<LogisticsDrawerProps>(({ parentNavigation }) => {
         component={LogisticsAnalyticsScreen}
         options={{
           title: 'Analytics Reports',
-          drawerItemStyle: { display: 'none' },
-        }}
-      />
-      <Drawer.Screen
-        name="Equipment"
-        component={EquipmentManagementScreen}
-        options={{
-          title: 'Equipment Management',
           drawerItemStyle: { display: 'none' },
         }}
       />

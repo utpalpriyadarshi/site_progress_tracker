@@ -9,7 +9,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { Q } from '@nozbe/watermelondb';
@@ -30,11 +30,11 @@ import { COLORS } from '../theme/colors';
  */
 
 interface DoorsRegisterScreenProps {
-  navigation: any;
   doorsPackages: DoorsPackageModel[];
 }
 
-const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ navigation, doorsPackages }) => {
+const DoorsRegisterScreen: React.FC<DoorsRegisterScreenProps> = ({ doorsPackages }) => {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | DoorsPackageStatus>('all');

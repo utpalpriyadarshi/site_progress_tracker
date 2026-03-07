@@ -621,9 +621,9 @@ const enhance = withObservables(['route'], ({ route }: any) => {
 const EnhancedDoorsDetailScreen = enhance(DoorsDetailScreen);
 
 // Wrap with ErrorBoundary for graceful error handling
-const DoorsDetailScreenWithBoundary = () => (
+const DoorsDetailScreenWithBoundary = (props: any) => (
   <ErrorBoundary name="Logistics - DoorsDetailScreen">
-    <EnhancedDoorsDetailScreen />
+    <EnhancedDoorsDetailScreen {...props} />
   </ErrorBoundary>
 );
 

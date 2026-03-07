@@ -750,9 +750,9 @@ const enhance = withObservables([], () => ({
 const EnhancedRfqCreateScreen = enhance(RfqCreateScreen);
 
 // Wrap with ErrorBoundary for graceful error handling
-const RfqCreateScreenWithBoundary = () => (
+const RfqCreateScreenWithBoundary = (props: any) => (
   <ErrorBoundary name="Logistics - RfqCreateScreen">
-    <EnhancedRfqCreateScreen />
+    <EnhancedRfqCreateScreen {...props} />
   </ErrorBoundary>
 );
 

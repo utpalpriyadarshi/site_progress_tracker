@@ -10,22 +10,16 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { database } from '../../models/database';
 import RfqModel from '../../models/RfqModel';
-import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { Q } from '@nozbe/watermelondb';
 import withObservables from '@nozbe/with-observables';
-import { useAuth } from '../auth/AuthContext';
-import RfqService from '../services/RfqService';
-import { createRfqsDemoData, clearRfqDemoData } from '../utils/demoData/RfqSeeder';
+import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
-import { useLogistics } from './context/LogisticsContext';
 import { useFlatListProps } from '../hooks/useFlatListProps';
 
 /**
@@ -40,14 +34,13 @@ import { useFlatListProps } from '../hooks/useFlatListProps';
 type RfqStatus = 'draft' | 'issued' | 'quotes_received' | 'evaluated' | 'awarded' | 'cancelled';
 
 interface RfqListScreenProps {
-  navigation: any;
   rfqs: RfqModel[];
 }
 
-const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
-  const { user } = useAuth();
+const RfqListScreen: React.FC<RfqListScreenProps> = ({ rfqs }) => {
+  const navigation = useNavigation<any>();
+  const { selectedProjectId } = useLogistics();
   const { announce } = useAccessibility();
-  const { isOffline, pendingSyncCount, triggerSync } = useLogistics();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | RfqStatus>('all');
   const [loading, setLoading] = useState(false);
@@ -67,7 +60,9 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
 
   // Filter RFQs based on search and filters
   const filteredRfqs = useMemo(() => {
-    let filtered = [...rfqs];
+    let filtered = selectedProjectId
+      ? rfqs.filter((rfq) => rfq.projectId === selectedProjectId)
+      : [...rfqs];
 
     // Search filter - use debounced value
     if (debouncedSearchQuery.trim()) {
@@ -152,61 +147,6 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
       month: 'short',
       year: 'numeric',
     });
-  };
-
-  // Handle load demo data
-  const handleLoadDemoData = async () => {
-    try {
-      setLoading(true);
-
-      // Get first project
-      const projects = await database.collections.get('projects').query().fetch();
-      if (projects.length === 0) {
-        Alert.alert('Error', 'No projects found. Please create a project first.');
-        return;
-      }
-
-      const projectId = projects[0].id;
-      const userId = user?.userId || 'demo-user';
-
-      await createRfqsDemoData(projectId, userId);
-
-      setRefreshKey((prev) => prev + 1);
-      Alert.alert('Success', 'RFQ demo data loaded successfully!');
-    } catch (error) {
-      logger.error('[RfqList] Error loading demo data:', error as Error);
-      Alert.alert('Error', 'Failed to load demo data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle clear all data
-  const handleClearAllData = () => {
-    Alert.alert(
-      'Clear All RFQ Data',
-      'Are you sure you want to delete all RFQs, quotes, and vendors? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await clearRfqDemoData();
-              setRefreshKey((prev) => prev + 1);
-              Alert.alert('Success', 'All RFQ data cleared');
-            } catch (error) {
-              logger.error('[RfqList] Error clearing data:', error as Error);
-              Alert.alert('Error', 'Failed to clear data');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
   };
 
   // Render RFQ card
@@ -302,34 +242,10 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ navigation, rfqs }) => {
 
   return (
     <View style={styles.container}>
-      {/* Offline Indicator */}
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={true}
-      />
-
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>RFQs</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={handleLoadDemoData}
-            activeOpacity={0.7}
-            disabled={loading}
-          >
-            <Text style={styles.demoButtonText}>Load Demo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearAllData}
-            activeOpacity={0.7}
-            disabled={loading}
-          >
-            <Text style={styles.clearButtonText}>Clear All</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('RfqCreate')}
@@ -418,28 +334,6 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     gap: 8,
-  },
-  demoButton: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  demoButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  clearButton: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  clearButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
   },
   createButton: {
     backgroundColor: '#3B82F6',

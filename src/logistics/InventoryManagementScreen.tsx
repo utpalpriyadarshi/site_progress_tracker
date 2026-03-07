@@ -15,10 +15,15 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  Modal,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
+import { database } from '../../models/database';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -74,11 +79,58 @@ const InventoryManagementScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Add material modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addSupplier, setAddSupplier] = useState('');
+  const [addUnit, setAddUnit] = useState('nos');
+  const [addRequired, setAddRequired] = useState('');
+  const [addAvailable, setAddAvailable] = useState('0');
+  const [saving, setSaving] = useState(false);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
   }, [refresh]);
+
+  const resetAddForm = useCallback(() => {
+    setAddName('');
+    setAddSupplier('');
+    setAddUnit('nos');
+    setAddRequired('');
+    setAddAvailable('0');
+  }, []);
+
+  const handleAddMaterial = useCallback(async () => {
+    if (!addName.trim()) {
+      Alert.alert('Required', 'Please enter a material name.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await database.write(async () => {
+        await (database.collections.get('materials') as any).create((rec: any) => {
+          rec.name = addName.trim();
+          rec.supplier = addSupplier.trim() || null;
+          rec.unit = addUnit.trim() || 'nos';
+          rec.quantityRequired = parseFloat(addRequired) || 0;
+          rec.quantityAvailable = parseFloat(addAvailable) || 0;
+          rec.quantityUsed = 0;
+          rec.status = 'ordered';
+          rec._version = 1;
+          rec.appSyncStatus = 'pending';
+        });
+      });
+      setShowAddModal(false);
+      resetAddForm();
+      await refresh();
+    } catch {
+      Alert.alert('Error', 'Could not add material. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [addName, addSupplier, addUnit, addRequired, addAvailable, refresh, resetAddForm]);
 
   // Annotate materials with stock category
   const annotated = materials.map(m => ({
@@ -233,6 +285,49 @@ const InventoryManagementScreen: React.FC = () => {
         )}
         <View style={styles.listFooter} />
       </ScrollView>
+
+      {/* FAB — Add Material */}
+      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
+        <Text style={styles.fabText}>＋</Text>
+      </TouchableOpacity>
+
+      {/* Add Material Modal */}
+      <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => { setShowAddModal(false); resetAddForm(); }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add Material</Text>
+
+            <Text style={styles.fieldLabel}>Name *</Text>
+            <TextInput style={styles.fieldInput} value={addName} onChangeText={setAddName} placeholder="e.g. HV Bushing Assembly 33kV" placeholderTextColor="#bbb" />
+
+            <Text style={styles.fieldLabel}>Supplier</Text>
+            <TextInput style={styles.fieldInput} value={addSupplier} onChangeText={setAddSupplier} placeholder="e.g. PowerTech Industries" placeholderTextColor="#bbb" />
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.fieldLabel}>Unit</Text>
+                <TextInput style={styles.fieldInput} value={addUnit} onChangeText={setAddUnit} placeholder="nos" placeholderTextColor="#bbb" />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.fieldLabel}>Required Qty</Text>
+                <TextInput style={styles.fieldInput} value={addRequired} onChangeText={setAddRequired} placeholder="0" keyboardType="numeric" placeholderTextColor="#bbb" />
+              </View>
+            </View>
+
+            <Text style={styles.fieldLabel}>Available Qty</Text>
+            <TextInput style={styles.fieldInput} value={addAvailable} onChangeText={setAddAvailable} placeholder="0" keyboardType="numeric" placeholderTextColor="#bbb" />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAddModal(false); resetAddForm(); }}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleAddMaterial} disabled={saving}>
+                <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Add Material'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -285,7 +380,28 @@ const styles = StyleSheet.create({
   emptyIcon:      { fontSize: 48, marginBottom: 12 },
   emptyTitle:     { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 8 },
   emptyMsg:       { fontSize: 14, color: '#666', textAlign: 'center' },
-  listFooter:     { height: 24 },
+  listFooter:     { height: 80 },
+  fab:            { position: 'absolute', bottom: 20, right: 20, width: 54, height: 54, borderRadius: 27,
+                    backgroundColor: COLORS.PRIMARY, alignItems: 'center', justifyContent: 'center',
+                    elevation: 4, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4 },
+  fabText:        { fontSize: 28, color: '#fff', lineHeight: 32 },
+  modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalCard:      { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16,
+                    padding: 20, paddingBottom: 32 },
+  modalTitle:     { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginBottom: 16 },
+  fieldLabel:     { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 4, marginTop: 10 },
+  fieldInput:     { backgroundColor: '#f5f5f5', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10,
+                    fontSize: 14, color: '#333', borderWidth: 1, borderColor: '#e0e0e0' },
+  fieldRow:       { flexDirection: 'row', gap: 12 },
+  fieldHalf:      { flex: 1 },
+  modalButtons:   { flexDirection: 'row', gap: 12, marginTop: 20 },
+  cancelBtn:      { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1,
+                    borderColor: '#ddd', alignItems: 'center' },
+  cancelBtnText:  { fontSize: 14, color: '#555', fontWeight: '500' },
+  saveBtn:        { flex: 2, paddingVertical: 12, borderRadius: 8,
+                    backgroundColor: COLORS.PRIMARY, alignItems: 'center' },
+  saveBtnDisabled:{ opacity: 0.5 },
+  saveBtnText:    { fontSize: 14, color: '#fff', fontWeight: '600' },
 });
 
 // ── Export ────────────────────────────────────────────────────────────────────
