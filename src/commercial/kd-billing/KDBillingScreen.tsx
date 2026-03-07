@@ -332,6 +332,38 @@ const KDBillingScreen: React.FC = () => {
     }
   }, [selectedKD, projectId, user, ipcForm, summary.totalBilled, loadData]);
 
+  // ── Mark KD as Complete ────────────────────────────────
+  const handleMarkComplete = useCallback((kd: KDRow) => {
+    Alert.alert(
+      'Mark as Complete',
+      `Mark "${kd.code} — ${kd.description}" as completed? This will enable IPC generation.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Complete',
+          style: 'default',
+          onPress: async () => {
+            try {
+              const keyDatesCol = database.collections.get('key_dates');
+              const record = await keyDatesCol.find(kd.id);
+              await database.write(async () => {
+                await record.update((r: any) => {
+                  r.status = 'completed';
+                  r.progressPercentage = 100;
+                  r.actualDate = Date.now();
+                });
+              });
+              await loadData();
+            } catch (err) {
+              logger.error('[KDBillingScreen] Mark complete error:', err as Error);
+              Alert.alert('Error', 'Failed to update KD status');
+            }
+          },
+        },
+      ]
+    );
+  }, [loadData]);
+
   // ── Render KD Row ──────────────────────────────────────
   const renderKDRow = useCallback(
     ({ item }: { item: KDRow }) => {
@@ -396,7 +428,21 @@ const KDBillingScreen: React.FC = () => {
               Generate IPC
             </Button>
           ) : (
-            <Text style={styles.notBillableText}>Not yet billable</Text>
+            <View style={styles.notBillableRow}>
+              <Text style={styles.notBillableText}>
+                {item.status === 'in_progress' ? 'In progress — mark complete to bill' : 'Not yet complete'}
+              </Text>
+              <Button
+                mode="outlined"
+                compact
+                style={styles.markCompleteBtn}
+                textColor={COLORS.SUCCESS}
+                onPress={() => handleMarkComplete(item)}
+                icon="check"
+              >
+                Mark Complete
+              </Button>
+            </View>
           )}
         </View>
       );
@@ -644,7 +690,9 @@ const styles = StyleSheet.create({
   },
   billedText: { fontSize: 13, color: COLORS.SUCCESS, fontWeight: '600' },
   generateBtn: { alignSelf: 'flex-start', marginTop: 2 },
-  notBillableText: { fontSize: 12, color: '#999', fontStyle: 'italic' },
+  notBillableRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  notBillableText: { fontSize: 12, color: '#999', fontStyle: 'italic', flex: 1, marginRight: 8 },
+  markCompleteBtn: { borderColor: COLORS.SUCCESS },
 
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 15, color: '#888' },
