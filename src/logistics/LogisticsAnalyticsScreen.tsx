@@ -1,466 +1,201 @@
 /**
- * LogisticsAnalyticsScreen - Week 6
+ * LogisticsAnalyticsScreen
  *
- * Advanced analytics and optimization dashboard with:
- * - Predictive analytics (demand forecasting, lead time prediction)
- * - Cost optimization recommendations
- * - Performance benchmarking
- * - Comprehensive reporting
+ * Real-data analytics dashboard for MRE/electrical logistics:
+ * - Material status summary (critical, shortage, sufficient)
+ * - Discipline breakdown (TSS vs OHE vs General)
+ * - Top shortages ranked by gap
+ * - Supplier distribution
  */
 
-import React, { useReducer, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Modal,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import {
-  PredictiveAnalyticsService,
-  type DemandForecast,
-  type LeadTimePrediction,
-  type CostTrendAnalysis,
-  type ConsumptionPattern,
-  type PerformanceBenchmark,
-  type HistoricalDataPoint,
-  type ProjectDemandFactor,
-} from '../services/PredictiveAnalyticsService';
-import {
-  CostOptimizationService,
-  type CostBreakdown,
-  type VolumeDiscount,
-} from '../services/CostOptimizationService';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
-import { logger } from '../services/LoggingService';
-
-// Analytics components
-import {
-  ViewModeSelector,
-  OverviewSection,
-  DemandAnalyticsSection,
-  CostAnalyticsSection,
-  PerformanceSection,
-  OptimizationSection,
-} from './analytics/components';
-
-// Analytics state management
-import { analyticsReducer, initialAnalyticsState } from './analytics/state';
 import { COLORS } from '../theme/colors';
 
 // ============================================================================
-// MOCK DATA
+// HELPERS
 // ============================================================================
 
-const mockHistoricalData: HistoricalDataPoint[] = Array.from({ length: 90 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (90 - i));
-  return {
-    date: date.toISOString(),
-    value: 100 + Math.sin(i / 10) * 20 + Math.random() * 10,
-  };
-});
+const getDiscipline = (name: string): 'TSS' | 'OHE' | 'General' => {
+  const n = name.toLowerCase();
+  if (n.includes('tss') || n.includes('transformer') || n.includes('substation') || n.includes('breaker')) return 'TSS';
+  if (n.includes('ohe') || n.includes('catenary') || n.includes('mast') || n.includes('cantilever') || n.includes('dropper')) return 'OHE';
+  return 'General';
+};
 
-const mockCostData: HistoricalDataPoint[] = Array.from({ length: 90 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (90 - i));
-  return {
-    date: date.toISOString(),
-    value: 500 + (i / 90) * 50 + Math.random() * 20, // Increasing trend
-  };
-});
-
-const mockProjectDemand: ProjectDemandFactor[] = [
-  {
-    projectId: 'p1',
-    projectName: 'Office Tower Phase 2',
-    startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    requiredQuantity: 500,
-    probability: 90,
-    impact: 450,
-  },
-  {
-    projectId: 'p2',
-    projectName: 'Industrial Complex',
-    startDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-    requiredQuantity: 800,
-    probability: 75,
-    impact: 600,
-  },
-];
-
-const mockVolumeDiscounts: VolumeDiscount[] = [
-  { tier: 1, minQuantity: 0, maxQuantity: 100, discountPercentage: 0, discountedPrice: 100 },
-  { tier: 2, minQuantity: 100, maxQuantity: 500, discountPercentage: 5, discountedPrice: 95 },
-  { tier: 3, minQuantity: 500, maxQuantity: 1000, discountPercentage: 10, discountedPrice: 90 },
-  { tier: 4, minQuantity: 1000, discountPercentage: 15, discountedPrice: 85 },
-];
-
-const mockCurrentCosts: CostBreakdown = {
-  totalCost: 250000,
-  currency: 'USD',
-  materialCosts: 180000,
-  transportationCosts: 35000,
-  storageCosts: 20000,
-  administrativeCosts: 10000,
-  wasteCosts: 5000,
-  fixedCosts: 50000,
-  variableCosts: 200000,
-  costPercentages: {
-    materials: 72,
-    transportation: 14,
-    storage: 8,
-    administrative: 4,
-    waste: 2,
-  },
+const STATUS_COLORS: Record<string, string> = {
+  critical: COLORS.ERROR,
+  shortage: COLORS.WARNING,
+  sufficient: COLORS.SUCCESS,
+  ordered: COLORS.INFO,
+  delivered: COLORS.SUCCESS,
 };
 
 // ============================================================================
-// COMPONENT
+// SUB-COMPONENTS
 // ============================================================================
 
-const LogisticsAnalyticsScreen: React.FC = () => {
-  const { selectedProjectId } = useLogistics();
+const KpiCard: React.FC<{ label: string; value: string | number; color: string }> = ({ label, value, color }) => (
+  <View style={[styles.kpiCard, { borderLeftColor: color }]}>
+    <Text style={[styles.kpiValue, { color }]}>{value}</Text>
+    <Text style={styles.kpiLabel}>{label}</Text>
+  </View>
+);
 
-  // Centralized state management with useReducer (replaces 15 useState hooks)
-  const [state, dispatch] = useReducer(analyticsReducer, initialAnalyticsState);
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+  <Text style={styles.sectionHeader}>{title}</Text>
+);
 
-  // Load analytics data
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [selectedProjectId]);
-
-  const loadAnalyticsData = () => {
-    dispatch({ type: 'START_LOADING' });
-    try {
-      // Generate demand forecasts
-      const forecasts: DemandForecast[] = [
-        PredictiveAnalyticsService.forecastDemand(
-          'm1',
-          'Concrete Mix',
-          'Construction Materials',
-          mockHistoricalData,
-          mockProjectDemand,
-          90
-        ),
-        PredictiveAnalyticsService.forecastDemand(
-          'm2',
-          'Steel Rebar',
-          'Structural Materials',
-          mockHistoricalData.map(d => ({ ...d, value: d.value * 1.5 })),
-          [],
-          90
-        ),
-      ];
-
-      // Generate lead time predictions
-      const leadTimes: LeadTimePrediction[] = [
-        PredictiveAnalyticsService.predictLeadTime(
-          's1',
-          'ABC Materials Inc',
-          'Construction Materials',
-          [12, 14, 13, 15, 14, 16, 13, 14, 12, 15]
-        ),
-        PredictiveAnalyticsService.predictLeadTime(
-          's2',
-          'XYZ Supplies Co',
-          'Electrical',
-          [7, 8, 9, 7, 10, 8, 7, 9, 8, 7]
-        ),
-      ];
-
-      // Generate cost trend analysis
-      const costs: CostTrendAnalysis[] = [
-        PredictiveAnalyticsService.analyzeCostTrends(
-          'm1',
-          'Concrete Mix',
-          'Construction Materials',
-          mockCostData,
-          90
-        ),
-        PredictiveAnalyticsService.analyzeCostTrends(
-          'm2',
-          'Steel Rebar',
-          'Structural Materials',
-          mockCostData.map(d => ({ ...d, value: d.value * 1.2 })),
-          90
-        ),
-      ];
-
-      // Generate consumption patterns
-      const patterns: ConsumptionPattern[] = [
-        PredictiveAnalyticsService.analyzeConsumptionPattern(
-          'm1',
-          'Concrete Mix',
-          'Construction Materials',
-          mockHistoricalData,
-          2,
-          1
-        ),
-        PredictiveAnalyticsService.analyzeConsumptionPattern(
-          'm2',
-          'Steel Rebar',
-          'Structural Materials',
-          mockHistoricalData.map(d => ({ ...d, value: d.value * 0.8 })),
-          1,
-          2
-        ),
-      ];
-
-      // Generate performance benchmarks
-      const benchmarks: PerformanceBenchmark[] = [
-        PredictiveAnalyticsService.benchmarkPerformance(
-          'Inventory',
-          'inventory_turnover',
-          8.5,
-          'times/year',
-          10
-        ),
-        PredictiveAnalyticsService.benchmarkPerformance(
-          'Delivery',
-          'order_fulfillment_time',
-          4.2,
-          'days',
-          3
-        ),
-        PredictiveAnalyticsService.benchmarkPerformance(
-          'Supplier',
-          'supplier_reliability',
-          92,
-          'percentage',
-          95
-        ),
-      ];
-
-      // Generate analytics summary
-      const summary = PredictiveAnalyticsService.generateAnalyticsSummary(
-        forecasts,
-        leadTimes,
-        costs,
-        patterns,
-        benchmarks
-      );
-
-      // Dispatch all analytics data at once
-      dispatch({
-        type: 'SET_ALL_ANALYTICS_DATA',
-        payload: {
-          summary,
-          demandForecasts: forecasts,
-          leadTimePredictions: leadTimes,
-          costTrends: costs,
-          consumptionPatterns: patterns,
-          performanceBenchmarks: benchmarks,
-        },
-      });
-
-      // Cost optimization
-      const costOpt = CostOptimizationService.performCostOptimization(
-        mockCurrentCosts,
-        {},
-        {},
-        {},
-        {}
-      );
-
-      // Procurement bundles
-      const bundles = CostOptimizationService.optimizeProcurementBundles(
-        [
-          {
-            materialId: 'm1',
-            materialName: 'Concrete Mix',
-            quantity: 250,
-            unit: 'm³',
-            unitCost: 150,
-            supplierId: 's1',
-            supplierName: 'ABC Materials Inc',
-          },
-          {
-            materialId: 'm2',
-            materialName: 'Steel Rebar',
-            quantity: 300,
-            unit: 'tons',
-            unitCost: 800,
-            supplierId: 's1',
-            supplierName: 'ABC Materials Inc',
-          },
-          {
-            materialId: 'm3',
-            materialName: 'Cement Bags',
-            quantity: 500,
-            unit: 'bags',
-            unitCost: 12,
-            supplierId: 's1',
-            supplierName: 'ABC Materials Inc',
-          },
-        ],
-        mockVolumeDiscounts
-      );
-
-      // Supplier negotiation analysis
-      const negotiation = [
-        CostOptimizationService.analyzeSupplierNegotiation(
-          's1',
-          'ABC Materials Inc',
-          120000,
-          8,
-          12,
-          10000,
-          [500, 520, 510, 530],
-          [520, 525, 515, 535],
-          88,
-          92
-        ),
-      ];
-
-      // Transportation optimization
-      const transOpt = CostOptimizationService.optimizeTransportationCosts([
-        { route: 'Supplier A -> Site 1', deliveries: 8, cost: 12000, mode: 'truck' },
-        { route: 'Supplier B -> Site 2', deliveries: 6, cost: 9000, mode: 'truck' },
-        { route: 'Warehouse -> Site 1', deliveries: 4, cost: 5000, mode: 'truck' },
-      ]);
-
-      // Storage optimization
-      const storOpt = CostOptimizationService.optimizeStorageCosts(
-        10000,
-        6500,
-        20000,
-        [
-          { materialId: 'm1', materialName: 'Concrete Mix', quantity: 100, turnoverRate: 8, spaceRequired: 500 },
-          { materialId: 'm2', materialName: 'Steel Rebar', quantity: 50, turnoverRate: 3, spaceRequired: 300 },
-          { materialId: 'm3', materialName: 'Cement Bags', quantity: 200, turnoverRate: 12, spaceRequired: 200 },
-        ]
-      );
-
-      // Dispatch all optimization data at once
-      dispatch({
-        type: 'SET_ALL_OPTIMIZATION_DATA',
-        payload: {
-          costOptimization: costOpt,
-          procurementBundles: bundles,
-          supplierNegotiation: negotiation,
-          transportation: transOpt,
-          storage: storOpt,
-        },
-      });
-    } catch (error) {
-      logger.error('Error loading analytics:', error as Error);
-    } finally {
-      dispatch({ type: 'STOP_LOADING' });
-    }
-  };
-
-  const handleRefresh = () => {
-    dispatch({ type: 'START_REFRESH' });
-    loadAnalyticsData();
-    dispatch({ type: 'STOP_REFRESH' });
-  };
-
-  const showDetail = (detail: any, type: string) => {
-    dispatch({ type: 'SHOW_DETAIL_MODAL', payload: { detail, detailType: type } });
-  };
-
-  // Check if we have enough data for analytics
-  const hasAnalyticsData = state.analytics.summary !== null ||
-    state.analytics.demandForecasts.length > 0 ||
-    state.optimization.costOptimization !== null;
-
-  // Empty state for insufficient data
-  const renderAnalyticsEmptyState = () => {
-    if (!hasAnalyticsData && !state.ui.loading) {
-      return (
-        <EmptyState
-          icon="chart-line"
-          title="Not Enough Data"
-          message="Analytics require sufficient historical data to generate insights."
-          helpText="Continue using the logistics features to build up data for predictive analytics."
-          variant="large"
-        />
-      );
-    }
-    return null;
-  };
-
-  // -------------------------------------------------------------------------
-  // Main Render
-  // -------------------------------------------------------------------------
-
+const BarRow: React.FC<{ label: string; count: number; total: number; color: string }> = ({ label, count, total, color }) => {
+  const pct = total > 0 ? (count / total) * 100 : 0;
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Advanced Analytics</Text>
-        <TouchableOpacity onPress={handleRefresh}>
-          <Icon name="refresh" size={24} color={COLORS.INFO} />
-        </TouchableOpacity>
+    <View style={styles.barRow}>
+      <Text style={styles.barLabel}>{label}</Text>
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: color }]} />
       </View>
-
-      <ViewModeSelector
-        viewMode={state.ui.viewMode}
-        onViewModeChange={(mode) => dispatch({ type: 'SET_VIEW_MODE', payload: mode })}
-      />
-
-      <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={state.ui.refreshing} onRefresh={handleRefresh} />}
-      >
-        {renderAnalyticsEmptyState() || (
-          <>
-            {state.ui.viewMode === 'overview' && <OverviewSection analyticsSummary={state.analytics.summary} />}
-        {state.ui.viewMode === 'demand' && (
-          <DemandAnalyticsSection
-            demandForecasts={state.analytics.demandForecasts}
-            leadTimePredictions={state.analytics.leadTimePredictions}
-            consumptionPatterns={state.analytics.consumptionPatterns}
-            onShowDetail={showDetail}
-          />
-        )}
-        {state.ui.viewMode === 'costs' && (
-          <CostAnalyticsSection
-            costOptimization={state.optimization.costOptimization}
-            costTrends={state.analytics.costTrends}
-            procurementBundles={state.optimization.procurementBundles}
-            onShowDetail={showDetail}
-          />
-        )}
-        {state.ui.viewMode === 'performance' && (
-          <PerformanceSection performanceBenchmarks={state.analytics.performanceBenchmarks} onShowDetail={showDetail} />
-        )}
-        {state.ui.viewMode === 'optimization' && (
-          <OptimizationSection
-            costOptimization={state.optimization.costOptimization}
-            transportationOpt={state.optimization.transportation}
-            storageOpt={state.optimization.storage}
-          />
-        )}
-          </>
-        )}
-      </ScrollView>
-
-      {/* Detail Modal */}
-      <Modal visible={state.modal.visible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Details</Text>
-              <TouchableOpacity onPress={() => dispatch({ type: 'HIDE_DETAIL_MODAL' })}>
-                <Icon name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              <Text>{JSON.stringify(state.modal.selectedDetail, null, 2)}</Text>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <Text style={styles.barCount}>{count}</Text>
     </View>
   );
 };
 
+// ============================================================================
+// SCREEN
+// ============================================================================
+
+const LogisticsAnalyticsScreen: React.FC = () => {
+  const { materials } = useLogistics();
+
+  const stats = useMemo(() => {
+    const total = materials.length;
+    const critical = materials.filter(m => m.status === 'critical').length;
+    const shortage = materials.filter(m => m.status === 'shortage').length;
+    const sufficient = materials.filter(m => m.status === 'sufficient').length;
+    const ordered = materials.filter(m => m.status === 'ordered').length;
+    const delivered = materials.filter(m => m.status === 'delivered').length;
+
+    // Discipline breakdown
+    const byDiscipline = materials.reduce<Record<string, number>>((acc, m) => {
+      const d = getDiscipline(m.name);
+      acc[d] = (acc[d] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Top shortages (gap = required - available, descending)
+    const topShortages = materials
+      .filter(m => m.quantityRequired > m.quantityAvailable)
+      .map(m => ({
+        name: m.name,
+        gap: m.quantityRequired - m.quantityAvailable,
+        unit: m.unit,
+        supplier: m.supplier,
+        status: m.status,
+      }))
+      .sort((a, b) => b.gap - a.gap)
+      .slice(0, 8);
+
+    // Supplier distribution
+    const bySupplier = materials.reduce<Record<string, number>>((acc, m) => {
+      const s = m.supplier || 'Unknown';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {});
+    const topSuppliers = Object.entries(bySupplier)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    return { total, critical, shortage, sufficient, ordered, delivered, byDiscipline, topShortages, topSuppliers };
+  }, [materials]);
+
+  if (materials.length === 0) {
+    return (
+      <EmptyState
+        icon="chart-bar"
+        title="No Material Data"
+        message="Load sample BOMs from the Materials tab to populate analytics."
+        variant="large"
+      />
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+      {/* KPI Row */}
+      <SectionHeader title="MATERIAL STATUS" />
+      <View style={styles.kpiRow}>
+        <KpiCard label="Total" value={stats.total} color={COLORS.INFO} />
+        <KpiCard label="Critical" value={stats.critical} color={COLORS.ERROR} />
+        <KpiCard label="Shortage" value={stats.shortage} color={COLORS.WARNING} />
+        <KpiCard label="Sufficient" value={stats.sufficient} color={COLORS.SUCCESS} />
+      </View>
+
+      {/* Status Breakdown */}
+      <SectionHeader title="STATUS BREAKDOWN" />
+      <View style={styles.card}>
+        {[
+          { label: 'Critical', count: stats.critical, color: COLORS.ERROR },
+          { label: 'Shortage', count: stats.shortage, color: COLORS.WARNING },
+          { label: 'Ordered', count: stats.ordered, color: COLORS.INFO },
+          { label: 'Sufficient', count: stats.sufficient, color: COLORS.SUCCESS },
+          { label: 'Delivered', count: stats.delivered, color: '#10B981' },
+        ].map(row => (
+          <BarRow key={row.label} label={row.label} count={row.count} total={stats.total} color={row.color} />
+        ))}
+      </View>
+
+      {/* Discipline Breakdown */}
+      <SectionHeader title="DISCIPLINE BREAKDOWN" />
+      <View style={styles.card}>
+        {Object.entries(stats.byDiscipline).map(([discipline, count]) => (
+          <BarRow
+            key={discipline}
+            label={discipline}
+            count={count}
+            total={stats.total}
+            color={discipline === 'TSS' ? '#7C3AED' : discipline === 'OHE' ? '#2563EB' : '#6B7280'}
+          />
+        ))}
+      </View>
+
+      {/* Top Shortages */}
+      {stats.topShortages.length > 0 && (
+        <>
+          <SectionHeader title="TOP SHORTAGES" />
+          <View style={styles.card}>
+            {stats.topShortages.map((item, idx) => (
+              <View key={idx} style={styles.shortageRow}>
+                <View style={styles.shortageLeft}>
+                  <Text style={styles.shortageName} numberOfLines={1}>{item.name}</Text>
+                  {item.supplier ? (
+                    <Text style={styles.shortageSupplier}>{item.supplier}</Text>
+                  ) : null}
+                </View>
+                <View style={styles.shortageRight}>
+                  <Text style={[styles.shortageGap, { color: item.status === 'critical' ? COLORS.ERROR : COLORS.WARNING }]}>
+                    -{item.gap.toFixed(0)} {item.unit}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* Top Suppliers */}
+      <SectionHeader title="SUPPLIER DISTRIBUTION" />
+      <View style={styles.card}>
+        {stats.topSuppliers.map(([supplier, count]) => (
+          <BarRow key={supplier} label={supplier} count={count} total={stats.total} color={COLORS.PRIMARY} />
+        ))}
+      </View>
+
+    </ScrollView>
+  );
+};
 
 // ============================================================================
 // STYLES
@@ -471,50 +206,111 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#212121',
-  },
   content: {
-    flex: 1,
     padding: 16,
+    paddingBottom: 32,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 0.8,
+    marginTop: 20,
+    marginBottom: 8,
   },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
+  kpiRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 8,
+  },
+  kpiCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  kpiValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  kpiLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  barRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    marginBottom: 10,
   },
-  modalTitle: {
-    fontSize: 18,
+  barLabel: {
+    width: 80,
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  barTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginHorizontal: 8,
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  barCount: {
+    width: 28,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#212121',
+    color: '#111827',
+    textAlign: 'right',
   },
-  modalBody: {
-    padding: 16,
+  shortageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  shortageLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  shortageName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  shortageSupplier: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  shortageRight: {
+    alignItems: 'flex-end',
+  },
+  shortageGap: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

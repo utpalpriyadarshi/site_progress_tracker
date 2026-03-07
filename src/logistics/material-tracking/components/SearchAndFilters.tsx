@@ -1,30 +1,57 @@
 import React from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { METRO_MATERIAL_CATEGORIES } from '../utils/materialTrackingConstants';
 import { COLORS } from '../../../theme/colors';
+
+type Discipline = 'all' | 'tss' | 'ohe' | 'general';
+
+const DISCIPLINE_CHIPS: { id: Discipline; label: string }[] = [
+  { id: 'all',     label: 'All' },
+  { id: 'tss',     label: 'TSS' },
+  { id: 'ohe',     label: 'OHE' },
+  { id: 'general', label: 'General' },
+];
 
 interface SearchAndFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  selectedCategory: string | null;
-  onCategoryChange: (category: string | null) => void;
+  selectedDiscipline?: Discipline;
+  onDisciplineChange?: (discipline: Discipline) => void;
+  // kept for backward compat — ignored
+  selectedCategory?: string | null;
+  onCategoryChange?: (category: string | null) => void;
 }
 
 /**
- * SearchAndFilters Component
- *
- * Combined search bar with category filter chips.
- * Extracted from MaterialTrackingScreen for reusability.
+ * SearchAndFilters — discipline chip row + search bar.
+ * Category filter removed: Metro categories don't map to BOM item data.
  */
 export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   searchQuery,
   onSearchChange,
-  selectedCategory,
-  onCategoryChange,
+  selectedDiscipline = 'all',
+  onDisciplineChange,
 }) => {
   return (
     <View style={styles.container}>
-      {/* Search bar - compact with clear button */}
+      {/* Discipline filter chips */}
+      <View style={styles.chipRow}>
+        {DISCIPLINE_CHIPS.map((chip) => {
+          const active = selectedDiscipline === chip.id;
+          return (
+            <TouchableOpacity
+              key={chip.id}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => onDisciplineChange?.(chip.id)}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {chip.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Search bar */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -34,45 +61,11 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
           placeholderTextColor="#999"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => onSearchChange('')}
-          >
+          <TouchableOpacity style={styles.clearButton} onPress={() => onSearchChange('')}>
             <Text style={styles.clearText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
-
-      {/* Category filters - horizontal chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtersScroll}
-      >
-        {METRO_MATERIAL_CATEGORIES.map((category) => {
-          const isSelected = selectedCategory === category.id;
-          return (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.filterChip,
-                isSelected && styles.filterChipActive,
-              ]}
-              onPress={() => onCategoryChange(isSelected ? null : category.id)}
-            >
-              <Text style={styles.filterIcon}>{category.icon}</Text>
-              <Text
-                style={[
-                  styles.filterText,
-                  isSelected && styles.filterTextActive,
-                ]}
-              >
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
     </View>
   );
 };
@@ -81,12 +74,38 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 10,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  searchContainer: {
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  chipActive: {
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  searchContainer: {
     position: 'relative',
   },
   searchInput: {
@@ -110,34 +129,6 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: 18,
     color: '#999',
-    fontWeight: '600',
-  },
-  filtersScroll: {
-    flexGrow: 0,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.INFO,
-  },
-  filterIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  filterText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  filterTextActive: {
-    color: '#fff',
     fontWeight: '600',
   },
 });

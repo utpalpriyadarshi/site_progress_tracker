@@ -353,25 +353,58 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
   const refreshProjects = useCallback(async () => {
     try {
-      const projectsList = await database.collections
+      const allProjects = await database.collections
         .get<ProjectModel>('projects')
         .query()
         .fetch();
+
+      // Primary filter: projects that have BOMs (logistics-specific seeded data).
+      // "Sample Construction Project" has sites but no BOMs → excluded.
+      // Fallback: projects with sites (for fresh installs before Manager demo runs).
+      const bomsCol = database.collections.get('boms');
+      const sitesCol = database.collections.get('sites');
+
+      const projectsWithBoms: ProjectModel[] = [];
+      const projectsWithSites: ProjectModel[] = [];
+
+      for (const project of allProjects) {
+        const bomCount = await bomsCol.query(Q.where('project_id', project.id)).fetchCount();
+        if (bomCount > 0) {
+          projectsWithBoms.push(project);
+        } else {
+          const siteCount = await sitesCol.query(Q.where('project_id', project.id)).fetchCount();
+          if (siteCount > 0) projectsWithSites.push(project);
+        }
+      }
+
+      const projectsList = projectsWithBoms.length > 0 ? projectsWithBoms : projectsWithSites;
+
       dispatch({ type: 'SET_PROJECTS', payload: projectsList });
 
-      // Auto-select first project if none selected
-      if (!state.selectedProjectId && projectsList.length > 0) {
+      // Validate saved selection — if stored ID is not in the valid list, switch to first valid
+      const savedIdIsValid = projectsList.some(p => p.id === state.selectedProjectId);
+
+      if (!savedIdIsValid && projectsList.length > 0) {
         const firstProject = projectsList[0];
         dispatch({
           type: 'SET_PROJECT',
           payload: { projectId: firstProject.id, project: firstProject },
         });
         await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
+      } else if (state.selectedProjectId && projectsList.length > 0) {
+        // Selection valid but project object may be null (restored from AsyncStorage without object)
+        const project = projectsList.find(p => p.id === state.selectedProjectId) || null;
+        if (project && !state.selectedProject) {
+          dispatch({
+            type: 'SET_PROJECT',
+            payload: { projectId: state.selectedProjectId, project },
+          });
+        }
       }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load projects' });
     }
-  }, [state.selectedProjectId]);
+  }, [state.selectedProjectId, state.selectedProject]);
 
   const refreshSites = useCallback(async () => {
     if (!state.selectedProjectId) {
@@ -392,20 +425,16 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
   const refreshMaterials = useCallback(async () => {
     try {
-      let query = database.collections.get<MaterialModel>('materials').query();
-
-      if (state.selectedProjectId) {
-        query = database.collections
-          .get<MaterialModel>('materials')
-          .query(Q.where('project_id', state.selectedProjectId));
-      }
-
-      const materialsList = await query.fetch();
+      // materials table has no project_id column — load all and let UI filter by context
+      const materialsList = await database.collections
+        .get<MaterialModel>('materials')
+        .query()
+        .fetch();
       dispatch({ type: 'SET_MATERIALS', payload: materialsList });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load materials' });
     }
-  }, [state.selectedProjectId]);
+  }, []);
 
   const refreshLogisticsStats = useCallback(async () => {
     if (!state.selectedProjectId) return;

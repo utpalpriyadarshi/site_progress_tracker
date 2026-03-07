@@ -24,7 +24,7 @@ export default class DoorsPackageModel extends Model {
   static associations: Associations = {
     project: { type: 'belongs_to', key: 'project_id' },
     domain: { type: 'belongs_to', key: 'domain_id' },
-    requirements: { type: 'has_many', foreignKey: 'doors_package_id' },
+    doors_requirements: { type: 'has_many', foreignKey: 'doors_package_id' },
     bom_items: { type: 'has_many', foreignKey: 'doors_id' },
   };
 

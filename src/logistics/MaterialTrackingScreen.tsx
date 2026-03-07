@@ -15,27 +15,17 @@ import MaterialProcurementService, {
   SupplierQuote,
   ConsumptionData,
 } from '../services/MaterialProcurementService';
-import DoorsLinkingModal from './components/DoorsLinkingModal';
-import mockSuppliers, { generateMockConsumptionHistory } from '../data/mockSuppliers';
-import { database } from '../../models/database';
-import { Q } from '@nozbe/watermelondb';
-import MaterialModel from '../../models/MaterialModel';
-import DoorsPackageModel from '../../models/DoorsPackageModel';
+import mockSuppliers from '../data/mockSuppliers';
 import { BomDataService } from '../services/BomDataService';
-import { AppMode, toggleAppMode } from '../config/AppMode';
-import { clearAllBoms } from '../services/ClearBomsService';
-import DoorsEditService from '../services/DoorsEditService';
-import UnlinkBomItemsService from '../services/UnlinkBomItemsService';
+import { AppMode } from '../config/AppMode';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
 
 // Import Material Tracking components
 import {
-  ProjectSelector,
   SearchAndFilters,
   ViewModeTabs,
   StatCards,
@@ -48,7 +38,6 @@ import {
 
 // Import hooks
 import {
-  useMaterialTrackingData,
   useProcurementData,
   useAnalyticsData,
 } from './material-tracking/hooks';
@@ -80,14 +69,9 @@ interface MaterialTrackingScreenProps {
 const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigation }) => {
   const {
     selectedProjectId,
-    selectProject: setSelectedProjectId,
-    projects,
     materials,
     loading: contextLoading,
     refresh: refreshContext,
-    isOffline,
-    pendingSyncCount,
-    triggerSync,
   } = useLogistics();
 
   const { user } = useAuth();
@@ -95,9 +79,9 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   const [viewMode, setViewMode] = useState<ViewMode>('requirements');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDiscipline, setSelectedDiscipline] = useState<'all' | 'tss' | 'ohe' | 'general'>('all');
   const [loading, setLoading] = useState(false);
-  const [appMode, setAppModeState] = useState(AppMode.getMode());
+  const [appMode] = useState(AppMode.getMode());
 
   // Debounce search for performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -110,10 +94,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const [supplierQuotes, setSupplierQuotes] = useState<SupplierQuote[]>([]);
   const [showQuotesModal, setShowQuotesModal] = useState(false);
 
-  // DOORS linking modal state
-  const [showLinkingModal, setShowLinkingModal] = useState(false);
-  const [selectedBomItem, setSelectedBomItem] = useState<{id: string; name: string} | null>(null);
-
   // Use BOM data hook
   const {
     boms,
@@ -123,7 +103,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   } = useBomData(selectedProjectId || '');
 
   // Use custom hooks
-  const { doorsPackages } = useMaterialTrackingData(selectedProjectId);
   const { purchaseSuggestions, refresh: refreshProcurement } = useProcurementData(
     materials,
     bomItems
@@ -181,42 +160,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
   };
 
-  const handleToggleMode = () => {
-    const newMode = toggleAppMode();
-    setAppModeState(newMode);
-    logger.info('[MaterialTracking] Switched to mode', { newMode });
-    // Refresh to apply new mode behavior
-    refreshBoms();
-  };
-
-  const handleClearBoms = async () => {
-    try {
-      setLoading(true);
-      logger.info('[MaterialTracking] Clearing all BOMs...');
-      await clearAllBoms();
-      await refreshBoms();
-      logger.info('[MaterialTracking] BOMs cleared, screen refreshed');
-    } catch (error) {
-      logger.error('[MaterialTracking] Error clearing BOMs:', error as Error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUnlinkBomItems = async () => {
-    try {
-      setLoading(true);
-      logger.info('[MaterialTracking] Unlinking first 5 BOM items...');
-      await UnlinkBomItemsService.unlinkFirstNItems(5);
-      await refreshBoms();
-      logger.info('[MaterialTracking] BOM items unlinked, screen refreshed');
-    } catch (error) {
-      logger.error('[MaterialTracking] Error unlinking BOM items:', error as Error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Toggle BOM expansion
   const toggleBomExpansion = (bomId: string) => {
     setExpandedBoms(prev => {
@@ -230,73 +173,18 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     });
   };
 
-  // Handle DOORS linking
-  const handleLinkPress = async (itemCode: string, bomItemName: string) => {
-    // Find the BOM item by itemCode
-    const bomItem = bomItems.find(item => item.itemCode === itemCode);
-
-    if (!bomItem) {
-      logger.error(`[MaterialTracking] BOM item not found for itemCode: ${itemCode}`);
-      return;
-    }
-
-    setSelectedBomItem({ id: bomItem.id, name: bomItemName });
-    setShowLinkingModal(true);
-  };
-
-  const handleLinkConfirm = async (doorsPackageId: string, doorsPackageName: string) => {
-    if (!selectedBomItem || !user) return;
-
-    try {
-      await DoorsEditService.createManualLink(
-        selectedBomItem.id,
-        doorsPackageId,
-        user.userId
-      );
-
-      logger.info('[MaterialTracking] Linked BOM item to DOORS package:', {
-        bomItemId: selectedBomItem.id,
-        doorsPackageId,
-        doorsPackageName,
-      });
-
-      // Refresh to show the link
-      await refreshBoms();
-    } catch (error) {
-      logger.error('[MaterialTracking] Error linking BOM item:', error as Error);
-      throw error;
-    }
-  };
-
-  // Calculate material requirements
+  // Calculate material requirements, enriched with BOM name/id for grouping
   const materialRequirements = React.useMemo(() => {
     if (!bomItems.length) return [];
-    return BomLogisticsService.calculateMaterialRequirements(bomItems, materials);
-  }, [bomItems, materials]);
-
-  // Create a map of itemCode → doorsId for DOORS integration
-  const doorsLinkMap = React.useMemo(() => {
-    const map = new Map<string, string>();
-    bomItems.forEach(item => {
-      if (item.doorsId) {
-        map.set(item.itemCode, item.doorsId);
-      }
+    const reqs = BomLogisticsService.calculateMaterialRequirements(bomItems, materials);
+    return reqs.map(req => {
+      const srcItem = bomItems.find(
+        i => (req.materialId && i.materialId === req.materialId) || i.itemCode === req.itemCode
+      );
+      const bom = boms.find(b => b.id === srcItem?.bomId);
+      return { ...req, bomId: bom?.id, bomName: bom?.name };
     });
-    return map;
-  }, [bomItems]);
-
-  // Create a map of doorsId → DOORS package data
-  const doorsDataMap = React.useMemo(() => {
-    const map = new Map<string, { packageId: string; doorsId: string; compliancePercentage: number }>();
-    doorsPackages.forEach(pkg => {
-      map.set(pkg.doorsId, {
-        packageId: pkg.id, // Database record ID for navigation
-        doorsId: pkg.doorsId,
-        compliancePercentage: pkg.compliancePercentage,
-      });
-    });
-    return map;
-  }, [doorsPackages]);
+  }, [bomItems, materials, boms]);
 
   // Get shortages
   const shortages = React.useMemo(() => {
@@ -305,7 +193,16 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     );
   }, [materialRequirements]);
 
-  // Filter by category and search
+  // Derive discipline from BOM name OR item code
+  // calculateMaterialRequirements doesn't populate bomName, but itemCode always has TSS/OHE
+  const getDiscipline = (bomName?: string, itemCode?: string): 'tss' | 'ohe' | 'general' => {
+    const src = `${bomName || ''} ${itemCode || ''}`.toLowerCase();
+    if (src.includes('tss')) return 'tss';
+    if (src.includes('ohe')) return 'ohe';
+    return 'general';
+  };
+
+  // Filter by discipline and search
   const filteredRequirements = React.useMemo(() => {
     let filtered = materialRequirements;
 
@@ -313,14 +210,11 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       filtered = shortages;
     }
 
-    // Category filter (Metro Railway categories)
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter((req) => {
-        // Check if the requirement's category matches
-        // Category is stored in the BOM item's subCategory field
-        return req.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-               req.subCategory?.toLowerCase() === selectedCategory.toLowerCase();
-      });
+    // Discipline filter — check both bomName and itemCode
+    if (selectedDiscipline !== 'all') {
+      filtered = filtered.filter(
+        (req) => getDiscipline(req.bomName, req.itemCode) === selectedDiscipline
+      );
     }
 
     if (debouncedSearchQuery.trim()) {
@@ -334,7 +228,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedCategory]);
+  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedDiscipline]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
@@ -370,7 +264,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
   const renderRequirementsEmptyState = () => {
     const hasNoData = materialRequirements.length === 0;
     const hasSearchQuery = debouncedSearchQuery.trim().length > 0;
-    const hasFilter = selectedCategory !== null && selectedCategory !== 'all';
+    const hasDisciplineFilter = selectedDiscipline !== 'all';
     const noFilteredResults = filteredRequirements.length === 0;
 
     // No BOM requirements linked at all
@@ -403,15 +297,15 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
       );
     }
 
-    // No filter results
-    if (hasFilter && noFilteredResults && materialRequirements.length > 0) {
+    // No discipline filter results
+    if (hasDisciplineFilter && noFilteredResults && materialRequirements.length > 0) {
       return (
         <EmptyState
           icon="filter-off"
-          title={`No ${selectedCategory} Materials`}
-          message="Try selecting a different category filter."
-          actionText="Clear Filter"
-          onAction={() => setSelectedCategory(null)}
+          title={`No ${selectedDiscipline.toUpperCase()} Materials`}
+          message="Try selecting a different discipline filter."
+          actionText="Show All"
+          onAction={() => setSelectedDiscipline('all')}
         />
       );
     }
@@ -431,15 +325,11 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
             loading={loading}
             bomLoading={bomLoading}
             expandedBoms={expandedBoms}
-            doorsLinkMap={doorsLinkMap}
-            doorsDataMap={doorsDataMap}
             searchQuery={searchQuery}
             selectedProjectId={selectedProjectId}
             appMode={appMode}
             onToggleBom={toggleBomExpansion}
             onLoadSampleData={handleLoadSampleData}
-            onNavigateToDoorsDetail={(packageId) => navigation.navigate('DoorsDetail', { packageId })}
-            onLinkPress={handleLinkPress}
           />
         );
       case 'procurement':
@@ -459,40 +349,24 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   return (
     <View style={styles.container}>
-      {/* Offline Indicator */}
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={true}
-      />
-
-      {/* Project Selector */}
-      <ProjectSelector
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onProjectSelect={setSelectedProjectId}
-      />
 
       {/* View Mode Tabs */}
-      {stats.total > 0 && (
-        <ViewModeTabs
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          stats={stats}
-        />
-      )}
+      <ViewModeTabs
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        stats={stats}
+      />
 
-      {/* Stat Cards */}
-      {stats.total > 0 && <StatCards stats={stats} />}
+      {/* Compact stat summary */}
+      <StatCards stats={stats} />
 
-      {/* Search and Filters - Show only for requirements/shortages */}
-      {(viewMode === 'requirements' || viewMode === 'shortages') && stats.total > 0 && (
+      {/* Discipline filter + search — always shown for requirements/shortages */}
+      {(viewMode === 'requirements' || viewMode === 'shortages') && (
         <SearchAndFilters
           searchQuery={searchQuery}
-          selectedCategory={selectedCategory}
+          selectedDiscipline={selectedDiscipline}
           onSearchChange={setSearchQuery}
-          onCategoryChange={setSelectedCategory}
+          onDisciplineChange={setSelectedDiscipline}
         />
       )}
 
@@ -507,15 +381,6 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
         onClose={() => setShowQuotesModal(false)}
       />
 
-      {/* DOORS Linking Modal */}
-      <DoorsLinkingModal
-        visible={showLinkingModal}
-        bomItemName={selectedBomItem?.name || ''}
-        bomItemId={selectedBomItem?.id || ''}
-        onClose={() => setShowLinkingModal(false)}
-        onLink={handleLinkConfirm}
-        doorsPackages={doorsPackages}
-      />
     </View>
   );
 };

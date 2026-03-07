@@ -6,6 +6,7 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput } from 'react-native-paper';
 import { database } from '../../models/database';
@@ -13,7 +14,6 @@ import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
-import { OfflineIndicator } from '../components/common/OfflineIndicator';
 import { SkeletonList } from '../components/common/LoadingState';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { useDebounce } from '../utils/performance';
@@ -48,9 +48,6 @@ const PurchaseOrderManagementScreen = () => {
   const {
     selectedProjectId,
     projects,
-    isOffline,
-    pendingSyncCount,
-    triggerSync,
   } = useLogistics();
   const { announce } = useAccessibility();
 
@@ -139,8 +136,8 @@ const PurchaseOrderManagementScreen = () => {
             try {
               const vendor = await database.collections.get('vendors').find(po.vendorId);
               vendorName = (vendor as any).name;
-            } catch (error) {
-              logger.error('[PO] Vendor not found:', po.vendorId);
+            } catch {
+              logger.warn('[PO] Vendor not found for PO', { value: po.poNumber });
             }
           }
 
@@ -301,7 +298,7 @@ const PurchaseOrderManagementScreen = () => {
     <Card style={styles.card}>
       <Card.Content>
         <View style={styles.cardHeader}>
-          <View>
+          <View style={styles.cardHeaderLeft}>
             <Text style={styles.poNumber}>{item.poNumber}</Text>
             <Text style={styles.vendorName}>{item.vendorName || 'Unknown Vendor'}</Text>
           </View>
@@ -317,7 +314,7 @@ const PurchaseOrderManagementScreen = () => {
 
         <View style={styles.detailRow}>
           <Text style={styles.label}>Amount:</Text>
-          <Text style={styles.value}>${(item.totalAmount || 0).toLocaleString()}</Text>
+          <Text style={styles.value}>₹{(item.totalAmount || 0).toLocaleString()}</Text>
         </View>
 
         {item.description && (
@@ -393,14 +390,6 @@ const PurchaseOrderManagementScreen = () => {
 
   return (
     <View style={commonStyles.screen}>
-      {/* Offline Indicator */}
-      <OfflineIndicator
-        isOnline={!isOffline}
-        pendingCount={pendingSyncCount}
-        onSync={triggerSync}
-        showWhenPending={true}
-      />
-
       <View style={styles.header}>
         <Text style={styles.projectName}>{selectedProject?.name || 'Project'}</Text>
         <Searchbar
@@ -471,6 +460,7 @@ const PurchaseOrderManagementScreen = () => {
         <Dialog visible={state.ui.showCreateDialog} onDismiss={() => dispatch({ type: 'HIDE_CREATE_DIALOG' })} style={styles.dialog}>
           <Dialog.Title>Create Purchase Order</Dialog.Title>
           <Dialog.Content>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.dialogScroll}>
             <TextInput
               label="Description"
               value={state.form.newDescription}
@@ -526,6 +516,7 @@ const PurchaseOrderManagementScreen = () => {
               keyboardType="numeric"
               placeholder="30"
             />
+            </ScrollView>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -590,10 +581,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
   },
+  cardHeaderLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
   vendorName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 4,
+    color: '#333',
   },
   statusChip: {
     height: 28,
@@ -655,6 +651,9 @@ const styles = StyleSheet.create({
   },
   dialog: {
     maxHeight: '80%',
+  },
+  dialogScroll: {
+    maxHeight: 420,
   },
   input: {
     marginBottom: 12,

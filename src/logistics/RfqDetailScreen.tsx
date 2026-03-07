@@ -925,9 +925,9 @@ const enhance = withObservables(['route'], ({ route }: any) => {
 const EnhancedRfqDetailScreen = enhance(RfqDetailScreen);
 
 // Wrap with ErrorBoundary for graceful error handling
-const RfqDetailScreenWithBoundary = () => (
+const RfqDetailScreenWithBoundary = (props: any) => (
   <ErrorBoundary name="Logistics - RfqDetailScreen">
-    <EnhancedRfqDetailScreen />
+    <EnhancedRfqDetailScreen {...props} />
   </ErrorBoundary>
 );
 

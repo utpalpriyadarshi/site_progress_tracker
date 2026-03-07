@@ -19,15 +19,11 @@ interface RequirementsListProps {
   loading: boolean;
   bomLoading: boolean;
   expandedBoms: Set<string>;
-  doorsLinkMap: Map<string, string>;
-  doorsDataMap: Map<string, { doorsId: string; packageId: string; compliancePercentage: number }>;
   searchQuery: string;
   selectedProjectId: string | null;
   appMode: 'demo' | 'production';
   onToggleBom: (bomId: string) => void;
   onLoadSampleData: () => void;
-  onNavigateToDoorsDetail: (packageId: string) => void;
-  onLinkPress: (itemCode: string, description: string) => void;
 }
 
 /**
@@ -54,15 +50,11 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
   loading,
   bomLoading,
   expandedBoms,
-  doorsLinkMap,
-  doorsDataMap,
   searchQuery,
   selectedProjectId,
   appMode,
   onToggleBom,
   onLoadSampleData,
-  onNavigateToDoorsDetail,
-  onLinkPress,
 }) => {
   const { announce } = useAccessibility();
   const hasAnnouncedRef = useRef(false);
@@ -228,41 +220,27 @@ export const RequirementsList: React.FC<RequirementsListProps> = ({
             {/* BOM Items - Show only when expanded */}
             {isExpanded && (
               <View style={styles.bomItemsContainer}>
-                {bomGroup.items.map((requirement) => {
-                  // Get DOORS link for this item
-                  const doorsId = doorsLinkMap.get(requirement.itemCode);
-                  const doorsData = doorsId ? doorsDataMap.get(doorsId) : undefined;
-
-                  return (
-                    <BomRequirementCard
-                      key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
-                      requirement={{
-                        bomId: requirement.bomId || '',
-                        bomName: requirement.bomName || 'Unknown BOM',
-                        bomType: 'execution',
-                        projectId: selectedProjectId || '',
-                        materialId: requirement.materialId,
-                        itemCode: requirement.itemCode,
-                        description: requirement.description,
-                        requiredQuantity: requirement.requiredQuantity,
-                        unit: requirement.unit,
-                        phase: '',
-                        wbsCode: '',
-                        priority: 'medium',
-                        status: 'active',
-                      }}
-                      availableQuantity={requirement.availableQuantity}
-                      doorsId={doorsData?.doorsId}
-                      doorsCompliance={doorsData?.compliancePercentage}
-                      onDoorsPress={() => {
-                        if (doorsData?.packageId) {
-                          onNavigateToDoorsDetail(doorsData.packageId);
-                        }
-                      }}
-                      onLinkPress={() => onLinkPress(requirement.itemCode, requirement.description)}
-                    />
-                  );
-                })}
+                {bomGroup.items.map((requirement) => (
+                  <BomRequirementCard
+                    key={`${requirement.bomId || 'unknown'}-${requirement.itemCode}`}
+                    requirement={{
+                      bomId: requirement.bomId || '',
+                      bomName: requirement.bomName || '',
+                      bomType: 'execution',
+                      projectId: selectedProjectId || '',
+                      materialId: requirement.materialId,
+                      itemCode: requirement.itemCode,
+                      description: requirement.description,
+                      requiredQuantity: requirement.requiredQuantity,
+                      unit: requirement.unit,
+                      phase: '',
+                      wbsCode: '',
+                      priority: 'medium',
+                      status: 'active',
+                    }}
+                    availableQuantity={requirement.availableQuantity}
+                  />
+                ))}
               </View>
             )}
           </View>
