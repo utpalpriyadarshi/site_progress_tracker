@@ -233,12 +233,123 @@ const CommercialDashboardScreen = () => {
           0
         );
 
-        // Weighted average KD progress
+        // Weighted average KD progress — mirrors Planner dual-track logic
         const kds = keyDates as any[];
         const totalWeight = kds.reduce((s: number, k: any) => s + (k.weightage ?? 0), 0);
+
+        // Load key_date_sites + items + design docs — mirrors Planner dual-track logic
+        // key_date_sites has no project_id; filter by kd_id IN project's KD IDs
+        const [allKdSites, allSiteItems, allDesignDocs] = await (async () => {
+          try {
+            const kdIds = kds.map((k: any) => k.id);
+            if (kdIds.length === 0) return [[], [], []];
+            const kdSitesData = await database.collections.get('key_date_sites')
+              .query(Q.where('key_date_id', Q.oneOf(kdIds)))
+              .fetch() as any[];
+            const siteIds = [...new Set(kdSitesData.map((s: any) => s.siteId))];
+            const [itemsData, docsData] = await Promise.all([
+              siteIds.length > 0
+                ? database.collections.get('items')
+                    .query(Q.where('site_id', Q.oneOf(siteIds)))
+                    .fetch() as Promise<any[]>
+                : Promise.resolve([]),
+              database.collections.get('design_documents')
+                .query(Q.where('project_id', projectId))
+                .fetch() as Promise<any[]>,
+            ]);
+            return [kdSitesData, itemsData, docsData];
+          } catch { return [[], [], []]; }
+        })();
+
+        // Build lookup maps
+        const kdSitesByKdId: Record<string, any[]> = {};
+        for (const s of allKdSites) {
+          if (!kdSitesByKdId[s.keyDateId]) kdSitesByKdId[s.keyDateId] = [];
+          kdSitesByKdId[s.keyDateId].push(s);
+        }
+        const itemsBySiteId: Record<string, any[]> = {};
+        for (const item of allSiteItems) {
+          if (!itemsBySiteId[item.siteId]) itemsBySiteId[item.siteId] = [];
+          itemsBySiteId[item.siteId].push(item);
+        }
+        const docsByKdId: Record<string, any[]> = {};
+        const docsBySiteId: Record<string, any[]> = {};
+        for (const doc of allDesignDocs) {
+          if (doc.keyDateId) {
+            if (!docsByKdId[doc.keyDateId]) docsByKdId[doc.keyDateId] = [];
+            docsByKdId[doc.keyDateId].push(doc);
+          }
+          if (doc.siteId) {
+            if (!docsBySiteId[doc.siteId]) docsBySiteId[doc.siteId] = [];
+            docsBySiteId[doc.siteId].push(doc);
+          }
+        }
+
+        // Inline doc-progress helpers (mirrors designDocumentProgress.ts)
+        const DOC_STATUS_PROGRESS: Record<string, number> = {
+          draft: 0, submitted: 0.3, approved: 1.0, approved_with_comment: 1.0, rejected: 0,
+        };
+        const getRevNum = (rev: string) => { const m = rev?.match(/^R(\d+)$/); return m ? parseInt(m[1], 10) : 0; };
+        const docProgress = (docs: any[]): number => {
+          if (docs.length === 0) return 0;
+          // Latest revision per documentNumber
+          const latest: Record<string, any> = {};
+          for (const d of docs) {
+            if (!latest[d.documentNumber] || getRevNum(d.revisionNumber) > getRevNum(latest[d.documentNumber].revisionNumber)) {
+              latest[d.documentNumber] = d;
+            }
+          }
+          const ld = Object.values(latest);
+          const totalW = ld.reduce((s: number, d: any) => s + (d.weightage ?? 0), 0);
+          if (totalW === 0) {
+            return ld.length > 0 ? (ld.reduce((s: number, d: any) => s + (DOC_STATUS_PROGRESS[d.status] ?? 0), 0) / ld.length) * 100 : 0;
+          }
+          return ld.reduce((s: number, d: any) => s + (d.weightage ?? 0) * (DOC_STATUS_PROGRESS[d.status] ?? 0), 0) / totalW * 100;
+        };
+
+        const effectiveKDProgress = (kd: any): number => {
+          if (kd.status === 'completed') return 100;
+          const mode = kd.progressMode;
+          if (mode === 'manual' || mode === 'binary') return kd.progressPercentage ?? 0;
+
+          const sites = kdSitesByKdId[kd.id] ?? [];
+
+          // Item progress (site-contribution-weighted)
+          let siteWeighted = 0;
+          for (const site of sites) {
+            const items = itemsBySiteId[site.siteId] ?? [];
+            const totalW = items.reduce((s: number, i: any) => s + (i.weightage ?? 0), 0);
+            const sp = totalW > 0
+              ? items.reduce((s: number, i: any) => {
+                  const pct = (i.plannedQuantity ?? 0) > 0
+                    ? Math.min(100, ((i.completedQuantity ?? 0) / i.plannedQuantity) * 100) : 0;
+                  return s + (i.weightage ?? 0) * pct;
+                }, 0) / totalW
+              : 0;
+            siteWeighted += (site.contributionPercentage / 100) * sp;
+          }
+
+          // Doc progress (same dedup + status-map logic as Planner)
+          const directDocs = docsByKdId[kd.id] ?? [];
+          const seenIds = new Set(directDocs.map((d: any) => d.id));
+          const siteDocs = sites.flatMap((site: any) =>
+            (docsBySiteId[site.siteId] ?? []).filter((d: any) => !seenIds.has(d.id))
+          );
+          const kdDocs = [...directDocs, ...siteDocs];
+          const kdDocProgress = docProgress(kdDocs);
+
+          const hasSites = sites.length > 0;
+          const hasDocs = kdDocs.length > 0;
+          if (!hasSites && !hasDocs) return kd.progressPercentage ?? 0;
+          const dw = kd.designWeightage ?? 0;
+          if (!hasDocs || dw === 0) return Math.min(100, siteWeighted);
+          if (!hasSites) return kdDocProgress;
+          return Math.min(100, siteWeighted * (100 - dw) / 100 + kdDocProgress * dw / 100);
+        };
+
         const weightedKDProgress = totalWeight > 0
           ? kds.reduce((s: number, k: any) =>
-              s + (k.progressPercentage ?? 0) * (k.weightage ?? 0) / totalWeight, 0)
+              s + effectiveKDProgress(k) * (k.weightage ?? 0) / totalWeight, 0)
           : 0;
 
         // LD exposure from delayed KDs

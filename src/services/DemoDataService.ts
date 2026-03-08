@@ -100,6 +100,8 @@ interface KeyDateDef {
   delayDamagesInitial: number;
   delayDamagesExtended: number;
   sequenceOrder: number;
+  initialStatus?: string;   // override 'not_started' default
+  initialProgress?: number; // override 0 default
 }
 
 const KEY_DATES: KeyDateDef[] = [
@@ -114,6 +116,8 @@ const KEY_DATES: KeyDateDef[] = [
     delayDamagesInitial: 1,
     delayDamagesExtended: 10,
     sequenceOrder: 1,
+    initialStatus: 'completed',   // Site possession completed at project start
+    initialProgress: 100,
   },
   {
     code: 'KD-A-01',
@@ -377,8 +381,8 @@ export async function generatePlannerDemoData(projectId: string): Promise<DemoDa
         record.description = kdDef.description;
         record.targetDays = kdDef.targetDays;
         record.targetDate = daysFromNow(kdDef.targetDays);
-        record.status = 'not_started';
-        record.progressPercentage = 0;
+        record.status = kdDef.initialStatus ?? 'not_started';
+        record.progressPercentage = kdDef.initialProgress ?? 0;
         record.delayDamagesInitial = kdDef.delayDamagesInitial;
         record.delayDamagesExtended = kdDef.delayDamagesExtended;
         record.projectId = projectId;
