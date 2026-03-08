@@ -298,7 +298,9 @@ const LDRiskScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>
                 <Icon name="alert-circle" size={16} color={COLORS.ERROR} /> Delayed Key Dates
               </Text>
-              {ldRows.map(row => renderDelayedRow({ item: row }))}
+              {ldRows.map(row => (
+                <React.Fragment key={row.id}>{renderDelayedRow({ item: row })}</React.Fragment>
+              ))}
               <View style={{ height: 8 }} />
             </>
           ) : (
@@ -315,7 +317,9 @@ const LDRiskScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>
                 <Icon name="clock-alert" size={16} color={COLORS.WARNING} /> At Risk (due within 30 days)
               </Text>
-              {atRiskRows.map(row => renderAtRiskRow({ item: row }))}
+              {atRiskRows.map(row => (
+                <React.Fragment key={row.id}>{renderAtRiskRow({ item: row })}</React.Fragment>
+              ))}
             </>
           )}
 
