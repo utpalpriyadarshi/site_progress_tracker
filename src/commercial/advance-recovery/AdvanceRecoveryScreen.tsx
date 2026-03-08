@@ -315,15 +315,25 @@ const AdvanceRecoveryScreen: React.FC = () => {
                 <Text style={styles.impactTitle}>Impact on Next {nextBillImpact.length} Pending KD Bills</Text>
                 {nextBillImpact.map(row => (
                   <View key={row.kdCode} style={styles.impactRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.impactKD}>{row.kdCode}</Text>
-                      <Text style={styles.impactDesc} numberOfLines={1}>{row.kdDescription}</Text>
-                    </View>
+                    <Text style={styles.impactKD}>{row.kdCode}</Text>
+                    <Text style={styles.impactDesc} numberOfLines={1}>{row.kdDescription}</Text>
                     <View style={styles.impactAmounts}>
-                      <Text style={styles.impactGross}>Gross: {formatCurrency(row.grossBilling)}</Text>
-                      <Text style={styles.impactRecovery}>
-                        Recovery: <Text style={{ color: COLORS.ERROR }}>−{formatCurrency(row.recoveryAmount)}</Text>
-                      </Text>
+                      <View style={styles.impactAmountItem}>
+                        <Text style={styles.impactAmountLabel}>Gross Bill</Text>
+                        <Text style={styles.impactGross}>{formatCurrency(row.grossBilling)}</Text>
+                      </View>
+                      <View style={styles.impactAmountItem}>
+                        <Text style={styles.impactAmountLabel}>Advance Recovery</Text>
+                        <Text style={[styles.impactRecovery, { color: COLORS.ERROR }]}>
+                          −{formatCurrency(row.recoveryAmount)}
+                        </Text>
+                      </View>
+                      <View style={styles.impactAmountItem}>
+                        <Text style={styles.impactAmountLabel}>Net Payable</Text>
+                        <Text style={[styles.impactGross, { color: COLORS.SUCCESS }]}>
+                          {formatCurrency(row.grossBilling - row.recoveryAmount)}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 ))}
@@ -460,12 +470,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4, borderLeftColor: COLORS.WARNING, elevation: 1,
   },
   impactTitle: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 10 },
-  impactRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  impactKD: { fontSize: 13, fontWeight: '700' },
-  impactDesc: { fontSize: 11, color: '#666' },
-  impactAmounts: { alignItems: 'flex-end' },
-  impactGross: { fontSize: 11, color: '#666' },
-  impactRecovery: { fontSize: 12, fontWeight: '600' },
+  impactRow: { marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0e8c8' },
+  impactKD: { fontSize: 13, fontWeight: '700', marginBottom: 1 },
+  impactDesc: { fontSize: 11, color: '#666', marginBottom: 6 },
+  impactAmounts: { flexDirection: 'row', justifyContent: 'space-between' },
+  impactAmountItem: { flex: 1 },
+  impactAmountLabel: { fontSize: 9, color: '#999', marginBottom: 2 },
+  impactGross: { fontSize: 12, fontWeight: '700', color: '#333' },
+  impactRecovery: { fontSize: 12, fontWeight: '700' },
 
   sectionLabel: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 8, marginTop: 4 },
 

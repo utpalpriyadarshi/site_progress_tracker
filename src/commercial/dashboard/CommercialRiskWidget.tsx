@@ -158,7 +158,24 @@ const CommercialRiskWidget: React.FC<Props> = ({ style }) => {
         });
       }
 
-      // ─── Risk 5: Slow-Paying Client ──────────────────────────────────────
+      // ─── Risk 5: IPC Awaiting Payment ───────────────────────────────────
+      const pendingIPCs = (allInvoices as any[]).filter(inv =>
+        inv.invoiceType === 'ipc' && inv.paymentStatus === 'pending'
+      );
+      if (pendingIPCs.length > 0) {
+        const pendingIPCAmount = pendingIPCs.reduce((s, i) => s + (i.netAmount ?? i.amount ?? 0), 0);
+        detectedRisks.push({
+          id: 'pending_ipc',
+          icon: 'file-send-outline',
+          title: 'IPC Awaiting Payment',
+          detail: `${pendingIPCs.length} IPC${pendingIPCs.length > 1 ? 's' : ''} pending client payment — ₹${(pendingIPCAmount / 1_00_00_000).toFixed(2)} Cr receivable`,
+          severity: pendingIPCAmount > 10_00_00_000 ? 'high' : 'medium',
+          action: 'Follow up on IPC clearance',
+          navTarget: 'KDBilling',
+        });
+      }
+
+      // ─── Risk 6: Slow-Paying Client ──────────────────────────────────────
       const overdueInvoices = (allInvoices as any[]).filter(inv =>
         inv.paymentStatus === 'pending' && inv.invoiceDate < sixtyDaysAgo
       );
