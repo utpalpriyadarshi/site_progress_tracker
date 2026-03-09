@@ -4,9 +4,8 @@
  * Usage:
  *   import { COLORS } from '../theme/colors';   // adjust path depth as needed
  *
- * Migration note:
- *   Phase 1 (this file): brand + semantic + status colours replaced.
- *   Phase 2 (future): text, surface, border greys (#333, #666, #F5F5F5 etc.)
+ * All StyleSheet values must use COLORS constants — no hardcoded hex anywhere.
+ * Migration status tracked in UI_UX_UNIFORMITY_PLAN.md (ISSUE-12/13).
  */
 
 export const COLORS = {
@@ -25,13 +24,13 @@ export const COLORS = {
   INFO:              '#2196F3',   // Blue — issued, info, links
   INFO_BG:           '#E3F2FD',   // Light blue — info badge background
 
-  // ── Text (Phase 2 migration target) ───────────────────────────────────────
+  // ── Text ──────────────────────────────────────────────────────────────────
   TEXT_PRIMARY:      '#333333',
   TEXT_SECONDARY:    '#666666',
   TEXT_TERTIARY:     '#999999',
   TEXT_DISABLED:     '#BDBDBD',
 
-  // ── Surface & Layout (Phase 2 migration target) ───────────────────────────
+  // ── Surface & Layout ──────────────────────────────────────────────────────
   BACKGROUND:        '#F5F5F5',
   SURFACE:           '#FFFFFF',
   BORDER:            '#E0E0E0',
@@ -39,6 +38,25 @@ export const COLORS = {
 
   // ── Disabled / Neutral ─────────────────────────────────────────────────────
   DISABLED:          '#9E9E9E',   // Grey — disabled, inactive, draft state
+
+  // ── Extended palette (replaces iOS/Tailwind one-offs) ─────────────────────
+  // Use these instead of #007AFF, #1976D2, #3B82F6 — one blue for secondary actions
+  BLUE_SECONDARY:    '#1976D2',
+  // Use instead of #10B981, #34C759 — one accent green for healthy/good status
+  GREEN_ACCENT:      '#10B981',
+  GREEN_ACCENT_BG:   '#D1FAE5',
+  // Use instead of #F59E0B, #FF9500 — one amber for caution/at-risk
+  AMBER_CAUTION:     '#F59E0B',
+  AMBER_CAUTION_BG:  '#FEF3C7',
+  // Use instead of #00BCD4 — cyan for info/active indicators
+  CYAN_INFO:         '#00BCD4',
+  CYAN_INFO_BG:      '#E0F7FA',
+  // Use instead of #8B5CF6 — violet for category chips / priority
+  PURPLE_ACCENT:     '#8B5CF6',
+  PURPLE_ACCENT_BG:  '#EDE9FE',
+  // Blue-grey for archived/closed states
+  BLUE_GREY:         '#607D8B',
+  BLUE_GREY_BG:      '#ECEFF1',
 
   // ── Status palette (RFQ · DOORS · Documents · Milestones) ─────────────────
   STATUS_DRAFT:      '#9E9E9E',   // Grey — draft state

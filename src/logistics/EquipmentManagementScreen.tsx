@@ -284,7 +284,7 @@ const EquipmentManagementScreen = () => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search equipment..."
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.TEXT_TERTIARY}
           value={state.ui.searchQuery}
           onChangeText={(text) => dispatch({ type: 'SET_SEARCH_QUERY', payload: text })}
         />
@@ -664,36 +664,36 @@ const EquipmentManagementScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   statsScroll: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     paddingHorizontal: 12,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   statCard: {
     minWidth: 100,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     marginRight: 12,
     alignItems: 'center',
   },
@@ -715,18 +715,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   tab: {
     flex: 1,
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   tabTextActive: {
     color: COLORS.INFO,
@@ -761,11 +761,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   filtersContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   filterChip: {
     flexDirection: 'row',
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     marginRight: 8,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   filterChipTextActive: {
     color: COLORS.INFO,
@@ -797,17 +797,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   searchContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   contentScroll: {
     flex: 1,
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
   },
   equipmentCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 8,
     marginBottom: 12,
     overflow: 'hidden',
@@ -844,7 +844,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   statusBadge: {
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   cardDetails: {
     marginBottom: 8,
@@ -871,18 +871,18 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     width: 80,
   },
   detailValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   conditionBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: COLORS.BORDER,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   maintenanceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   maintenanceName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   priorityBadge: {
@@ -953,12 +953,12 @@ const styles = StyleSheet.create({
   },
   maintenanceLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   maintenanceValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   overdueValue: {
     color: COLORS.ERROR,
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   allocationCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
@@ -994,14 +994,14 @@ const styles = StyleSheet.create({
   allocationEquipment: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   allocationStatusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: COLORS.BORDER,
   },
   allocationStatusActive: {
     backgroundColor: COLORS.INFO_BG,
@@ -1009,16 +1009,16 @@ const styles = StyleSheet.create({
   allocationStatusText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   allocationProject: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 2,
   },
   allocationSite: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 12,
   },
   allocationMetrics: {
@@ -1032,13 +1032,13 @@ const styles = StyleSheet.create({
   },
   allocationMetricLabel: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 4,
   },
   allocationMetricValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   allocationOperator: {
     fontSize: 12,
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   performanceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
@@ -1063,7 +1063,7 @@ const styles = StyleSheet.create({
   performanceName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 12,
   },
   performanceGrid: {
@@ -1077,13 +1077,13 @@ const styles = StyleSheet.create({
   },
   performanceLabel: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 4,
   },
   performanceValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   modalOverlay: {
     flex: 1,
@@ -1091,7 +1091,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -1102,16 +1102,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   modalClose: {
     fontSize: 24,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   modalScroll: {
     padding: 16,
@@ -1122,24 +1122,24 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   modalInfo: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 4,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
 });
 

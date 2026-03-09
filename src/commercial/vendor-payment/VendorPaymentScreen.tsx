@@ -27,6 +27,7 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { useCommercial } from '../context/CommercialContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -161,13 +162,13 @@ const VendorCard: React.FC<VendorCardProps> = ({ row, expanded, onToggle }) => {
           </Chip>
           <Text style={styles.netPayable}>{formatL(row.netPayable)}</Text>
           <Text style={styles.netPayableLabel}>Net Payable</Text>
-          <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color="#999" />
+          <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.TEXT_TERTIARY} />
         </View>
       </TouchableOpacity>
 
       {row.holdReason && (
         <View style={styles.holdBanner}>
-          <Icon name="alert" size={14} color="#FF3B30" />
+          <Icon name="alert" size={14} color={COLORS.ERROR} />
           <Text style={styles.holdText}>{row.holdReason}</Text>
         </View>
       )}
@@ -183,11 +184,11 @@ const VendorCard: React.FC<VendorCardProps> = ({ row, expanded, onToggle }) => {
         </View>
         <View style={styles.metric}>
           <Text style={styles.metricLabel}>Paid</Text>
-          <Text style={[styles.metricValue, { color: '#34C759' }]}>{formatL(row.totalPaid)}</Text>
+          <Text style={[styles.metricValue, { color: COLORS.GREEN_ACCENT }]}>{formatL(row.totalPaid)}</Text>
         </View>
         <View style={styles.metric}>
           <Text style={styles.metricLabel}>Retention</Text>
-          <Text style={[styles.metricValue, { color: '#FF9500' }]}>{formatL(row.retentionHeld)}</Text>
+          <Text style={[styles.metricValue, { color: COLORS.AMBER_CAUTION }]}>{formatL(row.retentionHeld)}</Text>
         </View>
         <View style={styles.metric}>
           <Text style={styles.metricLabel}>TDS</Text>
@@ -195,8 +196,8 @@ const VendorCard: React.FC<VendorCardProps> = ({ row, expanded, onToggle }) => {
         </View>
         {row.overdueInvoicesCount > 0 && (
           <View style={styles.metric}>
-            <Text style={[styles.metricLabel, { color: '#FF3B30' }]}>Overdue</Text>
-            <Text style={[styles.metricValue, { color: '#FF3B30' }]}>{row.overdueInvoicesCount} inv</Text>
+            <Text style={[styles.metricLabel, { color: COLORS.ERROR }]}>Overdue</Text>
+            <Text style={[styles.metricValue, { color: COLORS.ERROR }]}>{row.overdueInvoicesCount} inv</Text>
           </View>
         )}
       </View>
@@ -218,11 +219,11 @@ const VendorCard: React.FC<VendorCardProps> = ({ row, expanded, onToggle }) => {
                 <Chip
                   style={[
                     styles.statusChip,
-                    { backgroundColor: inv.isOverdue ? '#FF3B3022' : inv.paymentStatus === 'paid' ? '#34C75922' : '#FF950022' }
+                    { backgroundColor: inv.isOverdue ? COLORS.ERROR + '22' : inv.paymentStatus === 'paid' ? COLORS.GREEN_ACCENT + '22' : COLORS.AMBER_CAUTION + '22' }
                   ]}
                   textStyle={{
                     fontSize: 10,
-                    color: inv.isOverdue ? '#FF3B30' : inv.paymentStatus === 'paid' ? '#34C759' : '#FF9500'
+                    color: inv.isOverdue ? COLORS.ERROR : inv.paymentStatus === 'paid' ? COLORS.GREEN_ACCENT : COLORS.AMBER_CAUTION
                   }}
                 >
                   {inv.isOverdue ? `Overdue ${inv.daysOverdue}d` : inv.paymentStatus}
@@ -380,7 +381,7 @@ const VendorPaymentScreen: React.FC = () => {
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color="#007AFF" /></View>;
+    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color={COLORS.BLUE_SECONDARY} /></View>;
   }
 
   return (
@@ -397,15 +398,15 @@ const VendorPaymentScreen: React.FC = () => {
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Net Payable</Text>
-              <Text style={[styles.summaryValue, { color: '#007AFF' }]}>{formatCr(state.summary.totalPayable)}</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.BLUE_SECONDARY }]}>{formatCr(state.summary.totalPayable)}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Overdue Amount</Text>
-              <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>{formatCr(state.summary.overdueAmount)}</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.ERROR }]}>{formatCr(state.summary.overdueAmount)}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Hold Vendors</Text>
-              <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>{state.summary.holdCount}</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.ERROR }]}>{state.summary.holdCount}</Text>
             </View>
           </View>
         </View>
@@ -429,7 +430,7 @@ const VendorPaymentScreen: React.FC = () => {
         {/* Vendor Cards */}
         {filteredRows.length === 0 ? (
           <View style={styles.emptyList}>
-            <Icon name="account-cash-outline" size={48} color="#ccc" />
+            <Icon name="account-cash-outline" size={48} color={COLORS.TEXT_DISABLED} />
             <Text style={styles.emptyListText}>
               {state.filter === 'all' ? 'No active vendor payments' : 'No vendors match this filter'}
             </Text>
@@ -454,58 +455,58 @@ const VendorPaymentScreen: React.FC = () => {
 // ==================== Styles ====================
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f5f5f5' },
+  screen: { flex: 1, backgroundColor: COLORS.BACKGROUND },
   scroll: { flex: 1 },
   scrollContent: { padding: 16 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 16, color: '#666' },
+  emptyText: { fontSize: 16, color: COLORS.TEXT_SECONDARY },
 
-  summaryCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
-  summaryTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 12 },
+  summaryCard: { backgroundColor: COLORS.SURFACE, borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
+  summaryTitle: { fontSize: 15, fontWeight: '600', color: COLORS.TEXT_PRIMARY, marginBottom: 12 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   summaryItem: { flex: 1, minWidth: '45%', alignItems: 'center' },
-  summaryLabel: { fontSize: 11, color: '#888', marginBottom: 4 },
-  summaryValue: { fontSize: 15, fontWeight: '700', color: '#333' },
+  summaryLabel: { fontSize: 11, color: COLORS.TEXT_TERTIARY, marginBottom: 4 },
+  summaryValue: { fontSize: 15, fontWeight: '700', color: COLORS.TEXT_PRIMARY },
 
   filterRow: { flexDirection: 'row', marginBottom: 8, gap: 4 },
-  filterTab: { flex: 1, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0' },
-  filterTabActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  filterTabText: { fontSize: 11, color: '#666', textAlign: 'center' },
+  filterTab: { flex: 1, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 8, backgroundColor: COLORS.SURFACE, alignItems: 'center', borderWidth: 1, borderColor: COLORS.BORDER },
+  filterTabActive: { backgroundColor: COLORS.BLUE_SECONDARY, borderColor: COLORS.BLUE_SECONDARY },
+  filterTabText: { fontSize: 11, color: COLORS.TEXT_SECONDARY, textAlign: 'center' },
   filterTabTextActive: { color: '#fff', fontWeight: '600' },
 
-  noteText: { fontSize: 11, color: '#999', marginBottom: 12, fontStyle: 'italic' },
+  noteText: { fontSize: 11, color: COLORS.TEXT_TERTIARY, marginBottom: 12, fontStyle: 'italic' },
 
-  vendorCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10, elevation: 2 },
+  vendorCard: { backgroundColor: COLORS.SURFACE, borderRadius: 12, padding: 14, marginBottom: 10, elevation: 2 },
   vendorHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
   vendorInfo: { flex: 1 },
-  vendorCode: { fontSize: 11, color: '#888', marginBottom: 2 },
-  vendorName: { fontSize: 14, fontWeight: '700', color: '#333' },
-  vendorCategory: { fontSize: 11, color: '#555', marginTop: 2 },
+  vendorCode: { fontSize: 11, color: COLORS.TEXT_TERTIARY, marginBottom: 2 },
+  vendorName: { fontSize: 14, fontWeight: '700', color: COLORS.TEXT_PRIMARY },
+  vendorCategory: { fontSize: 11, color: COLORS.TEXT_SECONDARY, marginTop: 2 },
   vendorRight: { alignItems: 'flex-end', gap: 4 },
   recChip: {},
-  netPayable: { fontSize: 15, fontWeight: '700', color: '#007AFF', marginTop: 4 },
-  netPayableLabel: { fontSize: 10, color: '#888' },
+  netPayable: { fontSize: 15, fontWeight: '700', color: COLORS.BLUE_SECONDARY, marginTop: 4 },
+  netPayableLabel: { fontSize: 10, color: COLORS.TEXT_TERTIARY },
 
   holdBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF3B3011', borderRadius: 6, padding: 6, marginBottom: 8, gap: 6 },
-  holdText: { fontSize: 12, color: '#FF3B30', flex: 1 },
+  holdText: { fontSize: 12, color: COLORS.ERROR, flex: 1 },
 
   vendorMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   metric: { alignItems: 'center', minWidth: '30%' },
-  metricLabel: { fontSize: 10, color: '#888', marginBottom: 2 },
-  metricValue: { fontSize: 12, fontWeight: '600', color: '#333' },
+  metricLabel: { fontSize: 10, color: COLORS.TEXT_TERTIARY, marginBottom: 2 },
+  metricValue: { fontSize: 12, fontWeight: '600', color: COLORS.TEXT_PRIMARY },
 
   invoiceList: { marginTop: 8 },
-  invoiceListTitle: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
+  invoiceListTitle: { fontSize: 13, fontWeight: '600', color: COLORS.TEXT_SECONDARY, marginBottom: 6 },
   invoiceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   invoiceLeft: {},
   invoiceRight: { alignItems: 'flex-end', gap: 4 },
-  invoiceNum: { fontSize: 12, fontWeight: '600', color: '#333' },
-  invoiceDate: { fontSize: 11, color: '#888' },
-  invoiceAmount: { fontSize: 12, fontWeight: '600', color: '#333' },
+  invoiceNum: { fontSize: 12, fontWeight: '600', color: COLORS.TEXT_PRIMARY },
+  invoiceDate: { fontSize: 11, color: COLORS.TEXT_TERTIARY },
+  invoiceAmount: { fontSize: 12, fontWeight: '600', color: COLORS.TEXT_PRIMARY },
   statusChip: {},
 
   emptyList: { alignItems: 'center', paddingVertical: 40 },
-  emptyListText: { fontSize: 14, color: '#999', marginTop: 12 },
+  emptyListText: { fontSize: 14, color: COLORS.TEXT_TERTIARY, marginTop: 12 },
 });
 
 export default function VendorPaymentScreenWithBoundary() {

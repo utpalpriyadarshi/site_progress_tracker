@@ -1924,45 +1924,45 @@ const ManagerDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     textAlign: 'center',
   },
   welcomeHeader: {
     padding: 16,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   dateText: {
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   greeting: {
     fontWeight: 'bold',
@@ -1987,12 +1987,12 @@ const styles = StyleSheet.create({
   },
   projectClient: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 3,
   },
   projectDates: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   healthChip: {
     marginLeft: 10,
@@ -2009,7 +2009,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   progressValue: {
@@ -2025,7 +2025,7 @@ const styles = StyleSheet.create({
   },
   progressSubtext: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     fontStyle: 'italic',
   },
   card: {
@@ -2035,7 +2035,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 15,
   },
   roleButton: {
@@ -2068,7 +2068,7 @@ const styles = StyleSheet.create({
   },
   kpiLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   kpiValue: {
@@ -2078,7 +2078,7 @@ const styles = StyleSheet.create({
   },
   kpiSubtext: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   kpiIndicator: {
     position: 'absolute',
@@ -2102,7 +2102,7 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 15,
   },
   sectionCard: {
@@ -2128,7 +2128,7 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 5,
   },
   statusChip: {
@@ -2160,7 +2160,7 @@ const styles = StyleSheet.create({
   },
   complianceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   complianceValue: {
@@ -2198,7 +2198,7 @@ const styles = StyleSheet.create({
   },
   supervisorText: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   siteStatusChip: {
     marginLeft: 10,
@@ -2220,12 +2220,12 @@ const styles = StyleSheet.create({
   },
   siteProgressLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 3,
   },
   siteProgressFormula: {
     fontSize: 10,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     fontStyle: 'italic',
   },
   siteProgressRight: {
@@ -2242,7 +2242,7 @@ const styles = StyleSheet.create({
   },
   siteMetricLabel: {
     fontSize: 11,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 3,
   },
   // Section 4: Equipment/Materials styles
@@ -2256,7 +2256,7 @@ const styles = StyleSheet.create({
   },
   pipelineLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
     textAlign: 'center',
   },
@@ -2281,12 +2281,12 @@ const styles = StyleSheet.create({
   },
   poTotalLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   poCount: {
     fontSize: 13,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   poSummaryRight: {
     flex: 1,
@@ -2306,12 +2306,12 @@ const styles = StyleSheet.create({
   deliveryValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   deliveryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   warningText: {
     marginTop: 15,
@@ -2336,7 +2336,7 @@ const styles = StyleSheet.create({
   },
   budgetLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   budgetItem: {
     fontSize: 14,
@@ -2351,7 +2351,7 @@ const styles = StyleSheet.create({
   },
   utilizationLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   utilizationValue: {
@@ -2368,7 +2368,7 @@ const styles = StyleSheet.create({
   },
   profitLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   profitValue: {
@@ -2399,7 +2399,7 @@ const styles = StyleSheet.create({
   },
   marginLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   bomRow: {
     flexDirection: 'row',
@@ -2416,19 +2416,19 @@ const styles = StyleSheet.create({
   },
   bomLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   bomStatus: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   bomRight: {
     flex: 1,
   },
   bomCostLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 5,
   },
   bomCostValue: {
@@ -2449,7 +2449,7 @@ const styles = StyleSheet.create({
   },
   varianceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   varianceValue: {
@@ -2467,7 +2467,7 @@ const styles = StyleSheet.create({
   },
   testingLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
     textAlign: 'center',
   },
@@ -2478,7 +2478,7 @@ const styles = StyleSheet.create({
   },
   testingCount: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginTop: 5,
   },
   systemsRow: {
@@ -2493,7 +2493,7 @@ const styles = StyleSheet.create({
   },
   systemsLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -2519,7 +2519,7 @@ const styles = StyleSheet.create({
   },
   inspectionLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   inspectionItem: {
     fontSize: 14,
@@ -2534,7 +2534,7 @@ const styles = StyleSheet.create({
   },
   passRateLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   passRateValue: {
@@ -2560,12 +2560,12 @@ const styles = StyleSheet.create({
   },
   handoverLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 8,
   },
   handoverSiteLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -2592,16 +2592,16 @@ const styles = StyleSheet.create({
   },
   documentationLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   documentationPending: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginTop: 5,
   },
   documentationPercentageLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 5,
   },
   documentationPercentageValue: {
@@ -2611,7 +2611,7 @@ const styles = StyleSheet.create({
   },
   documentationNote: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginTop: 8,
     fontStyle: 'italic',
   },
@@ -2633,7 +2633,7 @@ const styles = StyleSheet.create({
   },
   punchListLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   punchListItem: {
     fontSize: 14,
@@ -2654,7 +2654,7 @@ const styles = StyleSheet.create({
   },
   punchCompletionLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   punchCompletionValue: {

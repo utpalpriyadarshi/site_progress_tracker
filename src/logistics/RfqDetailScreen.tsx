@@ -26,6 +26,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import VendorQuotesSheet from '../design_engineer/components/VendorQuotesSheet';
 import { Vendor } from '../design_engineer/types/VendorQuoteTypes';
 import { DesignRfq } from '../design_engineer/types/DesignRfqTypes';
+import { COLORS } from '../theme/colors';
 
 /**
  * RFQ Detail Screen
@@ -109,7 +110,7 @@ const QuoteCard: React.FC<{ quote: RfqVendorQuoteModel; formatCurrency: (amount:
         {quote.technicalScore != null && (
           <View style={styles.quoteRow}>
             <Text style={styles.quoteLabel}>Qualification:</Text>
-            <Text style={[styles.quoteValue, { color: (quote.technicalScore || 0) >= 70 ? '#10B981' : '#EF4444', fontWeight: '700' }]}>
+            <Text style={[styles.quoteValue, { color: (quote.technicalScore || 0) >= 70 ? COLORS.GREEN_ACCENT : COLORS.ERROR, fontWeight: '700' }]}>
               {(quote.technicalScore || 0) >= 70 ? 'Qualified' : 'Disqualified'}
             </Text>
           </View>
@@ -486,7 +487,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
                   <View key={quote.id} style={styles.rankingRow}>
                     <Text style={styles.rankingRank}>{quote.rank ? `L${quote.rank}` : '-'}</Text>
                     <Text style={styles.rankingVendor}>{quote.vendorId.slice(0, 8)}...</Text>
-                    <Text style={[styles.rankingScore, { color: qualified ? '#3B82F6' : '#EF4444' }]}>
+                    <Text style={[styles.rankingScore, { color: qualified ? COLORS.BLUE_SECONDARY : COLORS.ERROR }]}>
                       {qualified ? formatCurrency(quote.quotedPrice) : 'Disqualified'}
                     </Text>
                   </View>
@@ -606,7 +607,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -614,31 +615,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.BORDER,
   },
   backButton: {
     padding: 4,
   },
   backText: {
     fontSize: 16,
-    color: '#3B82F6',
+    color: COLORS.BLUE_SECONDARY,
     fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
   },
   headerSpacer: {
     width: 50,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.BORDER,
   },
   tab: {
     flex: 1,
@@ -648,32 +649,32 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#3B82F6',
+    borderBottomColor: COLORS.BLUE_SECONDARY,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
   },
   tabTextActive: {
-    color: '#3B82F6',
+    color: COLORS.BLUE_SECONDARY,
   },
   tabContent: {
     flex: 1,
     padding: 16,
   },
   detailSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 12,
   },
   detailRow: {
@@ -684,12 +685,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   detailValue: {
     fontSize: 14,
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     fontWeight: '600',
   },
   statusChip: {
@@ -704,7 +705,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    color: '#374151',
+    color: COLORS.TEXT_PRIMARY,
     lineHeight: 20,
   },
   statsGrid: {
@@ -713,39 +714,39 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   statBoxValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 4,
   },
   statBoxLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
   },
   awardSection: {
     backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
+    borderColor: COLORS.GREEN_ACCENT,
   },
   awardValue: {
     color: '#059669',
     fontSize: 16,
   },
   quoteCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   quoteHeader: {
     flexDirection: 'row',
@@ -756,11 +757,11 @@ const styles = StyleSheet.create({
   vendorName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
   },
   vendorCode: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 2,
   },
   rankBadge: {
@@ -783,51 +784,51 @@ const styles = StyleSheet.create({
   },
   quoteLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
   },
   quotePrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
   },
   quoteValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
   },
   scoreValue: {
-    color: '#3B82F6',
+    color: COLORS.BLUE_SECONDARY,
   },
   quoteStatusChip: {
     alignSelf: 'flex-start',
-    backgroundColor: '#6B7280',
+    backgroundColor: COLORS.TEXT_SECONDARY,
   },
   rankingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.BACKGROUND,
   },
   rankingRank: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     width: 40,
   },
   rankingVendor: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: COLORS.TEXT_PRIMARY,
   },
   rankingScore: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#3B82F6',
+    color: COLORS.BLUE_SECONDARY,
   },
   warningText: {
     fontSize: 13,
-    color: '#EF4444',
+    color: COLORS.ERROR,
     fontStyle: 'italic',
   },
   emptyState: {
@@ -842,12 +843,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     paddingHorizontal: 32,
   },
@@ -855,9 +856,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: COLORS.BORDER,
   },
   actionButton: {
     flex: 1,
@@ -872,24 +873,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   issueButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.BLUE_SECONDARY,
   },
   rankButton: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: COLORS.PURPLE_ACCENT,
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: COLORS.ERROR,
   },
   cancelButtonText: {
-    color: '#EF4444',
+    color: COLORS.ERROR,
   },
   comparisonButton: {
     backgroundColor: '#EFF6FF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3B82F6',
+    borderColor: COLORS.BLUE_SECONDARY,
     padding: 12,
     alignItems: 'center',
     marginBottom: 12,
@@ -897,7 +898,7 @@ const styles = StyleSheet.create({
   comparisonButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: COLORS.BLUE_SECONDARY,
   },
 });
 

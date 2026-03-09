@@ -79,14 +79,14 @@ const CommercialTabNavigator: React.FC = memo(() => {
     headerStyle: {
       backgroundColor: COLORS.PRIMARY,
     },
-    headerTintColor: '#FFF',
+    headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
     headerLeft: HeaderLeft,
     headerRight: HeaderRight,
     tabBarActiveTintColor: COLORS.PRIMARY,
-    tabBarInactiveTintColor: 'gray',
+    tabBarInactiveTintColor: COLORS.TEXT_SECONDARY,
   }), [HeaderLeft, HeaderRight]);
 
   const getTabBarIcon = useCallback((routeName: string, focused: boolean, color: string, size: number) => {
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   headerLogoutText: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 16,
     fontWeight: '500',
   },

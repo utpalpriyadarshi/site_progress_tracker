@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   drawerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   tutorialDivider: {

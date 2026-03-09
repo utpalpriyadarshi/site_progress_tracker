@@ -165,7 +165,7 @@ const DesignEngineerTabs: React.FC = memo(() => {
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
     tabBarActiveTintColor: COLORS.PRIMARY,
-    tabBarInactiveTintColor: 'gray',
+    tabBarInactiveTintColor: COLORS.TEXT_SECONDARY,
     headerShown: false,
     tabBarStyle: {
       paddingBottom: 4,
@@ -270,11 +270,11 @@ const DesignEngineerDrawer: React.FC<DesignEngineerNavigatorProps> = memo(({ nav
     drawerIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getDrawerIcon(route.name, focused, color, size),
     drawerActiveTintColor: theme.colors.primary,
-    drawerInactiveTintColor: 'gray',
+    drawerInactiveTintColor: COLORS.TEXT_SECONDARY,
     headerStyle: {
       backgroundColor: theme.colors.primary,
     },
-    headerTintColor: '#FFF',
+    headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
     },
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   drawerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   headerMenuButton: {
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   headerLogoutText: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 16,
     fontWeight: '500',
   },

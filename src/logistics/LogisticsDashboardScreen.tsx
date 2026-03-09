@@ -567,52 +567,52 @@ const LogisticsDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   selectorContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   selectorLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 8,
   },
   projectChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     marginRight: 8,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -623,24 +623,24 @@ const styles = StyleSheet.create({
   },
   projectChipText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   projectChipTextActive: {
     color: COLORS.INFO,
     fontWeight: '600',
   },
   kpiScroll: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     paddingHorizontal: 12,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.BORDER,
   },
   kpiCard: {
     minWidth: 140,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     marginRight: 12,
     alignItems: 'center',
   },
@@ -665,28 +665,28 @@ const styles = StyleSheet.create({
   kpiValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   kpiLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
     textAlign: 'center',
   },
   kpiSubtext: {
     fontSize: 10,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginTop: 2,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     padding: 16,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 12,
   },
   emptyState: {
@@ -695,10 +695,10 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   alertCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderLeftWidth: 4,
     borderRadius: 4,
     padding: 12,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   severityBadge: {
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   },
   alertDescription: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   alertAction: {
     fontSize: 12,
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionCard: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 4,
     padding: 12,
     marginBottom: 12,
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   priorityBadge: {
@@ -801,12 +801,12 @@ const styles = StyleSheet.create({
   },
   actionDescription: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 4,
   },
   actionDue: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   recommendationCard: {
     backgroundColor: '#FFFDE7',
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   recTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   recSavings: {
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
   },
   recDescription: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 4,
   },
   recAction: {
@@ -856,22 +856,22 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   metricLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
     textAlign: 'center',
   },
   metricSubtext: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginTop: 2,
     textAlign: 'center',
   },
   costCard: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     padding: 16,
   },
@@ -883,18 +883,18 @@ const styles = StyleSheet.create({
   costLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   costValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   costBreakdown: {
     paddingVertical: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.BORDER,
     marginBottom: 8,
   },
   costBreakdownRow: {
@@ -904,12 +904,12 @@ const styles = StyleSheet.create({
   },
   costBreakdownLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   costBreakdownValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   costSavings: {
     paddingTop: 8,

@@ -21,6 +21,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useDebounce } from '../utils/performance';
 import { useAccessibility } from '../utils/accessibility';
 import { useFlatListProps } from '../hooks/useFlatListProps';
+import { COLORS } from '../theme/colors';
 
 /**
  * RFQ List Screen
@@ -283,7 +284,7 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ rfqs }) => {
           placeholder="Search RFQs by number, title, or DOORS ID..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={COLORS.TEXT_TERTIARY}
         />
       </View>
 
@@ -314,7 +315,7 @@ const RfqListScreen: React.FC<RfqListScreenProps> = ({ rfqs }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -322,21 +323,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.BORDER,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
   },
   headerButtons: {
     flexDirection: 'row',
     gap: 8,
   },
   createButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.BLUE_SECONDARY,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -349,68 +350,68 @@ const styles = StyleSheet.create({
   statsContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
   },
   statCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 12,
     padding: 16,
     marginRight: 12,
     minWidth: 100,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   statCardValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 4,
   },
   statCardLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
   },
   searchInput: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   filterContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.BORDER,
   },
   filterPill: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
   },
   filterPillActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: COLORS.BLUE_SECONDARY,
+    borderColor: COLORS.BLUE_SECONDARY,
   },
   filterPillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
   },
   filterPillTextActive: {
     color: '#FFFFFF',
@@ -419,12 +420,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   rfqCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.BORDER,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   rfqNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginRight: 8,
   },
   statusChip: {
@@ -460,18 +461,18 @@ const styles = StyleSheet.create({
   },
   daysOpen: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   rfqTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 6,
   },
   doorsId: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 12,
   },
   statsRow: {
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: COLORS.BACKGROUND,
   },
   statItem: {
     flex: 1,
@@ -489,21 +490,21 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   statDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: COLORS.BORDER,
   },
   awardBanner: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: COLORS.GREEN_ACCENT_BG,
     borderRadius: 6,
     padding: 8,
     marginTop: 12,
@@ -526,12 +527,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     paddingHorizontal: 32,
   },

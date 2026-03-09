@@ -29,6 +29,7 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { useCommercial } from '../context/CommercialContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -195,7 +196,7 @@ interface CheckItemRowProps {
 }
 
 const CheckItemRow: React.FC<CheckItemRowProps> = ({ item, onToggle }) => {
-  const iconColor = item.checked ? '#34C759' : item.mandatory ? '#FF3B30' : '#FF9500';
+  const iconColor = item.checked ? COLORS.GREEN_ACCENT : item.mandatory ? COLORS.ERROR : COLORS.AMBER_CAUTION;
   const iconName = item.checked ? 'check-circle' : item.mandatory ? 'close-circle-outline' : 'alert-circle-outline';
 
   return (
@@ -207,7 +208,7 @@ const CheckItemRow: React.FC<CheckItemRowProps> = ({ item, onToggle }) => {
           {item.mandatory ? '' : ' (optional)'}
         </Text>
         {item.detail ? (
-          <Text style={[checkStyles.detail, { color: item.checked ? '#888' : '#FF9500' }]}>
+          <Text style={[checkStyles.detail, { color: item.checked ? COLORS.TEXT_TERTIARY : COLORS.AMBER_CAUTION }]}>
             {item.detail}
           </Text>
         ) : null}
@@ -216,7 +217,7 @@ const CheckItemRow: React.FC<CheckItemRowProps> = ({ item, onToggle }) => {
         <Switch
           value={item.checked}
           onValueChange={onToggle}
-          color="#34C759"
+          color={COLORS.GREEN_ACCENT}
         />
       )}
     </View>
@@ -227,8 +228,8 @@ const checkStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8 },
   icon: { flexShrink: 0 },
   labelContainer: { flex: 1 },
-  label: { fontSize: 13, color: '#333', lineHeight: 18 },
-  labelFailed: { color: '#555' },
+  label: { fontSize: 13, color: COLORS.TEXT_PRIMARY, lineHeight: 18 },
+  labelFailed: { color: COLORS.TEXT_SECONDARY },
   detail: { fontSize: 11, marginTop: 2 },
 });
 
@@ -365,7 +366,7 @@ const MilestoneReadinessScreen: React.FC = () => {
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color="#007AFF" /></View>;
+    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color={COLORS.BLUE_SECONDARY} /></View>;
   }
 
   return (
@@ -374,23 +375,23 @@ const MilestoneReadinessScreen: React.FC = () => {
       {/* Summary banner */}
       <View style={styles.summaryBanner}>
         <View style={styles.summaryItem}>
-          <Icon name="check-circle" size={20} color="#34C759" />
-          <Text style={[styles.summaryCount, { color: '#34C759' }]}>{safeCount}</Text>
+          <Icon name="check-circle" size={20} color={COLORS.GREEN_ACCENT} />
+          <Text style={[styles.summaryCount, { color: COLORS.GREEN_ACCENT }]}>{safeCount}</Text>
           <Text style={styles.summaryLabel}>Safe</Text>
         </View>
         <View style={styles.summaryItem}>
-          <Icon name="alert-circle" size={20} color="#FF9500" />
-          <Text style={[styles.summaryCount, { color: '#FF9500' }]}>{conditionalCount}</Text>
+          <Icon name="alert-circle" size={20} color={COLORS.AMBER_CAUTION} />
+          <Text style={[styles.summaryCount, { color: COLORS.AMBER_CAUTION }]}>{conditionalCount}</Text>
           <Text style={styles.summaryLabel}>Conditional</Text>
         </View>
         <View style={styles.summaryItem}>
-          <Icon name="close-circle" size={20} color="#FF3B30" />
-          <Text style={[styles.summaryCount, { color: '#FF3B30' }]}>{holdCount}</Text>
+          <Icon name="close-circle" size={20} color={COLORS.ERROR} />
+          <Text style={[styles.summaryCount, { color: COLORS.ERROR }]}>{holdCount}</Text>
           <Text style={styles.summaryLabel}>Hold</Text>
         </View>
         <View style={styles.summaryItem}>
-          <Icon name="format-list-checks" size={20} color="#007AFF" />
-          <Text style={[styles.summaryCount, { color: '#007AFF' }]}>{state.kds.length}</Text>
+          <Icon name="format-list-checks" size={20} color={COLORS.BLUE_SECONDARY} />
+          <Text style={[styles.summaryCount, { color: COLORS.BLUE_SECONDARY }]}>{state.kds.length}</Text>
           <Text style={styles.summaryLabel}>Total KDs</Text>
         </View>
       </View>
@@ -401,7 +402,7 @@ const MilestoneReadinessScreen: React.FC = () => {
 
       {state.kds.length === 0 && (
         <View style={styles.emptyList}>
-          <Icon name="calendar-check-outline" size={48} color="#ccc" />
+          <Icon name="calendar-check-outline" size={48} color={COLORS.TEXT_DISABLED} />
           <Text style={styles.emptyListText}>No Key Dates found for this project</Text>
         </View>
       )}
@@ -421,7 +422,7 @@ const MilestoneReadinessScreen: React.FC = () => {
                   <Chip
                     icon="check-circle"
                     style={styles.billedChip}
-                    textStyle={{ color: '#34C759', fontSize: 11 }}
+                    textStyle={{ color: COLORS.GREEN_ACCENT, fontSize: 11 }}
                   >
                     {kd.billedIpcNumber != null
                       ? `IPC-${String(kd.billedIpcNumber).padStart(3, '0')} Raised`
@@ -452,7 +453,7 @@ const MilestoneReadinessScreen: React.FC = () => {
                   <Text style={styles.kdMetaText}>
                     {kd.weightage}% • {new Date(kd.targetDate).toLocaleDateString('en-IN')}
                   </Text>
-                  <Text style={[styles.kdMetaText, { color: '#007AFF', marginLeft: 8 }]}>
+                  <Text style={[styles.kdMetaText, { color: COLORS.BLUE_SECONDARY, marginLeft: 8 }]}>
                     {checkedCount}/{totalCount} checks
                   </Text>
                 </View>
@@ -468,7 +469,7 @@ const MilestoneReadinessScreen: React.FC = () => {
                 <Icon
                   name={isExpanded ? 'chevron-up' : 'chevron-down'}
                   size={20}
-                  color="#999"
+                  color={COLORS.TEXT_TERTIARY}
                   style={{ marginTop: 8 }}
                 />
               </View>
@@ -497,7 +498,7 @@ const MilestoneReadinessScreen: React.FC = () => {
                 )}
                 {kd.readiness === 'conditional' && (
                   <View style={styles.conditionalBanner}>
-                    <Icon name="alert" size={14} color="#FF9500" />
+                    <Icon name="alert" size={14} color={COLORS.AMBER_CAUTION} />
                     <Text style={styles.conditionalText}>
                       Optional items incomplete — you may proceed but review these before submission.
                     </Text>
@@ -517,14 +518,14 @@ const MilestoneReadinessScreen: React.FC = () => {
 // ==================== Styles ====================
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { flex: 1, backgroundColor: COLORS.BACKGROUND },
   content: { padding: 16 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 16, color: '#666' },
+  emptyText: { fontSize: 16, color: COLORS.TEXT_SECONDARY },
 
   summaryBanner: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -533,12 +534,12 @@ const styles = StyleSheet.create({
   },
   summaryItem: { alignItems: 'center', gap: 4 },
   summaryCount: { fontSize: 20, fontWeight: '800' },
-  summaryLabel: { fontSize: 11, color: '#888' },
+  summaryLabel: { fontSize: 11, color: COLORS.TEXT_TERTIARY },
 
-  helpText: { fontSize: 12, color: '#888', marginBottom: 14, fontStyle: 'italic' },
+  helpText: { fontSize: 12, color: COLORS.TEXT_TERTIARY, marginBottom: 14, fontStyle: 'italic' },
 
   kdCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     marginBottom: 10,
     elevation: 2,
@@ -552,10 +553,10 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   kdHeaderLeft: { flex: 1, marginRight: 8 },
-  kdCode: { fontSize: 13, fontWeight: '700', color: '#007AFF', marginBottom: 2 },
-  kdDesc: { fontSize: 13, color: '#333', marginBottom: 4 },
+  kdCode: { fontSize: 13, fontWeight: '700', color: COLORS.BLUE_SECONDARY, marginBottom: 2 },
+  kdDesc: { fontSize: 13, color: COLORS.TEXT_PRIMARY, marginBottom: 4 },
   kdMeta: { flexDirection: 'row' },
-  kdMetaText: { fontSize: 11, color: '#888' },
+  kdMetaText: { fontSize: 11, color: COLORS.TEXT_TERTIARY },
   kdHeaderRight: { alignItems: 'flex-end' },
   readinessChip: {},
 
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#34C759',
+    backgroundColor: COLORS.GREEN_ACCENT,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -585,11 +586,11 @@ const styles = StyleSheet.create({
   },
   conditionalText: { flex: 1, fontSize: 12, color: '#856404' },
 
-  billedCard: { borderLeftColor: '#34C759', opacity: 0.75 },
-  billedChip: { backgroundColor: '#34C75922' },
+  billedCard: { borderLeftColor: COLORS.GREEN_ACCENT, opacity: 0.75 },
+  billedChip: { backgroundColor: COLORS.GREEN_ACCENT + '22' },
 
   emptyList: { alignItems: 'center', paddingVertical: 40 },
-  emptyListText: { fontSize: 14, color: '#999', marginTop: 12 },
+  emptyListText: { fontSize: 14, color: COLORS.TEXT_TERTIARY, marginTop: 12 },
 });
 
 export default function MilestoneReadinessScreenWithBoundary() {

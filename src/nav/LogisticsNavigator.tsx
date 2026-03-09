@@ -161,7 +161,7 @@ const LogisticsTabs = memo(() => {
     headerStyle: {
       backgroundColor: COLORS.PRIMARY,
     },
-    headerTintColor: '#FFF',
+    headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
       fontSize: 20,
