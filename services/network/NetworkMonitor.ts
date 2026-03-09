@@ -48,8 +48,10 @@ export class NetworkMonitor {
    * Fix: Week 8, Day 5 - Don't trigger sync on initial network state
    */
   private static handleNetworkChange(state: NetInfoState): void {
-    const wasConnected = this.currentState?.isConnected || false;
-    const isConnected = state.isConnected || false;
+    // Use ?? true so that null (NetInfo "not yet determined") is treated as
+    // online rather than offline — prevents false "You're offline" flashes.
+    const wasConnected = this.currentState?.isConnected ?? true;
+    const isConnected = state.isConnected ?? true;
 
     // Log network change
     console.log(`📡 Network changed: ${this.getConnectionInfo(state)}`);
@@ -122,6 +124,13 @@ export class NetworkMonitor {
   static addListener(listener: NetworkListener): () => void {
     this.listeners.push(listener);
 
+    // Immediately call with current known state so components that subscribe
+    // after initialize() don't miss the initial online/offline status.
+    if (this.currentState !== null) {
+      const isConnected = this.currentState.isConnected ?? true;
+      listener(isConnected, this.currentState.type);
+    }
+
     // Return unsubscribe function
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
@@ -147,7 +156,7 @@ export class NetworkMonitor {
    */
   static async isConnected(): Promise<boolean> {
     const state = await NetInfo.fetch();
-    return state.isConnected || false;
+    return state.isConnected ?? true;
   }
 
   /**

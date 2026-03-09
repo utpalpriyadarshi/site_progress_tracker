@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import NetworkMonitor from '../../../services/network/NetworkMonitor';
+import { COLORS } from '../../theme/colors';
 
 export const OfflineBanner: React.FC = () => {
   const [isOffline, setIsOffline] = useState(false);
@@ -26,7 +27,7 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#B00020',
+    backgroundColor: COLORS.ERROR,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   text: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
