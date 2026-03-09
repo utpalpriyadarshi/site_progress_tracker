@@ -15,6 +15,7 @@
 import React, { memo, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text, Divider, useTheme } from 'react-native-paper';
+import { COLORS } from '../theme/colors';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -106,8 +107,8 @@ export const SupervisorDrawerNavigator: React.FC = () => {
           headerShown: false,
           drawerType: 'front',
           drawerStyle: { width: 280 },
-          drawerActiveTintColor: '#6200ee',
-          drawerInactiveTintColor: '#666',
+          drawerActiveTintColor: COLORS.PRIMARY,
+          drawerInactiveTintColor: COLORS.TEXT_SECONDARY,
         }}
       >
         {/* Main content - Tab Navigator (hidden from drawer) */}

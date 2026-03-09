@@ -8,6 +8,7 @@ import {
   Text,
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
+import MaterialModel from '../../models/MaterialModel';
 import { useBomData } from '../shared/hooks/useBomData';
 import BomLogisticsService, { MaterialRequirement } from '../services/BomLogisticsService';
 import MaterialProcurementService, {

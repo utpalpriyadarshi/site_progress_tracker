@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AuthStackParamList, RootStackParamList } from './types';
 import { useAuth, UserRole } from '../auth/AuthContext';
 import { useSnackbar } from '../components/Snackbar';
+import { COLORS } from '../theme/colors';
 
 type RoleSelectionScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -172,12 +173,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   subtitle: {
     fontSize: 16,
     marginBottom: 8,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   rolesContainer: {
     marginBottom: 32,
@@ -189,34 +190,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 2,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.BORDER,
   },
   selectedRoleCard: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
+    borderColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.PRIMARY_LIGHT,
   },
   roleName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   selectedRoleName: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   roleDescription: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 20,
   },
   continueButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   disabledButton: {
-    backgroundColor: '#cccccc',
+    backgroundColor: COLORS.TEXT_DISABLED,
   },
   continueButtonText: {
     color: 'white',
