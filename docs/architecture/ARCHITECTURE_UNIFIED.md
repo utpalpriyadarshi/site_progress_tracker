@@ -260,6 +260,7 @@ SyncQueue (models/SyncQueueModel.ts)
 ```
 
 **OfflineBanner** (`src/components/common/OfflineBanner.tsx`): self-contained, subscribes to `NetworkMonitor`, auto-shown when offline. Mounted once in `App.tsx`.
+> ⚠️ NetInfo returns `isConnected: null` on Android during startup — `NetworkMonitor` uses `?? true` (not `|| false`) so null is treated as online, not offline. `addListener` also immediately calls new subscribers with `currentState` if already known, so components mounted after `initialize()` get the correct initial state.
 
 ---
 
