@@ -2304,7 +2304,8 @@ export async function generateCommercialManagerDemoData(projectId: string): Prom
         record.amount = invDef.amount;
         record.paymentStatus = invDef.paymentStatus;
         record.paymentDate = paymentDate || null;
-        record.vendorId = vendors.length > 0 ? vendors[i % vendors.length].id : '';
+        const matchedVendor = (vendors as any[]).find((v: any) => v.vendorName === invDef.vendorName);
+        record.vendorId = matchedVendor?.id ?? '';
         record.vendorName = invDef.vendorName;
         record.createdBy = 'commercial_manager';
         record.updatedAt = Date.now();

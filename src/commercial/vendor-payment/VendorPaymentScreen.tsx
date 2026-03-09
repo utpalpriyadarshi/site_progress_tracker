@@ -292,7 +292,7 @@ const VendorPaymentScreen: React.FC = () => {
         if (!activeVendorIds.has(vendor.id)) continue;
         const invoices: VendorInvoice[] = (vendorInvMap[vendor.id] || []).map((inv: any) => {
           const dueDate = inv.dueDate || (inv.invoiceDate + 30 * 24 * 60 * 60 * 1000);
-          const isPending = inv.paymentStatus === 'pending';
+          const isPending = inv.paymentStatus !== 'paid';
           const isOverdue = isPending && dueDate < now;
           const daysOverdue = isOverdue ? Math.floor((now - dueDate) / (24 * 60 * 60 * 1000)) : 0;
           return {

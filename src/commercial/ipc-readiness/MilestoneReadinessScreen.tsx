@@ -50,6 +50,8 @@ interface KDReadiness {
   targetDate: number;
   checks: CheckItem[];
   readiness: 'safe' | 'conditional' | 'hold';
+  isBilled: boolean;
+  billedIpcNumber: number | null;
 }
 
 type Action =
@@ -250,14 +252,11 @@ const MilestoneReadinessScreen: React.FC = () => {
           .query(Q.where('project_id', projectId))
           .fetch() as Promise<any[]>,
         database.collections.get('invoices')
-          .query(
-            Q.where('project_id', projectId),
-            Q.where('key_date_id', Q.notEq(null))
-          )
+          .query(Q.where('project_id', projectId))
           .fetch() as Promise<any[]>,
       ]);
 
-      // Build VO lookup by linked_kd_id
+      // Build VO lookup by linked_kd_id; fall back to project-level VOs if none linked
       const vosByKd: Record<string, any[]> = {};
       for (const vo of allVOs) {
         if (vo.linkedKdId) {
@@ -265,6 +264,10 @@ const MilestoneReadinessScreen: React.FC = () => {
           vosByKd[vo.linkedKdId].push(vo);
         }
       }
+      // Project-level unapproved VOs (used when no KD-specific VOs exist)
+      const projectUnapprovedVOs = (allVOs as any[]).filter(
+        v => v.approvalStatus === 'pending' || v.approvalStatus === 'under_review'
+      );
 
       // Build invoice lookup by key_date_id, sorted by ipcNumber
       const invsByKd: Record<string, any[]> = {};
@@ -280,11 +283,23 @@ const MilestoneReadinessScreen: React.FC = () => {
         .filter(i => i.ipcNumber != null)
         .sort((a, b) => (a.ipcNumber ?? 0) - (b.ipcNumber ?? 0));
 
+      // KDs that already have an IPC invoice raised
+      const billedKdIds = new Set(
+        (allInvoices as any[])
+          .filter(i => i.invoiceType === 'ipc' && i.keyDateId)
+          .map(i => i.keyDateId)
+      );
+
       const now = Date.now();
 
       const kds: KDReadiness[] = (keyDates as any[]).map((kd, idx) => {
+        // Use KD-specific linked VOs; fall back to project-level pending VOs
         const linkedVOs = vosByKd[kd.id] ?? [];
-        const hasUnapprovedVOs = linkedVOs.some(v => v.approvalStatus !== 'approved' && v.approvalStatus !== 'rejected');
+        const vosForCheck = linkedVOs.length > 0 ? linkedVOs : (allVOs as any[]);
+        const hasUnapprovedVOs = vosForCheck.some(
+          v => v.approvalStatus === 'pending' || v.approvalStatus === 'under_review'
+        );
+        const voCount = linkedVOs.length > 0 ? linkedVOs.length : projectUnapprovedVOs.length;
 
         // LD: days delayed
         const ldDaysDelayed = kd.status === 'delayed' && kd.targetDate
@@ -299,9 +314,14 @@ const MilestoneReadinessScreen: React.FC = () => {
         const prevIpcExists = prevIpc !== null;
         const prevIpcPaid = prevIpc?.paymentStatus === 'paid';
 
+        const isBilled = billedKdIds.has(kd.id);
+        const billedInvoice = isBilled
+          ? (allInvoices as any[]).find(i => i.keyDateId === kd.id && i.invoiceType === 'ipc')
+          : null;
+
         const checks = buildChecks({
           hasUnapprovedVOs,
-          voCount: linkedVOs.length,
+          voCount,
           ldDaysDelayed,
           prevIpcPaid,
           prevIpcExists,
@@ -316,6 +336,8 @@ const MilestoneReadinessScreen: React.FC = () => {
           targetDate: kd.targetDate,
           checks,
           readiness: computeReadiness(checks),
+          isBilled,
+          billedIpcNumber: billedInvoice?.ipcNumber ?? null,
         };
       });
 
@@ -385,6 +407,32 @@ const MilestoneReadinessScreen: React.FC = () => {
       )}
 
       {state.kds.map(kd => {
+        // Already-billed KD — show compact billed card, no checklist
+        if (kd.isBilled) {
+          return (
+            <View key={kd.kdId} style={[styles.kdCard, styles.billedCard]}>
+              <View style={styles.kdHeader}>
+                <View style={styles.kdHeaderLeft}>
+                  <Text style={styles.kdCode}>{kd.kdCode}</Text>
+                  <Text style={styles.kdDesc} numberOfLines={1}>{kd.kdDescription}</Text>
+                  <Text style={styles.kdMetaText}>{kd.weightage}%</Text>
+                </View>
+                <View style={styles.kdHeaderRight}>
+                  <Chip
+                    icon="check-circle"
+                    style={styles.billedChip}
+                    textStyle={{ color: '#34C759', fontSize: 11 }}
+                  >
+                    {kd.billedIpcNumber != null
+                      ? `IPC-${String(kd.billedIpcNumber).padStart(3, '0')} Raised`
+                      : 'IPC Raised'}
+                  </Chip>
+                </View>
+              </View>
+            </View>
+          );
+        }
+
         const cfg = READINESS_CONFIG[kd.readiness];
         const isExpanded = state.expandedKdId === kd.kdId;
         const checkedCount = kd.checks.filter(c => c.checked).length;
@@ -536,6 +584,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   conditionalText: { flex: 1, fontSize: 12, color: '#856404' },
+
+  billedCard: { borderLeftColor: '#34C759', opacity: 0.75 },
+  billedChip: { backgroundColor: '#34C75922' },
 
   emptyList: { alignItems: 'center', paddingVertical: 40 },
   emptyListText: { fontSize: 14, color: '#999', marginTop: 12 },
