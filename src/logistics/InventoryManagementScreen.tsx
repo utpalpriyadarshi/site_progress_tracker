@@ -16,11 +16,12 @@ import {
   TextInput,
   RefreshControl,
   Modal,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
 import { useLogistics } from './context/LogisticsContext';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
 import { database } from '../../models/database';
@@ -75,6 +76,7 @@ const getStockLabel = (cat: StockFilter) => {
 
 const InventoryManagementScreen: React.FC = () => {
   const { materials, refresh } = useLogistics();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -104,7 +106,7 @@ const InventoryManagementScreen: React.FC = () => {
 
   const handleAddMaterial = useCallback(async () => {
     if (!addName.trim()) {
-      Alert.alert('Required', 'Please enter a material name.');
+      showSnackbar('Please enter a material name.');
       return;
     }
     setSaving(true);
@@ -126,7 +128,7 @@ const InventoryManagementScreen: React.FC = () => {
       resetAddForm();
       await refresh();
     } catch {
-      Alert.alert('Error', 'Could not add material. Please try again.');
+      showSnackbar('Could not add material. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -290,6 +292,8 @@ const InventoryManagementScreen: React.FC = () => {
       <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
+
+      <Snackbar {...snackbarProps} duration={3000} />
 
       {/* Add Material Modal */}
       <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => { setShowAddModal(false); resetAddForm(); }}>

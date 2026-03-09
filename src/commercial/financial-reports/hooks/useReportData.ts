@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
 import {
@@ -38,6 +38,7 @@ export const useReportData = (
   startDate: Date | null,
   endDate: Date | null
 ) => {
+  const { show: showSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
@@ -127,11 +128,11 @@ export const useReportData = (
       logger.debug('[Reports] Report data loaded successfully');
     } catch (error) {
       logger.error('[Reports] Error loading report data', error as Error);
-      Alert.alert('Error', 'Failed to load report data');
+      showSnackbar('Failed to load report data');
     } finally {
       setLoading(false);
     }
-  }, [projectId, startDate, endDate]);
+  }, [projectId, startDate, endDate, showSnackbar]);
 
   return {
     loading,

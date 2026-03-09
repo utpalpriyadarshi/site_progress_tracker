@@ -85,7 +85,7 @@ const DesignDocumentManagementScreen = () => {
     handleEditDocument,
     handleReviseDocument,
     handleApprovalAction,
-  } = useDocumentCrud({ projectId, engineerId, selectedSiteId, state, dispatch, announce });
+  } = useDocumentCrud({ projectId, engineerId, selectedSiteId, state, dispatch, showSnackbar, announce });
 
   // Tracks the auto-resolved Key Date for the currently open dialog
   const [resolvedKeyDate, setResolvedKeyDate] = useState<ResolvedKeyDate | null | undefined>(undefined);
@@ -159,7 +159,7 @@ const DesignDocumentManagementScreen = () => {
     handleAddSubCategory,
     handleUpdateCategory,
     handleDeleteCategory,
-  } = useCategoryManagement({ projectId, engineerId, dispatch, loadCategories });
+  } = useCategoryManagement({ projectId, engineerId, dispatch, loadCategories, showSnackbar });
 
   // Load data on mount
   useEffect(() => {
@@ -216,12 +216,12 @@ const DesignDocumentManagementScreen = () => {
 
   const handleOpenCopyDialog = () => {
     if (!selectedSiteId) {
-      Alert.alert('No Site Selected', 'Please select a site to copy documents from.');
+      showSnackbar('Please select a site to copy documents from.');
       return;
     }
 
     if (siteDocumentCount === 0) {
-      Alert.alert('No Documents', 'The selected site has no documents to copy.');
+      showSnackbar('The selected site has no documents to copy.');
       return;
     }
 

@@ -1,6 +1,7 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
-import { FAB } from 'react-native-paper';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { FAB, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
@@ -55,6 +56,7 @@ const InvoiceManagementScreen = () => {
   const { projectId, projectName, selectedInvoiceStatus, setSelectedInvoiceStatus, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const route = useRoute<RouteProp<CommercialTabParamList, 'InvoiceManagement'>>();
   const [state, dispatch] = useReducer(invoiceManagementReducer, initialInvoiceManagementState);
 
@@ -116,11 +118,11 @@ const InvoiceManagementScreen = () => {
       dispatch(invoiceManagementActions.setInvoices(invoicesWithVendors));
     } catch (error) {
       logger.error('[Invoice] Error loading invoices:', error as Error);
-      Alert.alert('Error', 'Failed to load invoices');
+      showSnackbar('Failed to load invoices');
     } finally {
       dispatch(invoiceManagementActions.setLoading(false));
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   // Calculate summary against the full unfiltered list
   useEffect(() => {
@@ -178,12 +180,12 @@ const InvoiceManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Invoice created successfully');
+      showSnackbar('Invoice created successfully');
       loadInvoices();
       return true;
     } catch (error) {
       logger.error('[Invoice] Error creating invoice:', error as Error);
-      Alert.alert('Error', 'Failed to create invoice');
+      showSnackbar('Failed to create invoice');
       return false;
     }
   };
@@ -208,12 +210,12 @@ const InvoiceManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Invoice updated successfully');
+      showSnackbar('Invoice updated successfully');
       loadInvoices();
       return true;
     } catch (error) {
       logger.error('[Invoice] Error updating invoice:', error as Error);
-      Alert.alert('Error', 'Failed to update invoice');
+      showSnackbar('Failed to update invoice');
       return false;
     }
   };
@@ -227,11 +229,11 @@ const InvoiceManagementScreen = () => {
         await invoiceRecord.markAsDeleted();
       });
 
-      Alert.alert('Success', 'Invoice deleted successfully');
+      showSnackbar('Invoice deleted successfully');
       loadInvoices();
     } catch (error) {
       logger.error('[Invoice] Error deleting invoice:', error as Error);
-      Alert.alert('Error', 'Failed to delete invoice');
+      showSnackbar('Failed to delete invoice');
     }
   };
 
@@ -248,11 +250,11 @@ const InvoiceManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Invoice marked as paid');
+      showSnackbar('Invoice marked as paid');
       loadInvoices();
     } catch (error) {
       logger.error('[Invoice] Error marking invoice as paid:', error as Error);
-      Alert.alert('Error', 'Failed to mark invoice as paid');
+      showSnackbar('Failed to mark invoice as paid');
     }
   };
 
@@ -353,6 +355,7 @@ const InvoiceManagementScreen = () => {
         editingInvoice={state.data.editingInvoice}
         title="Edit Invoice"
       />
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Alert, KeyboardAvoidingView } from 'react-native';
-import { Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
+import { View, Text, ScrollView, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
+import { Portal, Dialog, Button, TextInput, Chip, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { InvoiceFormData, Invoice } from '../hooks';
 import { PAYMENT_STATUSES, validateInvoiceForm } from '../utils';
@@ -22,6 +23,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
   title,
 }) => {
   const { announce } = useAccessibility();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [formInvoiceNumber, setFormInvoiceNumber] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formPoId, setFormPoId] = useState('');
@@ -158,7 +160,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
       const errorCount = Object.keys(errors).length;
       announce(`Validation failed. ${errorCount} ${errorCount === 1 ? 'error' : 'errors'} found. ${validation.error}`);
 
-      Alert.alert('Validation Error', validation.error);
+      showSnackbar(validation.error ?? 'Validation failed');
       return;
     }
 
@@ -416,6 +418,7 @@ export const InvoiceFormDialog: React.FC<InvoiceFormDialogProps> = ({
           </Button>
         </Dialog.Actions>
       </Dialog>
+      <Snackbar {...snackbarProps} duration={3000} />
     </Portal>
   );
 };

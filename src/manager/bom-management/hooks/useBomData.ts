@@ -6,7 +6,6 @@
  */
 
 import { useReducer, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import BomModel from '../../../../models/BomModel';
 import BomItemModel from '../../../../models/BomItemModel';
@@ -292,11 +291,7 @@ export const useBomData = (
         projectName: project?.name,
       });
 
-      Alert.alert(
-        'Export Successful',
-        `BOM exported successfully!\n\nSaved to: ${filePath}`,
-        [{ text: 'OK' }]
-      );
+      showSnackbar(`BOM exported successfully! Saved to: ${filePath}`, 'success');
     } catch (error) {
       logger.error('Error exporting BOM', error as Error);
       showSnackbar('Failed to export BOM: ' + (error as Error).message, 'error');
@@ -305,11 +300,7 @@ export const useBomData = (
 
   // Import BOM from file (temporarily disabled - compatibility issue)
   const handleImportBom = async () => {
-    Alert.alert(
-      'Import Feature',
-      'Import feature is currently being upgraded. Please use Export to Excel and manually create BOMs for now.',
-      [{ text: 'OK' }]
-    );
+    showSnackbar('Import feature is currently being upgraded. Please use Export to Excel for now.', 'info');
   };
 
   // Create BOM from imported data

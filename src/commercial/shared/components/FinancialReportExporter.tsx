@@ -13,8 +13,9 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Card, Button, Checkbox, RadioButton, ActivityIndicator, Divider } from 'react-native-paper';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Card, Button, Checkbox, RadioButton, ActivityIndicator, Divider, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import type { FinancialReportExporterProps, ReportFormat, ReportExportOptions } from '../types';
 import { COLORS } from '../../../theme/colors';
 
@@ -26,6 +27,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
   availableFormats = ['pdf', 'excel', 'csv', 'json'],
   isExporting = false,
 }) => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [selectedFormat, setSelectedFormat] = useState<ReportFormat>('pdf');
   const [includeSummary, setIncludeSummary] = useState(true);
   const [includeCharts, setIncludeCharts] = useState(true);
@@ -65,7 +67,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
   // Handle export
   const handleExport = async () => {
     if (!includeSummary && !includeCharts && !includeDetails) {
-      Alert.alert('Selection Required', 'Please select at least one section to export');
+      showSnackbar('Please select at least one section to export');
       return;
     }
 
@@ -81,7 +83,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
     try {
       await onExport(options);
     } catch (error) {
-      Alert.alert('Export Failed', 'An error occurred while exporting the report');
+      showSnackbar('An error occurred while exporting the report');
     }
   };
 
@@ -184,6 +186,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
   );
 
   return (
+    <>
     <ScrollView style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
@@ -257,6 +260,8 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
         </Card.Content>
       </Card>
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

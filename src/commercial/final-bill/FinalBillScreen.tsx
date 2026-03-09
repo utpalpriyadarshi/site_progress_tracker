@@ -21,7 +21,8 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Switch, Chip, Divider } from 'react-native-paper';
+import { Switch, Chip, Divider, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -124,6 +125,7 @@ const DLP_STATUS_CONFIG: Record<DLPStatus, { color: string; label: string; icon:
 
 const FinalBillScreen: React.FC = () => {
   const { projectId } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadData = useCallback(async () => {
@@ -281,10 +283,10 @@ const FinalBillScreen: React.FC = () => {
       dispatch({ type: 'SET_DATA', summary, retentions: retentionRows, closureChecks });
     } catch (error) {
       logger.error('[FinalBill] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load final bill data');
+      showSnackbar('Failed to load final bill data');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -310,13 +312,13 @@ const FinalBillScreen: React.FC = () => {
               dispatch({ type: 'RELEASE_RETENTION', retId: ret.id });
             } catch (error) {
               logger.error('[FinalBill] Release retention error', error as Error);
-              Alert.alert('Error', 'Failed to release retention');
+              showSnackbar('Failed to release retention');
             }
           },
         },
       ]
     );
-  }, []);
+  }, [showSnackbar]);
 
   if (!projectId) {
     return <View style={styles.emptyContainer}><Text style={styles.emptyText}>No project assigned</Text></View>;
@@ -336,6 +338,7 @@ const FinalBillScreen: React.FC = () => {
   const closureTotal = state.closureChecks.length;
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* DLP Status Banner */}
@@ -484,6 +487,8 @@ const FinalBillScreen: React.FC = () => {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

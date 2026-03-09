@@ -11,7 +11,8 @@
 
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Title, Paragraph } from 'react-native-paper';
+import { Title, Paragraph, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useManagerContext } from './context/ManagerContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
@@ -34,13 +35,14 @@ import { useWizardNavigation } from './bom-import-wizard/hooks/useWizardNavigati
 
 const BomImportWizardScreen = () => {
   const { projectId } = useManagerContext();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   // Initialize all hooks
   const { importData, setImportData, resetImportData } = useImportData();
 
-  const { handleFilePicker } = useFileUpload(importData, setImportData);
+  const { handleFilePicker } = useFileUpload(importData, setImportData, showSnackbar);
 
-  const { validateMapping, validateData } = useDataValidation(importData, setImportData);
+  const { validateMapping, validateData } = useDataValidation(importData, setImportData, showSnackbar);
 
   const { importing, importProgress, executeImport } = useImportExecution(
     projectId,
@@ -49,7 +51,8 @@ const BomImportWizardScreen = () => {
       // Reset wizard after successful import
       resetImportData();
       setCurrentStep(1);
-    }
+    },
+    showSnackbar
   );
 
   const { currentStep, setCurrentStep, handleNext, handleBack, handleCancel } =
@@ -58,7 +61,8 @@ const BomImportWizardScreen = () => {
       resetImportData,
       validateMapping,
       validateData,
-      executeImport
+      executeImport,
+      showSnackbar
     );
 
   // Render appropriate step content based on current step
@@ -107,26 +111,29 @@ const BomImportWizardScreen = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Title style={styles.headerTitle}>BOM Import Wizard</Title>
-        <Paragraph style={styles.headerSubtitle}>
-          Import Bill of Materials from Excel or CSV files
-        </Paragraph>
-      </View>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Title style={styles.headerTitle}>BOM Import Wizard</Title>
+          <Paragraph style={styles.headerSubtitle}>
+            Import Bill of Materials from Excel or CSV files
+          </Paragraph>
+        </View>
 
-      <ProgressStepper currentStep={currentStep} />
+        <ProgressStepper currentStep={currentStep} />
 
-      {renderStepContent()}
+        {renderStepContent()}
 
-      <WizardActions
-        currentStep={currentStep}
-        importing={importing}
-        onCancel={handleCancel}
-        onBack={handleBack}
-        onNext={handleNext}
-      />
-    </ScrollView>
+        <WizardActions
+          currentStep={currentStep}
+          importing={importing}
+          onCancel={handleCancel}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
+      </ScrollView>
+      <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

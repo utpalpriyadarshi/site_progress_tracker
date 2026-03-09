@@ -6,8 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import BomCalculatorService from '../../services/BomCalculatorService';
 import { COLORS } from '../../theme/colors';
 
@@ -60,6 +61,7 @@ const BomItemEditor: React.FC<BomItemEditorProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [itemCode, setItemCode] = useState(initialData?.itemCode || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [category, setCategory] = useState<'material' | 'labor' | 'equipment' | 'subcontractor'>(
@@ -90,15 +92,15 @@ const BomItemEditor: React.FC<BomItemEditorProps> = ({
   const handleSave = () => {
     // Validation
     if (!itemCode.trim()) {
-      Alert.alert('Validation Error', 'Please enter an item code');
+      showSnackbar('Please enter an item code');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
     if (!unit.trim()) {
-      Alert.alert('Validation Error', 'Please enter a unit of measurement');
+      showSnackbar('Please enter a unit of measurement');
       return;
     }
 
@@ -106,11 +108,11 @@ const BomItemEditor: React.FC<BomItemEditorProps> = ({
     const cost = parseFloat(unitCost);
 
     if (isNaN(qty) || qty < 0) {
-      Alert.alert('Validation Error', 'Please enter a valid quantity (greater than or equal to 0)');
+      showSnackbar('Please enter a valid quantity (greater than or equal to 0)');
       return;
     }
     if (isNaN(cost) || cost < 0) {
-      Alert.alert('Validation Error', 'Please enter a valid unit cost (greater than or equal to 0)');
+      showSnackbar('Please enter a valid unit cost (greater than or equal to 0)');
       return;
     }
 
@@ -140,6 +142,7 @@ const BomItemEditor: React.FC<BomItemEditorProps> = ({
   const commonPhases = ['Foundation', 'Structure', 'Finishing', 'MEP', 'Landscaping'];
 
   return (
+    <>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>{mode === 'add' ? 'Add BOM Item' : 'Edit BOM Item'}</Text>
 
@@ -343,6 +346,8 @@ const BomItemEditor: React.FC<BomItemEditorProps> = ({
         </TouchableOpacity>
       </View>
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

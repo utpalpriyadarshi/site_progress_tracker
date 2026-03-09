@@ -12,6 +12,8 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import VendorModel from '../../models/VendorModel';
@@ -48,6 +50,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
   vendors,
 }) => {
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   // Debug logging
   React.useEffect(() => {
@@ -186,7 +189,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
   const handleCreateDraft = async () => {
     const validation = validateForm();
     if (!validation.valid) {
-      Alert.alert('Validation Error', validation.error);
+      showSnackbar(validation.error!);
       return;
     }
 
@@ -205,15 +208,11 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
         user?.userId || 'demo-user'
       );
 
-      Alert.alert('Success', 'RFQ created as draft successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('RfqDetail', { rfqId: rfq.id }),
-        },
-      ]);
+      showSnackbar('RFQ created as draft successfully');
+      navigation.navigate('RfqDetail', { rfqId: rfq.id });
     } catch (error) {
       logger.error('[RfqCreate] Error creating RFQ:', error as Error);
-      Alert.alert('Error', 'Failed to create RFQ. Please try again.');
+      showSnackbar('Failed to create RFQ. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -223,12 +222,12 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
   const handleCreateAndIssue = async () => {
     const validation = validateForm();
     if (!validation.valid) {
-      Alert.alert('Validation Error', validation.error);
+      showSnackbar(validation.error!);
       return;
     }
 
     if (!closingDate) {
-      Alert.alert('Validation Error', 'Closing date is required to issue RFQ');
+      showSnackbar('Closing date is required to issue RFQ');
       return;
     }
 
@@ -264,15 +263,11 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
               await RfqService.issueRfq(rfq.id);
               logger.info('[RfqCreate] Step 4: RFQ issued successfully');
 
-              Alert.alert('Success', 'RFQ issued successfully to vendors', [
-                {
-                  text: 'OK',
-                  onPress: () => navigation.navigate('RfqDetail', { rfqId: rfq.id }),
-                },
-              ]);
+              showSnackbar('RFQ issued successfully to vendors');
+              navigation.navigate('RfqDetail', { rfqId: rfq.id });
             } catch (error) {
               logger.error('[RfqCreate] Error issuing RFQ:', error as Error);
-              Alert.alert('Error', 'Failed to issue RFQ. Please try again.');
+              showSnackbar('Failed to issue RFQ. Please try again.');
             } finally {
               setCreating(false);
             }
@@ -529,6 +524,7 @@ const RfqCreateScreen: React.FC<RfqCreateScreenProps> = ({
       {/* Modals */}
       {renderDoorsModal()}
       {renderVendorModal()}
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

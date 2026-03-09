@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import TeamManagementService from '../../../services/team/TeamManagementService';
@@ -44,6 +46,7 @@ export default function TeamMemberAssignment({
   onClose,
   onAssigned,
 }: TeamMemberAssignmentProps) {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [loading, setLoading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +98,7 @@ export default function TeamMemberAssignment({
       setAvailableUsers(available);
     } catch (error) {
       logger.error('Error loading data', error as Error);
-      Alert.alert('Error', 'Failed to load data');
+      showSnackbar('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -104,7 +107,7 @@ export default function TeamMemberAssignment({
   const handleAssignMember = async () => {
     if (!selectedUserId || isAssigning) {
       if (!selectedUserId) {
-        Alert.alert('Error', 'Please select a user to assign');
+        showSnackbar('Please select a user to assign');
       }
       return;
     }
@@ -112,14 +115,14 @@ export default function TeamMemberAssignment({
     try {
       setIsAssigning(true);
       await TeamManagementService.assignMember(teamId, selectedUserId, selectedRole);
-      Alert.alert('Success', 'Team member assigned successfully');
+      showSnackbar('Team member assigned successfully');
       setSelectedUserId('');
       setSearchQuery('');
       onAssigned();
       await loadData(); // Reload data
     } catch (error) {
       logger.error('Error assigning member', error as Error);
-      Alert.alert('Error', 'Failed to assign team member');
+      showSnackbar('Failed to assign team member');
     } finally {
       setIsAssigning(false);
     }
@@ -138,12 +141,12 @@ export default function TeamMemberAssignment({
             try {
               setLoading(true);
               await TeamManagementService.removeMember(memberId);
-              Alert.alert('Success', 'Team member removed successfully');
+              showSnackbar('Team member removed successfully');
               onAssigned();
               loadData();
             } catch (error) {
               logger.error('Error removing member', error as Error);
-              Alert.alert('Error', 'Failed to remove team member');
+              showSnackbar('Failed to remove team member');
             } finally {
               setLoading(false);
             }
@@ -357,6 +360,7 @@ export default function TeamMemberAssignment({
             </View>
           </ScrollView>
         )}
+        <Snackbar {...snackbarProps} duration={3000} />
       </View>
     </Modal>
   );

@@ -14,13 +14,13 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  Alert,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { Portal, Dialog, Button, TextInput, Chip, ProgressBar, FAB } from 'react-native-paper';
+import { Portal, Dialog, Button, TextInput, Chip, ProgressBar, FAB, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useCommercial } from '../context/CommercialContext';
@@ -71,6 +71,7 @@ const ADVANCE_TYPES: AdvanceType[] = ['mobilization', 'performance', 'material']
 const AdvanceRecoveryScreen: React.FC = () => {
   const { projectId } = useCommercial();
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   const [loading, setLoading] = useState(true);
   const [advances, setAdvances] = useState<AdvanceRow[]>([]);
@@ -152,8 +153,8 @@ const AdvanceRecoveryScreen: React.FC = () => {
   const handleSave = useCallback(async () => {
     const amount = parseFloat(formAmount);
     const pct = parseFloat(formRecoveryPct);
-    if (!amount || amount <= 0) { Alert.alert('Validation', 'Enter a valid advance amount'); return; }
-    if (!pct || pct <= 0 || pct > 100) { Alert.alert('Validation', 'Recovery % must be between 1 and 100'); return; }
+    if (!amount || amount <= 0) { showSnackbar('Enter a valid advance amount'); return; }
+    if (!pct || pct <= 0 || pct > 100) { showSnackbar('Recovery % must be between 1 and 100'); return; }
 
     setSaving(true);
     try {
@@ -177,11 +178,11 @@ const AdvanceRecoveryScreen: React.FC = () => {
       await loadData();
     } catch (err) {
       logger.error('[AdvanceRecovery] Save error:', err as Error);
-      Alert.alert('Error', 'Failed to save advance');
+      showSnackbar('Failed to save advance');
     } finally {
       setSaving(false);
     }
-  }, [projectId, user, formType, formAmount, formRecoveryPct, formDate, formNotes, loadData]);
+  }, [projectId, user, formType, formAmount, formRecoveryPct, formDate, formNotes, loadData, showSnackbar]);
 
   const resetForm = () => {
     setFormType('mobilization');
@@ -441,6 +442,7 @@ const AdvanceRecoveryScreen: React.FC = () => {
             </Button>
           </Dialog.Actions>
         </Dialog>
+        <Snackbar {...snackbarProps} duration={3000} />
       </Portal>
     </View>
   );

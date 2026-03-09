@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
 import { isInvoiceOverdue } from '../utils';
@@ -33,6 +34,7 @@ export interface InvoiceFormData {
 }
 
 export const useInvoiceData = (projectId: string | null, userId: string) => {
+  const { show: showSnackbar } = useSnackbar();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,11 +78,11 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
       setInvoices(invoicesWithVendors);
     } catch (error) {
       logger.error('[Invoice] Error loading invoices:', error as Error);
-      Alert.alert('Error', 'Failed to load invoices');
+      showSnackbar('Failed to load invoices');
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   const createInvoice = async (formData: InvoiceFormData): Promise<boolean> => {
     try {
@@ -105,12 +107,12 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
         });
       });
 
-      Alert.alert('Success', 'Invoice created successfully');
+      showSnackbar('Invoice created successfully');
       await loadInvoices();
       return true;
     } catch (error) {
       logger.error('[Invoice] Error creating invoice:', error as Error);
-      Alert.alert('Error', 'Failed to create invoice');
+      showSnackbar('Failed to create invoice');
       return false;
     }
   };
@@ -136,12 +138,12 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
         });
       });
 
-      Alert.alert('Success', 'Invoice updated successfully');
+      showSnackbar('Invoice updated successfully');
       await loadInvoices();
       return true;
     } catch (error) {
       logger.error('[Invoice] Error updating invoice:', error as Error);
-      Alert.alert('Error', 'Failed to update invoice');
+      showSnackbar('Failed to update invoice');
       return false;
     }
   };
@@ -164,11 +166,11 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
                 await invoiceRecord.markAsDeleted();
               });
 
-              Alert.alert('Success', 'Invoice deleted successfully');
+              showSnackbar('Invoice deleted successfully');
               await loadInvoices();
             } catch (error) {
               logger.error('[Invoice] Error deleting invoice:', error as Error);
-              Alert.alert('Error', 'Failed to delete invoice');
+              showSnackbar('Failed to delete invoice');
             }
           },
         },
@@ -194,11 +196,11 @@ export const useInvoiceData = (projectId: string | null, userId: string) => {
               });
             });
 
-            Alert.alert('Success', 'Invoice marked as paid');
+            showSnackbar('Invoice marked as paid');
             await loadInvoices();
           } catch (error) {
             logger.error('[Invoice] Error marking invoice as paid:', error as Error);
-            Alert.alert('Error', 'Failed to mark invoice as paid');
+            showSnackbar('Failed to mark invoice as paid');
           }
         },
       },

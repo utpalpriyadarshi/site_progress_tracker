@@ -4,10 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import { logger } from '../../services/LoggingService';
 import { COLORS } from '../../theme/colors';
 // Note: You'll need to install these packages:
@@ -57,6 +58,7 @@ const BomImport: React.FC<BomImportProps> = ({ bomId, onImportComplete, onCancel
   const [importing, setImporting] = useState(false);
   const [previewData, setPreviewData] = useState<ImportedItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   /**
    * Parse CSV content
@@ -64,7 +66,7 @@ const BomImport: React.FC<BomImportProps> = ({ bomId, onImportComplete, onCancel
   const parseCSV = (content: string): ImportedItem[] => {
     const lines = content.trim().split('\n');
     if (lines.length < 2) {
-      Alert.alert('Error', 'CSV file is empty or invalid');
+      showSnackbar('CSV file is empty or invalid');
       return [];
     }
 
@@ -75,7 +77,7 @@ const BomImport: React.FC<BomImportProps> = ({ bomId, onImportComplete, onCancel
     const requiredColumns = ['itemCode', 'description', 'category', 'quantity', 'unit', 'unitCost'];
     const missingColumns = requiredColumns.filter((col) => !header.includes(col));
     if (missingColumns.length > 0) {
-      Alert.alert('Error', `Missing required columns: ${missingColumns.join(', ')}`);
+      showSnackbar(`Missing required columns: ${missingColumns.join(', ')}`);
       return [];
     }
 
@@ -157,11 +159,7 @@ const BomImport: React.FC<BomImportProps> = ({ bomId, onImportComplete, onCancel
    * Note: This is a placeholder. You'll need react-native-document-picker for actual file selection
    */
   const handleSelectFile = async () => {
-    Alert.alert(
-      'Import BOM Items',
-      'To implement file import:\n\n1. Install: npm install react-native-document-picker\n2. Install: npm install xlsx\n3. Update this component with actual file picker\n\nFor now, you can:\n- Use the template below\n- Copy to Excel/CSV\n- Import via file picker (after packages installed)',
-      [{ text: 'OK' }]
-    );
+    showSnackbar('To implement file import, install react-native-document-picker and xlsx packages');
 
     // Placeholder: Show example data
     showExampleImport();
@@ -189,7 +187,7 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
     const validItems = previewData.filter((item) => item.isValid);
 
     if (validItems.length === 0) {
-      Alert.alert('Error', 'No valid items to import');
+      showSnackbar('No valid items to import');
       return;
     }
 
@@ -222,14 +220,14 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
       }
 
       if (failCount > 0) {
-        Alert.alert('Partial Success', `Imported ${successCount} items. Failed: ${failCount}`);
+        showSnackbar(`Imported ${successCount} items. Failed: ${failCount}`);
       } else {
-        Alert.alert('Success', `Successfully imported ${successCount} items`);
+        showSnackbar(`Successfully imported ${successCount} items`);
       }
 
       onImportComplete(successCount);
     } catch (error) {
-      Alert.alert('Error', 'Failed to import items');
+      showSnackbar('Failed to import items');
       logger.error('Import error', error as Error);
     } finally {
       setImporting(false);
@@ -241,100 +239,106 @@ EQP-001,Concrete Mixer,equipment,machinery,50,hrs,1000,1.2.1,Foundation,Rental b
     const invalidCount = previewData.length - validCount;
 
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Preview Import ({previewData.length} items)</Text>
+      <>
+        <View style={styles.container}>
+          <Text style={styles.title}>Preview Import ({previewData.length} items)</Text>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryText}>✓ Valid: {validCount}</Text>
-          <Text style={[styles.summaryText, { color: invalidCount > 0 ? COLORS.ERROR : '#666' }]}>
-            ✗ Invalid: {invalidCount}
-          </Text>
-        </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryText}>✓ Valid: {validCount}</Text>
+            <Text style={[styles.summaryText, { color: invalidCount > 0 ? COLORS.ERROR : '#666' }]}>
+              ✗ Invalid: {invalidCount}
+            </Text>
+          </View>
 
-        <ScrollView style={styles.previewList}>
-          {previewData.map((item, index) => (
-            <View
-              key={index}
-              style={[styles.previewItem, !item.isValid && styles.previewItemInvalid]}
-            >
-              <View style={styles.previewHeader}>
-                <Text style={styles.previewCode}>{item.itemCode}</Text>
-                {!item.isValid && <Text style={styles.errorBadge}>Invalid</Text>}
+          <ScrollView style={styles.previewList}>
+            {previewData.map((item, index) => (
+              <View
+                key={index}
+                style={[styles.previewItem, !item.isValid && styles.previewItemInvalid]}
+              >
+                <View style={styles.previewHeader}>
+                  <Text style={styles.previewCode}>{item.itemCode}</Text>
+                  {!item.isValid && <Text style={styles.errorBadge}>Invalid</Text>}
+                </View>
+                <Text style={styles.previewDescription}>{item.description}</Text>
+                <Text style={styles.previewDetails}>
+                  {item.quantity} {item.unit} × ₹{item.unitCost} = ₹{item.quantity * item.unitCost}
+                </Text>
+                <Text style={styles.previewCategory}>Category: {item.category}</Text>
+                {item.error && <Text style={styles.errorText}>Error: {item.error}</Text>}
               </View>
-              <Text style={styles.previewDescription}>{item.description}</Text>
-              <Text style={styles.previewDetails}>
-                {item.quantity} {item.unit} × ₹{item.unitCost} = ₹{item.quantity * item.unitCost}
-              </Text>
-              <Text style={styles.previewCategory}>Category: {item.category}</Text>
-              {item.error && <Text style={styles.errorText}>Error: {item.error}</Text>}
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
 
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => {
-              setShowPreview(false);
-              setPreviewData([]);
-            }}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.importButton, importing && styles.importButtonDisabled]}
-            onPress={handleImport}
-            disabled={importing || validCount === 0}
-          >
-            {importing ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.importButtonText}>Import {validCount} Items</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                setShowPreview(false);
+                setPreviewData([]);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.importButton, importing && styles.importButtonDisabled]}
+              onPress={handleImport}
+              disabled={importing || validCount === 0}
+            >
+              {importing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.importButtonText}>Import {validCount} Items</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+        <Snackbar {...snackbarProps} duration={3000} />
+      </>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Import BOM Items</Text>
+    <>
+      <View style={styles.container}>
+        <Text style={styles.title}>Import BOM Items</Text>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>Supported Formats:</Text>
-        <Text style={styles.infoText}>• CSV (.csv)</Text>
-        <Text style={styles.infoText}>• Excel (.xls, .xlsx)</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Supported Formats:</Text>
+          <Text style={styles.infoText}>• CSV (.csv)</Text>
+          <Text style={styles.infoText}>• Excel (.xls, .xlsx)</Text>
+        </View>
+
+        <View style={styles.templateCard}>
+          <Text style={styles.templateTitle}>Required Columns:</Text>
+          <Text style={styles.templateText}>
+            itemCode, description, category, quantity, unit, unitCost
+          </Text>
+          <Text style={[styles.templateTitle, { marginTop: 12 }]}>
+            Optional Columns:
+          </Text>
+          <Text style={styles.templateText}>subCategory, wbsCode, phase, notes</Text>
+        </View>
+
+        <View style={styles.exampleCard}>
+          <Text style={styles.exampleTitle}>Category Values:</Text>
+          <Text style={styles.exampleText}>material, labor, equipment, subcontractor</Text>
+        </View>
+
+        <TouchableOpacity style={styles.selectButton} onPress={handleSelectFile}>
+          <Text style={styles.selectButtonText}>📁 Select File to Import</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.exampleButton} onPress={showExampleImport}>
+          <Text style={styles.exampleButtonText}>View Example Import</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
       </View>
-
-      <View style={styles.templateCard}>
-        <Text style={styles.templateTitle}>Required Columns:</Text>
-        <Text style={styles.templateText}>
-          itemCode, description, category, quantity, unit, unitCost
-        </Text>
-        <Text style={[styles.templateTitle, { marginTop: 12 }]}>
-          Optional Columns:
-        </Text>
-        <Text style={styles.templateText}>subCategory, wbsCode, phase, notes</Text>
-      </View>
-
-      <View style={styles.exampleCard}>
-        <Text style={styles.exampleTitle}>Category Values:</Text>
-        <Text style={styles.exampleText}>material, labor, equipment, subcontractor</Text>
-      </View>
-
-      <TouchableOpacity style={styles.selectButton} onPress={handleSelectFile}>
-        <Text style={styles.selectButtonText}>📁 Select File to Import</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.exampleButton} onPress={showExampleImport}>
-        <Text style={styles.exampleButtonText}>View Example Import</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+      <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

@@ -3,7 +3,6 @@
  */
 
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
 import { ImportData } from './useImportData';
 import { useAuth } from '../../../auth/AuthContext';
@@ -11,7 +10,8 @@ import { useAuth } from '../../../auth/AuthContext';
 export const useImportExecution = (
   projectId: string | null,
   importData: ImportData,
-  onImportComplete: () => void
+  onImportComplete: () => void,
+  showSnackbar: (message: string) => void
 ) => {
   const { user } = useAuth();
   const [importing, setImporting] = useState(false);
@@ -19,7 +19,7 @@ export const useImportExecution = (
 
   const executeImport = async () => {
     if (!projectId) {
-      Alert.alert('Error', 'No project selected');
+      showSnackbar('No project selected');
       return;
     }
 
@@ -70,18 +70,10 @@ export const useImportExecution = (
         }
       });
 
-      Alert.alert(
-        'Import Complete',
-        `Successfully imported ${importData.mappedData.length} items`,
-        [
-          {
-            text: 'OK',
-            onPress: onImportComplete,
-          },
-        ]
-      );
+      showSnackbar(`Successfully imported ${importData.mappedData.length} items`);
+      onImportComplete();
     } catch (error) {
-      Alert.alert('Import Failed', `Error: ${error}`);
+      showSnackbar(`Import failed: ${error}`);
     } finally {
       setImporting(false);
       setImportProgress(0);

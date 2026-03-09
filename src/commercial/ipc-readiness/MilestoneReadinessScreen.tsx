@@ -19,9 +19,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { Switch, Chip, Divider } from 'react-native-paper';
+import { Switch, Chip, Divider, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../../models/database';
@@ -238,6 +238,7 @@ const checkStyles = StyleSheet.create({
 const MilestoneReadinessScreen: React.FC = () => {
   const { projectId } = useCommercial();
   const navigation = useNavigation<any>();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadKDs = useCallback(async () => {
@@ -350,10 +351,10 @@ const MilestoneReadinessScreen: React.FC = () => {
       }
     } catch (error) {
       logger.error('[MilestoneReadiness] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load KD readiness data');
+      showSnackbar('Failed to load KD readiness data');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadKDs(); }, [loadKDs]);
 
@@ -370,6 +371,7 @@ const MilestoneReadinessScreen: React.FC = () => {
   }
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* Summary banner */}
@@ -512,6 +514,8 @@ const MilestoneReadinessScreen: React.FC = () => {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

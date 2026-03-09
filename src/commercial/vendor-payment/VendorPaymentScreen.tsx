@@ -18,9 +18,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { Chip, Divider } from 'react-native-paper';
+import { Chip, Divider, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -241,6 +241,7 @@ const VendorCard: React.FC<VendorCardProps> = ({ row, expanded, onToggle }) => {
 
 const VendorPaymentScreen: React.FC = () => {
   const { projectId } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadData = useCallback(async () => {
@@ -359,10 +360,10 @@ const VendorPaymentScreen: React.FC = () => {
       dispatch({ type: 'SET_DATA', rows, summary });
     } catch (error) {
       logger.error('[VendorPayment] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load vendor payment data');
+      showSnackbar('Failed to load vendor payment data');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -385,6 +386,7 @@ const VendorPaymentScreen: React.FC = () => {
   }
 
   return (
+    <>
     <View style={styles.screen}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
 
@@ -449,6 +451,8 @@ const VendorPaymentScreen: React.FC = () => {
         <View style={{ height: 32 }} />
       </ScrollView>
     </View>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

@@ -18,8 +18,9 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -99,6 +100,7 @@ function next6MonthStarts(): number[] {
 
 const CashFlowForecastScreen: React.FC = () => {
   const { projectId } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadData = useCallback(async () => {
@@ -210,10 +212,10 @@ const CashFlowForecastScreen: React.FC = () => {
       dispatch({ type: 'SET_DATA', months, summary });
     } catch (error) {
       logger.error('[CashFlow] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load cash flow forecast');
+      showSnackbar('Failed to load cash flow forecast');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -231,6 +233,7 @@ const CashFlowForecastScreen: React.FC = () => {
   );
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* Funding Gap Alert */}
@@ -334,6 +337,8 @@ const CashFlowForecastScreen: React.FC = () => {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { database } from '../../models/database';
 import DoorsRequirementModel from '../../models/DoorsRequirementModel';
 import { useAuth } from '../auth/AuthContext';
@@ -39,6 +41,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
   const { user, currentRole } = useAuth();
   const { requirementId } = route.params;
 
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requirement, setRequirement] = useState<DoorsRequirementModel | null>(null);
@@ -69,7 +72,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
       setReviewComments(req.reviewComments || '');
     } catch (error) {
       logger.error('[DoorsRequirementEdit] Error loading requirement:', error as Error);
-      Alert.alert('Error', 'Failed to load requirement details');
+      showSnackbar('Failed to load requirement details');
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -87,7 +90,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
       if (complianceStatus === 'partial') {
         percentageNum = parseFloat(compliancePercentage);
         if (isNaN(percentageNum) || percentageNum < 0 || percentageNum > 100) {
-          Alert.alert('Validation Error', 'Compliance percentage must be between 0 and 100 for partial compliance');
+          showSnackbar('Compliance percentage must be between 0 and 100 for partial compliance');
           return;
         }
       }
@@ -104,21 +107,17 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
       // Update requirement
       await DoorsEditService.updateRequirement(requirementId, updates, user.userId, currentRole || 'logistics');
 
-      Alert.alert('Success', 'Requirement updated successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      showSnackbar('Requirement updated successfully');
+      navigation.goBack();
     } catch (error: any) {
       logger.error('[DoorsRequirementEdit] Save error:', error);
 
       if (error.message && error.message.includes('Validation failed')) {
-        Alert.alert('Validation Error', error.message);
+        showSnackbar(error.message);
       } else if (error.message && error.message.includes("don't have permission")) {
-        Alert.alert('Permission Denied', error.message);
+        showSnackbar(error.message);
       } else {
-        Alert.alert('Error', 'Failed to save requirement. Please try again.');
+        showSnackbar('Failed to save requirement. Please try again.');
       }
     } finally {
       setSaving(false);
@@ -298,6 +297,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
           />
         </View>
       </ScrollView>
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { Portal, Dialog, Button, Chip, FAB, IconButton } from 'react-native-paper';
+import { Portal, Dialog, Button, Chip, FAB, IconButton, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import VendorQuoteCard from './VendorQuoteCard';
 import AddVendorQuoteDialog from './AddVendorQuoteDialog';
 import EvaluateQuoteDialog from './EvaluateQuoteDialog';
@@ -38,6 +39,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
   onRfqUpdated,
   readOnly = false,
 }) => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [quotes, setQuotes] = useState<VendorQuote[]>([]);
   const flatListProps = useFlatListProps<VendorQuote>();
   const [loading, setLoading] = useState(false);
@@ -111,7 +113,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       setQuotes(quotesList);
     } catch (error: any) {
       logger.error('[VendorQuotes] Error loading quotes:', error);
-      Alert.alert('Error', 'Failed to load quotes');
+      showSnackbar('Failed to load quotes');
     } finally {
       setLoading(false);
     }
@@ -254,7 +256,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       });
     } catch (error: any) {
       logger.error('[VendorQuotes] Error adding quote:', error);
-      Alert.alert('Error', error.message || 'Failed to add quote');
+      showSnackbar(error.message || 'Failed to add quote');
     } finally {
       setIsAddingQuote(false);
     }
@@ -302,7 +304,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       });
     } catch (error: any) {
       logger.error('[VendorQuotes] Error evaluating quote:', error);
-      Alert.alert('Error', error.message || 'Failed to evaluate quote');
+      showSnackbar(error.message || 'Failed to evaluate quote');
     } finally {
       setIsEvaluating(false);
     }
@@ -320,7 +322,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       await loadQuotes();
     } catch (error: any) {
       logger.error('[VendorQuotes] Error shortlisting:', error);
-      Alert.alert('Error', 'Failed to shortlist quote');
+      showSnackbar('Failed to shortlist quote');
     }
   };
 
@@ -336,7 +338,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
       await loadQuotes();
     } catch (error: any) {
       logger.error('[VendorQuotes] Error rejecting:', error);
-      Alert.alert('Error', 'Failed to reject quote');
+      showSnackbar('Failed to reject quote');
     }
   };
 
@@ -374,7 +376,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
     }
 
     if (!l1Quote) {
-      Alert.alert('Error', 'No L1 vendor found. Please evaluate and rank quotes first.');
+      showSnackbar('No L1 vendor found. Please evaluate and rank quotes first.');
       return;
     }
 
@@ -438,7 +440,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
               });
             } catch (error: any) {
               logger.error('[VendorQuotes] Error awarding:', error);
-              Alert.alert('Error', error.message || 'Failed to award RFQ');
+              showSnackbar(error.message || 'Failed to award RFQ');
             }
           },
         },
@@ -735,6 +737,7 @@ const VendorQuotesSheet: React.FC<VendorQuotesSheetProps> = ({
         quote={selectedQuote}
         isSubmitting={isEvaluating}
       />
+      <Snackbar {...snackbarProps} duration={3000} />
     </Portal>
   );
 };

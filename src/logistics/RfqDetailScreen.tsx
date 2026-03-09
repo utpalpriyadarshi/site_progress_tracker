@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';
 import RfqModel from '../../models/RfqModel';
@@ -132,6 +134,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   doorsPackage,
 }) => {
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -230,7 +233,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   // Issue RFQ
   const handleIssueRfq = async () => {
     if (rfq.status !== 'draft') {
-      Alert.alert('Error', 'Only draft RFQs can be issued');
+      showSnackbar('Only draft RFQs can be issued');
       return;
     }
 
@@ -242,10 +245,10 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
           try {
             setLoading(true);
             await RfqService.issueRfq(rfq.id);
-            Alert.alert('Success', 'RFQ issued successfully');
+            showSnackbar('RFQ issued successfully');
             setRefreshKey((prev) => prev + 1);
           } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to issue RFQ');
+            showSnackbar(error.message || 'Failed to issue RFQ');
           } finally {
             setLoading(false);
           }
@@ -257,23 +260,23 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   // Rank quotes
   const handleRankQuotes = async () => {
     if (quotes.length === 0) {
-      Alert.alert('Error', 'No quotes to rank');
+      showSnackbar('No quotes to rank');
       return;
     }
 
     const unevaluatedQuotes = quotes.filter((q) => q.technicalScore == null);
     if (unevaluatedQuotes.length > 0) {
-      Alert.alert('Error', `${unevaluatedQuotes.length} quote(s) are not yet evaluated`);
+      showSnackbar(`${unevaluatedQuotes.length} quote(s) are not yet evaluated`);
       return;
     }
 
     try {
       setLoading(true);
       await RfqService.rankQuotes(rfq.id);
-      Alert.alert('Success', 'Quotes ranked successfully');
+      showSnackbar('Quotes ranked successfully');
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to rank quotes');
+      showSnackbar(error.message || 'Failed to rank quotes');
     } finally {
       setLoading(false);
     }
@@ -282,7 +285,7 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
   // Cancel RFQ
   const handleCancelRfq = () => {
     if (rfq.status === 'awarded') {
-      Alert.alert('Error', 'Cannot cancel an awarded RFQ');
+      showSnackbar('Cannot cancel an awarded RFQ');
       return;
     }
 
@@ -295,10 +298,10 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
           try {
             setLoading(true);
             await RfqService.cancelRfq(rfq.id, 'Cancelled by user');
-            Alert.alert('Success', 'RFQ cancelled');
+            showSnackbar('RFQ cancelled');
             setRefreshKey((prev) => prev + 1);
           } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to cancel RFQ');
+            showSnackbar(error.message || 'Failed to cancel RFQ');
           } finally {
             setLoading(false);
           }
@@ -559,6 +562,8 @@ const RfqDetailScreen: React.FC<RfqDetailScreenProps> = ({
         vendors={vendors}
         readOnly={true}
       />
+
+      <Snackbar {...snackbarProps} duration={3000} />
 
       {/* Action Bar */}
       <View style={styles.actionBar}>

@@ -8,7 +8,8 @@ import { ImportData } from './useImportData';
 
 export const useFileUpload = (
   importData: ImportData,
-  setImportData: (data: ImportData) => void
+  setImportData: (data: ImportData) => void,
+  showSnackbar: (message: string) => void
 ) => {
   const handleFilePicker = async () => {
     // NOTE: File picker temporarily disabled due to react-native-document-picker
@@ -74,7 +75,7 @@ export const useFileUpload = (
       columnMapping: autoMapping,
     });
 
-    Alert.alert('Demo Data Loaded', `${demoData.length} sample rows loaded for testing`);
+    showSnackbar(`${demoData.length} sample rows loaded for testing`);
   };
 
   return {

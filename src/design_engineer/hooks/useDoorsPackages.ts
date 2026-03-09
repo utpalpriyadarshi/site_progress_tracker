@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { DoorsPackage, Site } from '../types/DoorsPackageTypes';
 
-export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
+export const useDoorsPackages = (projectId: string, refreshTrigger: number, showSnackbar: (message: string) => void) => {
   const [packages, setPackages] = useState<DoorsPackage[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +80,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
       setPackages(packagesWithSites);
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error as Error);
-      Alert.alert('Error', 'Failed to load DOORS packages');
+      showSnackbar('Failed to load DOORS packages');
     } finally {
       setLoading(false);
     }
@@ -89,7 +88,7 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
 
   const createPackage = async (doorsId: string, siteId: string, equipmentType: string, materialType: string) => {
     if (!doorsId || !equipmentType || !siteId) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      showSnackbar('Please fill in all required fields');
       return false;
     }
 
@@ -112,12 +111,12 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'DOORS package created successfully');
+      showSnackbar('DOORS package created successfully');
       loadPackages();
       return true;
     } catch (error) {
       logger.error('[DoorsPackage] Error creating package:', error as Error);
-      Alert.alert('Error', 'Failed to create DOORS package');
+      showSnackbar('Failed to create DOORS package');
       return false;
     }
   };
@@ -134,11 +133,11 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'Package marked as received');
+      showSnackbar('Package marked as received');
       loadPackages();
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as received:', error as Error);
-      Alert.alert('Error', 'Failed to update package');
+      showSnackbar('Failed to update package');
     }
   };
 
@@ -154,11 +153,11 @@ export const useDoorsPackages = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'Package marked as reviewed');
+      showSnackbar('Package marked as reviewed');
       loadPackages();
     } catch (error) {
       logger.error('[DoorsPackage] Error marking as reviewed:', error as Error);
-      Alert.alert('Error', 'Failed to update package');
+      showSnackbar('Failed to update package');
     }
   };
 

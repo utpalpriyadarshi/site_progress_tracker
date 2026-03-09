@@ -9,8 +9,9 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { Chip, Divider, ProgressBar } from 'react-native-paper';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { Chip, Divider, ProgressBar, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useCommercial } from '../context/CommercialContext';
 import { database } from '../../../models/database';
@@ -71,6 +72,7 @@ const EOT_COLORS: Record<string, string> = {
 
 const LDRiskScreen: React.FC = () => {
   const { projectId } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   const [loading, setLoading] = useState(true);
   const [ldRows, setLdRows] = useState<LDRow[]>([]);
@@ -147,11 +149,11 @@ const LDRiskScreen: React.FC = () => {
       setTotalLDLakhs(total);
     } catch (err) {
       logger.error('[LDRiskScreen] Load error:', err as Error);
-      Alert.alert('Error', 'Failed to load LD Risk data');
+      showSnackbar('Failed to load LD Risk data');
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -251,6 +253,7 @@ const LDRiskScreen: React.FC = () => {
   }
 
   return (
+    <>
     <FlatList
       data={[]}
       keyExtractor={() => 'dummy'}
@@ -329,6 +332,8 @@ const LDRiskScreen: React.FC = () => {
         </View>
       }
     />
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

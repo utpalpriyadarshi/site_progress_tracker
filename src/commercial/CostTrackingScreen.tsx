@@ -1,6 +1,7 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { FAB, Searchbar } from 'react-native-paper';
+import { FAB, Searchbar, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
@@ -40,6 +41,7 @@ const CostTrackingScreen = () => {
   const { projectId, projectName, selectedCostCategory, setSelectedCostCategory, refreshTrigger } =
     useCommercial();
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const route = useRoute<RouteProp<CommercialTabParamList, 'CostTracking'>>();
   const [state, dispatch] = useReducer(costTrackingReducer, initialCostTrackingState);
 
@@ -111,11 +113,11 @@ const CostTrackingScreen = () => {
       dispatch(costTrackingActions.setTotals(totalBudgets, totalCosts, totalVariance));
     } catch (error) {
       logger.error('[Cost] Error loading costs', error as Error);
-      Alert.alert('Error', 'Failed to load costs');
+      showSnackbar('Failed to load costs');
     } finally {
       dispatch(costTrackingActions.setLoading(false));
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => {
     loadCosts();
@@ -144,13 +146,13 @@ const CostTrackingScreen = () => {
 
   const handleCreateCost = async () => {
     if (!state.form.description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -171,25 +173,25 @@ const CostTrackingScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Cost entry created successfully');
+      showSnackbar('Cost entry created successfully');
       dispatch(costTrackingActions.closeDialogs());
       dispatch(costTrackingActions.resetForm());
       loadCosts();
     } catch (error) {
       logger.error('[Cost] Error creating cost', error as Error);
-      Alert.alert('Error', 'Failed to create cost entry');
+      showSnackbar('Failed to create cost entry');
     }
   };
 
   const handleEditCost = async () => {
     if (!state.data.editingCost || !state.form.description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(state.form.amount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -208,13 +210,13 @@ const CostTrackingScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Cost entry updated successfully');
+      showSnackbar('Cost entry updated successfully');
       dispatch(costTrackingActions.closeDialogs());
       dispatch(costTrackingActions.resetForm());
       loadCosts();
     } catch (error) {
       logger.error('[Cost] Error updating cost', error as Error);
-      Alert.alert('Error', 'Failed to update cost entry');
+      showSnackbar('Failed to update cost entry');
     }
   };
 
@@ -236,11 +238,11 @@ const CostTrackingScreen = () => {
                 await costRecord.markAsDeleted();
               });
 
-              Alert.alert('Success', 'Cost entry deleted successfully');
+              showSnackbar('Cost entry deleted successfully');
               loadCosts();
             } catch (error) {
               logger.error('[Cost] Error deleting cost', error as Error);
-              Alert.alert('Error', 'Failed to delete cost entry');
+              showSnackbar('Failed to delete cost entry');
             }
           },
         },
@@ -373,6 +375,7 @@ const CostTrackingScreen = () => {
         setShowDatePicker={(show) => dispatch(costTrackingActions.setShowDatePicker(show))}
         handleDateChange={handleDateChange}
       />
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

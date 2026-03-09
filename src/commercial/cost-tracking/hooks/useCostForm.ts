@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { database } from '../../../../models/database';
 import { logger } from '../../../services/LoggingService';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import { Cost } from './useCostData';
 
 export const useCostForm = (userId: string | undefined, projectId: string | null, onSuccess: () => void) => {
+  const { show: showSnackbar } = useSnackbar();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
@@ -27,13 +29,13 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
 
   const handleCreateCost = async () => {
     if (!formDescription.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(formAmount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -54,25 +56,25 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
         });
       });
 
-      Alert.alert('Success', 'Cost entry created successfully');
+      showSnackbar('Cost entry created successfully');
       setShowCreateDialog(false);
       resetForm();
       onSuccess();
     } catch (error) {
       logger.error('[Cost] Error creating cost', error as Error);
-      Alert.alert('Error', 'Failed to create cost entry');
+      showSnackbar('Failed to create cost entry');
     }
   };
 
   const handleEditCost = async () => {
     if (!editingCost || !formDescription.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      showSnackbar('Please enter a description');
       return;
     }
 
     const amount = parseFloat(formAmount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid amount');
+      showSnackbar('Please enter a valid amount');
       return;
     }
 
@@ -91,14 +93,14 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
         });
       });
 
-      Alert.alert('Success', 'Cost entry updated successfully');
+      showSnackbar('Cost entry updated successfully');
       setShowEditDialog(false);
       setEditingCost(null);
       resetForm();
       onSuccess();
     } catch (error) {
       logger.error('[Cost] Error updating cost', error as Error);
-      Alert.alert('Error', 'Failed to update cost entry');
+      showSnackbar('Failed to update cost entry');
     }
   };
 
@@ -120,11 +122,11 @@ export const useCostForm = (userId: string | undefined, projectId: string | null
                 await costRecord.markAsDeleted();
               });
 
-              Alert.alert('Success', 'Cost entry deleted successfully');
+              showSnackbar('Cost entry deleted successfully');
               onSuccess();
             } catch (error) {
               logger.error('[Cost] Error deleting cost', error as Error);
-              Alert.alert('Error', 'Failed to delete cost entry');
+              showSnackbar('Failed to delete cost entry');
             }
           },
         },

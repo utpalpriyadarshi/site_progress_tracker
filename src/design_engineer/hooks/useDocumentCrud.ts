@@ -24,6 +24,7 @@ interface UseDocumentCrudParams {
   selectedSiteId: string;
   state: DesignDocumentManagementState;
   dispatch: React.Dispatch<DesignDocumentManagementAction>;
+  showSnackbar: (message: string) => void;
   announce: (message: string) => void;
 }
 
@@ -33,6 +34,7 @@ export const useDocumentCrud = ({
   selectedSiteId,
   state,
   dispatch,
+  showSnackbar,
   announce,
 }: UseDocumentCrudParams) => {
   const [projectCategoryAKeyDates, setProjectCategoryAKeyDates] = useState<
@@ -265,11 +267,11 @@ export const useDocumentCrud = ({
       );
     } catch (error: any) {
       logger.error('[DesignDocument] Error loading documents:', error);
-      Alert.alert('Error', 'Failed to load design documents');
+      showSnackbar('Failed to load design documents');
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
     }
-  }, [projectId, engineerId, selectedSiteId, dispatch, announce]);
+  }, [projectId, engineerId, selectedSiteId, dispatch, announce, showSnackbar]);
 
   const handleCreateOrUpdateDocument = useCallback(async () => {
     if (isSubmitting) return;
@@ -278,21 +280,21 @@ export const useDocumentCrud = ({
       state.form;
 
     if (!documentNumber || !title || !documentType) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      showSnackbar('Please fill in all required fields');
       setIsSubmitting(false);
       return;
     }
 
     const requiresSite = SITE_REQUIRED_TYPES.includes(documentType as DocumentType);
     if (requiresSite && !siteId) {
-      Alert.alert('Validation Error', 'Site is required for this document type');
+      showSnackbar('Site is required for this document type');
       setIsSubmitting(false);
       return;
     }
 
     const weightageNum = weightage ? parseFloat(weightage) : undefined;
     if (weightage && (isNaN(weightageNum!) || weightageNum! < 0 || weightageNum! > 100)) {
-      Alert.alert('Validation Error', 'Weightage must be a number between 0 and 100');
+      showSnackbar('Weightage must be a number between 0 and 100');
       setIsSubmitting(false);
       return;
     }
@@ -319,25 +321,16 @@ export const useDocumentCrud = ({
             if (newTotal < previousTotal) {
               // Reducing the overrun — allow save to proceed
             } else {
-              Alert.alert(
-                'Weightage Validation',
+              showSnackbar(
                 `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
-                  `This would increase the overrun.\n\n` +
-                  `Current total: ${previousTotal.toFixed(1)}%\n` +
-                  `New total: ${newTotal.toFixed(1)}%\n\n` +
-                  `Reduce other documents first, or use Normalize to 100%.`,
+                  `This would increase the overrun. Reduce other documents first, or use Normalize to 100%.`,
               );
               setIsSubmitting(false);
               return;
             }
           } else {
-            Alert.alert(
-              'Weightage Validation',
+            showSnackbar(
               `Total weightage for ${siteName} would be ${newTotal.toFixed(1)}%. ` +
-                `Total weightage per site should equal 100%.\n\n` +
-                `Current total: ${othersTotal.toFixed(1)}%\n` +
-                `Adding: ${weightageNum.toFixed(1)}%\n` +
-                `New total: ${newTotal.toFixed(1)}%\n\n` +
                 `Available: ${(100 - othersTotal).toFixed(1)}%`,
             );
             setIsSubmitting(false);
@@ -426,7 +419,7 @@ export const useDocumentCrud = ({
         };
 
         dispatch({ type: 'UPDATE_DOCUMENT', payload: { document: updatedDoc } });
-        Alert.alert('Success', 'Document updated successfully');
+        showSnackbar('Document updated successfully');
       } else {
         let newDoc: DesignDocument | null = null;
 
@@ -501,18 +494,18 @@ export const useDocumentCrud = ({
           dispatch({ type: 'ADD_DOCUMENT', payload: { document: newDoc } });
         }
 
-        Alert.alert('Success', 'Design document created successfully');
+        showSnackbar('Design document created successfully');
         announce('Design document created successfully');
       }
 
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error: any) {
       logger.error('[DesignDocument] Error saving document:', error);
-      Alert.alert('Error', 'Failed to save design document');
+      showSnackbar('Failed to save design document');
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, state, projectId, engineerId, dispatch, announce]);
+  }, [isSubmitting, state, projectId, engineerId, dispatch, announce, showSnackbar]);
 
   const handleDeleteDocument = useCallback(
     async (documentId: string) => {
@@ -529,16 +522,16 @@ export const useDocumentCrud = ({
                 await record.markAsDeleted();
               });
               dispatch({ type: 'DELETE_DOCUMENT', payload: { documentId } });
-              Alert.alert('Success', 'Document deleted');
+              showSnackbar('Document deleted');
             } catch (error: any) {
               logger.error('[DesignDocument] Error deleting document:', error);
-              Alert.alert('Error', 'Failed to delete document');
+              showSnackbar('Failed to delete document');
             }
           },
         },
       ]);
     },
-    [dispatch],
+    [dispatch, showSnackbar],
   );
 
   const handleEditDocument = useCallback(
@@ -657,14 +650,14 @@ export const useDocumentCrud = ({
       }
 
       dispatch({ type: 'CLOSE_APPROVAL_DIALOG' });
-      Alert.alert('Success', `Document ${newStatus.replace(/_/g, ' ')}`);
+      showSnackbar(`Document ${newStatus.replace(/_/g, ' ')}`);
     } catch (error: any) {
       logger.error('[DesignDocument] Error updating document status:', error);
-      Alert.alert('Error', 'Failed to update document status');
+      showSnackbar('Failed to update document status');
     } finally {
       setIsApproving(false);
     }
-  }, [isApproving, state, dispatch]);
+  }, [isApproving, state, dispatch, showSnackbar]);
 
   return {
     projectCategoryAKeyDates,

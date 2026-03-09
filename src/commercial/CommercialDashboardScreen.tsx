@@ -4,9 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   RefreshControl,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useCommercial } from './context/CommercialContext';
 import { useAuth } from '../auth/AuthContext';
@@ -78,6 +79,7 @@ interface ContractKPIs {
 
 const CommercialDashboardScreen = () => {
   const { projectId, projectName, refreshTrigger } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<CommercialTabParamList, 'Dashboard'>>();
   const { user } = useAuth();
@@ -184,13 +186,13 @@ const CommercialDashboardScreen = () => {
         logger.debug('[Dashboard] Dashboard data loaded successfully');
       } catch (error) {
         logger.error('[Dashboard] Error loading dashboard data:', error as Error);
-        Alert.alert('Error', 'Failed to load dashboard data');
+        showSnackbar('Failed to load dashboard data');
       } finally {
         dispatch(dashboardActions.setLoading(false));
         dispatch(dashboardActions.setRefreshing(false));
       }
     },
-    [projectId, state.ui.selectedPeriod]
+    [projectId, state.ui.selectedPeriod, showSnackbar]
   );
 
   useEffect(() => {
@@ -692,6 +694,7 @@ const CommercialDashboardScreen = () => {
         onDismiss={handleTutorialDismiss}
         onStepChange={handleTutorialStepChange}
       />
+      <Snackbar {...snackbarProps} duration={3000} />
     </>
   );
 };

@@ -6,8 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import { database } from '../../../models/database';
 import SiteModel from '../../../models/SiteModel';
 import ResourceRequestService from '../../../services/resource/ResourceRequestService';
@@ -33,6 +34,7 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
   currentUserId,
   preSelectedSite,
 }) => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [sites, setSites] = useState<SiteModel[]>([]);
   const [resourceType, setResourceType] = useState<string>('equipment');
   const [resourceName, setResourceName] = useState('');
@@ -79,24 +81,24 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
 
   const validateForm = (): boolean => {
     if (!resourceName.trim()) {
-      Alert.alert('Validation Error', 'Please enter resource name');
+      showSnackbar('Please enter resource name');
       return false;
     }
 
     const qty = parseInt(quantity, 10);
     if (isNaN(qty) || qty <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid quantity');
+      showSnackbar('Please enter a valid quantity');
       return false;
     }
 
     if (!siteId) {
-      Alert.alert('Validation Error', 'Please select a site');
+      showSnackbar('Please select a site');
       return false;
     }
 
     const days = parseInt(neededByDays, 10);
     if (isNaN(days) || days <= 0) {
-      Alert.alert('Validation Error', 'Please enter valid number of days');
+      showSnackbar('Please enter valid number of days');
       return false;
     }
 
@@ -122,7 +124,7 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
         notes: notes.trim() || undefined,
       });
 
-      Alert.alert('Success', 'Resource request submitted successfully');
+      showSnackbar('Resource request submitted successfully');
 
       // Reset form
       setResourceName('');
@@ -136,13 +138,14 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
       }
     } catch (error) {
       logger.error('Error creating resource request', error as Error);
-      Alert.alert('Error', 'Failed to submit resource request');
+      showSnackbar('Failed to submit resource request');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
+    <>
     <ScrollView style={styles.container}>
       <Text style={styles.title}>New Resource Request</Text>
 
@@ -304,6 +307,8 @@ const ResourceRequestForm: React.FC<ResourceRequestFormProps> = ({
         </View>
       </View>
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 
