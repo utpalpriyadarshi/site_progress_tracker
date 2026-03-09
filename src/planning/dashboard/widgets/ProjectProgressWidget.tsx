@@ -86,7 +86,7 @@ const ProjectProgressWidget: React.FC<ProjectProgressWidgetProps> = ({
             style={styles.kdProgressBar}
           />
           <Text variant="labelSmall" style={[styles.kdProgressText, { color: barColor }]}>
-            {Math.round(item.progress)}%
+            {item.progress.toFixed(1)}%
           </Text>
         </View>
       </View>
@@ -114,7 +114,7 @@ const ProjectProgressWidget: React.FC<ProjectProgressWidgetProps> = ({
         {/* Overall Progress */}
         <View style={styles.overallSection}>
           <Text variant="headlineMedium" style={[styles.overallValue, { color: progressColor }]}>
-            {Math.round(projectProgress)}%
+            {projectProgress.toFixed(1)}%
           </Text>
           <Text variant="bodySmall" style={styles.overallLabel}>
             Project Progress (KD Weighted)
