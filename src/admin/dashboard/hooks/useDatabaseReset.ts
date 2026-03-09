@@ -25,7 +25,9 @@ export const useDatabaseReset = () => {
               // WatermelonDB's in-memory cache in one atomic operation.
               // Manual batch-delete leaves the cache stale, causing
               // initializeDefaultData to reuse deleted role IDs → login error.
-              await database.unsafeResetDatabase();
+              await database.write(async () => {
+                await database.unsafeResetDatabase();
+              });
               logger.info('WatermelonDB reset complete');
 
               // Clear AsyncStorage so no stale session/role IDs remain
