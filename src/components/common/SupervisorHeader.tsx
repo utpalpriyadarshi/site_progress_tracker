@@ -46,10 +46,10 @@ export const SupervisorHeader: React.FC<SupervisorHeaderProps> = ({
   return (
     <Appbar.Header style={styles.header}>
       {showBack
-        ? <Appbar.BackAction onPress={() => navigation.goBack()} />
+        ? <Appbar.BackAction color={COLORS.SURFACE} onPress={() => navigation.goBack()} />
         : <IconButton icon="menu" size={26} iconColor="#FFF" onPress={handleDrawerToggle} style={styles.menuButton} />
       }
-      <Appbar.Content title={title} />
+      <Appbar.Content title={title} titleStyle={styles.title} />
 
       {/* Custom right actions (optional) */}
       {rightActions}
@@ -74,8 +74,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  title: {
+    color: COLORS.SURFACE,
+  },
   logoutText: {
-    color: '#fff',
+    color: COLORS.SURFACE,
     fontSize: 14,
     fontWeight: '600',
   },
