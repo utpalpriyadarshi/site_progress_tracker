@@ -427,9 +427,9 @@ const styles = StyleSheet.create({
     height: 56,
     paddingBottom: 4,
     paddingTop: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.SURFACE,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: COLORS.BORDER,
   },
   tabBarLabel: {
     fontSize: 11,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   },
   drawer: {
     width: 280,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: COLORS.BACKGROUND,
   },
   drawerContent: {
     flex: 1,
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFC107',
+    backgroundColor: COLORS.WARNING,
     paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 8,
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: COLORS.BORDER,
+    backgroundColor: COLORS.SURFACE,
     gap: 12,
   },
   headerTextContainer: {
@@ -472,11 +472,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1C1C1E',
+    color: COLORS.TEXT_PRIMARY,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   section: {
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: COLORS.TEXT_TERTIARY,
     paddingHorizontal: 16,
     paddingVertical: 8,
     letterSpacing: 0.5,
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   headerLogoutText: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 16,
     fontWeight: '500',
   },

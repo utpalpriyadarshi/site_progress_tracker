@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { COLORS } from '../theme/colors';
 import { Q } from '@nozbe/watermelondb';
 import AutoSyncManager from '../../services/sync/AutoSyncManager';
 import { database } from '../../models/database';
@@ -93,13 +94,13 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#FF3B30',
+    backgroundColor: COLORS.ERROR,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 9,
     fontWeight: '700',
   },
