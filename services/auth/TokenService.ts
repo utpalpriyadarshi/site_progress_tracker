@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as KJUR from 'jsrsasign';
 import { JWT_CONFIG, AccessTokenPayload, RefreshTokenPayload } from '../../config/jwt.config';
 

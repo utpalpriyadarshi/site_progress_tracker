@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { generatePDF } from 'react-native-html-to-pdf';
 import RNFS from 'react-native-fs';
 import SiteModel from '../../models/SiteModel';

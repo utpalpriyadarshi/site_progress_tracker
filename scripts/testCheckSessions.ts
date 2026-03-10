@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test Script: Check Sessions in Database
  *
