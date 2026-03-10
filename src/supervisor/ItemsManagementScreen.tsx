@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {
   Card,
@@ -77,7 +78,13 @@ const ItemsManagementScreenComponent = ({
   const navigation = useNavigation<any>();
 
   // Search, filter, sort state
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
   const [selectedStatus, setSelectedStatus] = useState<string[]>(['all']);
   const [selectedPhases, setSelectedPhases] = useState<string[]>(['all']);
@@ -570,7 +577,10 @@ const ItemsManagementScreenComponent = ({
         />
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {filteredItems.length === 0 ? (
           <EmptyState
             icon={
