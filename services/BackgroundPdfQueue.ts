@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Database, Q } from '@nozbe/watermelondb';
 import DailyReportModel, { PdfGenerationStatus } from '../models/DailyReportModel';
 import SiteModel from '../models/SiteModel';

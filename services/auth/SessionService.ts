@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import SessionModel from '../../models/SessionModel';

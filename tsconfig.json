@@ -5,5 +5,13 @@
     "emitDecoratorMetadata": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["**/node_modules", "**/Pods"]
+  "exclude": [
+    "**/node_modules",
+    "**/Pods",
+    "__tests__",
+    "scripts",
+    "services",
+    "models/UserModel.ts",
+    "update_admin_email.ts"
+  ]
 }

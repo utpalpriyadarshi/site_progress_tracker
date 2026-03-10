@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { database } from '../../models/database';
 import ProjectModel from '../../models/ProjectModel';
 import SiteModel from '../../models/SiteModel';

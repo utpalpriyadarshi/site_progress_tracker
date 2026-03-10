@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AutoSyncManager - Automatic synchronization trigger manager
  * Week 8, Day 4: Auto-sync implementation

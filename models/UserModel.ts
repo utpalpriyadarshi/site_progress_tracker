@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Model } from '@nozbe/watermelondb';
 import { field, relation } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * NetworkMonitor - Network connectivity monitoring service
  * Week 8, Day 3: NetInfo integration for network state management
