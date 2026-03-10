@@ -487,10 +487,10 @@ Configure `paperTheme.ts` and pass to `<PaperProvider>` — eliminates need for 
 5. ⏭️ **ISSUE-01**: Header uniformity — deferred (current header layout is already consistent across roles)
 6. 🔲 **ISSUE-02**: Enforce Alert/Snackbar rule across Logistics, Design Eng, Manager, Commercial
 
-### Sprint 3 — Loading & Empty states (Days 10–13)
-7. **ISSUE-03**: Create `LoadingState` component; replace bare `ActivityIndicator` calls
-8. **ISSUE-04**: Replace custom EmptyState variants with shared `EmptyState`
-9. **ISSUE-05**: Create `CARD_STYLES` constant; apply `mode="elevated"` uniformly
+### ✅ Sprint 3 — Loading & Empty states (Days 10–13) — DONE (PR #220)
+7. ✅ **ISSUE-03**: Replaced bare `ActivityIndicator` full-screen patterns with `SpinnerLoading` across 25 screens (component already existed)
+8. ✅ **ISSUE-04**: Deleted 5 dead custom EmptyState variants; updated 2 admin screens to use shared `EmptyState`
+9. ✅ **ISSUE-05**: Created `src/theme/cardStyles.ts` (`CARD_STYLES` + `CARD_MODE`); applied `mode="elevated"` to 100+ Card components
 
 ### Sprint 4 — Final polish (Days 14–18)
 10. **ISSUE-06**: Define and implement create-action pattern (header button or FAB)
