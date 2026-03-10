@@ -121,7 +121,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
   return (
     <View style={styles.container}>
       {/* Header Card with Filters */}
-      <Card style={styles.headerCard}>
+      <Card mode="elevated" style={styles.headerCard}>
         <Card.Content>
           {/* Project Selector */}
           <Text style={styles.label}>Project:</Text>
@@ -201,6 +201,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
           return (
             <Card
               key={item.id}
+              mode="elevated"
               style={[styles.itemCard, item.isCriticalPath && styles.criticalPathCard]}
             >
               <Card.Content>
@@ -300,7 +301,7 @@ const ScheduleManagementScreenComponent: React.FC<ScheduleManagementObservedProp
         })}
 
         {filteredItems.length === 0 && (
-          <Card style={styles.emptyCard}>
+          <Card mode="elevated" style={styles.emptyCard}>
             <Card.Content>
               <Text style={styles.emptyText}>
                 {showCriticalPathOnly

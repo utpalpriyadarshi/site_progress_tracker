@@ -21,7 +21,7 @@ export const Step3Validate: React.FC<Step3ValidateProps> = ({
   const warningCount = validationErrors.filter(e => e.severity === 'warning').length;
 
   return (
-    <Card style={styles.contentCard}>
+    <Card mode="elevated" style={styles.contentCard}>
       <Card.Content>
         <Title style={styles.contentTitle}>Step 3: Validate Data</Title>
         <Paragraph style={styles.contentSubtitle}>

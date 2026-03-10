@@ -19,7 +19,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { FAB, Chip, Switch, Divider, TextInput, Button, Snackbar } from 'react-native-paper';
 import { useSnackbar } from '../../hooks/useSnackbar';
@@ -31,6 +30,7 @@ import { useCommercial } from '../context/CommercialContext';
 import { useAuth } from '../../auth/AuthContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import VariationOrderModel, { VOApprovalStatus } from '../../../models/VariationOrderModel';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 
 // ==================== Types ====================
 
@@ -396,7 +396,7 @@ const VariationOrderScreen: React.FC = () => {
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color="#007AFF" /></View>;
+    return <SpinnerLoading message="Loading..." />;
   }
 
   return (

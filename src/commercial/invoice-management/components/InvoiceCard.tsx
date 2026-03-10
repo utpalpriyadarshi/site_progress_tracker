@@ -23,7 +23,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const isPaid = invoice.paymentStatus === 'paid';
 
   return (
-    <Card style={styles.invoiceCard}>
+    <Card mode="elevated" style={styles.invoiceCard}>
       <Card.Content>
         <View style={styles.cardHeader}>
           <View>

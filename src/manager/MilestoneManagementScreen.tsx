@@ -508,7 +508,7 @@ const MilestoneManagementScreen = () => {
     const isExpanded = expandedMilestoneId === milestone.id;
 
     return (
-      <Card key={milestone.id} style={styles.milestoneCard}>
+      <Card key={milestone.id} mode="elevated" style={styles.milestoneCard}>
         <Card.Content>
           {/* Milestone Header */}
           <View style={styles.milestoneHeader}>
@@ -703,7 +703,7 @@ const MilestoneManagementScreen = () => {
         </View>
 
         {/* Milestones Summary */}
-        <Card style={styles.summaryCard}>
+        <Card mode="elevated" style={styles.summaryCard}>
           <Card.Content>
             <Title style={styles.summaryTitle}>Summary</Title>
             <View style={styles.summaryRow}>

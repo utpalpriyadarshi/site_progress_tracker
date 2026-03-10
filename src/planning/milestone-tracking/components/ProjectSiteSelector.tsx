@@ -26,7 +26,7 @@ export const ProjectSiteSelector: React.FC<ProjectSiteSelectorProps> = ({
   const filteredSites = sites.filter(s => s.projectId === selectedProjectId);
 
   return (
-    <Card style={styles.selectorCard}>
+    <Card mode="elevated" style={styles.selectorCard}>
       <Card.Content>
         <Title>Select Project & Site</Title>
 

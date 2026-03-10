@@ -296,7 +296,7 @@ const PurchaseOrderManagementScreen = () => {
   };
 
   const renderPOCard = ({ item }: { item: PurchaseOrder }) => (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>

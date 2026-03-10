@@ -1,8 +1,9 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { FAB, Searchbar, Chip, Menu, Portal, Snackbar, Button } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import DoorsPackageCard from './components/DoorsPackageCard';
 import CreateDoorsPackageDialog from './components/CreateDoorsPackageDialog';
 import CopyDoorsPackagesDialog from './components/CopyDoorsPackagesDialog';
@@ -332,15 +333,7 @@ const DoorsPackageManagementScreen = () => {
         )}
 
         {state.ui.loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator
-              size="large"
-              color="#007AFF"
-              accessible
-              accessibilityLabel="Loading DOORS packages"
-              accessibilityRole="progressbar"
-            />
-          </View>
+          <SpinnerLoading message="Loading..." />
         ) : (
           <FlatList
             {...flatListProps}

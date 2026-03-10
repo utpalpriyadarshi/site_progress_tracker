@@ -11,7 +11,7 @@ export const CategoryBreakdownCard: React.FC<CategoryBreakdownCardProps> = ({
   categoryBreakdown,
 }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Spending by Category</Text>
         {categoryBreakdown.map((cat) => (

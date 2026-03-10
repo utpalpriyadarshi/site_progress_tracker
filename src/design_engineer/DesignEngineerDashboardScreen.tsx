@@ -269,7 +269,7 @@ const DesignEngineerDashboardScreen = () => {
                   Your design document contribution to project milestones
                 </Text>
                 {kdDocProgress.map((kd) => (
-                  <Card key={kd.keyDateId} style={styles.kdProgressCard}>
+                  <Card key={kd.keyDateId} mode="elevated" style={styles.kdProgressCard}>
                     <Card.Content>
                       <View style={styles.kdProgressHeader}>
                         <View style={styles.kdProgressInfo}>

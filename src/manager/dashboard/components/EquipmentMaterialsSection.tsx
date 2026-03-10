@@ -44,7 +44,7 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
   return (
     <>
       {/* 4.1 Procurement Pipeline (PM300 & PM400) */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Procurement & Manufacturing Pipeline</Title>
           <View style={styles.pipelineRow}>
@@ -98,7 +98,7 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
       </Card>
 
       {/* 4.2 Purchase Orders Summary */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Purchase Orders</Title>
           <View style={styles.poSummaryRow}>
@@ -120,7 +120,7 @@ export const EquipmentMaterialsSection: React.FC<EquipmentMaterialsSectionProps>
       </Card>
 
       {/* 4.3 Delivery Schedule */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Delivery Schedule</Title>
           <View style={styles.deliveryRow}>

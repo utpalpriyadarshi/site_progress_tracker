@@ -13,7 +13,7 @@ export const CategoryMigrationCard: React.FC<CategoryMigrationCardProps> = ({
   onMigrate,
 }) => {
   return (
-    <Card style={[styles.card, { backgroundColor: COLORS.INFO_BG }]}>
+    <Card mode="elevated" style={[styles.card, { backgroundColor: COLORS.INFO_BG }]}>
       <Card.Content>
         <Title>📋 Category Names Migration (v2.18)</Title>
         <Paragraph style={styles.cardDescription}>

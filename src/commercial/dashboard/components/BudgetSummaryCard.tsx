@@ -10,7 +10,7 @@ interface BudgetSummaryCardProps {
 
 export const BudgetSummaryCard: React.FC<BudgetSummaryCardProps> = ({ budgetSummary }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Budget Summary</Text>
         <View style={styles.budgetSummaryContainer}>

@@ -127,7 +127,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
   if (onPress) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[styles.flex, style]}>
-        <Card style={[styles.card, isCompact && styles.cardCompact]}>
+        <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact]}>
           <Card.Content style={[styles.cardContent, isCompact && styles.cardContentCompact]}>
             {cardContent}
           </Card.Content>
@@ -139,7 +139,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
   // Otherwise, render normal card
   return (
     <View style={[styles.flex, style]}>
-      <Card style={[styles.card, isCompact && styles.cardCompact]}>
+      <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact]}>
         <Card.Content style={[styles.cardContent, isCompact && styles.cardContentCompact]}>
           {cardContent}
         </Card.Content>

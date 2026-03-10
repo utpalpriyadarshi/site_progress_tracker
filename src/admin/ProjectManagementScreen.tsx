@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { FAB, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { FAB, Searchbar } from 'react-native-paper';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
@@ -15,7 +16,7 @@ import {
   useProjectForm,
   useProjectDelete,
 } from './project-management/hooks';
-import { NoProjectsEmptyState } from './shared/components';
+import { EmptyState } from '../components/common/EmptyState';
 
 const ProjectManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -65,11 +66,7 @@ const ProjectManagementScreen = () => {
   });
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <SpinnerLoading message="Loading..." />;
   }
 
   return (
@@ -86,9 +83,13 @@ const ProjectManagementScreen = () => {
 
       <ScrollView style={styles.scrollView}>
         {filteredProjects.length === 0 ? (
-          <NoProjectsEmptyState
-            searchQuery={searchQuery}
-            onAddProject={openCreateModal}
+          <EmptyState
+            icon={searchQuery ? 'magnify-close' : 'folder-open-outline'}
+            title={searchQuery ? 'No projects found' : 'No projects yet'}
+            message={searchQuery ? `No projects match "${searchQuery}"` : 'Add your first project to get started.'}
+            actionText={!searchQuery ? 'Add Project' : undefined}
+            onAction={!searchQuery ? openCreateModal : undefined}
+            variant="compact"
           />
         ) : (
           filteredProjects.map((project) => (

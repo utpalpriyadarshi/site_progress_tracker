@@ -16,7 +16,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   indicatorColor,
 }) => {
   return (
-    <Card style={styles.kpiCard}>
+    <Card mode="elevated" style={styles.kpiCard}>
       <Card.Content>
         <Paragraph style={styles.kpiLabel}>{label}</Paragraph>
         <Title style={styles.kpiValue}>{value}</Title>

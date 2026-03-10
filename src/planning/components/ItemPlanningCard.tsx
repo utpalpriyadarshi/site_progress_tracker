@@ -75,6 +75,7 @@ const ItemPlanningCard: React.FC<ItemPlanningCardProps> = ({
 
   return (
     <Card
+      mode="elevated"
       style={[
         styles.card,
         isCriticalPath && styles.criticalPathCard,

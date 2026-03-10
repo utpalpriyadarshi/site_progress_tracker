@@ -386,7 +386,7 @@ const WBSManagementScreen = () => {
   return (
     <View style={styles.container}>
       {/* Site Selector */}
-      <Card style={styles.selectorCard}>
+      <Card mode="elevated" style={styles.selectorCard}>
         <Card.Content>
           <SimpleSiteSelector
             selectedSite={state.selection.selectedSite}

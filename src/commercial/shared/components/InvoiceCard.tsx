@@ -69,7 +69,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   // Render compact variant
   if (variant === 'compact') {
     return (
-      <Card style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
+      <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
         <Card.Content>
           <View style={styles.compactHeader}>
             <View style={styles.compactInfo}>
@@ -96,7 +96,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   // Render detailed variant
   if (variant === 'detailed') {
     return (
-      <Card style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
+      <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
         <Card.Content>
           {/* Header */}
           <View style={styles.header}>
@@ -195,7 +195,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
 
   // Render default variant
   return (
-    <Card style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
+    <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(invoice) : undefined}>
       <Card.Content>
         {/* Header */}
         <View style={styles.header}>

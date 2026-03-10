@@ -58,6 +58,7 @@ const WBSItemCard: React.FC<WBSItemCardProps> = ({
 
   return (
     <Card
+      mode="elevated"
       style={[
         styles.card,
         { marginLeft: 16 + indentLevel * 20 }, // Indent based on WBS level

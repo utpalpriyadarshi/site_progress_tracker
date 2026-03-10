@@ -33,7 +33,7 @@ export interface DoorsPackageListSkeletonProps {
  * Single Package Card Skeleton
  */
 const PackageCardSkeleton: React.FC = () => (
-  <Card style={styles.card}>
+  <Card mode="elevated" style={styles.card}>
     <Card.Content>
       {/* Header with DOORS ID, site name, and dual badges */}
       <View style={styles.cardHeader}>

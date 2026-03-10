@@ -8,6 +8,3 @@ export * from './PermissionEditor';
 export * from './ProjectCard';
 export * from './SyncStatusPanel';
 
-// Empty States (Phase 3 - Task 3.3)
-export * from './AdminEmptyState';
-// Exports: AdminEmptyState, NoUsersEmptyState, NoProjectsEmptyState

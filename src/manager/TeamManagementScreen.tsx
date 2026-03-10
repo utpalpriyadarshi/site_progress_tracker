@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
@@ -22,6 +21,7 @@ import TeamMemberAssignment from './components/TeamMemberAssignment';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 /**
  * TeamManagementScreen
@@ -400,10 +400,7 @@ const TeamManagementScreen = () => {
         {/* Teams List */}
         <ScrollView style={styles.teamsList}>
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.INFO} />
-              <Text style={styles.loadingText}>Loading teams...</Text>
-            </View>
+            <SpinnerLoading message="Loading teams..." />
           ) : teams.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateTitle}>No teams found</Text>

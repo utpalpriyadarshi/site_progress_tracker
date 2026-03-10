@@ -93,7 +93,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   // Render compact variant
   if (variant === 'compact') {
     return (
-      <Card style={styles.card} onPress={onPress ? () => onPress(project) : undefined}>
+      <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(project) : undefined}>
         <Card.Content>
           <View style={styles.compactContainer}>
             <View style={styles.compactLeft}>
@@ -145,7 +145,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const overdue = isOverdue();
 
   return (
-    <Card style={styles.card} onPress={onPress ? () => onPress(project) : undefined}>
+    <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(project) : undefined}>
       <Card.Content>
         {/* Header */}
         <View style={styles.header}>

@@ -39,7 +39,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   }
 
   return (
-    <Card style={styles.card} onPress={onPress}>
+    <Card mode="elevated" style={styles.card} onPress={onPress}>
       <Card.Content>
         <View style={styles.header}>
           <Icon name={icon} size={24} color={color} />
@@ -71,7 +71,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 const MetricCardSkeleton: React.FC = () => {
   // Reuse Phase 2 skeleton pattern
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <View style={[styles.skeleton, styles.iconSkeleton]} />
         <View style={[styles.skeleton, styles.valueSkeleton]} />

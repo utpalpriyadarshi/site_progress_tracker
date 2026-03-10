@@ -10,7 +10,7 @@ interface CashFlowCardProps {
 
 export const CashFlowCard: React.FC<CashFlowCardProps> = ({ cashFlow }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Cash Flow</Text>
         <View style={styles.cashFlowContainer}>

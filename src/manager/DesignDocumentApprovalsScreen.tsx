@@ -17,7 +17,6 @@ import {
   Text,
   Card,
   Chip,
-  ActivityIndicator,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -26,6 +25,7 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { commonStyles } from '../styles/common';
 
 // ==================== Types ====================
@@ -149,7 +149,7 @@ const DesignDocumentApprovalsScreen = () => {
       : COLORS.SUCCESS;
 
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardTopRow}>
             <View style={styles.docInfo}>
@@ -220,9 +220,7 @@ const DesignDocumentApprovalsScreen = () => {
         )}
 
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-          </View>
+          <SpinnerLoading message="Loading..." />
         ) : (
           <FlatList
             data={docs}

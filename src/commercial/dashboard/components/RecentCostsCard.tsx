@@ -12,7 +12,7 @@ export const RecentCostsCard: React.FC<RecentCostsCardProps> = ({ recentCosts })
   if (recentCosts.length === 0) return null;
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Recent Costs</Text>
         {recentCosts.map((cost, index) => (

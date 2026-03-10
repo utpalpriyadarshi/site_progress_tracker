@@ -79,7 +79,7 @@ export const InspectionCard: React.FC<InspectionCardProps> = React.memo(
     const syncStatusColor = isLocal ? COLORS.WARNING : COLORS.SUCCESS;
 
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           {/* Header: Type chips + Rating */}
           <View style={styles.cardHeader}>

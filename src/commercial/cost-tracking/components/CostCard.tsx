@@ -23,7 +23,7 @@ export const CostCard: React.FC<CostCardProps> = ({
   const isOverBudget = totalSpent > budgetAmount;
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <View style={styles.header}>
           <CategoryChip category={cost.category} label={getCategoryLabel(cost.category)} />

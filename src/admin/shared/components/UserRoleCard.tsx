@@ -82,7 +82,7 @@ export const UserRoleCard: React.FC<UserRoleCardProps> = ({
   // Render compact variant
   if (variant === 'compact') {
     return (
-      <Card style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
+      <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
         <Card.Content>
           <View style={styles.compactContainer}>
             <Avatar.Text
@@ -120,7 +120,7 @@ export const UserRoleCard: React.FC<UserRoleCardProps> = ({
   // Render detailed variant
   if (variant === 'detailed') {
     return (
-      <Card style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
+      <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
         <Card.Content>
           {/* Header with avatar and basic info */}
           <View style={styles.detailedHeader}>
@@ -244,7 +244,7 @@ export const UserRoleCard: React.FC<UserRoleCardProps> = ({
 
   // Render default variant
   return (
-    <Card style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
+    <Card mode="elevated" style={styles.card} onPress={onPress ? () => onPress(user) : undefined}>
       <Card.Content>
         <View style={styles.defaultHeader}>
           <Avatar.Text

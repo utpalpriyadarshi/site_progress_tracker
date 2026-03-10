@@ -11,7 +11,7 @@ export const AlertsCard: React.FC<AlertsCardProps> = ({ alerts }) => {
   if (alerts.length === 0) return null;
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Alerts</Text>
         {alerts.map((alert, index) => (

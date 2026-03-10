@@ -8,8 +8,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import { useSnackbar } from '../hooks/useSnackbar';
@@ -22,6 +22,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 // DOORS Package state management
 import { doorsPackageFormReducer, initialDoorsPackageFormState } from './doors-package/state';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 /**
  * DOORS Package Edit Screen
@@ -156,12 +157,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
   };
 
   if (state.ui.loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading package...</Text>
-      </View>
-    );
+    return <SpinnerLoading message="Loading package..." />;
   }
 
   if (!state.data.doorsPackage) {
@@ -189,7 +185,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
           disabled={!canEdit || state.ui.saving}
         >
           {state.ui.saving ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={COLORS.SURFACE} />
           ) : (
             <Text style={styles.saveText}>Save</Text>
           )}

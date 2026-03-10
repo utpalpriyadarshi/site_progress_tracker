@@ -629,6 +629,7 @@ const ItemsManagementScreenComponent = ({
             return (
               <Card
                 key={item.id}
+                mode="elevated"
                 style={styles.itemCard}
                 onPress={() => navigation.navigate('DailyWork', { focusItemId: item.id })}
               >

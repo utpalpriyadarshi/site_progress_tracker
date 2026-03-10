@@ -24,7 +24,6 @@ import {
   TextInput,
   Menu,
   IconButton,
-  ActivityIndicator,
   Divider,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -36,6 +35,7 @@ import { useSnackbar } from '../../components/Snackbar';
 import { logger } from '../../services/LoggingService';
 import { seedPredefinedTemplates } from '../../services/TemplateService';
 import { COLORS } from '../../theme/colors';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 import { TemplatesStackParamList } from './TemplatesStackNavigator';
 
 // ==================== Types ====================
@@ -191,7 +191,7 @@ const TemplatesScreen: React.FC = () => {
         }
         activeOpacity={0.8}
       >
-        <Card style={styles.card}>
+        <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.cardContent}>
             <View style={styles.cardMain}>
               <Text style={styles.templateName}>{item.name}</Text>
@@ -244,9 +244,7 @@ const TemplatesScreen: React.FC = () => {
       <SupervisorHeader title="Activity Templates" showBack={false} />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <SpinnerLoading message="Loading..." />
       ) : templates.length === 0 ? (
         <EmptyState
           icon="file-document-outline"

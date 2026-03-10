@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   TextInput,
   Modal,
 } from 'react-native';
@@ -30,6 +29,7 @@ import {
   StatusFilter,
 } from './equipment/state';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 /**
  * EquipmentManagementScreen (Week 3)
@@ -636,12 +636,7 @@ const EquipmentManagementScreen = () => {
   };
 
   if (state.ui.loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.INFO} />
-        <Text style={styles.loadingText}>Loading equipment data...</Text>
-      </View>
-    );
+    return <SpinnerLoading message="Loading equipment data..." />;
   }
 
   return (

@@ -492,7 +492,7 @@ const FinancialReportsScreen = () => {
       </View>
 
       {/* Budget Overview Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Budget Overview</Title>
 
@@ -542,7 +542,7 @@ const FinancialReportsScreen = () => {
       </Card>
 
       {/* Profitability Analysis Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Profitability Analysis</Title>
 
@@ -591,7 +591,7 @@ const FinancialReportsScreen = () => {
       </Card>
 
       {/* Cost Breakdown by Category Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Cost Breakdown by Category</Title>
 
@@ -647,7 +647,7 @@ const FinancialReportsScreen = () => {
       </Card>
 
       {/* BOM Summary Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Bill of Materials Summary</Title>
 
@@ -698,7 +698,7 @@ const FinancialReportsScreen = () => {
       </Card>
 
       {/* Purchase Orders Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Purchase Orders</Title>
 

@@ -194,7 +194,7 @@ const SiteManagementScreenComponent = ({
 
       {/* Project Header - Shows supervisor's assigned project */}
       {projectName && (
-        <Card style={styles.projectCard}>
+        <Card mode="elevated" style={styles.projectCard}>
           <Card.Content>
             <View style={styles.projectHeader}>
               <View>
@@ -295,7 +295,7 @@ const SiteManagementScreenComponent = ({
             const project = projects.find((p) => p.id === site.projectId);
 
             return (
-              <Card key={site.id} style={styles.siteCard}>
+              <Card key={site.id} mode="elevated" style={styles.siteCard}>
                 <Card.Content>
                   <View style={styles.siteHeader}>
                     <View style={styles.siteInfo}>

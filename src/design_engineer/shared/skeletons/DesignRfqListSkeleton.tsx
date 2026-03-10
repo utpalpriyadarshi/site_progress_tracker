@@ -33,7 +33,7 @@ export interface DesignRfqListSkeletonProps {
  * Single RFQ Card Skeleton
  */
 const RfqCardSkeleton: React.FC = () => (
-  <Card style={styles.card}>
+  <Card mode="elevated" style={styles.card}>
     <Card.Content>
       {/* Header with RFQ number, title, and status chip */}
       <View style={styles.cardHeader}>

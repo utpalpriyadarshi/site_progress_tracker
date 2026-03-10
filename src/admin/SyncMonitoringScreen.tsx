@@ -146,7 +146,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       <Text style={styles.title}>Sync Monitoring</Text>
 
       {/* Network Status Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Icon name={isConnected ? 'wifi' : 'wifi-off'} size={24} color={isConnected ? COLORS.SUCCESS : '#999'} />
@@ -162,7 +162,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       </Card>
 
       {/* Sync Status Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Icon name="sync" size={24} color={getSyncStatusColor()} />
@@ -196,7 +196,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       </Card>
 
       {/* Sync Queue Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Icon name="format-list-bulleted" size={24} color={COLORS.INFO} />
@@ -223,7 +223,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       </Card>
 
       {/* Dead Letter Queue Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Icon name="skull" size={24} color={COLORS.ERROR} />
@@ -255,7 +255,7 @@ export const SyncMonitoringScreen: React.FC = () => {
       </Card>
 
       {/* Manual Controls Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Icon name="cog" size={24} color={COLORS.PRIMARY} />

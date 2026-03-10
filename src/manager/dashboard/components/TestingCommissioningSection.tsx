@@ -45,7 +45,7 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
   return (
     <>
       {/* 6.1 Pre-commissioning (PM500) & Commissioning (PM600) */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Pre-commissioning & Commissioning Overview</Title>
           <View style={styles.testingRow}>
@@ -105,7 +105,7 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
       </Card>
 
       {/* 6.2 Testing & Systems Status */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Testing & Systems Status</Title>
           <View style={styles.systemsRow}>
@@ -133,7 +133,7 @@ export const TestingCommissioningSection: React.FC<TestingCommissioningSectionPr
       </Card>
 
       {/* 6.3 Quality Inspections */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Quality Inspections</Title>
           <View style={styles.inspectionRow}>

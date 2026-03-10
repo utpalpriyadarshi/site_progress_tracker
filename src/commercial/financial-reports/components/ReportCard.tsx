@@ -9,7 +9,7 @@ interface ReportCardProps {
 
 export const ReportCard: React.FC<ReportCardProps> = ({ children, style }) => {
   return (
-    <Card style={[styles.card, style]}>
+    <Card mode="elevated" style={[styles.card, style]}>
       <Card.Content>{children}</Card.Content>
     </Card>
   );

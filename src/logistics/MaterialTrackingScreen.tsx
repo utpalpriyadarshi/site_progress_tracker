@@ -4,7 +4,6 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Text,
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';

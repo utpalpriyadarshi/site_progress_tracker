@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, TextInput, Button, HelperText, Portal, Snackbar } from 'react-native-paper';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import PasswordResetService from '../services/PasswordResetService';
 import { useSnackbar } from '../hooks/useSnackbar';
@@ -140,14 +141,7 @@ export const ResetPasswordScreen: React.FC = () => {
 
   // Show loading while validating token
   if (validatingToken) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" />
-        <Text variant="bodyLarge" style={{ marginTop: 16 }}>
-          Validating reset link...
-        </Text>
-      </View>
-    );
+    return <SpinnerLoading message="Validating reset link..." />;
   }
 
   // Show error if token is invalid

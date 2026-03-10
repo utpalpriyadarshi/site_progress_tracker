@@ -54,7 +54,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
   return (
     <>
       {/* 5.1 Budget Overview */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Budget Overview</Title>
           <View style={styles.budgetRow}>
@@ -96,7 +96,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
       </Card>
 
       {/* 5.2 Profitability */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Profitability</Title>
           <View style={styles.profitRow}>
@@ -133,7 +133,7 @@ export const FinancialSection: React.FC<FinancialSectionProps> = ({ data }) => {
       </Card>
 
       {/* 5.3 BOM Summary */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>BOM Summary</Title>
           <View style={styles.bomRow}>

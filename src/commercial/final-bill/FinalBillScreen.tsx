@@ -17,7 +17,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -30,6 +29,7 @@ import { logger } from '../../services/LoggingService';
 import { useCommercial } from '../context/CommercialContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { COLORS } from '../../theme/colors';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 
 // ==================== Types ====================
 
@@ -325,7 +325,7 @@ const FinalBillScreen: React.FC = () => {
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color={COLORS.BLUE_SECONDARY} /></View>;
+    return <SpinnerLoading message="Loading..." />;
   }
 
   if (!state.summary) {

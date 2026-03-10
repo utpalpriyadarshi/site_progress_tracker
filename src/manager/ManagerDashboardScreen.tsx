@@ -1449,7 +1449,7 @@ const ManagerDashboardScreen = () => {
       </View>
 
       {/* Project Header */}
-      <Card style={styles.headerCard}>
+      <Card mode="elevated" style={styles.headerCard}>
         <Card.Content>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
@@ -1483,7 +1483,7 @@ const ManagerDashboardScreen = () => {
       </Card>
 
       {/* Role Switcher Card */}
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title>Switch Role View</Title>
           <Paragraph style={styles.cardDescription}>
@@ -1532,6 +1532,7 @@ const ManagerDashboardScreen = () => {
         <View style={styles.kpiRow}>
           {/* KPI 1: Sites Status */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.sitesDelayed > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('TeamPerformance')}
           >
@@ -1563,6 +1564,7 @@ const ManagerDashboardScreen = () => {
 
           {/* KPI 2: Budget Utilization */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.budgetUtilization > 90 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('FinancialReports')}
           >
@@ -1595,6 +1597,7 @@ const ManagerDashboardScreen = () => {
         <View style={styles.kpiRow}>
           {/* KPI 3: Open Hindrances */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.openHindrances > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('TeamPerformance')}
           >
@@ -1624,6 +1627,7 @@ const ManagerDashboardScreen = () => {
 
           {/* KPI 4: Critical Path Risk */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.criticalPathItemsAtRisk > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('Milestones')}
           >
@@ -1656,6 +1660,7 @@ const ManagerDashboardScreen = () => {
         <View style={styles.kpiRow}>
           {/* KPI 5: Delivery Status */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.deliveryDelayed > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('BomManagement')}
           >
@@ -1687,6 +1692,7 @@ const ManagerDashboardScreen = () => {
 
           {/* KPI 6: Upcoming Milestones */}
           <Card
+            mode="elevated"
             style={styles.kpiCard}
             onPress={() => (navigation as any).navigate('Milestones')}
           >
@@ -1712,6 +1718,7 @@ const ManagerDashboardScreen = () => {
         <View style={styles.kpiRow}>
           {/* KPI 7: Docs awaiting customer review — tappable */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.pendingApprovals > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('DesignDocApprovals')}
           >
@@ -1741,6 +1748,7 @@ const ManagerDashboardScreen = () => {
 
           {/* KPI 8: Pending Change Orders */}
           <Card
+            mode="elevated"
             style={[styles.kpiCard, stats.pendingChanges > 0 && styles.kpiCardActionable]}
             onPress={() => (navigation as any).navigate('ChangeOrders')}
           >
@@ -1773,6 +1781,7 @@ const ManagerDashboardScreen = () => {
         <View style={styles.kpiRow}>
           {/* KPI 9: Active Supervisors */}
           <Card
+            mode="elevated"
             style={styles.kpiCard}
             onPress={() => (navigation as any).navigate('TeamPerformance')}
           >

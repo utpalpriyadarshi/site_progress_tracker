@@ -64,7 +64,7 @@ export const ItemsList: React.FC<ItemsListProps> = ({
           );
 
           return (
-            <Card key={site.id} style={styles.siteCard}>
+            <Card key={site.id} mode="elevated" style={styles.siteCard}>
               <Card.Title
                 title={site.name}
                 subtitle={site.location}

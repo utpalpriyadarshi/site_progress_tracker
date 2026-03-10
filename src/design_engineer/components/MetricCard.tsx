@@ -11,7 +11,7 @@ interface MetricCardProps {
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, color = '#007AFF' }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.title}>{title}</Text>
         <Text style={[styles.value, { color }]}>{value}</Text>
