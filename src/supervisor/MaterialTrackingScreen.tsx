@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ScrollView, RefreshControl } from 'react-native';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -25,7 +25,13 @@ const MaterialTrackingScreenComponent = ({
 }) => {
   const { selectedSiteId } = useSiteContext();
   const { showSnackbar } = useSnackbar();
+  const [refreshing, setRefreshing] = useState(false);
   const [filteredMaterials, setFilteredMaterials] = useState<MaterialModel[]>([]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -345,6 +351,7 @@ const MaterialTrackingScreenComponent = ({
           keyExtractor={item => item.id}
           style={styles.list}
           accessibilityLabel="Materials list"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
 

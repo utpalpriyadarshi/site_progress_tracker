@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {
   Card,
@@ -53,7 +54,13 @@ const SiteManagementScreenComponent = ({
   const { showSnackbar } = useSnackbar();
 
   // Search, filter, sort state
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
   const [selectedActivity, setSelectedActivity] = useState<string[]>(['all']);
   const [sortBy, setSortBy] = useState<'name'>('name');
@@ -253,7 +260,10 @@ const SiteManagementScreenComponent = ({
         />
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {displayedSites.length === 0 ? (
           <EmptyState
             icon={hasActiveFilters ? 'filter-variant' : 'map-marker-plus-outline'}

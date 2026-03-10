@@ -180,7 +180,7 @@ const LogisticsTabs = memo(() => {
         component={LogisticsDashboard}
         options={{
           title: 'Dashboard',
-          headerTitle: 'Logistics',
+          headerTitle: 'Logistics Dashboard',
           tabBarAccessibilityLabel: 'Dashboard tab, overview of logistics',
         }}
       />
@@ -189,7 +189,7 @@ const LogisticsTabs = memo(() => {
         component={MaterialTrackingScreen}
         options={{
           title: 'Materials',
-          headerTitle: 'Logistics',
+          headerTitle: 'Material Tracking',
           tabBarAccessibilityLabel: 'Materials tracking tab',
         }}
       />
@@ -198,7 +198,7 @@ const LogisticsTabs = memo(() => {
         component={InventoryManagementScreen}
         options={{
           title: 'Inventory',
-          headerTitle: 'Logistics',
+          headerTitle: 'Inventory Management',
           tabBarAccessibilityLabel: 'Inventory management tab',
         }}
       />
@@ -207,7 +207,7 @@ const LogisticsTabs = memo(() => {
         component={DeliverySchedulingScreen}
         options={{
           title: 'Deliveries',
-          headerTitle: 'Logistics',
+          headerTitle: 'Delivery Scheduling',
           tabBarAccessibilityLabel: 'Delivery scheduling tab',
         }}
       />
