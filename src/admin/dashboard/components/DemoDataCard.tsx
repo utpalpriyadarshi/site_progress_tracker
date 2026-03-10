@@ -261,7 +261,7 @@ export const DemoDataCard: React.FC = () => {
   };
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Title>Demo Data Generator</Title>
         <Paragraph style={styles.description}>

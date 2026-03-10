@@ -1,8 +1,9 @@
 import React, { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import { FAB, Searchbar, Menu, Snackbar, IconButton } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import DesignDocumentCard from './components/DesignDocumentCard';
 import CreateDesignDocumentDialog from './components/CreateDesignDocumentDialog';
 import ManageCategoriesDialog from './components/ManageCategoriesDialog';
@@ -605,14 +606,7 @@ const DesignDocumentManagementScreen = () => {
         </View>
 
         {state.ui.loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator
-              size="large"
-              color="#007AFF"
-              accessible
-              accessibilityLabel="Loading design documents"
-            />
-          </View>
+          <SpinnerLoading message="Loading..." />
         ) : (
           <FlatList
             {...flatListProps}

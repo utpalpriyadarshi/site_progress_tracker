@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { FAB, Card, Searchbar, Chip, Menu, Portal, Dialog, Button, TextInput, Snackbar } from 'react-native-paper';
@@ -21,6 +20,7 @@ import { budgetManagementActions } from './state/budget/budgetManagementActions'
 import type { Budget } from './state/budget/budgetManagementReducer';
 import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { formatCurrencySmart } from '../utils/currencyFormatter';
 
 /**
@@ -250,7 +250,7 @@ const BudgetManagementScreen = () => {
     const isOverBudget = variance < 0;
 
     return (
-      <Card style={styles.budgetCard}>
+      <Card mode="elevated" style={styles.budgetCard}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Chip
@@ -434,10 +434,7 @@ const BudgetManagementScreen = () => {
 
       {/* Budget list */}
       {state.ui.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading budgets...</Text>
-        </View>
+        <SpinnerLoading message="Loading budgets..." />
       ) : displayedBudgets.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>

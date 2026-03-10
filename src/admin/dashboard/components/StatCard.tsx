@@ -9,7 +9,7 @@ interface StatCardProps {
 
 export const StatCard: React.FC<StatCardProps> = ({ value, label }) => {
   return (
-    <Card style={styles.statCard}>
+    <Card mode="elevated" style={styles.statCard}>
       <Card.Content>
         <Title style={styles.statNumber}>{value}</Title>
         <Paragraph>{label}</Paragraph>

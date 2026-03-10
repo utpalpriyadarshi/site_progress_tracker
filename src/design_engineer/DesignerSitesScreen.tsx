@@ -384,7 +384,7 @@ const DesignerSitesScreenComponent: React.FC<DesignerSitesScreenProps> = ({ site
               const domainNameStr = getDomainName((site as any).domainId);
 
               return (
-                <Card key={site.id} style={styles.siteCard}>
+                <Card key={site.id} mode="elevated" style={styles.siteCard}>
                   <Card.Content>
                     <View style={styles.siteHeader}>
                       <View style={styles.siteInfo}>

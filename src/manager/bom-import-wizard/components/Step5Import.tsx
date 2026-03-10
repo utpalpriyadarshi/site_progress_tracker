@@ -19,7 +19,7 @@ export const Step5Import: React.FC<Step5ImportProps> = ({
   itemCount,
 }) => {
   return (
-    <Card style={styles.contentCard}>
+    <Card mode="elevated" style={styles.contentCard}>
       <Card.Content>
         <Title style={styles.contentTitle}>Step 5: Import</Title>
         <Paragraph style={styles.contentSubtitle}>

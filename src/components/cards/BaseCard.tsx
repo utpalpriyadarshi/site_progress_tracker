@@ -77,6 +77,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
 
   return (
     <Card
+      mode="elevated"
       style={[styles.card, isSelected && styles.selectedCard, style]}
       onPress={bulkSelectMode ? handlePress : onPress}
       onLongPress={onLongPress}

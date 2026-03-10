@@ -17,7 +17,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import { useSnackbar } from '../../hooks/useSnackbar';
@@ -27,6 +26,7 @@ import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { useCommercial } from '../context/CommercialContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 
 // ==================== Types ====================
 
@@ -224,7 +224,7 @@ const CashFlowForecastScreen: React.FC = () => {
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color="#007AFF" /></View>;
+    return <SpinnerLoading message="Loading..." />;
   }
 
   const maxAbsValue = Math.max(

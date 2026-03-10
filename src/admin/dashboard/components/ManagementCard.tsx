@@ -16,7 +16,7 @@ export const ManagementCard: React.FC<ManagementCardProps> = ({
   onPress,
 }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Title>{title}</Title>
         <Paragraph style={styles.cardDescription}>{description}</Paragraph>

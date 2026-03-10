@@ -89,6 +89,7 @@ export const BaseWidget: React.FC<BaseWidgetProps> = ({
   return (
     <CardWrapper onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
       <Card
+        mode="elevated"
         style={[styles.card, styles[`${size}Card`]]}
         accessible
         accessibilityRole={onPress ? 'button' : 'text'}

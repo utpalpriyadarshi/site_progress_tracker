@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useLogistics } from './context/LogisticsContext';
@@ -23,6 +22,7 @@ import DoorsPackageModel from '../../models/DoorsPackageModel';
 import DoorsStatisticsService, { DoorsKPIs } from '../services/DoorsStatisticsService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 
 /**
@@ -522,12 +522,7 @@ const LogisticsDashboardScreen = () => {
   };
 
   if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.INFO} />
-        <Text style={styles.loadingText}>Loading logistics dashboard...</Text>
-      </View>
-    );
+    return <SpinnerLoading message="Loading logistics dashboard..." />;
   }
 
   return (

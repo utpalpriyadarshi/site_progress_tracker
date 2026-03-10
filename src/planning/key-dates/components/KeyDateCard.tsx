@@ -127,6 +127,7 @@ const KeyDateCardInner: React.FC<KeyDateCardProps> = ({
 
   return (
     <Card
+      mode="elevated"
       style={[styles.card, isCritical && styles.criticalCard]}
       accessibilityLabel={`Key Date ${keyDate.code}: ${keyDate.description}`}
     >

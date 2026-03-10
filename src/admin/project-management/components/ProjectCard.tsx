@@ -15,6 +15,7 @@ interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete }) => {
   return (
     <Card
+      mode="elevated"
       style={styles.card}
       accessible={true}
       accessibilityLabel={`Project card for ${project.name}, ${project.client}, status ${project.status}`}

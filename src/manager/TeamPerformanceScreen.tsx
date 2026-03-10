@@ -315,7 +315,7 @@ const TeamPerformanceScreen = () => {
 
   const renderProjectSummary = () => {
     return (
-      <Card style={styles.summaryCard}>
+      <Card mode="elevated" style={styles.summaryCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Project Team Summary</Title>
           <View style={styles.summaryRow}>
@@ -382,7 +382,7 @@ const TeamPerformanceScreen = () => {
     }
 
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Supervisor Performance</Title>
           <Paragraph style={styles.cardSubtitle}>
@@ -466,7 +466,7 @@ const TeamPerformanceScreen = () => {
     if (supervisors.length === 0 || filteredSupervisors.length === 0) return null;
 
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Performance Comparison</Title>
           <ScrollView horizontal>

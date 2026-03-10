@@ -104,7 +104,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
     // Compact variant for list views
     return (
       <TouchableOpacity onPress={handleCardPress} disabled={!onPress}>
-        <Card style={styles.compactCard}>
+        <Card mode="elevated" style={styles.compactCard}>
           <Card.Content style={styles.compactContent}>
             <View style={styles.compactHeader}>
               <View style={styles.compactInfo}>
@@ -136,7 +136,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
 
   // Default variant with full details
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         {/* Header */}
         <View style={styles.header}>

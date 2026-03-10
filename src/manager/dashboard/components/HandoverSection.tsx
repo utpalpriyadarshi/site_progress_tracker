@@ -43,7 +43,7 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
   return (
     <>
       {/* 7.1 PM700 Overview & Site Status */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Handover Overview (PM700)</Title>
           <View style={styles.handoverOverviewRow}>
@@ -85,7 +85,7 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
       </Card>
 
       {/* 7.2 Documentation Status */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Documentation Status</Title>
           <View style={styles.documentationRow}>
@@ -125,7 +125,7 @@ export const HandoverSection: React.FC<HandoverSectionProps> = ({ data }) => {
       </Card>
 
       {/* 7.3 Punch List Summary */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Punch List</Title>
           <View style={styles.punchListRow}>

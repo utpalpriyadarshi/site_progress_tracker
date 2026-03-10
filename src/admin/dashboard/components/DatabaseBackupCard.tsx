@@ -111,7 +111,7 @@ export const DatabaseBackupCard: React.FC = () => {
   };
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Title>Database Backup & Restore</Title>
         <Paragraph style={styles.description}>

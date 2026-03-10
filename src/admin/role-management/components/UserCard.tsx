@@ -34,6 +34,7 @@ export const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <Card
+      mode="elevated"
       style={styles.card}
       accessible={true}
       accessibilityLabel={`User card for ${user.fullName}, ${roleName}, ${user.isActive ? 'active' : 'inactive'}`}

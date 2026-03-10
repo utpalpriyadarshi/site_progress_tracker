@@ -25,7 +25,6 @@ import {
   TextInput,
   Menu,
   IconButton,
-  ActivityIndicator,
   Switch,
   Divider,
 } from 'react-native-paper';
@@ -36,6 +35,7 @@ import { SupervisorHeader } from '../../components/common';
 import { useSnackbar } from '../../components/Snackbar';
 import { logger } from '../../services/LoggingService';
 import { COLORS } from '../../theme/colors';
+import { SpinnerLoading } from '../../components/common/LoadingState';
 import { TemplatesStackParamList } from './TemplatesStackNavigator';
 
 // ==================== Types ====================
@@ -245,7 +245,7 @@ const TemplateDetailScreen: React.FC = () => {
   })).filter(g => g.items.length > 0);
 
   const renderItem = (item: TemplateItem, idx: number) => (
-    <Card key={idx} style={styles.itemCard}>
+    <Card key={idx} mode="elevated" style={styles.itemCard}>
       <Card.Content style={styles.itemContent}>
         <View style={styles.itemMain}>
           <Text style={styles.itemName}>{item.name}</Text>
@@ -289,9 +289,7 @@ const TemplateDetailScreen: React.FC = () => {
       <SupervisorHeader title={template.name} showBack={true} />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <SpinnerLoading message="Loading..." />
       ) : (
         <FlatList
           data={[]}

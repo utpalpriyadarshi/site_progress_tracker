@@ -31,7 +31,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
   const statusColor = STATUS_COLORS[statusValue as keyof typeof STATUS_COLORS] || STATUS_COLORS.not_started;
 
   return (
-    <Card style={styles.milestoneCard}>
+    <Card mode="elevated" style={styles.milestoneCard}>
       <Card.Content>
         {/* Header */}
         <View style={styles.milestoneHeader}>

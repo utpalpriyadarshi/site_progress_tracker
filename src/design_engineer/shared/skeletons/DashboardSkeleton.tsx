@@ -33,7 +33,7 @@ export interface DashboardSkeletonProps {
  * Single Metric Card Skeleton
  */
 const MetricCardSkeleton: React.FC = () => (
-  <Card style={styles.metricCard}>
+  <Card mode="elevated" style={styles.metricCard}>
     <Card.Content>
       <Skeleton width="60%" height={14} marginBottom={8} />
       <Skeleton width={60} height={32} marginBottom={4} />
@@ -56,7 +56,7 @@ const SectionHeaderSkeleton: React.FC = () => (
  * Info Card Skeleton
  */
 const InfoCardSkeleton: React.FC = () => (
-  <Card style={styles.infoCard}>
+  <Card mode="elevated" style={styles.infoCard}>
     <Card.Content>
       <Skeleton width={150} height={16} marginBottom={12} />
       <Skeleton width="100%" height={14} marginBottom={6} />

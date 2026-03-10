@@ -65,7 +65,7 @@ export const AlertsSection: React.FC<AlertsSectionProps> = ({ alerts, onAlertPre
 
         return (
           <TouchableOpacity key={alert.id} onPress={() => onAlertPress?.(alert)}>
-            <Card style={styles.alertCard}>
+            <Card mode="elevated" style={styles.alertCard}>
               <Card.Content style={styles.alertContent}>
                 <Icon name={icon} size={24} color={color} />
                 <View style={styles.alertText}>

@@ -541,7 +541,7 @@ const ReportsHistoryScreen = () => {
           />
         ) : (
           filteredReports.map(({ report, site, progressLogs, items }) => (
-            <Card key={report.id} style={styles.reportCard}>
+            <Card key={report.id} mode="elevated" style={styles.reportCard}>
               <Card.Content>
                 <View style={styles.cardHeader}>
                   <View style={styles.headerLeft}>

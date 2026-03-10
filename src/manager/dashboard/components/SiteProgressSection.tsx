@@ -21,7 +21,7 @@ interface SiteProgressSectionProps {
 export const SiteProgressSection: React.FC<SiteProgressSectionProps> = ({ sites }) => {
   if (sites.length === 0) {
     return (
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Paragraph style={styles.emptyText}>No sites found for this project</Paragraph>
         </Card.Content>
@@ -32,7 +32,7 @@ export const SiteProgressSection: React.FC<SiteProgressSectionProps> = ({ sites 
   return (
     <>
       {sites.map((site) => (
-        <Card key={site.siteId} style={styles.siteCard}>
+        <Card key={site.siteId} mode="elevated" style={styles.siteCard}>
           <Card.Content>
             <View style={styles.siteHeader}>
               <View style={styles.siteHeaderLeft}>

@@ -19,6 +19,7 @@ import { useAuth } from '../auth/AuthContext';
 import DoorsEditService, { RequirementEditData } from '../services/DoorsEditService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 /**
  * DOORS Requirement Edit Screen
@@ -136,12 +137,7 @@ const DoorsRequirementEditScreen: React.FC<DoorsRequirementEditScreenProps> = ({
   };
 
   if (loading || !requirement) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading requirement...</Text>
-      </View>
-    );
+    return <SpinnerLoading message="Loading requirement..." />;
   }
 
   return (

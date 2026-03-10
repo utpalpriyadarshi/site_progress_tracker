@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { FAB, Searchbar, Snackbar } from 'react-native-paper';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useRoute, RouteProp } from '@react-navigation/native';
@@ -20,6 +20,7 @@ import {
 } from './cost-tracking/components';
 import type { CommercialTabParamList } from '../nav/CommercialNavigator';
 import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 /**
  * CostTrackingScreen (v2.20 - Refactored)
@@ -296,10 +297,7 @@ const CostTrackingScreen = () => {
 
       {/* Cost list */}
       {state.ui.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading costs...</Text>
-        </View>
+        <SpinnerLoading message="Loading costs..." />
       ) : displayedCosts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>

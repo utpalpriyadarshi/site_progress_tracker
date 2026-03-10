@@ -15,7 +15,7 @@ export const Step2MapColumns: React.FC<Step2MapColumnsProps> = ({ columnMapping 
   const requiredFields = getRequiredFields();
 
   return (
-    <Card style={styles.contentCard}>
+    <Card mode="elevated" style={styles.contentCard}>
       <Card.Content>
         <Title style={styles.contentTitle}>Step 2: Map Columns</Title>
         <Paragraph style={styles.contentSubtitle}>

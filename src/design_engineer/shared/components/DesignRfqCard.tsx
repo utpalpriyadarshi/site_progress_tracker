@@ -169,7 +169,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
   if (onPress) {
     return (
       <TouchableOpacity onPress={() => onPress(rfq)} activeOpacity={0.7}>
-        <Card style={[styles.card, isCompact && styles.cardCompact, style]}>
+        <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact, style]}>
           <Card.Content>{cardContent}</Card.Content>
         </Card>
       </TouchableOpacity>
@@ -178,7 +178,7 @@ const DesignRfqCard: React.FC<DesignRfqCardProps> = ({
 
   // Otherwise, render normal card
   return (
-    <Card style={[styles.card, isCompact && styles.cardCompact, style]}>
+    <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact, style]}>
       <Card.Content>{cardContent}</Card.Content>
     </Card>
   );

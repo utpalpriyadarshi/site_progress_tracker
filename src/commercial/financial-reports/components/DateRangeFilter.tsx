@@ -27,7 +27,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   handleClearDates,
 }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Date Range Filter</Text>
         <View style={styles.dateFilterContainer}>

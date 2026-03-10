@@ -141,7 +141,7 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
   // Render empty state
   if (costs.length === 0) {
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No cost data available</Text>
@@ -155,7 +155,7 @@ export const CostBreakdownTable: React.FC<CostBreakdownTableProps> = ({
   }
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <View style={styles.header}>
           <Text style={styles.title}>Cost Breakdown</Text>

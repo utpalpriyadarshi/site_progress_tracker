@@ -95,7 +95,7 @@ export const SyncStatusPanel: React.FC<SyncStatusPanelProps> = ({
     const statusColor = getStatusColor();
 
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.compactContainer}>
             {/* Status Indicator */}
@@ -142,7 +142,7 @@ export const SyncStatusPanel: React.FC<SyncStatusPanelProps> = ({
   const statusColor = getStatusColor();
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         {/* Header */}
         <View style={styles.header}>

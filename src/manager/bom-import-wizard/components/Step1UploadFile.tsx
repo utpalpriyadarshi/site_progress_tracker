@@ -23,7 +23,7 @@ export const Step1UploadFile: React.FC<Step1UploadFileProps> = ({
   onFilePicker,
 }) => {
   return (
-    <Card style={styles.contentCard}>
+    <Card mode="elevated" style={styles.contentCard}>
       <Card.Content>
         <Title style={styles.contentTitle}>Step 1: Upload File</Title>
         <Paragraph style={styles.contentSubtitle}>

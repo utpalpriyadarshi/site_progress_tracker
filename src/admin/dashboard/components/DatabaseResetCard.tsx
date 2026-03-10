@@ -8,7 +8,7 @@ interface DatabaseResetCardProps {
 
 export const DatabaseResetCard: React.FC<DatabaseResetCardProps> = ({ onReset }) => {
   return (
-    <Card style={[styles.card, { backgroundColor: '#FFE5E5' }]}>
+    <Card mode="elevated" style={[styles.card, { backgroundColor: '#FFE5E5' }]}>
       <Card.Content>
         <Title>🗄️ Database Reset (v2.11)</Title>
         <Paragraph style={styles.cardDescription}>

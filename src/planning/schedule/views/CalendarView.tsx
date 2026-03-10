@@ -205,7 +205,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const renderSelectedDayItem = ({ item }: { item: ScheduleItem }) => (
-    <Card style={styles.selectedItemCard}>
+    <Card mode="elevated" style={styles.selectedItemCard}>
       <Card.Content style={styles.selectedItemContent}>
         <View style={styles.selectedItemHeader}>
           <Text style={styles.selectedItemName} numberOfLines={1}>

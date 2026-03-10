@@ -1,8 +1,9 @@
 import React, { useReducer, useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { FAB, Searchbar, Chip, Snackbar, Menu, Portal, Dialog, Button, TextInput, Paragraph } from 'react-native-paper';
 import { useDesignEngineerContext } from './context/DesignEngineerContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import DesignRfqCard from './components/DesignRfqCard';
 import CreateDesignRfqDialog from './components/CreateDesignRfqDialog';
 import VendorQuotesSheet from './components/VendorQuotesSheet';
@@ -830,15 +831,7 @@ const DesignRfqManagementScreen = () => {
         )}
 
         {state.ui.loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator
-              size="large"
-              color="#007AFF"
-              accessible
-              accessibilityLabel="Loading Design RFQs"
-              accessibilityRole="progressbar"
-            />
-          </View>
+          <SpinnerLoading message="Loading..." />
         ) : (
           <FlatList
             {...flatListProps}

@@ -79,6 +79,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   const renderItem = ({ item }: { item: ScheduleItem }) => (
     <Card
+      mode="elevated"
       style={[styles.itemCard, item.isCriticalPath && styles.criticalPathCard]}
       accessible
       accessibilityLabel={`${item.name}, ${Math.round(item.progress * 100)}% complete, ${item.status}`}
@@ -206,7 +207,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   return (
     <View style={styles.container}>
       {/* Filter Card */}
-      <Card style={styles.headerCard}>
+      <Card mode="elevated" style={styles.headerCard}>
         <Card.Content>
           {/* Project */}
           <View style={styles.projectHeader}>

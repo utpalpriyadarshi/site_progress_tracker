@@ -21,7 +21,7 @@ export const GanttLegend: React.FC<GanttLegendProps> = ({
   variant = 'tasks',
 }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <View style={styles.legend}>
           {variant === 'key_dates' ? (

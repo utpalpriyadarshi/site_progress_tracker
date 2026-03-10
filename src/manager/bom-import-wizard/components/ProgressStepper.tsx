@@ -16,7 +16,7 @@ interface ProgressStepperProps {
 
 export const ProgressStepper: React.FC<ProgressStepperProps> = ({ currentStep }) => {
   return (
-    <Card style={styles.stepperCard}>
+    <Card mode="elevated" style={styles.stepperCard}>
       <Card.Content>
         <View style={styles.stepperContainer}>
           {WIZARD_STEPS.map((step, index) => (

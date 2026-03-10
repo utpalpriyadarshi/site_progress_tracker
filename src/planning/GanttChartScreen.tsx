@@ -16,7 +16,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { Text, Card, ActivityIndicator, Chip, SegmentedButtons } from 'react-native-paper';
+import { Text, Card, Chip, SegmentedButtons } from 'react-native-paper';
 import dayjs from 'dayjs';
 import SiteModel from '../../models/SiteModel';
 import KeyDateModel from '../../models/KeyDateModel';
@@ -52,6 +52,7 @@ import {
   TaskRow,
   KeyDateMilestoneRow,
 } from './gantt-chart/components';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 const GanttChartScreen: React.FC = () => {
   const [state, dispatch] = useReducer(ganttChartReducer, createGanttChartInitialState());
@@ -192,7 +193,7 @@ const GanttChartScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Site Selector */}
-      <Card style={styles.selectorCard}>
+      <Card mode="elevated" style={styles.selectorCard}>
         <Card.Content>
           <SimpleSiteSelector
             selectedSite={state.selection.selectedSite}
@@ -240,10 +241,7 @@ const GanttChartScreen: React.FC = () => {
 
       {/* Content */}
       {state.ui.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1976D2" />
-          <Text style={styles.loadingText}>Loading tasks...</Text>
-        </View>
+        <SpinnerLoading message="Loading tasks..." />
       ) : !state.selection.selectedSite ? (
         <EmptyState
           icon="map-marker-outline"

@@ -24,7 +24,7 @@ export const SiteProgressSection: React.FC<SiteProgressSectionProps> = ({ sites,
       <Text variant="titleMedium" style={styles.sectionTitle}>
         Site Progress
       </Text>
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content style={styles.cardContent}>
           {sites.map((site, index) => {
             const progressColor = getProgressColor(site.progress);

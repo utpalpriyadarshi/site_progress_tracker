@@ -129,7 +129,7 @@ const SiteCard: React.FC<SiteCardProps> = ({ site, project, onEdit, onDelete, on
   }, [site.id, site.supervisorId, site.designEngineerId]);
 
   return (
-    <Card style={styles.siteCard}>
+    <Card mode="elevated" style={styles.siteCard}>
       <Card.Content>
         <View style={styles.siteHeader}>
           <View style={styles.siteInfo}>

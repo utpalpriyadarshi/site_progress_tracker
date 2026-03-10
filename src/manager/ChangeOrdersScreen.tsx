@@ -26,7 +26,6 @@ import {
   Dialog,
   TextInput,
   Snackbar,
-  ActivityIndicator,
 } from 'react-native-paper';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -36,6 +35,7 @@ import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { commonStyles } from '../styles/common';
 
 type ChangeOrderStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
@@ -270,7 +270,7 @@ const ChangeOrdersScreen = () => {
   const renderItem = ({ item }: { item: ChangeOrder }) => {
     const cfg = STATUS_CONFIG[item.status];
     return (
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <View style={styles.cardTopRow}>
             <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -443,9 +443,7 @@ const ChangeOrdersScreen = () => {
         </ScrollView>
 
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-          </View>
+          <SpinnerLoading message="Loading..." />
         ) : (
           <FlatList
             data={displayed}

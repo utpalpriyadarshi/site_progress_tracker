@@ -43,7 +43,7 @@ const VendorQuoteCard: React.FC<VendorQuoteCardProps> = ({
   const canShortlistReject = quote.technicalScore != null && quote.status !== 'awarded';
 
   return (
-    <Card style={[styles.card, isL1 && styles.l1Card]}>
+    <Card mode="elevated" style={[styles.card, isL1 && styles.l1Card]}>
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>

@@ -61,7 +61,7 @@ export const BomCard: React.FC<BomCardProps> = ({
   const variance = baselineBom ? calculateVariance(baselineTotalCost, totalCost) : 0;
 
   return (
-    <Card key={bom.id} style={styles.bomCard}>
+    <Card key={bom.id} mode="elevated" style={styles.bomCard}>
       <Card.Content>
         {/* BOM Header */}
         <View style={styles.bomHeader}>

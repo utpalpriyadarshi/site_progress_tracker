@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   Divider,
-  ActivityIndicator,
 } from 'react-native-paper';
 import { useAuth } from './AuthContext';
 import { useSnackbar } from '../components/Snackbar';
@@ -106,7 +105,7 @@ const PasswordChangeScreen = ({ navigation }: any) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Title style={styles.title}>Change Password</Title>
           <Paragraph style={styles.subtitle}>
@@ -225,7 +224,7 @@ const PasswordChangeScreen = ({ navigation }: any) => {
       </Card>
 
       {/* Security Notice */}
-      <Card style={styles.noticeCard}>
+      <Card mode="elevated" style={styles.noticeCard}>
         <Card.Content>
           <Paragraph style={styles.noticeText}>
             🔒 <strong>Security Notice:</strong> After changing your password, you will need to login

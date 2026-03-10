@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { FAB, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { FAB, Searchbar } from 'react-native-paper';
+import { SpinnerLoading } from '../components/common/LoadingState';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
 import { useAuth } from '../auth/AuthContext';
@@ -16,7 +17,7 @@ import {
   useUserForm,
   usePasswordReset,
 } from './role-management/hooks';
-import { NoUsersEmptyState } from './shared/components';
+import { EmptyState } from '../components/common/EmptyState';
 
 const RoleManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -77,11 +78,7 @@ const RoleManagementScreen = () => {
   });
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <SpinnerLoading message="Loading..." />;
   }
 
   return (
@@ -98,9 +95,13 @@ const RoleManagementScreen = () => {
 
       <ScrollView style={styles.scrollView}>
         {filteredUsers.length === 0 ? (
-          <NoUsersEmptyState
-            searchQuery={searchQuery}
-            onAddUser={openCreateModal}
+          <EmptyState
+            icon={searchQuery ? 'magnify-close' : 'account-group-outline'}
+            title={searchQuery ? 'No users found' : 'No users yet'}
+            message={searchQuery ? `No users match "${searchQuery}"` : 'Add your first user to get started.'}
+            actionText={!searchQuery ? 'Add User' : undefined}
+            onAction={!searchQuery ? openCreateModal : undefined}
+            variant="compact"
           />
         ) : (
           filteredUsers.map((user) => (

@@ -10,7 +10,6 @@ import {
   TextInput,
   ScrollView,
   Modal,
-  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { database } from '../../models/database';

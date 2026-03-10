@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { Button, Card, Text, FAB } from 'react-native-paper';
 import { useSnackbar } from '../components/Snackbar';
@@ -22,6 +21,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
 import { useAccessibility } from '../utils/accessibility';
 import { COLORS } from '../theme/colors';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 interface BaselineScreenProps {
   projects: ProjectModel[];
@@ -178,7 +178,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
           </View>
 
           {criticalPathItems.length > 0 && (
-            <Card style={styles.infoCard}>
+            <Card mode="elevated" style={styles.infoCard}>
               <Card.Content>
                 <View style={styles.infoHeader}>
                   <Text variant="titleMedium" style={styles.infoTitle}>
@@ -196,7 +196,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
           )}
 
           {isBaselineLocked && (
-            <Card style={styles.warningCard}>
+            <Card mode="elevated" style={styles.warningCard}>
               <Card.Content>
                 <Text variant="bodyMedium" style={styles.warningText}>
                   ⚠️ Baseline is locked. Use Schedule Update screen to make changes.
@@ -206,10 +206,7 @@ const BaselineScreenComponent: React.FC<BaselineScreenProps> = ({ projects }) =>
           )}
 
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#1976D2" />
-              <Text style={styles.loadingText}>Loading items...</Text>
-            </View>
+            <SpinnerLoading message="Loading items..." />
           ) : items.length === 0 ? (
             <EmptyState
               icon="clipboard-list-outline"

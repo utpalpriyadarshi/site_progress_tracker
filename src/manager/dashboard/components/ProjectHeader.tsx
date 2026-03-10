@@ -23,7 +23,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   healthColor,
 }) => {
   return (
-    <Card style={styles.headerCard}>
+    <Card mode="elevated" style={styles.headerCard}>
       <Card.Content>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>

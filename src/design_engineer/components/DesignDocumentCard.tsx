@@ -38,7 +38,7 @@ const DesignDocumentCard: React.FC<DesignDocumentCardProps> = ({
   const hasReviseActions = (doc.status === 'rejected' || doc.status === 'approved_with_comment') && onRevise;
 
   return (
-    <Card style={[styles.card, { borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
+    <Card mode="elevated" style={[styles.card, { borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
       <Card.Content style={styles.cardContent}>
         <View style={styles.topRow}>
           <Text style={styles.documentNumber}>{doc.documentNumber}</Text>

@@ -21,12 +21,12 @@ import {
   Button,
   Appbar,
   Surface,
-  ActivityIndicator,
   Snackbar,
 } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlanningStackParamList } from '../nav/types';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { SpinnerLoading } from '../components/common/LoadingState';
 
 // Components
 import {
@@ -209,12 +209,7 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // Loading state
   if (state.ui.loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1976D2" />
-        <Text style={styles.loadingText}>Loading item...</Text>
-      </View>
-    );
+    return <SpinnerLoading message="Loading item..." />;
   }
 
   // Item not found

@@ -188,7 +188,7 @@ export const FinancialReportExporter: React.FC<FinancialReportExporterProps> = (
   return (
     <>
     <ScrollView style={styles.container}>
-      <Card style={styles.card}>
+      <Card mode="elevated" style={styles.card}>
         <Card.Content>
           <Text style={styles.title}>Export Financial Report</Text>
           <Text style={styles.subtitle}>

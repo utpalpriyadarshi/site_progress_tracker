@@ -157,7 +157,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
     const categoryColor = groupBy === 'category' ? getCategoryColor(group.name) : COLORS.INFO;
 
     return (
-      <Card key={group.name} style={styles.groupCard}>
+      <Card key={group.name} mode="elevated" style={styles.groupCard}>
         <List.Accordion
           title={group.name.toUpperCase()}
           expanded={isExpanded}
@@ -213,7 +213,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   return (
     <View style={styles.container}>
       {/* Header with summary */}
-      <Card style={styles.summaryCard}>
+      <Card mode="elevated" style={styles.summaryCard}>
         <Card.Content>
           <View style={styles.summaryHeader}>
             <View>

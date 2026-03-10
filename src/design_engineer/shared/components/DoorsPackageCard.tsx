@@ -177,7 +177,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
   if (onPress) {
     return (
       <TouchableOpacity onPress={() => onPress(pkg)} activeOpacity={0.7}>
-        <Card style={[styles.card, isCompact && styles.cardCompact, style]}>
+        <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact, style]}>
           <Card.Content>{cardContent}</Card.Content>
         </Card>
       </TouchableOpacity>
@@ -186,7 +186,7 @@ const DoorsPackageCard: React.FC<DoorsPackageCardProps> = ({
 
   // Otherwise, render normal card
   return (
-    <Card style={[styles.card, isCompact && styles.cardCompact, style]}>
+    <Card mode="elevated" style={[styles.card, isCompact && styles.cardCompact, style]}>
       <Card.Content>{cardContent}</Card.Content>
     </Card>
   );

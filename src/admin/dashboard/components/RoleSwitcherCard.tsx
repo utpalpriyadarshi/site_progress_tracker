@@ -18,7 +18,7 @@ export const RoleSwitcherCard: React.FC<RoleSwitcherCardProps> = ({
   onRoleSelect,
 }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Title>Switch Role View</Title>
         <Paragraph style={styles.cardDescription}>

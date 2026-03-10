@@ -215,7 +215,7 @@ export const BudgetSummaryChart: React.FC<BudgetSummaryChartProps> = ({
   );
 
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.title}>Budget Summary</Text>
 

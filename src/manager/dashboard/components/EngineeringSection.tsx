@@ -44,7 +44,7 @@ export const EngineeringSection: React.FC<EngineeringSectionProps> = ({ data }) 
   return (
     <>
       {/* Engineering Overview */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>Engineering Overview (PM200)</Title>
           <View style={styles.engineeringRow}>
@@ -76,7 +76,7 @@ export const EngineeringSection: React.FC<EngineeringSectionProps> = ({ data }) 
       </Card>
 
       {/* DOORS Packages */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>DOORS Packages</Title>
           <View style={styles.doorsRow}>
@@ -109,7 +109,7 @@ export const EngineeringSection: React.FC<EngineeringSectionProps> = ({ data }) 
       </Card>
 
       {/* RFQ Status */}
-      <Card style={styles.sectionCard}>
+      <Card mode="elevated" style={styles.sectionCard}>
         <Card.Content>
           <Title style={styles.cardTitle}>RFQ Status (Procurement)</Title>
           <View style={styles.rfqRow}>

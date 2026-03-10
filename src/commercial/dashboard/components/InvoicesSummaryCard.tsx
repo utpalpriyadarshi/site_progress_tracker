@@ -10,7 +10,7 @@ interface InvoicesSummaryCardProps {
 
 export const InvoicesSummaryCard: React.FC<InvoicesSummaryCardProps> = ({ invoicesSummary }) => {
   return (
-    <Card style={styles.card}>
+    <Card mode="elevated" style={styles.card}>
       <Card.Content>
         <Text style={styles.sectionTitle}>Invoices Overview</Text>
         <View style={styles.invoicesSummaryContainer}>

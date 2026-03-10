@@ -11,7 +11,5 @@ export { AccessibleDataTable } from './AccessibleDataTable';
 export type { ColumnDefinition, AccessibleDataTableProps } from './AccessibleDataTable';
 export { ChartAccessibilityProvider } from './ChartAccessibilityProvider';
 export type { ChartDataPoint, ChartAccessibilityProviderProps } from './ChartAccessibilityProvider';
-export { EmptyState } from './EmptyState';
-export type { EmptyStateProps, EmptyStateAction, EmptyStateIconType } from './EmptyState';
 export { NoSearchResults } from './NoSearchResults';
 export type { NoSearchResultsProps } from './NoSearchResults';

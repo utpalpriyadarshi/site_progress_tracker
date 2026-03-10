@@ -16,7 +16,7 @@ export const Step4Preview: React.FC<Step4PreviewProps> = ({ mappedData }) => {
   const totalCost = mappedData.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
 
   return (
-    <Card style={styles.contentCard}>
+    <Card mode="elevated" style={styles.contentCard}>
       <Card.Content>
         <Title style={styles.contentTitle}>Step 4: Preview & Confirm</Title>
         <Paragraph style={styles.contentSubtitle}>Review the data before importing</Paragraph>

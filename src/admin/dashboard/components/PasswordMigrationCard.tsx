@@ -23,7 +23,7 @@ export const PasswordMigrationCard: React.FC<PasswordMigrationCardProps> = ({
   const isComplete = migrationStatus.percentComplete === 100;
 
   return (
-    <Card style={[styles.card, { backgroundColor: '#FFF3CD' }]}>
+    <Card mode="elevated" style={[styles.card, { backgroundColor: '#FFF3CD' }]}>
       <Card.Content>
         <Title>🔐 Password Migration (v2.2)</Title>
         <Paragraph style={styles.cardDescription}>

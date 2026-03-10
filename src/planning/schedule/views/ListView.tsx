@@ -129,6 +129,7 @@ export const ListView: React.FC<ListViewProps> = ({
 
   const renderItem = ({ item }: { item: ScheduleItem }) => (
     <Card
+      mode="elevated"
       style={styles.itemCard}
       accessible
       accessibilityRole="button"
