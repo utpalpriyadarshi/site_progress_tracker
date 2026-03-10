@@ -485,18 +485,18 @@ Configure `paperTheme.ts` and pass to `<PaperProvider>` — eliminates need for 
 ### 🔄 Sprint 2 — Critical structural fixes (Days 5–9) — IN PROGRESS
 4. ✅ **ISSUE-13**: Added 11 extended palette constants; migrated top-9 hardcoded-colour files + all 11 navigator files (PR #219)
 5. ⏭️ **ISSUE-01**: Header uniformity — deferred (current header layout is already consistent across roles)
-6. 🔲 **ISSUE-02**: Enforce Alert/Snackbar rule across Logistics, Design Eng, Manager, Commercial
+6. ✅🔲 **ISSUE-02**: Enforce Alert/Snackbar rule across Logistics, Design Eng, Manager, Commercial
 
 ### ✅ Sprint 3 — Loading & Empty states (Days 10–13) — DONE (PR #220)
 7. ✅ **ISSUE-03**: Replaced bare `ActivityIndicator` full-screen patterns with `SpinnerLoading` across 25 screens (component already existed)
 8. ✅ **ISSUE-04**: Deleted 5 dead custom EmptyState variants; updated 2 admin screens to use shared `EmptyState`
 9. ✅ **ISSUE-05**: Created `src/theme/cardStyles.ts` (`CARD_STYLES` + `CARD_MODE`); applied `mode="elevated"` to 100+ Card components
 
-### Sprint 4 — Final polish (Days 14–18)
-10. **ISSUE-06**: Define and implement create-action pattern (header button or FAB)
-11. **ISSUE-08**: Fix Admin tab labels; standardize screen title format
-12. **ISSUE-09**: Supervisor pull-to-refresh standardization
-13. **ISSUE-11**: Typography scale audit
+### ✅ Sprint 4 — Final polish (Days 14–18) — DONE (PR #221)
+10. ✅ **ISSUE-06**: FAB create-action pattern already consistent across 18 screens — documented, no changes needed
+11. ✅ **ISSUE-08**: Fixed generic `headerTitle` in Manager (5 tabs), Logistics (4 tabs), Planning (4 tabs) — each tab now shows its descriptive screen name
+12. ✅ **ISSUE-09**: Added pull-to-refresh (`RefreshControl`) to 3 reactive Supervisor screens (Sites, Items, Materials)
+13. ✅ **ISSUE-11**: Created `src/theme/typography.ts` (FONT_SIZE, FONT_WEIGHT, LINE_HEIGHT) mapped to Paper MD3 scale; full 2159-instance migration deferred as follow-up
 
 ---
 
