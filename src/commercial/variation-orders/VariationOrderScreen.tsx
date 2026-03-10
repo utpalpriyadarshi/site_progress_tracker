@@ -21,7 +21,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { FAB, Chip, Switch, Divider, TextInput, Button } from 'react-native-paper';
+import { FAB, Chip, Switch, Divider, TextInput, Button, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -255,6 +256,7 @@ const VOCard: React.FC<VOCardProps> = ({ item, onToggleIPC, onUpdateStatus }) =>
 const VariationOrderScreen: React.FC = () => {
   const { projectId } = useCommercial();
   const { user } = useAuth();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadVOs = useCallback(async () => {
@@ -291,10 +293,10 @@ const VariationOrderScreen: React.FC = () => {
       dispatch({ type: 'SET_DATA', vos, summary });
     } catch (error) {
       logger.error('[VariationOrders] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load variation orders');
+      showSnackbar('Failed to load variation orders');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadVOs(); }, [loadVOs]);
 
@@ -335,7 +337,7 @@ const VariationOrderScreen: React.FC = () => {
   const handleSaveVO = useCallback(async () => {
     const { voNumber, description, value, executionPct, marginImpact, notes } = state.form;
     if (!voNumber.trim() || !description.trim() || !value.trim()) {
-      Alert.alert('Validation', 'VO Number, Description and Value are required');
+      showSnackbar('VO Number, Description and Value are required');
       return;
     }
     const valueNum = parseFloat(value) * 1_00_00_000; // user enters in Crore
@@ -371,11 +373,11 @@ const VariationOrderScreen: React.FC = () => {
       loadVOs();
     } catch (error) {
       logger.error('[VariationOrders] Save error', error as Error);
-      Alert.alert('Error', 'Failed to save variation order');
+      showSnackbar('Failed to save variation order');
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state.form, projectId, user, loadVOs]);
+  }, [state.form, projectId, user, loadVOs, showSnackbar]);
 
   const filteredVOs = state.vos.filter(v => {
     if (state.activeFilter === 'all') return true;
@@ -398,6 +400,7 @@ const VariationOrderScreen: React.FC = () => {
   }
 
   return (
+    <>
     <View style={styles.screen}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
 
@@ -543,6 +546,8 @@ const VariationOrderScreen: React.FC = () => {
         />
       )}
     </View>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

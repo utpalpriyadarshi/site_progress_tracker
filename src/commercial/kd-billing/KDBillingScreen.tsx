@@ -204,7 +204,7 @@ const KDBillingScreen: React.FC = () => {
       setSummary({ contractValue, totalBilled, retentionPct, advanceRecoveryPct, advanceMobilization, nextIpcNumber, dlpMonths });
     } catch (err) {
       logger.error('[KDBillingScreen] Load error:', err as Error);
-      Alert.alert('Error', 'Failed to load Key Date billing data');
+      setSnackbar('Failed to load Key Date billing data');
     } finally {
       setLoading(false);
     }
@@ -216,10 +216,7 @@ const KDBillingScreen: React.FC = () => {
   const openIPCDialog = useCallback(
     (kd: KDRow) => {
       if (!summary.contractValue) {
-        Alert.alert(
-          'Contract Value Not Set',
-          'Please set the project contract value before generating an IPC.'
-        );
+        setSnackbar('Please set the project contract value before generating an IPC.');
         return;
       }
       const gross = (summary.contractValue * kd.weightage) / 100;
@@ -263,7 +260,7 @@ const KDBillingScreen: React.FC = () => {
     if (!selectedKD || !projectId || !user) return;
     const gross = parseFloat(ipcForm.grossAmount);
     if (!gross || gross <= 0) {
-      Alert.alert('Validation', 'Gross amount must be greater than zero.');
+      setSnackbar('Gross amount must be greater than zero.');
       return;
     }
 
@@ -326,7 +323,7 @@ const KDBillingScreen: React.FC = () => {
       await loadData();
     } catch (err) {
       logger.error('[KDBillingScreen] Save IPC error:', err as Error);
-      Alert.alert('Error', 'Failed to save IPC');
+      setSnackbar('Failed to save IPC');
     } finally {
       setSaving(false);
     }
@@ -356,7 +353,7 @@ const KDBillingScreen: React.FC = () => {
               await loadData();
             } catch (err) {
               logger.error('[KDBillingScreen] Mark complete error:', err as Error);
-              Alert.alert('Error', 'Failed to update KD status');
+              setSnackbar('Failed to update KD status');
             }
           },
         },

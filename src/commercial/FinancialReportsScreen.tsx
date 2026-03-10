@@ -1,5 +1,7 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useCommercial } from './context/CommercialContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { database } from '../../models/database';
@@ -42,6 +44,7 @@ import { FinancialChartsSkeleton } from './shared';
 
 const FinancialReportsScreen = () => {
   const { projectId, projectName, startDate, setStartDate, endDate, setEndDate } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(financialReportsReducer, initialFinancialReportsState);
 
   const loadReportData = useCallback(async () => {
@@ -130,11 +133,11 @@ const FinancialReportsScreen = () => {
       logger.debug('[Reports] Report data loaded successfully');
     } catch (error) {
       logger.error('[Reports] Error loading report data', error as Error);
-      Alert.alert('Error', 'Failed to load report data');
+      showSnackbar('Failed to load report data');
     } finally {
       dispatch(financialReportsActions.setLoading(false));
     }
-  }, [projectId, startDate, endDate]);
+  }, [projectId, startDate, endDate, showSnackbar]);
 
   const handleStartDateChange = (event: any, selectedDate?: Date) => {
     dispatch(financialReportsActions.setShowStartDatePicker(Platform.OS === 'ios'));
@@ -180,6 +183,7 @@ const FinancialReportsScreen = () => {
   }
 
   return (
+    <>
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -238,6 +242,8 @@ const FinancialReportsScreen = () => {
 
       <View style={styles.bottomPadding} />
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

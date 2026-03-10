@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert } from 'react-native'; // kept for Cancel Import confirmation
 import { WizardStep } from '../utils/wizardConstants';
 import { ImportData } from './useImportData';
 
@@ -12,7 +12,8 @@ export const useWizardNavigation = (
   resetImportData: () => void,
   validateMapping: () => boolean,
   validateData: () => boolean,
-  executeImport: () => void
+  executeImport: () => void,
+  showSnackbar: (message: string) => void
 ) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
@@ -20,7 +21,7 @@ export const useWizardNavigation = (
     // Step 1: Check if file is uploaded
     if (currentStep === 1) {
       if (!importData.fileName) {
-        Alert.alert('No File', 'Please upload a file first');
+        showSnackbar('Please upload a file first');
         return;
       }
     }
@@ -33,10 +34,7 @@ export const useWizardNavigation = (
     // Step 3: Validate data
     else if (currentStep === 3) {
       if (!validateData()) {
-        Alert.alert(
-          'Validation Errors',
-          `Found ${importData.validationErrors.length} errors. Please review and fix them.`
-        );
+        showSnackbar(`Found ${importData.validationErrors.length} errors. Please review and fix them.`);
         return;
       }
     }

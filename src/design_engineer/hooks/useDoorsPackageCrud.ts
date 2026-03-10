@@ -172,7 +172,7 @@ export const useDoorsPackageCrud = ({
       );
     } catch (error) {
       logger.error('[DoorsPackage] Error loading packages:', error as Error);
-      Alert.alert('Error', getErrorMessage(error, 'DOORS packages'));
+      showSnackbar(getErrorMessage(error, 'DOORS packages'));
     } finally {
       dispatch({ type: 'COMPLETE_LOADING' });
     }
@@ -185,28 +185,21 @@ export const useDoorsPackageCrud = ({
       state.form;
 
     if (!equipmentType || !category) {
-      Alert.alert(
-        'Validation Error',
-        'Please fill in all required fields (Domain, Equipment Type)',
-      );
+      showSnackbar('Please fill in all required fields (Domain, Equipment Type)');
       setIsSubmitting(false);
       return;
     }
 
     const doorsIdValidation = validateDoorsId(doorsId);
     if (!doorsIdValidation.valid) {
-      Alert.alert(
-        'Invalid DOORS ID',
-        doorsIdValidation.message ||
-          'Please enter a valid DOORS ID.\n\nFormat: DOORS-CAT-TYPE-001',
-      );
+      showSnackbar(doorsIdValidation.message || 'Please enter a valid DOORS ID. Format: DOORS-CAT-TYPE-001');
       setIsSubmitting(false);
       return;
     }
 
     const reqCount = parseInt(totalRequirements) || 100;
     if (reqCount < 1 || reqCount > 500) {
-      Alert.alert('Validation Error', 'Requirements count must be between 1 and 500');
+      showSnackbar('Requirements count must be between 1 and 500');
       setIsSubmitting(false);
       return;
     }
@@ -284,10 +277,7 @@ export const useDoorsPackageCrud = ({
           .fetchCount();
 
         if (existing > 0) {
-          Alert.alert(
-            'Duplicate DOORS ID',
-            `A package with DOORS ID "${doorsId}" already exists in this project.`,
-          );
+          showSnackbar(`A package with DOORS ID "${doorsId}" already exists in this project.`);
           setIsSubmitting(false);
           return;
         }
@@ -352,7 +342,7 @@ export const useDoorsPackageCrud = ({
       dispatch({ type: 'CLOSE_DIALOG' });
     } catch (error) {
       logger.error('[DoorsPackage] Error saving package:', error as Error);
-      Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
+      showSnackbar(getErrorMessage(error, 'DOORS package'));
     } finally {
       setIsSubmitting(false);
     }
@@ -386,10 +376,7 @@ export const useDoorsPackageCrud = ({
           .fetchCount();
 
         if (rfqCount > 0) {
-          Alert.alert(
-            'Cannot Delete',
-            `This package has ${rfqCount} linked RFQ${rfqCount !== 1 ? 's' : ''}. Remove the RFQs first.`,
-          );
+          showSnackbar(`This package has ${rfqCount} linked RFQ${rfqCount !== 1 ? 's' : ''}. Remove the RFQs first.`);
           return;
         }
       } catch (error) {
@@ -412,7 +399,7 @@ export const useDoorsPackageCrud = ({
               showSnackbar('DOORS package deleted');
             } catch (error) {
               logger.error('[DoorsPackage] Error deleting package:', error as Error);
-              Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
+              showSnackbar(getErrorMessage(error, 'DOORS package'));
             }
           },
         },
@@ -519,7 +506,7 @@ export const useDoorsPackageCrud = ({
         showSnackbar(`Copied ${newPackages.length} package(s) to ${targetSiteName}`);
       } catch (error) {
         logger.error('[DoorsPackage] Error copying packages:', error as Error);
-        Alert.alert('Error', getErrorMessage(error, 'DOORS package copy'));
+        showSnackbar(getErrorMessage(error, 'DOORS package copy'));
       }
     },
     [state.data.packages, projectId, engineerId, dispatch, showSnackbar],
@@ -650,7 +637,7 @@ export const useDoorsPackageCrud = ({
         showSnackbar(stageLabels[transitionStage]);
       } catch (error) {
         logger.error(`[DoorsPackage] Error transitioning to ${transitionStage}:`, error as Error);
-        Alert.alert('Error', getErrorMessage(error, 'DOORS package'));
+        showSnackbar(getErrorMessage(error, 'DOORS package'));
       }
     },
     [transitionPackageId, transitionStage, engineerId, state.data.packages, dispatch, showSnackbar],
@@ -679,7 +666,7 @@ export const useDoorsPackageCrud = ({
       .map((p) => p.id);
 
     if (pendingIds.length === 0) {
-      Alert.alert('No Pending Packages', 'Only pending packages can be marked as received.');
+      showSnackbar('Only pending packages can be marked as received.');
       return;
     }
 
@@ -712,7 +699,7 @@ export const useDoorsPackageCrud = ({
       showSnackbar(`${pendingIds.length} package(s) marked as received`);
     } catch (error) {
       logger.error('[DoorsPackage] Error bulk marking received:', error as Error);
-      Alert.alert('Error', 'Failed to mark selected packages as received');
+      showSnackbar('Failed to mark selected packages as received');
     }
   }, [state.ui.selectedPackageIds, state.data.packages, dispatch, showSnackbar]);
 

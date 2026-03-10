@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
@@ -7,7 +6,7 @@ import { DesignRfq, DoorsPackage } from '../types/DesignRfqTypes';
 import DoorsPackageModel from '../../../models/DoorsPackageModel';
 import RfqModel from '../../../models/RfqModel';
 
-export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
+export const useDesignRfqs = (projectId: string, refreshTrigger: number, showSnackbar: (message: string) => void) => {
   const [rfqs, setRfqs] = useState<DesignRfq[]>([]);
   const [doorsPackages, setDoorsPackages] = useState<DoorsPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +80,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       setRfqs(rfqsList);
     } catch (error) {
       logger.error('[DesignRfq] Error loading RFQs:', error as Error);
-      Alert.alert('Error', 'Failed to load Design RFQs');
+      showSnackbar('Failed to load Design RFQs');
     } finally {
       setLoading(false);
     }
@@ -99,7 +98,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
     expectedDeliveryDays: string
   ) => {
     if (!title || !doorsPackageId) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      showSnackbar('Please fill in all required fields');
       return false;
     }
 
@@ -108,7 +107,7 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
       const selectedPackage = doorsPackages.find((p) => p.id === doorsPackageId);
 
       if (!selectedPackage) {
-        Alert.alert('Error', 'Selected DOORS package not found');
+        showSnackbar('Selected DOORS package not found');
         return false;
       }
 
@@ -131,12 +130,12 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'Design RFQ created successfully');
+      showSnackbar('Design RFQ created successfully');
       loadRfqs();
       return true;
     } catch (error) {
       logger.error('[DesignRfq] Error creating RFQ:', error as Error);
-      Alert.alert('Error', 'Failed to create Design RFQ');
+      showSnackbar('Failed to create Design RFQ');
       return false;
     }
   };
@@ -153,11 +152,11 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'RFQ issued successfully');
+      showSnackbar('RFQ issued successfully');
       loadRfqs();
     } catch (error) {
       logger.error('[DesignRfq] Error issuing RFQ:', error as Error);
-      Alert.alert('Error', 'Failed to issue RFQ');
+      showSnackbar('Failed to issue RFQ');
     }
   };
 
@@ -172,11 +171,11 @@ export const useDesignRfqs = (projectId: string, refreshTrigger: number) => {
         });
       });
 
-      Alert.alert('Success', 'Marked as quotes received');
+      showSnackbar('Marked as quotes received');
       loadRfqs();
     } catch (error) {
       logger.error('[DesignRfq] Error updating RFQ:', error as Error);
-      Alert.alert('Error', 'Failed to update RFQ');
+      showSnackbar('Failed to update RFQ');
     }
   };
 

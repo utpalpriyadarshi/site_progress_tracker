@@ -476,15 +476,16 @@ Configure `paperTheme.ts` and pass to `<PaperProvider>` — eliminates need for 
 
 ## Recommended Fix Order (Updated)
 
-### Sprint 1 — Foundation: Theme & Color (Days 1–4)
-1. **ISSUE-14**: Create `paperTheme.ts`, wire to `PaperProvider` *(unlocks Phase A replacements)*
-2. **ISSUE-12**: Phase A color replacement — find-replace all known COLORS constants (~2,339 instances)
-3. **ISSUE-15**: Fix Supervisor drawer `#6200ee` → `COLORS.PRIMARY`
+### ✅ Sprint 1 — Foundation: Theme & Color (Days 1–4) — DONE (PR #217)
+1. ✅ **ISSUE-14**: Created `paperTheme.ts`, wired to `PaperProvider` — all Paper components auto-themed
+2. ✅ **ISSUE-12**: Phase A color replacement — all nav files + SyncHeaderButton + RoleSelectionScreen + SupervisorHeader + OfflineBanner
+3. ✅ **ISSUE-15**: Fixed Supervisor drawer `#6200ee` → `COLORS.PRIMARY`
+4. ✅ **BONUS**: Fixed OfflineBanner always-visible bug — NetInfo null safety + immediate listener callback (PR #218)
 
-### Sprint 2 — Critical structural fixes (Days 5–9)
-4. **ISSUE-13**: Add extended palette to COLORS; fix top-10 hardcoded-color files
-5. **ISSUE-01**: Move Design Engineer and Supervisor to standard `headerShown: true`
-6. **ISSUE-02**: Enforce Alert/Snackbar rule across Logistics, Design Eng, Manager, Commercial
+### 🔄 Sprint 2 — Critical structural fixes (Days 5–9) — IN PROGRESS
+4. ✅ **ISSUE-13**: Added 11 extended palette constants; migrated top-9 hardcoded-colour files + all 11 navigator files (PR #219)
+5. ⏭️ **ISSUE-01**: Header uniformity — deferred (current header layout is already consistent across roles)
+6. 🔲 **ISSUE-02**: Enforce Alert/Snackbar rule across Logistics, Design Eng, Manager, Commercial
 
 ### Sprint 3 — Loading & Empty states (Days 10–13)
 7. **ISSUE-03**: Create `LoadingState` component; replace bare `ActivityIndicator` calls

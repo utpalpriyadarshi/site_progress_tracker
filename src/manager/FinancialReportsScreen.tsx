@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
   Platform,
 } from 'react-native';
 import {
@@ -15,7 +14,9 @@ import {
   Chip,
   Divider,
   ProgressBar,
+  Snackbar,
 } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { useManager } from './context/ManagerContext';
 import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
@@ -72,6 +73,7 @@ interface FinancialData {
 const FinancialReportsScreen = () => {
   const { projectId, projectName } = useManager();
   const { announce } = useAccessibility();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const previousBudgetUtilRef = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -302,7 +304,7 @@ const FinancialReportsScreen = () => {
 
   const exportToExcel = async () => {
     if (!projectInfo) {
-      Alert.alert('Error', 'No project information available');
+      showSnackbar('No project information available');
       return;
     }
 
@@ -415,14 +417,10 @@ const FinancialReportsScreen = () => {
       // Write file
       await RNFS.writeFile(filePath, base64, 'base64');
 
-      Alert.alert(
-        'Export Successful',
-        `Financial report exported to:\n${filePath}`,
-        [{ text: 'OK' }]
-      );
+      showSnackbar(`Financial report exported to: ${filePath}`);
     } catch (error) {
       logger.error('[FinancialReports] Export error', error as Error);
-      Alert.alert('Export Failed', 'Failed to export financial report');
+      showSnackbar('Failed to export financial report');
     } finally {
       setExporting(false);
     }
@@ -468,6 +466,7 @@ const FinancialReportsScreen = () => {
   }
 
   return (
+    <>
     <ScrollView
       style={commonStyles.screen}
       refreshControl={
@@ -727,6 +726,8 @@ const FinancialReportsScreen = () => {
         </Paragraph>
       </View>
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 

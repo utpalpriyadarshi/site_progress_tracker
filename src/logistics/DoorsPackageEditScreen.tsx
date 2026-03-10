@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { database } from '../../models/database';
 import DoorsPackageModel from '../../models/DoorsPackageModel';
 import { useAuth } from '../auth/AuthContext';
@@ -40,6 +42,7 @@ interface DoorsPackageEditScreenProps {
 const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, navigation }) => {
   const { user, currentRole } = useAuth();
   const { packageId } = route.params;
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   // Centralized state management with useReducer (replaces 13 useState hooks)
   const [state, dispatch] = useReducer(doorsPackageFormReducer, initialDoorsPackageFormState);
@@ -70,7 +73,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
       });
     } catch (error) {
       logger.error('[DoorsPackageEdit] Error loading package:', error as Error);
-      Alert.alert('Error', 'Failed to load package details');
+      showSnackbar('Failed to load package details');
       navigation.goBack();
     } finally {
       dispatch({ type: 'STOP_LOADING' });
@@ -92,7 +95,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
       // Validate quantity before parsing
       const quantityNum = parseFloat(state.form.quantity);
       if (isNaN(quantityNum) || quantityNum <= 0) {
-        Alert.alert('Validation Error', 'Quantity must be a number greater than 0');
+        showSnackbar('Quantity must be a number greater than 0');
         return;
       }
 
@@ -119,22 +122,18 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
         currentRole || ''
       );
 
-      Alert.alert('Success', 'Package updated successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      showSnackbar('Package updated successfully');
+      navigation.goBack();
     } catch (error: any) {
       logger.error('[DoorsPackageEdit] Error saving package:', error);
 
       // Handle validation errors
       if (error.message && error.message.includes('Validation failed')) {
-        Alert.alert('Validation Error', error.message);
+        showSnackbar(error.message);
       } else if (error.message && error.message.includes("don't have permission")) {
-        Alert.alert('Permission Denied', error.message);
+        showSnackbar(error.message);
       } else {
-        Alert.alert('Error', 'Failed to save package. Please try again.');
+        showSnackbar('Failed to save package. Please try again.');
       }
     } finally {
       dispatch({ type: 'STOP_SAVING' });
@@ -402,6 +401,7 @@ const DoorsPackageEditScreen: React.FC<DoorsPackageEditScreenProps> = ({ route, 
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

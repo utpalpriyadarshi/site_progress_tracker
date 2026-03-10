@@ -10,6 +10,8 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import { database } from '../../../models/database';
 import ResourceRequestModel from '../../../models/ResourceRequestModel';
 import SiteModel from '../../../models/SiteModel';
@@ -33,6 +35,7 @@ interface ApprovalQueueProps {
  * - Sort by priority or date
  */
 const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [requests, setRequests] = useState<ResourceRequestModel[]>([]);
   const [sites, setSites] = useState<SiteModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +59,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
       await Promise.all([loadRequests(), loadSites()]);
     } catch (error) {
       logger.error('Error loading data', error as Error);
-      Alert.alert('Error', 'Failed to load requests');
+      showSnackbar('Failed to load requests');
     } finally {
       setLoading(false);
     }
@@ -135,11 +138,11 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
           onPress: async () => {
             try {
               await ResourceRequestService.approveRequest(requestId, currentUserId);
-              Alert.alert('Success', 'Request approved successfully');
+              showSnackbar('Request approved successfully');
               loadRequests();
             } catch (error) {
               logger.error('Error approving request', error as Error);
-              Alert.alert('Error', 'Failed to approve request');
+              showSnackbar('Failed to approve request');
             }
           },
         },
@@ -155,7 +158,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
 
   const confirmReject = async () => {
     if (!rejectionReason.trim()) {
-      Alert.alert('Validation Error', 'Please provide a reason for rejection');
+      showSnackbar('Please provide a reason for rejection');
       return;
     }
 
@@ -168,14 +171,14 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
         rejectionReason.trim()
       );
 
-      Alert.alert('Success', 'Request rejected successfully');
+      showSnackbar('Request rejected successfully');
       setRejectModalVisible(false);
       setSelectedRequestId(null);
       setRejectionReason('');
       loadRequests();
     } catch (error) {
       logger.error('Error rejecting request', error as Error);
-      Alert.alert('Error', 'Failed to reject request');
+      showSnackbar('Failed to reject request');
     }
   };
 
@@ -418,6 +421,7 @@ const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ currentUserId }) => {
       </ScrollView>
 
       {renderRejectModal()}
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

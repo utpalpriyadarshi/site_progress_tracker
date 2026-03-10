@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
 import {
@@ -33,6 +33,7 @@ export interface DashboardData {
 }
 
 export const useDashboardData = (projectId: string | null) => {
+  const { show: showSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
@@ -94,11 +95,11 @@ export const useDashboardData = (projectId: string | null) => {
       logger.debug('[Dashboard] Dashboard data loaded successfully');
     } catch (error) {
       logger.error('[Dashboard] Error loading dashboard data:', error as Error);
-      Alert.alert('Error', 'Failed to load dashboard data');
+      showSnackbar('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   return {
     dashboardData,

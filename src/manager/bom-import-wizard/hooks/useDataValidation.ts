@@ -2,7 +2,6 @@
  * useDataValidation - Validation logic for column mapping and data
  */
 
-import { Alert } from 'react-native';
 import {
   validateColumnMapping,
   getRequiredFields,
@@ -12,15 +11,13 @@ import { ImportData, ValidationError } from './useImportData';
 
 export const useDataValidation = (
   importData: ImportData,
-  setImportData: (data: ImportData) => void
+  setImportData: (data: ImportData) => void,
+  showSnackbar: (message: string) => void
 ) => {
   const validateMapping = (): boolean => {
     const missing = validateColumnMapping(importData.columnMapping);
     if (missing.length > 0) {
-      Alert.alert(
-        'Missing Required Columns',
-        `Please map the following required fields:\n${missing.join(', ')}`
-      );
+      showSnackbar(`Please map the following required fields: ${missing.join(', ')}`);
       return false;
     }
     return true;

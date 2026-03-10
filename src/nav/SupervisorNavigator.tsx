@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { COLORS } from '../theme/colors';
 import { Text, TouchableOpacity } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -124,8 +125,8 @@ const SupervisorNavigator: React.FC<SupervisorNavigatorProps> = ({ navigation: p
 
             return <Text style={{ fontSize: size, color }}>{iconSymbol}</Text>;
           },
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: 'gray',
+          tabBarActiveTintColor: COLORS.PRIMARY,
+          tabBarInactiveTintColor: COLORS.TEXT_SECONDARY,
           headerRight: () => (
             <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
               <Text style={{ color: '#007AFF', fontSize: 16 }}>Logout</Text>

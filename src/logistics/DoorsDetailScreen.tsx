@@ -292,7 +292,7 @@ const DoorsDetailScreen: React.FC<DoorsDetailScreenProps> = ({
             placeholder="Search requirements..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.TEXT_TERTIARY}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity style={styles.clearButton} onPress={() => setSearchQuery('')}>
@@ -632,31 +632,31 @@ export default DoorsDetailScreenWithBoundary;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: COLORS.BORDER,
   },
   backButton: {
     marginBottom: 8,
   },
   backButtonText: {
-    color: '#007AFF',
+    color: COLORS.BLUE_SECONDARY,
     fontSize: 16,
   },
   doorsId: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '600',
     marginBottom: 4,
   },
   equipmentName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   headerBadges: {
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   categoryBadgeText: {
-    color: '#1976D2',
+    color: COLORS.BLUE_SECONDARY,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -687,9 +687,9 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: COLORS.BORDER,
   },
   tab: {
     flex: 1,
@@ -699,15 +699,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#007AFF',
+    borderBottomColor: COLORS.BLUE_SECONDARY,
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#007AFF',
+    color: COLORS.BLUE_SECONDARY,
     fontWeight: '600',
   },
   tabContent: {
@@ -715,15 +715,15 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
   },
   searchInput: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.BORDER,
   },
   clearButton: {
     position: 'absolute',
@@ -736,11 +736,11 @@ const styles = StyleSheet.create({
   },
   clearText: {
     fontSize: 18,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     fontWeight: '600',
   },
   filterRow: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     paddingHorizontal: 16,
     paddingBottom: 12,
     maxHeight: 50,
@@ -750,21 +750,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginRight: 10,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.BORDER,
     height: 40, // Fixed height instead of minHeight
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterPillActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.BLUE_SECONDARY,
     borderColor: 'transparent',
   },
   filterPillText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   filterPillTextActive: {
     color: '#fff',
@@ -774,12 +774,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   requirementCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.BORDER,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
   requirementCode: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: COLORS.BLUE_SECONDARY,
   },
   editButton: {
     padding: 8,
@@ -823,13 +823,13 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: 15,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     lineHeight: 20,
     marginBottom: 8,
   },
   clauseReference: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 8,
   },
   requirementFooter: {
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   },
   categoryTag: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   compliancePercentage: {
     fontSize: 14,
@@ -880,29 +880,29 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   complianceContent: {
     padding: 16,
   },
   summaryCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.BORDER,
   },
   summaryTitle: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 8,
   },
   summaryPercentage: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: COLORS.BLUE_SECONDARY,
     marginBottom: 16,
   },
   summaryStats: {
@@ -915,27 +915,27 @@ const styles = StyleSheet.create({
   },
   summaryStatLabel: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 4,
   },
   summaryStatValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 16,
   },
   complianceCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.BORDER,
   },
   complianceHeader: {
     flexDirection: 'row',
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
   complianceCategoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   compliancePercentageLarge: {
     fontSize: 24,
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 12,
@@ -972,13 +972,13 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 4,
   },
   breakdownValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   placeholderContainer: {
     flex: 1,
@@ -993,12 +993,12 @@ const styles = StyleSheet.create({
   placeholderTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   placeholderText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -1007,7 +1007,7 @@ const styles = StyleSheet.create({
   },
   placeholderItem: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 8,
   },
   modalOverlay: {
@@ -1016,7 +1016,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.SURFACE,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -1033,11 +1033,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
   },
   modalCloseButton: {
     fontSize: 28,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '300',
   },
   modalStatusBadge: {
@@ -1059,16 +1059,16 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     marginBottom: 8,
   },
   modalSectionContent: {
     fontSize: 15,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     lineHeight: 22,
   },
   modalMetadata: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 8,
     padding: 16,
     marginTop: 8,
@@ -1080,11 +1080,11 @@ const styles = StyleSheet.create({
   },
   modalMetadataLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   modalMetadataValue: {
     fontSize: 14,
-    color: '#333',
+    color: COLORS.TEXT_PRIMARY,
     fontWeight: '500',
   },
 });

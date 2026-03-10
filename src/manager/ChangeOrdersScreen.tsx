@@ -165,7 +165,7 @@ const ChangeOrdersScreen = () => {
 
   const handleCreate = useCallback(async () => {
     if (!form.title.trim()) {
-      Alert.alert('Validation', 'Title is required');
+      showSnack('Title is required');
       return;
     }
     const costNum = parseFloat(form.impactCost) || 0;
@@ -195,7 +195,7 @@ const ChangeOrdersScreen = () => {
       loadOrders();
     } catch (err) {
       logger.error('[ChangeOrders] Create failed:', err as Error);
-      Alert.alert('Error', 'Failed to create change order');
+      showSnack('Failed to create change order');
     } finally {
       setSaving(false);
     }
@@ -224,7 +224,7 @@ const ChangeOrdersScreen = () => {
         loadOrders();
       } catch (err) {
         logger.error('[ChangeOrders] Status change failed:', err as Error);
-        Alert.alert('Error', 'Failed to update status');
+        showSnack('Failed to update status');
       }
     },
     [user, loadOrders],
@@ -248,7 +248,7 @@ const ChangeOrdersScreen = () => {
               loadOrders();
             } catch (err) {
               logger.error('[ChangeOrders] Delete failed:', err as Error);
-              Alert.alert('Error', 'Failed to delete change order');
+              showSnack('Failed to delete change order');
             }
           },
         },

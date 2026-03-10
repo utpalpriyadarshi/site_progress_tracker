@@ -101,12 +101,12 @@ const ManagerTabNavigator: React.FC = () => {
     tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getTabBarIcon(route.name, focused, color, size),
     tabBarActiveTintColor: COLORS.PRIMARY,
-    tabBarInactiveTintColor: 'gray',
+    tabBarInactiveTintColor: COLORS.TEXT_SECONDARY,
     headerShown: true,
     headerStyle: {
       backgroundColor: COLORS.PRIMARY,
     },
-    headerTintColor: '#FFF',
+    headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
       fontSize: 20,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   headerLogoutText: {
-    color: '#FFF',
+    color: COLORS.SURFACE,
     fontSize: 16,
     fontWeight: '500',
   },

@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
@@ -16,6 +15,7 @@ interface UseCategoryManagementParams {
   engineerId: string;
   dispatch: React.Dispatch<DesignDocumentManagementAction>;
   loadCategories: () => Promise<void>;
+  showSnackbar: (message: string) => void;
 }
 
 export const useCategoryManagement = ({
@@ -23,6 +23,7 @@ export const useCategoryManagement = ({
   engineerId,
   dispatch,
   loadCategories,
+  showSnackbar,
 }: UseCategoryManagementParams) => {
   const seedDefaultCategories = useCallback(async () => {
     if (!projectId || !engineerId) return;
@@ -122,10 +123,10 @@ export const useCategoryManagement = ({
         }
       } catch (error: any) {
         logger.error('[DesignDocument] Error adding category:', error);
-        Alert.alert('Error', 'Failed to add category');
+        showSnackbar('Failed to add category');
       }
     },
-    [projectId, engineerId, dispatch],
+    [projectId, engineerId, dispatch, showSnackbar],
   );
 
   const handleAddSubCategory = useCallback(
@@ -172,10 +173,10 @@ export const useCategoryManagement = ({
         }
       } catch (error: any) {
         logger.error('[DesignDocument] Error adding sub-category:', error);
-        Alert.alert('Error', 'Failed to add document type');
+        showSnackbar('Failed to add document type');
       }
     },
-    [projectId, engineerId, dispatch],
+    [projectId, engineerId, dispatch, showSnackbar],
   );
 
   const handleUpdateCategory = useCallback(
@@ -196,10 +197,10 @@ export const useCategoryManagement = ({
         dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, name: newName } });
       } catch (error: any) {
         logger.error('[DesignDocument] Error updating category:', error);
-        Alert.alert('Error', 'Failed to update category');
+        showSnackbar('Failed to update category');
       }
     },
-    [projectId, dispatch],
+    [projectId, dispatch, showSnackbar],
   );
 
   const handleDeleteCategory = useCallback(
@@ -215,10 +216,7 @@ export const useCategoryManagement = ({
           .fetchCount();
 
         if (docsUsingCategory > 0) {
-          Alert.alert(
-            'Cannot Delete',
-            'This category is used by existing documents. Remove documents first.',
-          );
+          showSnackbar('This category is used by existing documents. Remove documents first.');
           return;
         }
 
@@ -233,10 +231,7 @@ export const useCategoryManagement = ({
             .fetchCount();
 
           if (docsWithType > 0) {
-            Alert.alert(
-              'Cannot Delete',
-              `This category has ${docsWithType} document(s) of type "${categoryName}". Remove them first.`,
-            );
+            showSnackbar(`This category has ${docsWithType} document(s) of type "${categoryName}". Remove them first.`);
             return;
           }
         }
@@ -248,10 +243,10 @@ export const useCategoryManagement = ({
         dispatch({ type: 'DELETE_CATEGORY', payload: { categoryId } });
       } catch (error: any) {
         logger.error('[DesignDocument] Error deleting category:', error);
-        Alert.alert('Error', 'Failed to delete category');
+        showSnackbar('Failed to delete category');
       }
     },
-    [dispatch],
+    [dispatch, showSnackbar],
   );
 
   return {

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { database } from '../../../../models/database';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../../services/LoggingService';
 
@@ -22,6 +22,7 @@ export interface BudgetInfo {
 }
 
 export const useCostData = (projectId: string | null) => {
+  const { show: showSnackbar } = useSnackbar();
   const [costs, setCosts] = useState<Cost[]>([]);
   const [budgets, setBudgets] = useState<BudgetInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +70,11 @@ export const useCostData = (projectId: string | null) => {
       setBudgets(budgetsArray);
     } catch (error) {
       logger.error('[Cost] Error loading costs', error as Error);
-      Alert.alert('Error', 'Failed to load costs');
+      showSnackbar('Failed to load costs');
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   const getBudgetForCategory = useCallback(
     (category: string) => {

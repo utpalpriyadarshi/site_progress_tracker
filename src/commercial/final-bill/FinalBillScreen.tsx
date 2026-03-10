@@ -21,13 +21,15 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Switch, Chip, Divider } from 'react-native-paper';
+import { Switch, Chip, Divider, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { database } from '../../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import { logger } from '../../services/LoggingService';
 import { useCommercial } from '../context/CommercialContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -123,6 +125,7 @@ const DLP_STATUS_CONFIG: Record<DLPStatus, { color: string; label: string; icon:
 
 const FinalBillScreen: React.FC = () => {
   const { projectId } = useCommercial();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadData = useCallback(async () => {
@@ -280,10 +283,10 @@ const FinalBillScreen: React.FC = () => {
       dispatch({ type: 'SET_DATA', summary, retentions: retentionRows, closureChecks });
     } catch (error) {
       logger.error('[FinalBill] Load error', error as Error);
-      Alert.alert('Error', 'Failed to load final bill data');
+      showSnackbar('Failed to load final bill data');
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [projectId]);
+  }, [projectId, showSnackbar]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -309,20 +312,20 @@ const FinalBillScreen: React.FC = () => {
               dispatch({ type: 'RELEASE_RETENTION', retId: ret.id });
             } catch (error) {
               logger.error('[FinalBill] Release retention error', error as Error);
-              Alert.alert('Error', 'Failed to release retention');
+              showSnackbar('Failed to release retention');
             }
           },
         },
       ]
     );
-  }, []);
+  }, [showSnackbar]);
 
   if (!projectId) {
     return <View style={styles.emptyContainer}><Text style={styles.emptyText}>No project assigned</Text></View>;
   }
 
   if (state.loading) {
-    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color="#007AFF" /></View>;
+    return <View style={styles.emptyContainer}><ActivityIndicator size="large" color={COLORS.BLUE_SECONDARY} /></View>;
   }
 
   if (!state.summary) {
@@ -335,6 +338,7 @@ const FinalBillScreen: React.FC = () => {
   const closureTotal = state.closureChecks.length;
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* DLP Status Banner */}
@@ -364,21 +368,21 @@ const FinalBillScreen: React.FC = () => {
           </View>
           <View style={styles.kpiItem}>
             <Text style={styles.kpiLabel}>Total Invoiced</Text>
-            <Text style={[styles.kpiValue, { color: '#34C759' }]}>{formatCr(summary.totalInvoicedGross)}</Text>
+            <Text style={[styles.kpiValue, { color: COLORS.GREEN_ACCENT }]}>{formatCr(summary.totalInvoicedGross)}</Text>
           </View>
           <View style={styles.kpiItem}>
             <Text style={styles.kpiLabel}>Retention Held</Text>
-            <Text style={[styles.kpiValue, { color: '#FF9500' }]}>{formatCr(summary.totalRetentionHeld)}</Text>
+            <Text style={[styles.kpiValue, { color: COLORS.AMBER_CAUTION }]}>{formatCr(summary.totalRetentionHeld)}</Text>
           </View>
           <View style={styles.kpiItem}>
             <Text style={styles.kpiLabel}>Eligible Now</Text>
-            <Text style={[styles.kpiValue, { color: summary.retentionEligibleNow > 0 ? '#34C759' : '#aaa' }]}>
+            <Text style={[styles.kpiValue, { color: summary.retentionEligibleNow > 0 ? COLORS.GREEN_ACCENT : COLORS.TEXT_TERTIARY }]}>
               {formatCr(summary.retentionEligibleNow)}
             </Text>
           </View>
           <View style={styles.kpiItem}>
             <Text style={styles.kpiLabel}>Approved VOs (IPC)</Text>
-            <Text style={[styles.kpiValue, { color: '#007AFF' }]}>{formatCr(summary.pendingVOValue)}</Text>
+            <Text style={[styles.kpiValue, { color: COLORS.BLUE_SECONDARY }]}>{formatCr(summary.pendingVOValue)}</Text>
           </View>
           <View style={styles.kpiItem}>
             <Text style={styles.kpiLabel}>Final Bill Est.</Text>
@@ -401,14 +405,14 @@ const FinalBillScreen: React.FC = () => {
                 {formatL(ret.gross)} × {ret.retentionPct}% = {formatL(ret.retentionAmount)}
               </Text>
               {ret.dlpEndDate && (
-                <Text style={[styles.retDlp, { color: ret.isExpired ? '#34C759' : '#888' }]}>
+                <Text style={[styles.retDlp, { color: ret.isExpired ? COLORS.GREEN_ACCENT : COLORS.TEXT_TERTIARY }]}>
                   DLP: {new Date(ret.dlpEndDate).toLocaleDateString('en-IN')}
                   {ret.isExpired ? ' ✓ Expired' : ''}
                 </Text>
               )}
               {ret.holdingMonths > 0 && !ret.isReleased && (
                 <Text style={[styles.retAging, {
-                  color: ret.holdingMonths > 12 ? '#FF3B30' : ret.holdingMonths > 6 ? '#FF9500' : '#888'
+                  color: ret.holdingMonths > 12 ? COLORS.ERROR : ret.holdingMonths > 6 ? COLORS.AMBER_CAUTION : COLORS.TEXT_TERTIARY
                 }]}>
                   Held {ret.holdingMonths} month{ret.holdingMonths !== 1 ? 's' : ''}
                 </Text>
@@ -416,13 +420,13 @@ const FinalBillScreen: React.FC = () => {
             </View>
             <View style={styles.retRight}>
               {ret.isReleased ? (
-                <Chip style={styles.releasedChip} textStyle={{ color: '#34C759', fontSize: 11 }}>Released</Chip>
+                <Chip style={styles.releasedChip} textStyle={{ color: COLORS.GREEN_ACCENT, fontSize: 11 }}>Released</Chip>
               ) : ret.isExpired ? (
                 <TouchableOpacity style={styles.releaseBtn} onPress={() => handleReleaseRetention(ret)}>
                   <Text style={styles.releaseBtnText}>Release</Text>
                 </TouchableOpacity>
               ) : (
-                <Chip style={styles.holdingChip} textStyle={{ color: '#888', fontSize: 11 }}>Holding</Chip>
+                <Chip style={styles.holdingChip} textStyle={{ color: COLORS.TEXT_TERTIARY, fontSize: 11 }}>Holding</Chip>
               )}
             </View>
           </View>
@@ -430,7 +434,7 @@ const FinalBillScreen: React.FC = () => {
         {state.retentions.length > 0 && (
           <View style={styles.retSummaryRow}>
             <Text style={styles.retSummaryLabel}>Retention Released:</Text>
-            <Text style={[styles.retSummaryValue, { color: '#34C759' }]}>{formatCr(summary.totalRetentionReleased)}</Text>
+            <Text style={[styles.retSummaryValue, { color: COLORS.GREEN_ACCENT }]}>{formatCr(summary.totalRetentionReleased)}</Text>
           </View>
         )}
       </View>
@@ -447,14 +451,14 @@ const FinalBillScreen: React.FC = () => {
               <Icon
                 name={check.checked ? 'check-circle' : 'circle-outline'}
                 size={20}
-                color={check.checked ? '#34C759' : '#ccc'}
+                color={check.checked ? COLORS.GREEN_ACCENT : COLORS.TEXT_DISABLED}
               />
               <View style={styles.checkLabel}>
                 <Text style={[styles.checkText, check.checked && styles.checkTextDone]}>
                   {check.label}
                 </Text>
                 {check.detail && (
-                  <Text style={[styles.checkDetail, { color: check.checked ? '#888' : '#FF9500' }]}>
+                  <Text style={[styles.checkDetail, { color: check.checked ? COLORS.TEXT_TERTIARY : COLORS.AMBER_CAUTION }]}>
                     {check.detail}
                   </Text>
                 )}
@@ -463,7 +467,7 @@ const FinalBillScreen: React.FC = () => {
                 <Switch
                   value={check.checked}
                   onValueChange={() => dispatch({ type: 'TOGGLE_CHECK', checkId: check.id })}
-                  color="#34C759"
+                  color={COLORS.GREEN_ACCENT}
                 />
               )}
             </View>
@@ -473,7 +477,7 @@ const FinalBillScreen: React.FC = () => {
 
         {closureScore === closureTotal && (
           <View style={styles.closedBanner}>
-            <Icon name="check-decagram" size={24} color="#34C759" />
+            <Icon name="check-decagram" size={24} color={COLORS.GREEN_ACCENT} />
             <Text style={styles.closedBannerText}>
               All closure items complete — project is commercially closed.
             </Text>
@@ -483,52 +487,54 @@ const FinalBillScreen: React.FC = () => {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    <Snackbar {...snackbarProps} duration={3000} />
+    </>
   );
 };
 
 // ==================== Styles ====================
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { flex: 1, backgroundColor: COLORS.BACKGROUND },
   content: { padding: 16 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 14, color: '#999', textAlign: 'center' },
+  emptyText: { fontSize: 14, color: COLORS.TEXT_TERTIARY, textAlign: 'center' },
 
   dlpBanner: { borderRadius: 12, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   dlpBannerText: { flex: 1 },
   dlpStatusLabel: { fontSize: 16, fontWeight: '700' },
-  dlpDate: { fontSize: 12, color: '#555', marginTop: 4 },
+  dlpDate: { fontSize: 12, color: COLORS.TEXT_SECONDARY, marginTop: 4 },
 
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 12 },
+  card: { backgroundColor: COLORS.SURFACE, borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
+  cardTitle: { fontSize: 15, fontWeight: '600', color: COLORS.TEXT_PRIMARY, marginBottom: 12 },
 
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   kpiItem: { flex: 1, minWidth: '45%', alignItems: 'center', paddingVertical: 4 },
-  kpiLabel: { fontSize: 11, color: '#888', marginBottom: 2 },
-  kpiValue: { fontSize: 14, fontWeight: '700', color: '#333' },
+  kpiLabel: { fontSize: 11, color: COLORS.TEXT_TERTIARY, marginBottom: 2 },
+  kpiValue: { fontSize: 14, fontWeight: '700', color: COLORS.TEXT_PRIMARY },
 
-  retRow: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
+  retRow: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.BACKGROUND },
   retRowEligible: { backgroundColor: '#F0FFF4' },
   retLeft: { flex: 1 },
   retRight: { marginLeft: 8 },
-  retInvoice: { fontSize: 13, fontWeight: '600', color: '#333' },
-  retDetail: { fontSize: 12, color: '#555', marginTop: 2 },
+  retInvoice: { fontSize: 13, fontWeight: '600', color: COLORS.TEXT_PRIMARY },
+  retDetail: { fontSize: 12, color: COLORS.TEXT_SECONDARY, marginTop: 2 },
   retDlp: { fontSize: 11, marginTop: 2 },
   retAging: { fontSize: 11, fontWeight: '500', marginTop: 2 },
-  releasedChip: { backgroundColor: '#34C75922' },
-  holdingChip: { backgroundColor: '#f0f0f0' },
-  releaseBtn: { backgroundColor: '#34C759', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
+  releasedChip: { backgroundColor: COLORS.GREEN_ACCENT + '22' },
+  holdingChip: { backgroundColor: COLORS.DIVIDER },
+  releaseBtn: { backgroundColor: COLORS.GREEN_ACCENT, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   releaseBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  retSummaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
-  retSummaryLabel: { fontSize: 13, color: '#555' },
+  retSummaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.DIVIDER },
+  retSummaryLabel: { fontSize: 13, color: COLORS.TEXT_SECONDARY },
   retSummaryValue: { fontSize: 13, fontWeight: '700' },
 
   closureHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  closureScore: { fontSize: 18, fontWeight: '800', color: '#007AFF' },
+  closureScore: { fontSize: 18, fontWeight: '800', color: COLORS.BLUE_SECONDARY },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   checkLabel: { flex: 1 },
-  checkText: { fontSize: 13, color: '#333' },
-  checkTextDone: { color: '#888', textDecorationLine: 'line-through' },
+  checkText: { fontSize: 13, color: COLORS.TEXT_PRIMARY },
+  checkTextDone: { color: COLORS.TEXT_TERTIARY, textDecorationLine: 'line-through' },
   checkDetail: { fontSize: 11, marginTop: 2 },
 
   closedBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#D4EDDA', borderRadius: 8, padding: 14, marginTop: 14 },

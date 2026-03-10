@@ -5,10 +5,10 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Alert,
   ScrollView,
 } from 'react-native';
-import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput } from 'react-native-paper';
+import { FAB, Card, Searchbar, Chip, Portal, Dialog, Button, TextInput, Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { database } from '../../models/database';
 import { useLogistics } from './context/LogisticsContext';
 import { Q } from '@nozbe/watermelondb';
@@ -50,6 +50,7 @@ const PurchaseOrderManagementScreen = () => {
     projects,
   } = useLogistics();
   const { announce } = useAccessibility();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
 
   // Centralized state management with useReducer (replaces 13 useState hooks)
   const [state, dispatch] = useReducer(poManagementReducer, initialPOManagementState);
@@ -211,7 +212,7 @@ const PurchaseOrderManagementScreen = () => {
 
   const handleCreatePO = async () => {
     if (!state.form.newVendorId || !state.form.newTotalAmount) {
-      Alert.alert('Validation Error', 'Please select vendor and enter amount');
+      showSnackbar('Please select vendor and enter amount');
       return;
     }
     if (isSubmitting) return;
@@ -239,13 +240,13 @@ const PurchaseOrderManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', 'Purchase Order created successfully');
+      showSnackbar('Purchase Order created successfully');
       dispatch({ type: 'HIDE_CREATE_DIALOG' });
       dispatch({ type: 'RESET_FORM' });
       loadPurchaseOrders();
     } catch (error) {
       logger.error('[PO] Error creating PO:', error as Error);
-      Alert.alert('Error', 'Failed to create Purchase Order');
+      showSnackbar('Failed to create Purchase Order');
     } finally {
       setIsSubmitting(false);
     }
@@ -269,11 +270,11 @@ const PurchaseOrderManagementScreen = () => {
         });
       });
 
-      Alert.alert('Success', `PO marked as ${newStatus}`);
+      showSnackbar(`PO marked as ${newStatus}`);
       loadPurchaseOrders();
     } catch (error) {
       logger.error('[PO] Error updating PO status:', error as Error);
-      Alert.alert('Error', 'Failed to update PO status');
+      showSnackbar('Failed to update PO status');
     }
   };
 
@@ -457,6 +458,7 @@ const PurchaseOrderManagementScreen = () => {
 
       {/* Create Dialog */}
       <Portal>
+        <Snackbar {...snackbarProps} duration={3000} />
         <Dialog visible={state.ui.showCreateDialog} onDismiss={() => dispatch({ type: 'HIDE_CREATE_DIALOG' })} style={styles.dialog}>
           <Dialog.Title>Create Purchase Order</Dialog.Title>
           <Dialog.Content>

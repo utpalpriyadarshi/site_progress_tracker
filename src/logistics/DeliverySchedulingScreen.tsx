@@ -16,11 +16,13 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
 import { useLogistics } from './context/LogisticsContext';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { COLORS } from '../theme/colors';
 import MaterialModel from '../../models/MaterialModel';
 import { database } from '../../models/database';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 // ── Filter chips ──────────────────────────────────────────────────────────────
 
@@ -59,6 +61,7 @@ const getStatusLabel = (status: string) => {
 
 const DeliverySchedulingScreen: React.FC = () => {
   const { materials, refresh } = useLogistics();
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [markingId, setMarkingId] = useState<string | null>(null);
@@ -90,7 +93,7 @@ const DeliverySchedulingScreen: React.FC = () => {
               });
               await refresh();
             } catch {
-              Alert.alert('Error', 'Could not update delivery status. Please try again.');
+              showSnackbar('Could not update delivery status. Please try again.');
             } finally {
               setMarkingId(null);
             }
@@ -234,6 +237,7 @@ const DeliverySchedulingScreen: React.FC = () => {
         )}
         <View style={styles.listFooter} />
       </ScrollView>
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

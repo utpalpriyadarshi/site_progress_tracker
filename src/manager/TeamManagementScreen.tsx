@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { Snackbar } from 'react-native-paper';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { database } from '../../models/database';
 import TeamModel from '../../models/TeamModel';
 import TeamMemberModel from '../../models/TeamMemberModel';
@@ -33,6 +35,7 @@ import { COLORS } from '../theme/colors';
  * - Filter teams by site and status
  */
 const TeamManagementScreen = () => {
+  const { show: showSnackbar, snackbarProps } = useSnackbar();
   const [teams, setTeams] = useState<TeamModel[]>([]);
   const [sites, setSites] = useState<SiteModel[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<TeamModel | null>(null);
@@ -99,7 +102,7 @@ const TeamManagementScreen = () => {
       setTeams(loadedTeams);
     } catch (error) {
       logger.error('Error loading teams', error as Error);
-      Alert.alert('Error', 'Failed to load teams');
+      showSnackbar('Failed to load teams');
     } finally {
       setLoading(false);
     }
@@ -128,7 +131,7 @@ const TeamManagementScreen = () => {
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim() || !newTeamSite) {
-      Alert.alert('Validation Error', 'Please fill in team name and select a site');
+      showSnackbar('Please fill in team name and select a site');
       return;
     }
 
@@ -149,10 +152,10 @@ const TeamManagementScreen = () => {
       // Reload teams
       loadTeams();
 
-      Alert.alert('Success', 'Team created successfully');
+      showSnackbar('Team created successfully');
     } catch (error) {
       logger.error('Error creating team', error as Error);
-      Alert.alert('Error', 'Failed to create team');
+      showSnackbar('Failed to create team');
     }
   };
 
@@ -166,7 +169,7 @@ const TeamManagementScreen = () => {
 
   const handleUpdateTeam = async () => {
     if (!newTeamName.trim() || !newTeamSite || !editingTeamId) {
-      Alert.alert('Validation Error', 'Please fill in team name and select a site');
+      showSnackbar('Please fill in team name and select a site');
       return;
     }
 
@@ -187,10 +190,10 @@ const TeamManagementScreen = () => {
       // Reload teams
       loadTeams();
 
-      Alert.alert('Success', 'Team updated successfully');
+      showSnackbar('Team updated successfully');
     } catch (error) {
       logger.error('Error updating team', error as Error);
-      Alert.alert('Error', 'Failed to update team');
+      showSnackbar('Failed to update team');
     }
   };
 
@@ -208,10 +211,10 @@ const TeamManagementScreen = () => {
               await TeamManagementService.deleteTeam(teamId);
               setSelectedTeam(null);
               loadTeams();
-              Alert.alert('Success', 'Team disbanded successfully');
+              showSnackbar('Team disbanded successfully');
             } catch (error) {
               logger.error('Error disbanding team', error as Error);
-              Alert.alert('Error', 'Failed to disband team');
+              showSnackbar('Failed to disband team');
             }
           },
         },
@@ -590,6 +593,7 @@ const TeamManagementScreen = () => {
           }}
         />
       )}
+      <Snackbar {...snackbarProps} duration={3000} />
     </View>
   );
 };

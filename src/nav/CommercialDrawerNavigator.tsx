@@ -14,6 +14,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { COLORS } from '../theme/colors';
 import { Text, Divider, useTheme } from 'react-native-paper';
 import {
   createDrawerNavigator,
@@ -128,8 +129,8 @@ export const CommercialDrawerNavigator: React.FC = () => {
   const screenOptions = useCallback(({ route }: { route: { name: string } }) => ({
     drawerIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) =>
       getDrawerIcon(route.name, focused, color, size),
-    drawerActiveTintColor: '#007AFF',
-    drawerInactiveTintColor: '#666',
+    drawerActiveTintColor: COLORS.PRIMARY,
+    drawerInactiveTintColor: COLORS.TEXT_SECONDARY,
     headerShown: false,
     drawerType: 'front' as const,
   }), [getDrawerIcon]);
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   },
   drawerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   tutorialDivider: {
