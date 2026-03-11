@@ -15,6 +15,7 @@ interface ReportData {
     progressLog: ProgressLogModel | null;
   }>;
   supervisorName: string;
+  projectName?: string;
   reportDate: Date;
 }
 
@@ -27,6 +28,7 @@ interface ComprehensiveReportData {
   hindrances: HindranceModel[];
   inspection: SiteInspectionModel | null;
   supervisorName: string;
+  projectName?: string;
   reportDate: Date;
 }
 
@@ -426,7 +428,7 @@ export class ReportPdfService {
    * Generate HTML content for the report
    */
   private static async generateHtmlContent(data: ReportData): Promise<string> {
-    const { site, items, supervisorName, reportDate } = data;
+    const { site, items, supervisorName, projectName, reportDate } = data;
 
     // Calculate overall progress
     const totalProgress = items.length > 0
@@ -581,14 +583,25 @@ export class ReportPdfService {
             margin-top: 40px;
             padding-top: 20px;
             border-top: 2px solid #e0e0e0;
-            text-align: center;
             color: #666;
             font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          @page {
+            margin: 20mm;
+            @bottom-center {
+              content: "Page " counter(page) " of " counter(pages);
+              font-size: 11px;
+              color: #999;
+            }
           }
         </style>
       </head>
       <body>
         <div class="header">
+          ${projectName ? `<p style="font-size:13px;opacity:0.85;margin-bottom:6px;">Project: ${projectName}</p>` : ''}
           <h1>Daily Progress Report</h1>
           <p>Generated on ${this.formatDateTime(new Date())}</p>
         </div>
@@ -634,8 +647,8 @@ export class ReportPdfService {
         </table>
 
         <div class="footer">
-          <p><strong>Construction Site Progress Tracker</strong></p>
-          <p>This is a system-generated report. For queries, contact the project supervisor.</p>
+          <span><strong>MRE Site Tracker</strong> — System Generated Report</span>
+          <span>Supervisor: ${supervisorName}</span>
         </div>
       </body>
       </html>
@@ -669,31 +682,59 @@ export class ReportPdfService {
   }
 
   /**
-   * Generate HTML for photos section
-   * Temporarily disabled - photos cause PDF generation to fail due to size
+   * Read a photo from disk and return as base64 data URI.
+   * Returns empty string if file not found or unreadable.
+   */
+  private static async photoToBase64(photoPath: string): Promise<string> {
+    try {
+      const cleanPath = photoPath.startsWith('file://') ? photoPath.slice(7) : photoPath;
+      const exists = await RNFS.exists(cleanPath);
+      if (!exists) return '';
+      const base64 = await RNFS.readFile(cleanPath, 'base64');
+      const ext = cleanPath.toLowerCase().split('.').pop() || 'jpeg';
+      const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+      return `data:${mime};base64,${base64}`;
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Generate HTML for photos section — embeds up to 3 photos as base64 thumbnails.
    */
   private static async generatePhotosHtml(progressLog: ProgressLogModel): Promise<string> {
-    // Check if photos exist and are not empty
     if (!progressLog.photos || progressLog.photos === '[]' || progressLog.photos === '') {
       return '';
     }
 
     try {
-      // Parse the photos JSON string
       const photos = JSON.parse(progressLog.photos);
+      if (!Array.isArray(photos) || photos.length === 0) return '';
 
-      if (!Array.isArray(photos) || photos.length === 0) {
-        return '';
+      // Limit to first 3 to keep PDF size manageable
+      const subset = photos.slice(0, 3);
+      const dataUris = await Promise.all(
+        subset.map((photo: any) => {
+          const path = typeof photo === 'string' ? photo : photo?.uri;
+          return path ? this.photoToBase64(path) : Promise.resolve('');
+        })
+      );
+
+      const imgTags = dataUris
+        .filter(uri => uri.length > 0)
+        .map(uri =>
+          `<img src="${uri}" style="width:180px;height:135px;object-fit:cover;border-radius:4px;margin-right:8px;" />`
+        )
+        .join('');
+
+      if (!imgTags) {
+        return `<p style="font-size:12px;color:#666;font-style:italic;">&#128247; ${photos.length} photo(s) — could not load files</p>`;
       }
 
-      // TEMPORARILY: Just show count, don't embed images to avoid PDF generation failure
       return `
-        <div style="margin-top: 8px;">
-          <p style="
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-          ">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
+        <div style="margin-top:8px;">
+          <p style="font-size:11px;color:#666;margin-bottom:6px;">&#128247; ${photos.length} photo(s)${photos.length > 3 ? ' (showing first 3)' : ''}</p>
+          <div style="display:flex;flex-direction:row;">${imgTags}</div>
         </div>
       `;
     } catch (error) {
@@ -730,7 +771,7 @@ export class ReportPdfService {
    * Generate comprehensive HTML content (progress + hindrances + inspection)
    */
   private static async generateComprehensiveHtmlContent(data: ComprehensiveReportData): Promise<string> {
-    const { site, items, hindrances, inspection, supervisorName, reportDate } = data;
+    const { site, items, hindrances, inspection, supervisorName, projectName, reportDate } = data;
 
     // Calculate overall progress
     const totalProgress = items.length > 0
@@ -894,9 +935,19 @@ export class ReportPdfService {
             margin-top: 40px;
             padding-top: 20px;
             border-top: 2px solid #e0e0e0;
-            text-align: center;
             color: #666;
             font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          @page {
+            margin: 20mm;
+            @bottom-center {
+              content: "Page " counter(page) " of " counter(pages);
+              font-size: 11px;
+              color: #999;
+            }
           }
           .empty-section {
             text-align: center;
@@ -908,7 +959,8 @@ export class ReportPdfService {
       </head>
       <body>
         <div class="header">
-          <h1>📋 Comprehensive Daily Site Report</h1>
+          ${projectName ? `<p style="font-size:13px;opacity:0.85;margin-bottom:6px;">Project: ${projectName}</p>` : ''}
+          <h1>Comprehensive Daily Site Report</h1>
           <p>Generated on ${this.formatDateTime(new Date())}</p>
         </div>
 
@@ -944,8 +996,8 @@ export class ReportPdfService {
         ${inspectionSection}
 
         <div class="footer">
-          <p><strong>Construction Site Progress Tracker</strong></p>
-          <p>This is a system-generated comprehensive report. For queries, contact the project supervisor.</p>
+          <span><strong>MRE Site Tracker</strong> — System Generated Report</span>
+          <span>Supervisor: ${supervisorName}</span>
         </div>
       </body>
       </html>
@@ -1185,53 +1237,71 @@ export class ReportPdfService {
   }
 
   /**
-   * Generate hindrance photos HTML
-   * Temporarily disabled - photos cause PDF generation to fail due to size
+   * Generate hindrance photos HTML — embeds up to 3 photos as base64 thumbnails.
    */
   private static async generateHindrancePhotosHtml(hindrance: HindranceModel): Promise<string> {
     if (!hindrance.photos || hindrance.photos === '[]' || hindrance.photos === '') {
       return '';
     }
-
     try {
       const photos = JSON.parse(hindrance.photos);
-      if (!Array.isArray(photos) || photos.length === 0) {
-        return '';
-      }
-
-      // TEMPORARILY: Just show count
+      if (!Array.isArray(photos) || photos.length === 0) return '';
+      const subset = photos.slice(0, 3);
+      const dataUris = await Promise.all(
+        subset.map((photo: any) => {
+          const path = typeof photo === 'string' ? photo : photo?.uri;
+          return path ? this.photoToBase64(path) : Promise.resolve('');
+        })
+      );
+      const imgTags = dataUris
+        .filter(uri => uri.length > 0)
+        .map(uri =>
+          `<img src="${uri}" style="width:180px;height:135px;object-fit:cover;border-radius:4px;margin-right:8px;" />`
+        )
+        .join('');
+      if (!imgTags) return '';
       return `
-        <div style="margin-top: 8px;">
-          <p style="font-size: 12px; color: #666; font-style: italic;">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
+        <div style="margin-top:8px;">
+          <p style="font-size:11px;color:#666;margin-bottom:6px;">&#128247; ${photos.length} photo(s)${photos.length > 3 ? ' (showing first 3)' : ''}</p>
+          <div style="display:flex;flex-direction:row;">${imgTags}</div>
         </div>
       `;
-    } catch (error) {
+    } catch {
       return '';
     }
   }
 
   /**
-   * Generate inspection photos HTML
-   * Temporarily disabled - photos cause PDF generation to fail due to size
+   * Generate inspection photos HTML — embeds up to 3 photos as base64 thumbnails.
    */
   private static async generateInspectionPhotosHtml(inspection: SiteInspectionModel): Promise<string> {
     if (!inspection.photos || inspection.photos === '[]' || inspection.photos === '') {
       return '';
     }
-
     try {
       const photos = JSON.parse(inspection.photos);
-      if (!Array.isArray(photos) || photos.length === 0) {
-        return '';
-      }
-
-      // TEMPORARILY: Just show count
+      if (!Array.isArray(photos) || photos.length === 0) return '';
+      const subset = photos.slice(0, 3);
+      const dataUris = await Promise.all(
+        subset.map((photo: any) => {
+          const path = typeof photo === 'string' ? photo : photo?.uri;
+          return path ? this.photoToBase64(path) : Promise.resolve('');
+        })
+      );
+      const imgTags = dataUris
+        .filter(uri => uri.length > 0)
+        .map(uri =>
+          `<img src="${uri}" style="width:180px;height:135px;object-fit:cover;border-radius:4px;margin-right:8px;" />`
+        )
+        .join('');
+      if (!imgTags) return '';
       return `
-        <div style="margin-top: 8px;">
-          <p style="font-size: 12px; color: #666; font-style: italic;">📸 ${photos.length} photo${photos.length > 1 ? 's' : ''} attached (not shown in PDF due to size limitations)</p>
+        <div style="margin-top:8px;">
+          <p style="font-size:11px;color:#666;margin-bottom:6px;">&#128247; ${photos.length} photo(s)${photos.length > 3 ? ' (showing first 3)' : ''}</p>
+          <div style="display:flex;flex-direction:row;">${imgTags}</div>
         </div>
       `;
-    } catch (error) {
+    } catch {
       return '';
     }
   }

@@ -85,7 +85,8 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
     }
   }, [current, visible, showNext]);
 
-  // Add message to queue
+  // Add message to queue — uses functional setState to avoid stale closure
+  // and to prevent "setState during render" warnings from downstream hooks
   const showSnackbar = useCallback(
     (
       message: string,
@@ -101,16 +102,16 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
         duration,
       };
 
-      if (!current) {
-        // No message showing, show immediately
-        setCurrent(newMessage);
-        setVisible(true);
-      } else {
-        // Add to queue
-        setQueue((prev) => [...prev, newMessage]);
-      }
+      setCurrent((prev) => {
+        if (!prev) {
+          setVisible(true);
+          return newMessage;
+        }
+        setQueue((q) => [...q, newMessage]);
+        return prev;
+      });
     },
-    [current]
+    [] // stable — no closure dependencies
   );
 
   // Manually hide current snackbar

@@ -308,6 +308,24 @@ class BackgroundPdfQueue {
     const sitesCollection = this.database.get<SiteModel>('sites');
     const site = await sitesCollection.find(report.siteId);
 
+    // Fetch project name
+    let projectName = '';
+    try {
+      const project = await this.database.get('projects').find(site.projectId);
+      projectName = (project as any).name || '';
+    } catch {
+      // project not found — leave empty
+    }
+
+    // Fetch supervisor full name
+    let supervisorName = '';
+    try {
+      const user = await this.database.get('users').find(report.supervisorId);
+      supervisorName = (user as any).fullName || (user as any).username || `Supervisor ${report.supervisorId}`;
+    } catch {
+      supervisorName = `Supervisor ${report.supervisorId}`;
+    }
+
     // Fetch all items for this site
     const itemsCollection = this.database.get<ItemModel>('items');
     const siteItems = await itemsCollection
@@ -411,7 +429,8 @@ class BackgroundPdfQueue {
       items: itemsWithLogs,
       hindrances: todayHindrances,
       inspection: todayInspections[0] || null,
-      supervisorName: `Supervisor ${report.supervisorId}`,
+      supervisorName,
+      projectName,
       reportDate: new Date(report.reportDate),
     };
   }
