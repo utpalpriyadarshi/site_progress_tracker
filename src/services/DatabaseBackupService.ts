@@ -107,7 +107,7 @@ class DatabaseBackupService {
       await Share.open({
         url: `file://${filePath}`,
         type: 'application/json',
-        title: 'Construction Tracker Backup',
+        title: 'MRE Site Tracker Backup',
       });
     } catch (error: any) {
       // User cancelled share - not an error

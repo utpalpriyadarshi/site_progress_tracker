@@ -127,7 +127,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Construction Tracker</Text>
+      <Text style={styles.title}>MRE Site Tracker</Text>
       <Text style={styles.subtitle}>Sign in to your account</Text>
       
       <View style={styles.form}>
