@@ -1,4 +1,4 @@
-package com.site_progress_tracker
+package com.mre.sitetracker
 
 import android.app.Application
 import com.facebook.react.PackageList

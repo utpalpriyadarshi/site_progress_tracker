@@ -1,4 +1,4 @@
-package com.site_progress_tracker
+package com.mre.sitetracker
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
