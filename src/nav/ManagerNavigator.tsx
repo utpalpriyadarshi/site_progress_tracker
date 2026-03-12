@@ -130,7 +130,7 @@ const ManagerTabNavigator: React.FC = () => {
         component={ManagerDashboardScreen}
         options={{
           title: 'Dashboard',
-          headerTitle: 'Manager Dashboard',
+          headerTitle: 'Dashboard',
           tabBarAccessibilityLabel: 'Dashboard tab, overview of project management',
         }}
       />
@@ -148,7 +148,7 @@ const ManagerTabNavigator: React.FC = () => {
         component={TeamPerformanceScreen}
         options={{
           title: 'Team',
-          headerTitle: 'Team Performance',
+          headerTitle: 'Performance',
           tabBarAccessibilityLabel: 'Team Performance tab',
         }}
       />
@@ -166,7 +166,7 @@ const ManagerTabNavigator: React.FC = () => {
         component={MilestoneManagementScreen}
         options={{
           title: 'Milestones',
-          headerTitle: 'Milestone Management',
+          headerTitle: 'Milestones',
           tabBarAccessibilityLabel: 'Milestone Management tab',
         }}
       />

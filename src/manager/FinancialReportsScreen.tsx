@@ -22,6 +22,7 @@ import { database } from '../../models/database';
 import { Q } from '@nozbe/watermelondb';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAccessibility } from '../utils/accessibility';
@@ -414,10 +415,20 @@ const FinancialReportsScreen = () => {
           ? `${RNFS.DownloadDirectoryPath}/${fileName}`
           : `${RNFS.DocumentDirectoryPath}/${fileName}`;
 
-      // Write file
+      // Write file to Downloads
       await RNFS.writeFile(filePath, base64, 'base64');
 
-      showSnackbar(`Financial report exported to: ${filePath}`);
+      showSnackbar(`Saved to Downloads: ${fileName}`);
+
+      // Open native share sheet so the user can open or send the file
+      const cachePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
+      await RNFS.copyFile(filePath, cachePath);
+      await Share.open({
+        url: Platform.OS === 'android' ? `file://${cachePath}` : cachePath,
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        title: `Share ${fileName}`,
+        failOnCancel: false,
+      });
     } catch (error) {
       logger.error('[FinancialReports] Export error', error as Error);
       showSnackbar('Failed to export financial report');
@@ -854,9 +865,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  marginChip: {
-    height: 32,
-  },
+  marginChip: {},
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

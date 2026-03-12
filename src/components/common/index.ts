@@ -44,3 +44,6 @@ export type { SyncButtonProps } from './SyncButton';
 
 // Offline Banner
 export { OfflineBanner } from './OfflineBanner';
+
+// Header-native sync button for dark Appbar headers
+export { HeaderSyncButton } from './HeaderSyncButton';

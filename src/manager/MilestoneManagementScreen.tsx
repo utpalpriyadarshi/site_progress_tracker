@@ -511,20 +511,17 @@ const MilestoneManagementScreen = () => {
       <Card key={milestone.id} mode="elevated" style={styles.milestoneCard}>
         <Card.Content>
           {/* Milestone Header */}
-          <View style={styles.milestoneHeader}>
-            <View style={styles.milestoneHeaderLeft}>
-              <Chip
-                style={[
-                  styles.milestoneCodeChip,
-                  { backgroundColor: milestone.isCustom ? COLORS.STATUS_EVALUATED : COLORS.INFO },
-                ]}
-                textStyle={styles.chipCodeText}
-                accessibilityLabel={`Milestone code: ${milestone.milestoneCode}`}
-              >
-                {milestone.milestoneCode}
-              </Chip>
-              <Title style={styles.milestoneName}>{milestone.milestoneName}</Title>
-            </View>
+          <View style={styles.milestoneHeaderChipRow}>
+            <Chip
+              style={[
+                styles.milestoneCodeChip,
+                { backgroundColor: milestone.isCustom ? COLORS.STATUS_EVALUATED : COLORS.INFO },
+              ]}
+              textStyle={styles.chipCodeText}
+              accessibilityLabel={`Milestone code: ${milestone.milestoneCode}`}
+            >
+              {milestone.milestoneCode}
+            </Chip>
             <Chip
               style={styles.weightageChip}
               textStyle={styles.chipWeightText}
@@ -533,6 +530,7 @@ const MilestoneManagementScreen = () => {
               {milestone.weightage}%
             </Chip>
           </View>
+          <Title style={styles.milestoneName}>{milestone.milestoneName}</Title>
 
           {milestone.description && (
             <Paragraph style={styles.milestoneDescription}>{milestone.description}</Paragraph>
@@ -1062,28 +1060,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     elevation: 2,
   },
-  milestoneHeader: {
+  milestoneHeaderChipRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 6,
+  },
+  milestoneCodeChip: {},
+  milestoneName: {
+    fontSize: 16,
+    fontWeight: 'bold',
     marginBottom: 8,
   },
-  milestoneHeaderLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  milestoneCodeChip: {
-    height: 24,
-    marginRight: 8,
-  },
-  milestoneName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-  },
   weightageChip: {
-    height: 24,
     backgroundColor: '#f0f0f0',
   },
   milestoneDescription: {

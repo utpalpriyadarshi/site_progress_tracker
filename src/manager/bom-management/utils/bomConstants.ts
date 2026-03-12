@@ -36,3 +36,21 @@ export const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
  * Default BOM status color
  */
 export const DEFAULT_STATUS_COLOR = { bg: COLORS.DISABLED, text: '#FFFFFF' };
+
+/**
+ * BOM statuses that are read-only (items + header cannot be edited)
+ */
+export const LOCKED_BOM_STATUSES = ['submitted', 'won', 'lost', 'closed'];
+
+/**
+ * Valid status transitions per BOM status
+ */
+export const BOM_STATUS_TRANSITIONS: Record<string, Array<{ label: string; newStatus: string; icon: string; color: string }>> = {
+  draft:     [{ label: 'Submit to Client', newStatus: 'submitted', icon: 'send',         color: COLORS.INFO }],
+  submitted: [
+    { label: 'Mark Won',  newStatus: 'won',  icon: 'trophy',       color: COLORS.SUCCESS },
+    { label: 'Mark Lost', newStatus: 'lost', icon: 'close-circle', color: COLORS.ERROR },
+  ],
+  baseline:  [{ label: 'Activate',  newStatus: 'active', icon: 'play',  color: COLORS.SUCCESS }],
+  active:    [{ label: 'Close BOM', newStatus: 'closed', icon: 'lock',  color: '#616161' }],
+};

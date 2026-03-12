@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Card, Text } from 'react-native-paper';
 import { database } from '../../models/database';
 import { withObservables } from '@nozbe/watermelondb/react';
@@ -38,8 +39,15 @@ const BomManagementScreenComponent = ({
   projects: ProjectModel[];
   allBomItems: BomItemModel[];
 }) => {
+  const navigation = useNavigation<any>();
+
   // Use custom hooks for data management
-  const bomData = useBomData(projects, allBomItems, boms);
+  const bomData = useBomData(
+    projects,
+    allBomItems,
+    boms,
+    () => navigation.navigate('BomImportWizard')
+  );
   const itemData = useBomItemData(allBomItems);
   const {
     activeTab,
@@ -172,6 +180,8 @@ const BomManagementScreenComponent = ({
               onDeleteItem={itemData.handleDeleteItem}
               onCopyToExecution={(bom) => bomData.handleCopyToExecution(bom, () => setActiveTab('execution'))}
               onExportBom={bomData.handleExportBom}
+              exportingBomId={bomData.exportingBomId}
+              onUpdateBomStatus={bomData.handleUpdateBomStatus}
             />
           ))
         )}

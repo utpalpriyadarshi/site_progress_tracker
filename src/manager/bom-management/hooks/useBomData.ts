@@ -5,7 +5,10 @@
  * Refactored to use useReducer pattern (Phase 2, Task 2.1)
  */
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useState } from 'react';
+import { Platform } from 'react-native';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';
 import { database } from '../../../../models/database';
 import BomModel from '../../../../models/BomModel';
 import BomItemModel from '../../../../models/BomItemModel';
@@ -37,9 +40,11 @@ import {
 export const useBomData = (
   projects: ProjectModel[],
   allBomItems: BomItemModel[],
-  _boms: BomModel[]
+  _boms: BomModel[],
+  onNavigateToImport?: () => void
 ) => {
   const { showSnackbar } = useSnackbar();
+  const [exportingBomId, setExportingBomId] = useState<string | null>(null);
 
   // Replace 13 useState hooks with single useReducer
   const [state, dispatch] = useReducer(bomFormReducer, initialBomFormState);
@@ -144,6 +149,11 @@ export const useBomData = (
     try {
       await database.write(async () => {
         if (editingBom) {
+          // Increment version: "v1.0" → "v2.0", "v3.0" → "v4.0", etc.
+          const versionMatch = (editingBom.version || 'v1.0').match(/^v(\d+)/);
+          const nextVersionNum = versionMatch ? parseInt(versionMatch[1], 10) + 1 : 2;
+          const nextVersion = `v${nextVersionNum}.0`;
+
           // Update existing BOM
           await editingBom.update((bom: any) => {
             bom.name = bomName.trim();
@@ -151,9 +161,12 @@ export const useBomData = (
             bom.quantity = qty;
             bom.unit = unit.trim();
             bom.description = description.trim();
+            bom.version = nextVersion;
+            bom._version = (editingBom._version || 1) + 1;
+            bom.appSyncStatus = 'pending';
             bom.updatedDate = Date.now();
           });
-          showSnackbar('BOM updated successfully', 'success');
+          showSnackbar(`BOM updated — ${nextVersion}`, 'success');
         } else {
           // Create new BOM
           await database.collections.get<BomModel>('boms').create((bom: any) => {
@@ -277,13 +290,37 @@ export const useBomData = (
     }
   };
 
+  // Update BOM status (workflow transitions)
+  const handleUpdateBomStatus = async (bom: BomModel, newStatus: string) => {
+    try {
+      await database.write(async () => {
+        await bom.update((b: any) => {
+          b.status = newStatus;
+          b.appSyncStatus = 'pending';
+          b._version = (bom._version || 1) + 1;
+          b.updatedDate = Date.now();
+        });
+      });
+      const labels: Record<string, string> = {
+        submitted: 'Submitted to client',
+        won: 'Marked as Won',
+        lost: 'Marked as Lost',
+        active: 'Activated',
+        closed: 'Closed',
+      };
+      showSnackbar(labels[newStatus] ?? `Status → ${newStatus}`, 'success');
+    } catch (error) {
+      logger.error('Error updating BOM status', error as Error);
+      showSnackbar('Failed to update status', 'error');
+    }
+  };
+
   // Export BOM to Excel
   const handleExportBom = async (bom: BomModel) => {
+    setExportingBomId(bom.id);
     try {
       const items = getBomItems(bom.id, allBomItems);
       const project = projects.find(p => p.id === bom.projectId);
-
-      showSnackbar('Exporting BOM to Excel...', 'info');
 
       const filePath = await BomImportExportService.exportBomToExcel({
         bom,
@@ -291,16 +328,31 @@ export const useBomData = (
         projectName: project?.name,
       });
 
-      showSnackbar(`BOM exported successfully! Saved to: ${filePath}`, 'success');
+      const fileName = filePath.split('/').pop() ?? 'BOM.xlsx';
+      showSnackbar(`Saved to Downloads: ${fileName}`, 'success');
+
+      // Open native share sheet so the user can open or send the file
+      const cachePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
+      await RNFS.copyFile(filePath, cachePath);
+      await Share.open({
+        url: Platform.OS === 'android' ? `file://${cachePath}` : cachePath,
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        title: `Share ${fileName}`,
+        failOnCancel: false,
+      });
     } catch (error) {
       logger.error('Error exporting BOM', error as Error);
       showSnackbar('Failed to export BOM: ' + (error as Error).message, 'error');
+    } finally {
+      setExportingBomId(null);
     }
   };
 
-  // Import BOM from file (temporarily disabled - compatibility issue)
-  const handleImportBom = async () => {
-    showSnackbar('Import feature is currently being upgraded. Please use Export to Excel for now.', 'info');
+  // Import BOM from file — navigate to wizard
+  const handleImportBom = () => {
+    if (onNavigateToImport) {
+      onNavigateToImport();
+    }
   };
 
   // Create BOM from imported data
@@ -409,6 +461,10 @@ export const useBomData = (
     setProjectMenuVisible,
     siteMenuVisible: state.ui.siteMenuVisible,
     setSiteMenuVisible,
+
+    // Export state
+    exportingBomId,
+    handleUpdateBomStatus,
 
     // Handlers (unchanged)
     openAddBomDialog,

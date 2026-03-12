@@ -29,6 +29,7 @@ import { ManagerProvider } from '../manager/context/ManagerContext';
 import { BomProvider } from '../manager/context/BomContext';
 import ManagerTabNavigator from './ManagerNavigator';
 import BomManagementScreen from '../manager/BomManagementScreen';
+import BomImportWizardScreen from '../manager/bom-import-wizard/BomImportWizardScreen';
 import ChangeOrdersScreen from '../manager/ChangeOrdersScreen';
 import DesignDocumentApprovalsScreen from '../manager/DesignDocumentApprovalsScreen';
 import TutorialService from '../services/TutorialService';
@@ -36,6 +37,7 @@ import TutorialService from '../services/TutorialService';
 export type ManagerDrawerParamList = {
   ManagerTabs: { screen?: string; params?: { showTutorial?: boolean } } | undefined;
   BomManagement: undefined;
+  BomImportWizard: undefined;
   ChangeOrders: undefined;
   DesignDocApprovals: undefined;
 };
@@ -142,6 +144,17 @@ export const ManagerDrawerNavigator: React.FC = () => {
             options={{
               title: 'BOM Management',
               drawerLabel: 'BOM Management',
+              headerShown: false,
+            }}
+          />
+
+          {/* BOM Import Wizard — hidden from drawer, navigate-to only */}
+          <Drawer.Screen
+            name="BomImportWizard"
+            component={BomImportWizardScreen}
+            options={{
+              title: 'Import BOM',
+              drawerItemStyle: { display: 'none' },
               headerShown: false,
             }}
           />
