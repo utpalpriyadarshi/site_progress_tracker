@@ -109,8 +109,9 @@ const ManagerTabNavigator: React.FC = () => {
     headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
-      fontSize: 20,
+      fontSize: 18,
     },
+    headerTitleAlign: 'left' as const,
     headerLeft: HeaderLeft,
     headerRight: HeaderRight,
     tabBarStyle: {
