@@ -40,7 +40,8 @@ import {
 export const useBomData = (
   projects: ProjectModel[],
   allBomItems: BomItemModel[],
-  _boms: BomModel[]
+  _boms: BomModel[],
+  onNavigateToImport?: () => void
 ) => {
   const { showSnackbar } = useSnackbar();
   const [exportingBomId, setExportingBomId] = useState<string | null>(null);
@@ -347,9 +348,11 @@ export const useBomData = (
     }
   };
 
-  // Import BOM from file (temporarily disabled - compatibility issue)
-  const handleImportBom = async () => {
-    showSnackbar('Import feature is currently being upgraded. Please use Export to Excel for now.', 'info');
+  // Import BOM from file — navigate to wizard
+  const handleImportBom = () => {
+    if (onNavigateToImport) {
+      onNavigateToImport();
+    }
   };
 
   // Create BOM from imported data
