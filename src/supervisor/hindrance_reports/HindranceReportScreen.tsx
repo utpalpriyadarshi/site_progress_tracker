@@ -11,7 +11,7 @@ import { useHindranceForm } from './hooks/useHindranceForm';
 import { HindranceList } from './components/HindranceList';
 import { HindranceForm } from './components/HindranceForm';
 import { canAddHindrance } from './utils';
-import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../../components/common';
+import { LoadingOverlay, SupervisorHeader, OfflineIndicator, HeaderSyncButton } from '../../components/common';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { SyncService } from '../../../services/sync/SyncService';
 import { commonStyles } from '../../styles/common';
@@ -116,13 +116,11 @@ const HindranceReportScreen = () => {
       <SupervisorHeader
         title="Hindrance Reports"
         rightActions={
-          <SyncButton
+          <HeaderSyncButton
             syncStatus={syncStatus}
             isOnline={isOnline}
             pendingCount={pendingCount}
             onPress={manualSync}
-            variant="icon"
-            showPendingCount
           />
         }
       />

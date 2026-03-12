@@ -17,7 +17,7 @@ import {
   InspectionWithSite,
   InspectionFormData,
 } from './site_inspection/types';
-import { LoadingOverlay, SupervisorHeader, OfflineIndicator, SyncButton } from '../components/common';
+import { LoadingOverlay, SupervisorHeader, OfflineIndicator, HeaderSyncButton } from '../components/common';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { SyncService } from '../../services/sync/SyncService';
 import { commonStyles } from '../styles/common';
@@ -239,13 +239,11 @@ const SiteInspectionScreen = () => {
       <SupervisorHeader
         title="Site Inspection"
         rightActions={
-          <SyncButton
+          <HeaderSyncButton
             syncStatus={syncStatus}
             isOnline={isOnline}
             pendingCount={pendingCount}
             onPress={manualSync}
-            variant="icon"
-            showPendingCount
           />
         }
       />
