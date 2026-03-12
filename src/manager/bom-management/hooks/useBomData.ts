@@ -148,6 +148,11 @@ export const useBomData = (
     try {
       await database.write(async () => {
         if (editingBom) {
+          // Increment version: "v1.0" → "v2.0", "v3.0" → "v4.0", etc.
+          const versionMatch = (editingBom.version || 'v1.0').match(/^v(\d+)/);
+          const nextVersionNum = versionMatch ? parseInt(versionMatch[1], 10) + 1 : 2;
+          const nextVersion = `v${nextVersionNum}.0`;
+
           // Update existing BOM
           await editingBom.update((bom: any) => {
             bom.name = bomName.trim();
@@ -155,9 +160,12 @@ export const useBomData = (
             bom.quantity = qty;
             bom.unit = unit.trim();
             bom.description = description.trim();
+            bom.version = nextVersion;
+            bom._version = (editingBom._version || 1) + 1;
+            bom.appSyncStatus = 'pending';
             bom.updatedDate = Date.now();
           });
-          showSnackbar('BOM updated successfully', 'success');
+          showSnackbar(`BOM updated — ${nextVersion}`, 'success');
         } else {
           // Create new BOM
           await database.collections.get<BomModel>('boms').create((bom: any) => {

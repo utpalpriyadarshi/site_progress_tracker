@@ -101,6 +101,9 @@ export const BomCard: React.FC<BomCardProps> = ({
           </Text>
           <Text variant="bodySmall" style={styles.infoText}>
             📋 Version: {bom.version}
+            {bom.updatedDate && bom.updatedDate !== bom.createdDate
+              ? `  •  Updated ${new Date(bom.updatedDate).toLocaleDateString('en-IN')}`
+              : ''}
           </Text>
         </View>
 
