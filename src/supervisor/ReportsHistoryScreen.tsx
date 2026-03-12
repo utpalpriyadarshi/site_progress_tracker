@@ -26,6 +26,9 @@ import DailyReportModel from '../../models/DailyReportModel';
 import SiteModel from '../../models/SiteModel';
 import ItemModel from '../../models/ItemModel';
 import ProgressLogModel from '../../models/ProgressLogModel';
+import HindranceModel from '../../models/HindranceModel';
+import SiteInspectionModel from '../../models/SiteInspectionModel';
+import { ReportPdfService, ConsolidatedSiteEntry } from '../../services/pdf/ReportPdfService';
 import { useSiteContext } from './context/SiteContext';
 import SiteSelector from './components/SiteSelector';
 import { useSnackbar } from '../components/Snackbar';
@@ -64,6 +67,10 @@ const ReportsHistoryScreen = () => {
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search (Phase 3.4)
+
+  // Consolidated report state
+  const [isGeneratingConsolidated, setIsGeneratingConsolidated] = useState(false);
+  const [consolidatedPdfPath, setConsolidatedPdfPath] = useState<string | null>(null);
 
   // Load reports
   const loadReports = async () => {
@@ -228,6 +235,11 @@ const ReportsHistoryScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter, debouncedSearchQuery]);
 
+  // Clear consolidated PDF when period changes
+  useEffect(() => {
+    setConsolidatedPdfPath(null);
+  }, [dateFilter]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadReports();
@@ -375,6 +387,136 @@ const ReportsHistoryScreen = () => {
     }
   };
 
+  const handleGenerateConsolidated = async () => {
+    if (dateFilter !== 'week' && dateFilter !== 'month') return;
+    setIsGeneratingConsolidated(true);
+    try {
+      // Date range
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const fromDate = new Date(todayStart);
+      if (dateFilter === 'week') fromDate.setDate(fromDate.getDate() - 7);
+      else fromDate.setMonth(fromDate.getMonth() - 1);
+      const toDate = new Date();
+
+      // Fetch supervisor name and project name
+      let supervisorName = 'Supervisor';
+      let projectName = '';
+      try {
+        const usersCollection = database.collections.get<any>('users');
+        const supervisorUser = await usersCollection.find(supervisorId);
+        supervisorName = supervisorUser.fullName || supervisorUser.username || supervisorName;
+      } catch {}
+      try {
+        const projectsCollection = database.collections.get<any>('projects');
+        const project = await projectsCollection.find(projectId);
+        projectName = project.name || '';
+      } catch {}
+
+      // Group filteredReports by site
+      const siteMap = new Map<string, { site: SiteModel; reports: ReportWithDetails[] }>();
+      for (const r of filteredReports) {
+        if (!siteMap.has(r.site.id)) {
+          siteMap.set(r.site.id, { site: r.site, reports: [] });
+        }
+        siteMap.get(r.site.id)!.reports.push(r);
+      }
+
+      // Build consolidated site entries
+      const consolidatedSites: ConsolidatedSiteEntry[] = [];
+      for (const [siteId, { site, reports }] of siteMap) {
+        const hindrances = await database.collections
+          .get<HindranceModel>('hindrances')
+          .query(
+            Q.where('site_id', siteId),
+            Q.where('reported_at', Q.between(fromDate.getTime(), toDate.getTime())),
+          )
+          .fetch();
+
+        const inspections = await database.collections
+          .get<SiteInspectionModel>('site_inspections')
+          .query(
+            Q.where('site_id', siteId),
+            Q.where('inspection_date', Q.between(fromDate.getTime(), toDate.getTime())),
+          )
+          .fetch();
+
+        consolidatedSites.push({
+          siteName: site.name,
+          location: site.location || '',
+          days: reports
+            .sort((a, b) => a.report.reportDate - b.report.reportDate)
+            .map(r => {
+              const rDateStr = new Date(r.report.reportDate).toDateString();
+              return {
+                date: new Date(r.report.reportDate),
+                totalItems: r.report.totalItems,
+                totalProgress: r.report.totalProgress,
+                notes: r.report.notes || '',
+                hindrances: hindrances
+                  .filter(h => new Date(h.reportedAt).toDateString() === rDateStr)
+                  .map(h => ({ title: h.title, priority: h.priority, status: h.status })),
+                inspection: (() => {
+                  const ins = inspections.find(
+                    i => new Date(i.inspectionDate).toDateString() === rDateStr,
+                  );
+                  return ins
+                    ? {
+                        rating: ins.overallRating,
+                        safetyFlagged: ins.safetyFlagged,
+                        type: ins.inspectionType,
+                        notes: ins.notes || '',
+                      }
+                    : null;
+                })(),
+              };
+            }),
+        });
+      }
+
+      const pdfPath = await ReportPdfService.generateConsolidatedReport({
+        projectName,
+        supervisorName,
+        periodLabel: dateFilter === 'week' ? 'Last 7 Days' : 'Last 30 Days',
+        fromDate,
+        toDate,
+        sites: consolidatedSites,
+      });
+
+      setConsolidatedPdfPath(pdfPath);
+      showSnackbar('Consolidated report generated!', 'success');
+    } catch (error) {
+      logger.error('Failed to generate consolidated report', error as Error, {
+        component: 'ReportsHistoryScreen',
+        action: 'handleGenerateConsolidated',
+      });
+      showSnackbar('Failed to generate consolidated report', 'error');
+    } finally {
+      setIsGeneratingConsolidated(false);
+    }
+  };
+
+  const handleShareConsolidated = async () => {
+    if (!consolidatedPdfPath) return;
+    const filename = consolidatedPdfPath.split('/').pop() || 'ConsolidatedReport.pdf';
+    const cachePath = `${RNFS.CachesDirectoryPath}/${filename}`;
+    try {
+      await RNFS.copyFile(consolidatedPdfPath, cachePath);
+      await Share.open({
+        title: 'Consolidated Progress Report',
+        message: `Consolidated Progress Report — ${dateFilter === 'week' ? 'Last 7 Days' : 'Last 30 Days'}`,
+        url: `file://${cachePath}`,
+        type: 'application/pdf',
+        failOnCancel: false,
+      });
+      try { await RNFS.unlink(cachePath); } catch {}
+    } catch (error: any) {
+      if (!error.message?.includes('User did not share') && !error.message?.includes('cancelled')) {
+        showSnackbar('Failed to share consolidated report', 'error');
+      }
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
@@ -488,6 +630,49 @@ const ReportsHistoryScreen = () => {
           </Chip>
         </ScrollView>
       </View>
+
+      {/* Consolidated Report Banner */}
+      {(dateFilter === 'week' || dateFilter === 'month') && filteredReports.length > 0 && (
+        <Card style={styles.consolidatedCard} mode="outlined">
+          <Card.Content style={styles.consolidatedCardContent}>
+            <View style={styles.consolidatedInfo}>
+              <Text style={styles.consolidatedTitle}>
+                {dateFilter === 'week' ? 'Last 7 Days' : 'Last 30 Days'} — {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
+              </Text>
+              <Text style={styles.consolidatedSubtitle}>All-sites consolidated PDF</Text>
+            </View>
+            {consolidatedPdfPath ? (
+              <View style={styles.consolidatedActions}>
+                <Button
+                  icon="file-pdf-box"
+                  compact
+                  onPress={() => handleViewPdf(consolidatedPdfPath)}
+                >
+                  View
+                </Button>
+                <Button
+                  icon="share-variant"
+                  compact
+                  onPress={handleShareConsolidated}
+                >
+                  Share
+                </Button>
+              </View>
+            ) : (
+              <Button
+                icon="file-chart"
+                mode="contained"
+                compact
+                loading={isGeneratingConsolidated}
+                disabled={isGeneratingConsolidated}
+                onPress={handleGenerateConsolidated}
+              >
+                {isGeneratingConsolidated ? 'Generating…' : 'Consolidated PDF'}
+              </Button>
+            )}
+          </Card.Content>
+        </Card>
+      )}
 
       {/* Reports List */}
       <ScrollView
@@ -860,6 +1045,35 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  consolidatedCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderColor: COLORS.PRIMARY,
+  },
+  consolidatedCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  consolidatedInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  consolidatedTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  consolidatedSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  consolidatedActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   emptyCard: {
     margin: 16,
