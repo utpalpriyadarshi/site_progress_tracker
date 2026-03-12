@@ -172,6 +172,7 @@ const BomManagementScreenComponent = ({
               onDeleteItem={itemData.handleDeleteItem}
               onCopyToExecution={(bom) => bomData.handleCopyToExecution(bom, () => setActiveTab('execution'))}
               onExportBom={bomData.handleExportBom}
+              exportingBomId={bomData.exportingBomId}
             />
           ))
         )}

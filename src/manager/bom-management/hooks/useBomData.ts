@@ -5,7 +5,10 @@
  * Refactored to use useReducer pattern (Phase 2, Task 2.1)
  */
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useState } from 'react';
+import { Platform } from 'react-native';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';
 import { database } from '../../../../models/database';
 import BomModel from '../../../../models/BomModel';
 import BomItemModel from '../../../../models/BomItemModel';
@@ -40,6 +43,7 @@ export const useBomData = (
   _boms: BomModel[]
 ) => {
   const { showSnackbar } = useSnackbar();
+  const [exportingBomId, setExportingBomId] = useState<string | null>(null);
 
   // Replace 13 useState hooks with single useReducer
   const [state, dispatch] = useReducer(bomFormReducer, initialBomFormState);
@@ -279,11 +283,10 @@ export const useBomData = (
 
   // Export BOM to Excel
   const handleExportBom = async (bom: BomModel) => {
+    setExportingBomId(bom.id);
     try {
       const items = getBomItems(bom.id, allBomItems);
       const project = projects.find(p => p.id === bom.projectId);
-
-      showSnackbar('Exporting BOM to Excel...', 'info');
 
       const filePath = await BomImportExportService.exportBomToExcel({
         bom,
@@ -291,10 +294,23 @@ export const useBomData = (
         projectName: project?.name,
       });
 
-      showSnackbar(`BOM exported successfully! Saved to: ${filePath}`, 'success');
+      const fileName = filePath.split('/').pop() ?? 'BOM.xlsx';
+      showSnackbar(`Saved to Downloads: ${fileName}`, 'success');
+
+      // Open native share sheet so the user can open or send the file
+      const cachePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
+      await RNFS.copyFile(filePath, cachePath);
+      await Share.open({
+        url: Platform.OS === 'android' ? `file://${cachePath}` : cachePath,
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        title: `Share ${fileName}`,
+        failOnCancel: false,
+      });
     } catch (error) {
       logger.error('Error exporting BOM', error as Error);
       showSnackbar('Failed to export BOM: ' + (error as Error).message, 'error');
+    } finally {
+      setExportingBomId(null);
     }
   };
 
@@ -409,6 +425,9 @@ export const useBomData = (
     setProjectMenuVisible,
     siteMenuVisible: state.ui.siteMenuVisible,
     setSiteMenuVisible,
+
+    // Export state
+    exportingBomId,
 
     // Handlers (unchanged)
     openAddBomDialog,

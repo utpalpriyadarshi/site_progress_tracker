@@ -33,6 +33,7 @@ interface BomCardProps {
   onDeleteItem: (item: BomItemModel) => void;
   onCopyToExecution: (bom: BomModel) => void;
   onExportBom: (bom: BomModel) => void;
+  exportingBomId?: string | null;
 }
 
 /**
@@ -50,6 +51,7 @@ export const BomCard: React.FC<BomCardProps> = ({
   onDeleteItem,
   onCopyToExecution,
   onExportBom,
+  exportingBomId,
 }) => {
   const project = projects.find(p => p.id === bom.projectId);
   const items = getBomItems(bom.id, allBomItems);
@@ -255,8 +257,10 @@ export const BomCard: React.FC<BomCardProps> = ({
               icon="download"
               onPress={() => onExportBom(bom)}
               style={styles.exportButton}
+              loading={exportingBomId === bom.id}
+              disabled={exportingBomId === bom.id}
             >
-              Export to Excel
+              {exportingBomId === bom.id ? 'Exporting...' : 'Export to Excel'}
             </Button>
           </>
         )}
