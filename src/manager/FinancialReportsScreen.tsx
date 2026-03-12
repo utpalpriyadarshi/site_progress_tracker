@@ -854,9 +854,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  marginChip: {
-    height: 32,
-  },
+  marginChip: {},
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
