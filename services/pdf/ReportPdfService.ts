@@ -8,6 +8,30 @@ import HindranceModel from '../../models/HindranceModel';
 import SiteInspectionModel from '../../models/SiteInspectionModel';
 import { logger } from '../../src/services/LoggingService';
 
+export interface ConsolidatedDayEntry {
+  date: Date;
+  totalItems: number;
+  totalProgress: number;
+  notes: string;
+  hindrances: Array<{ title: string; priority: string; status: string }>;
+  inspection: { rating: string; safetyFlagged: boolean; type: string; notes: string } | null;
+}
+
+export interface ConsolidatedSiteEntry {
+  siteName: string;
+  location: string;
+  days: ConsolidatedDayEntry[];
+}
+
+export interface ConsolidatedReportInput {
+  projectName: string;
+  supervisorName: string;
+  periodLabel: string;
+  fromDate: Date;
+  toDate: Date;
+  sites: ConsolidatedSiteEntry[];
+}
+
 interface ReportData {
   site: SiteModel;
   items: Array<{
@@ -1319,6 +1343,307 @@ export class ReportPdfService {
     } catch (error) {
       return [];
     }
+  }
+
+  /**
+   * Generate a consolidated PDF report covering all sites over a date range
+   */
+  static async generateConsolidatedReport(data: ConsolidatedReportInput): Promise<string> {
+    const dateTag = this.formatDate(new Date());
+    const fileName = `ConsolidatedReport_${data.periodLabel.replace(/\s/g, '_')}_${dateTag}`;
+
+    try {
+      await this.ensureDocumentsDirectory();
+
+      const htmlContent = this.generateConsolidatedHtmlContent(data);
+
+      const file = await generatePDF({
+        html: htmlContent,
+        fileName,
+        directory: 'Documents',
+      });
+
+      logger.info('Consolidated PDF generated successfully', {
+        component: 'ReportPdfService',
+        action: 'generateConsolidatedReport',
+        fileName,
+        filePath: file.filePath,
+        siteCount: data.sites.length,
+        periodLabel: data.periodLabel,
+      });
+
+      return file.filePath || '';
+    } catch (error) {
+      logger.error('Consolidated PDF generation failed', error as Error, {
+        component: 'ReportPdfService',
+        action: 'generateConsolidatedReport',
+        fileName,
+        siteCount: data.sites.length,
+      });
+      throw new Error('Failed to generate consolidated PDF report');
+    }
+  }
+
+  /**
+   * Generate HTML for the consolidated report
+   */
+  private static generateConsolidatedHtmlContent(data: ConsolidatedReportInput): string {
+    const { projectName, supervisorName, periodLabel, fromDate, toDate, sites } = data;
+
+    // Executive summary stats
+    const totalReports = sites.reduce((sum, s) => sum + s.days.length, 0);
+    const totalItemsUpdated = sites.reduce((sum, s) =>
+      sum + s.days.reduce((ds, d) => ds + d.totalItems, 0), 0);
+    const allProgress = sites.flatMap(s => s.days.map(d => d.totalProgress)).filter(p => p > 0);
+    const avgProgress = allProgress.length > 0
+      ? allProgress.reduce((a, b) => a + b, 0) / allProgress.length
+      : 0;
+
+    const allHindrances = sites.flatMap(s =>
+      s.days.flatMap(d => d.hindrances.map(h => ({ ...h, siteName: s.siteName, date: d.date })))
+    );
+    const openHindrances = allHindrances.filter(h => h.status === 'open' || h.status === 'in_progress').length;
+    const resolvedHindrances = allHindrances.filter(h => h.status === 'resolved' || h.status === 'closed').length;
+
+    const allInspections = sites.flatMap(s =>
+      s.days.filter(d => d.inspection).map(d => ({ ...d.inspection!, siteName: s.siteName, date: d.date }))
+    );
+    const safetyFlaggedCount = allInspections.filter(i => i.safetyFlagged).length;
+
+    const formatShortDate = (d: Date) =>
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Per-site sections
+    const siteSections = sites.map(site => {
+      const dayRows = site.days
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(day => {
+          const progressColor = this.getProgressColor(day.totalProgress);
+          const hindranceSummary = day.hindrances.length > 0
+            ? day.hindrances.map(h =>
+                `<span style="font-size:11px;padding:2px 6px;border-radius:3px;margin-right:4px;
+                  background:${h.priority === 'high' ? '#F44336' : h.priority === 'medium' ? '#FF9800' : '#4CAF50'};
+                  color:white;">${h.title}</span>`
+              ).join('')
+            : '<span style="color:#999;font-size:11px;">None</span>';
+
+          const inspectionBadge = day.inspection
+            ? `<span style="font-size:11px;padding:2px 6px;border-radius:3px;
+                background:${day.inspection.rating === 'excellent' ? '#4CAF50' :
+                  day.inspection.rating === 'good' ? '#8BC34A' :
+                  day.inspection.rating === 'fair' ? '#FF9800' : '#F44336'};
+                color:white;">${day.inspection.rating.toUpperCase()}${day.inspection.safetyFlagged ? ' ⚠️' : ''}</span>`
+            : '<span style="color:#999;font-size:11px;">None</span>';
+
+          return `
+            <tr>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;white-space:nowrap;">${formatShortDate(day.date)}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">${day.totalItems}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">
+                <span style="font-weight:bold;color:${progressColor};">${day.totalProgress.toFixed(1)}%</span>
+              </td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${hindranceSummary}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${inspectionBadge}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;font-size:12px;color:#666;">
+                ${day.notes || '—'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      return `
+        <div class="section">
+          <div class="section-header" style="border-left-color:#1565C0;">
+            <h2 style="font-size:18px;">&#127970; ${site.siteName}</h2>
+            <p style="font-size:13px;color:#666;margin-top:4px;">${site.location}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th style="text-align:center;">Items Updated</th>
+                <th style="text-align:center;">Progress</th>
+                <th>Hindrances</th>
+                <th>Inspection</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>${dayRows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">No reports in this period</td></tr>'}</tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    // Hindrances overview table
+    const hindranceRows = allHindrances.map((h, i) => `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${formatShortDate(h.date)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${h.siteName}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;"><strong>${h.title}</strong></td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">
+          <span class="priority-${h.priority}">${h.priority.toUpperCase()}</span>
+        </td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">
+          <span class="status-badge" style="background:${this.getHindranceStatusColor(h.status)};color:white;">
+            ${h.status.replace('_', ' ')}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    const hindranceSection = allHindrances.length > 0 ? `
+      <div class="section">
+        <div class="section-header">
+          <h2>&#9888;&#65039; Hindrances Overview (${allHindrances.length} total — ${openHindrances} open, ${resolvedHindrances} resolved)</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Site</th><th>Issue</th>
+              <th style="text-align:center;">Priority</th>
+              <th style="text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>${hindranceRows}</tbody>
+        </table>
+      </div>
+    ` : `
+      <div class="section">
+        <div class="section-header">
+          <h2>&#9888;&#65039; Hindrances Overview</h2>
+        </div>
+        <div class="empty-section">No hindrances reported in this period</div>
+      </div>
+    `;
+
+    // Inspections overview table
+    const inspectionRows = allInspections.map(i => `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${formatShortDate(i.date)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${i.siteName}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;">${i.type}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">
+          <span class="status-badge rating-${i.rating}">${i.rating.toUpperCase()}</span>
+        </td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">
+          ${i.safetyFlagged ? '&#128680; YES' : '&#9989; NO'}
+        </td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e0e0e0;font-size:12px;color:#666;">${i.notes || '—'}</td>
+      </tr>
+    `).join('');
+
+    const inspectionSection = allInspections.length > 0 ? `
+      <div class="section">
+        <div class="section-header">
+          <h2>&#128269; Inspections Overview (${allInspections.length} conducted${safetyFlaggedCount > 0 ? ` — ${safetyFlaggedCount} safety flagged` : ''})</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Site</th><th>Type</th>
+              <th style="text-align:center;">Rating</th>
+              <th style="text-align:center;">Safety</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>${inspectionRows}</tbody>
+        </table>
+      </div>
+    ` : `
+      <div class="section">
+        <div class="section-header">
+          <h2>&#128269; Inspections Overview</h2>
+        </div>
+        <div class="empty-section">No inspections conducted in this period</div>
+      </div>
+    `;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
+          .header { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
+          .header h1 { font-size: 26px; margin-bottom: 8px; }
+          .header p { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+          .summary-box { background: #f5f5f5; padding: 16px; border-radius: 8px; border-left: 4px solid #1565C0; text-align: center; }
+          .summary-box h3 { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 6px; }
+          .summary-box p { font-size: 24px; font-weight: bold; color: #333; }
+          .summary-box span { font-size: 12px; color: #888; }
+          .section { margin-bottom: 36px; }
+          .section-header { background: #f5f5f5; padding: 14px 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #007AFF; }
+          .section-header h2 { font-size: 18px; color: #333; }
+          table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+          th { background: #f5f5f5; padding: 12px; text-align: left; font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; }
+          td { font-size: 13px; }
+          .priority-high { background:#F44336; color:white; padding:3px 7px; border-radius:3px; font-size:11px; font-weight:600; }
+          .priority-medium { background:#FF9800; color:white; padding:3px 7px; border-radius:3px; font-size:11px; font-weight:600; }
+          .priority-low { background:#4CAF50; color:white; padding:3px 7px; border-radius:3px; font-size:11px; font-weight:600; }
+          .status-badge { padding:3px 7px; border-radius:10px; font-size:11px; font-weight:600; text-transform:uppercase; }
+          .rating-excellent { background:#4CAF50; color:white; }
+          .rating-good { background:#8BC34A; color:white; }
+          .rating-fair { background:#FF9800; color:white; }
+          .rating-poor { background:#F44336; color:white; }
+          .empty-section { text-align:center; padding:32px; color:#999; font-style:italic; }
+          .footer { margin-top:40px; padding-top:20px; border-top:2px solid #e0e0e0; color:#666; font-size:12px; display:flex; justify-content:space-between; align-items:center; }
+          @page { margin:20mm; @bottom-center { content:"Page " counter(page) " of " counter(pages); font-size:11px; color:#999; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${projectName ? `<p>Project: ${projectName}</p>` : ''}
+          <h1>Consolidated Progress Report</h1>
+          <p>Period: ${periodLabel} &nbsp;|&nbsp; ${formatShortDate(fromDate)} — ${formatShortDate(toDate)}</p>
+          <p>Generated on ${this.formatDateTime(new Date())}</p>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <h3>Total Reports</h3>
+            <p>${totalReports}</p>
+            <span>${sites.length} site${sites.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="summary-box">
+            <h3>Items Updated</h3>
+            <p>${totalItemsUpdated}</p>
+            <span>Avg ${avgProgress.toFixed(1)}% progress</span>
+          </div>
+          <div class="summary-box">
+            <h3>Hindrances</h3>
+            <p>${allHindrances.length}</p>
+            <span>${openHindrances} open, ${resolvedHindrances} resolved</span>
+          </div>
+          <div class="summary-box">
+            <h3>Inspections</h3>
+            <p>${allInspections.length}</p>
+            <span>${safetyFlaggedCount > 0 ? `${safetyFlaggedCount} safety flagged` : 'No safety flags'}</span>
+          </div>
+          <div class="summary-box">
+            <h3>Supervisor</h3>
+            <p style="font-size:16px;">${supervisorName}</p>
+          </div>
+          <div class="summary-box">
+            <h3>Sites Covered</h3>
+            <p>${sites.length}</p>
+            <span>${sites.map(s => s.siteName).join(', ')}</span>
+          </div>
+        </div>
+
+        ${siteSections}
+        ${hindranceSection}
+        ${inspectionSection}
+
+        <div class="footer">
+          <span><strong>MRE Site Tracker</strong> — System Generated Consolidated Report</span>
+          <span>Supervisor: ${supervisorName}</span>
+        </div>
+      </body>
+      </html>
+    `;
   }
 
   /**
