@@ -469,6 +469,7 @@ const ChangeOrdersScreen = () => {
           icon="plus"
           label="New Change Order"
           style={styles.fab}
+          color="#FFFFFF"
           onPress={() => setDialogVisible(true)}
         />
 
