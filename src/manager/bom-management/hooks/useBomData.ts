@@ -289,6 +289,31 @@ export const useBomData = (
     }
   };
 
+  // Update BOM status (workflow transitions)
+  const handleUpdateBomStatus = async (bom: BomModel, newStatus: string) => {
+    try {
+      await database.write(async () => {
+        await bom.update((b: any) => {
+          b.status = newStatus;
+          b.appSyncStatus = 'pending';
+          b._version = (bom._version || 1) + 1;
+          b.updatedDate = Date.now();
+        });
+      });
+      const labels: Record<string, string> = {
+        submitted: 'Submitted to client',
+        won: 'Marked as Won',
+        lost: 'Marked as Lost',
+        active: 'Activated',
+        closed: 'Closed',
+      };
+      showSnackbar(labels[newStatus] ?? `Status → ${newStatus}`, 'success');
+    } catch (error) {
+      logger.error('Error updating BOM status', error as Error);
+      showSnackbar('Failed to update status', 'error');
+    }
+  };
+
   // Export BOM to Excel
   const handleExportBom = async (bom: BomModel) => {
     setExportingBomId(bom.id);
@@ -436,6 +461,7 @@ export const useBomData = (
 
     // Export state
     exportingBomId,
+    handleUpdateBomStatus,
 
     // Handlers (unchanged)
     openAddBomDialog,

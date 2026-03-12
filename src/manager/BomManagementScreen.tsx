@@ -173,6 +173,7 @@ const BomManagementScreenComponent = ({
               onCopyToExecution={(bom) => bomData.handleCopyToExecution(bom, () => setActiveTab('execution'))}
               onExportBom={bomData.handleExportBom}
               exportingBomId={bomData.exportingBomId}
+              onUpdateBomStatus={bomData.handleUpdateBomStatus}
             />
           ))
         )}

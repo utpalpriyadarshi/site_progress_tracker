@@ -12,6 +12,7 @@ import BomItemModel from '../../../../models/BomItemModel';
 import { useSnackbar } from '../../../components/Snackbar';
 import { logger } from '../../../services/LoggingService';
 import { getBomItems } from '../utils/bomCalculations';
+import { LOCKED_BOM_STATUSES } from '../utils/bomConstants';
 import {
   bomItemFormReducer,
   initialBomItemFormState,
@@ -118,6 +119,15 @@ export const useBomItemData = (allBomItems: BomItemModel[]) => {
     }
 
     try {
+      // Guard: reject if BOM is locked
+      const bomId = editingItem ? editingItem.bomId : selectedBomId;
+      const parentBom = await database.collections.get<BomModel>('boms').find(bomId);
+      if (LOCKED_BOM_STATUSES.includes((parentBom as any).status)) {
+        dispatch(closeAction());
+        showSnackbar('This BOM is locked — items cannot be modified', 'warning');
+        return;
+      }
+
       const qty = parseFloat(itemQuantity);
       const cost = parseFloat(itemUnitCost);
 
@@ -204,6 +214,14 @@ export const useBomItemData = (allBomItems: BomItemModel[]) => {
   const confirmDeleteItem = async () => {
     const { itemToDelete } = state.deleteConfirmation;
     if (!itemToDelete) return;
+
+    // Guard: reject if BOM is locked
+    const parentBom = await database.collections.get<BomModel>('boms').find(itemToDelete.bomId);
+    if (LOCKED_BOM_STATUSES.includes((parentBom as any).status)) {
+      dispatch(closeDeleteAction());
+      showSnackbar('This BOM is locked — items cannot be modified', 'warning');
+      return;
+    }
 
     dispatch(closeDeleteAction());
     try {

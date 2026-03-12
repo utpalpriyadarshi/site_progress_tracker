@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   Card,
   Button,
@@ -19,6 +20,7 @@ import {
   getBaselineBom,
   calculateVariance,
 } from '../utils/bomCalculations';
+import { LOCKED_BOM_STATUSES, BOM_STATUS_TRANSITIONS } from '../utils/bomConstants';
 import { COLORS } from '../../../theme/colors';
 
 interface BomCardProps {
@@ -34,6 +36,7 @@ interface BomCardProps {
   onCopyToExecution: (bom: BomModel) => void;
   onExportBom: (bom: BomModel) => void;
   exportingBomId?: string | null;
+  onUpdateBomStatus: (bom: BomModel, newStatus: string) => void;
 }
 
 /**
@@ -52,10 +55,13 @@ export const BomCard: React.FC<BomCardProps> = ({
   onCopyToExecution,
   onExportBom,
   exportingBomId,
+  onUpdateBomStatus,
 }) => {
   const project = projects.find(p => p.id === bom.projectId);
   const items = getBomItems(bom.id, allBomItems);
   const totalCost = calculateTotalCost(bom.id, allBomItems);
+  const isLocked = LOCKED_BOM_STATUSES.includes(bom.status);
+  const statusActions = BOM_STATUS_TRANSITIONS[bom.status] ?? [];
 
   // For execution BOMs, get baseline data
   const baselineBom = bom.type === 'execution' ? getBaselineBom(bom.baselineBomId, boms) : undefined;
@@ -71,19 +77,12 @@ export const BomCard: React.FC<BomCardProps> = ({
             <Text variant="titleMedium" style={styles.bomName}>{bom.name}</Text>
             <BomStatusChip status={bom.status} />
           </View>
-          <View style={styles.bomActions}>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => onEditBom(bom)}
-            />
-            <IconButton
-              icon="delete"
-              size={20}
-              iconColor="#FF3B30"
-              onPress={() => onDeleteBom(bom)}
-            />
-          </View>
+          {!isLocked && (
+            <View style={styles.bomActions}>
+              <IconButton icon="pencil" size={20} onPress={() => onEditBom(bom)} />
+              <IconButton icon="delete" size={20} iconColor="#FF3B30" onPress={() => onDeleteBom(bom)} />
+            </View>
+          )}
         </View>
 
         {/* BOM Info */}
@@ -109,19 +108,31 @@ export const BomCard: React.FC<BomCardProps> = ({
 
         <Divider style={styles.divider} />
 
+        {/* Locked banner */}
+        {isLocked && (
+          <View style={styles.lockedBanner}>
+            <Icon name="lock" size={14} color="#666" />
+            <Text variant="bodySmall" style={styles.lockedText}>
+              Read-only — BOM is {bom.status}
+            </Text>
+          </View>
+        )}
+
         {/* BOM Items Summary */}
         <View style={styles.itemsSection}>
           <View style={styles.itemsHeader}>
             <Text variant="titleSmall">Items ({items.length})</Text>
-            <Button
-              mode="outlined"
-              icon="plus"
-              onPress={() => onAddItem(bom.id)}
-              compact
-              style={styles.addItemButton}
-            >
-              Add Item
-            </Button>
+            {!isLocked && (
+              <Button
+                mode="outlined"
+                icon="plus"
+                onPress={() => onAddItem(bom.id)}
+                compact
+                style={styles.addItemButton}
+              >
+                Add Item
+              </Button>
+            )}
           </View>
 
           {items.length === 0 ? (
@@ -150,19 +161,12 @@ export const BomCard: React.FC<BomCardProps> = ({
                       {item.category.toUpperCase()}
                     </Chip>
                   </View>
-                  <View style={styles.itemActions}>
-                    <IconButton
-                      icon="pencil"
-                      size={18}
-                      onPress={() => onEditItem(item)}
-                    />
-                    <IconButton
-                      icon="delete"
-                      size={18}
-                      iconColor="#FF3B30"
-                      onPress={() => onDeleteItem(item)}
-                    />
-                  </View>
+                  {!isLocked && (
+                    <View style={styles.itemActions}>
+                      <IconButton icon="pencil" size={18} onPress={() => onEditItem(item)} />
+                      <IconButton icon="delete" size={18} iconColor="#FF3B30" onPress={() => onDeleteItem(item)} />
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -267,6 +271,28 @@ export const BomCard: React.FC<BomCardProps> = ({
             </Button>
           </>
         )}
+
+        {/* Status transition buttons */}
+        {statusActions.length > 0 && (
+          <>
+            <Divider style={styles.divider} />
+            <View style={styles.statusActions}>
+              {statusActions.map(action => (
+                <Button
+                  key={action.newStatus}
+                  mode="contained"
+                  icon={action.icon}
+                  onPress={() => onUpdateBomStatus(bom, action.newStatus)}
+                  style={[styles.statusActionButton, { backgroundColor: action.color }]}
+                  textColor="#FFFFFF"
+                  compact
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </View>
+          </>
+        )}
       </Card.Content>
     </Card>
   );
@@ -275,6 +301,29 @@ export const BomCard: React.FC<BomCardProps> = ({
 const styles = StyleSheet.create({
   bomCard: {
     marginBottom: 16,
+  },
+  lockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  lockedText: {
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  statusActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  statusActionButton: {
+    flex: 1,
   },
   bomHeader: {
     flexDirection: 'row',
