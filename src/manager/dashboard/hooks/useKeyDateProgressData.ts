@@ -67,13 +67,12 @@ export function useKeyDateProgressData(): UseKeyDateProgressDataResult {
       setLoading(true);
       setError(null);
 
-      // Query 1: key_dates for this project, sorted by category + code
+      // Query 1: key_dates for this project, sorted by sequence_order (matches Planner order)
       const keyDates = await database.collections
         .get<KeyDateModel>('key_dates')
         .query(
           Q.where('project_id', projectId),
-          Q.sortBy('category', Q.asc),
-          Q.sortBy('code', Q.asc),
+          Q.sortBy('sequence_order', Q.asc),
         )
         .fetch();
 
