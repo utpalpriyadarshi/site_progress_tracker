@@ -1,8 +1,12 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useAdminContext } from './context/AdminContext';
 import { useNavigation } from '@react-navigation/native';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import TutorialModal from '../tutorial/TutorialModal';
+import adminTutorialSteps from '../tutorial/adminTutorialSteps';
+import TutorialService from '../services/TutorialService';
+import { useAuth } from '../auth/AuthContext';
 import {
   RoleSwitcherCard,
   ManagementCard,
@@ -37,6 +41,45 @@ import { useAdminDashboard, useWidgetData } from './dashboard/hooks';
 const AdminDashboardScreen = () => {
   const { selectedRole, setSelectedRole } = useAdminContext();
   const navigation = useNavigation();
+  const { user } = useAuth();
+
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialInitialStep, setTutorialInitialStep] = useState(0);
+
+  // Auto-show tutorial on first login
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!user) return;
+      const shouldShow = await TutorialService.shouldShowTutorial(user.userId, 'admin');
+      if (shouldShow) {
+        const progress = await TutorialService.getTutorialProgress(user.userId, 'admin');
+        setTutorialInitialStep(progress.currentStep);
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, [user]);
+
+  const handleTutorialDismiss = useCallback(async () => {
+    if (user) {
+      await TutorialService.dismissTutorial(user.userId, 'admin', tutorialInitialStep);
+    }
+    setShowTutorial(false);
+  }, [user, tutorialInitialStep]);
+
+  const handleTutorialComplete = useCallback(async () => {
+    if (user) {
+      await TutorialService.markTutorialCompleted(user.userId, 'admin');
+    }
+    setShowTutorial(false);
+  }, [user]);
+
+  const handleTutorialStepChange = useCallback(async (step: number) => {
+    if (user) {
+      await TutorialService.markStepCompleted(user.userId, 'admin', step);
+    }
+  }, [user]);
 
   // Existing dashboard hook for role switching and migrations
   const {
@@ -78,6 +121,8 @@ const AdminDashboardScreen = () => {
   };
 
   return (
+    <>
+    <View style={styles.screen}>
     <ScrollView
       style={styles.container}
       refreshControl={
@@ -162,16 +207,66 @@ const AdminDashboardScreen = () => {
       {/* Bottom padding */}
       <View style={styles.bottomPadding} />
     </ScrollView>
+
+    {/* Tutorial FAB */}
+    <TouchableOpacity
+      style={styles.tutorialFab}
+      onPress={async () => {
+        if (user) await TutorialService.resetTutorial(user.userId, 'admin');
+        setTutorialInitialStep(0);
+        setShowTutorial(true);
+      }}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.tutorialFabText}>?</Text>
+    </TouchableOpacity>
+    </View>
+
+    {/* Tutorial Modal */}
+    <TutorialModal
+      visible={showTutorial}
+      steps={adminTutorialSteps}
+      initialStep={tutorialInitialStep}
+      onDismiss={handleTutorialDismiss}
+      onComplete={handleTutorialComplete}
+      onStepChange={handleTutorialStepChange}
+    />
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
   bottomPadding: {
-    height: 24,
+    height: 80, // Extra space so FAB doesn't overlap last card
+  },
+  tutorialFab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#1565C0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  tutorialFabText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+    lineHeight: 26,
   },
 });
 
