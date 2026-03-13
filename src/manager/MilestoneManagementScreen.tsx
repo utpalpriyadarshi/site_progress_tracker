@@ -116,6 +116,18 @@ const MilestoneManagementScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
+  // Reactivity: re-fetch silently when milestone data changes (e.g. Planning user updates progress)
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['milestones', 'milestone_progress'])
+      .subscribe(() => {
+        loadData();
+      });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
   const loadData = async () => {
     if (!projectId) {
       setLoading(false);
@@ -142,17 +154,32 @@ const MilestoneManagementScreen = () => {
         .query(Q.where('project_id', projectId))
         .fetch();
 
-      // Load progress for each milestone
+      // Bulk-fetch all milestone_progress for this project in one query (avoids N+1)
+      const milestoneIds = milestonesData.map((m: any) => m.id);
+      const allProgressRecords = milestoneIds.length > 0
+        ? await database.collections
+            .get('milestone_progress')
+            .query(Q.where('milestone_id', Q.oneOf(milestoneIds)))
+            .fetch()
+        : [];
+
+      // Group progress records by milestoneId for O(1) lookup
+      const progressByMilestone = new Map<string, Map<string, any>>();
+      for (const record of allProgressRecords as any[]) {
+        if (!progressByMilestone.has(record.milestoneId)) {
+          progressByMilestone.set(record.milestoneId, new Map());
+        }
+        progressByMilestone.get(record.milestoneId)!.set(record.siteId, record);
+      }
+
       const milestonesWithProgress: MilestoneWithProgress[] = [];
 
       for (const milestone of milestonesData) {
-        const milestoneProgressData = await database.collections
-          .get('milestone_progress')
-          .query(Q.where('milestone_id', milestone.id))
-          .fetch();
+        const milestoneProgressMap = progressByMilestone.get(milestone.id) || new Map();
 
         // Calculate overall progress across all sites
         let totalProgress = 0;
+        let sitesWithRecords = 0;
         let sitesCompleted = 0;
         let sitesInProgress = 0;
         let sitesNotStarted = 0;
@@ -160,13 +187,12 @@ const MilestoneManagementScreen = () => {
         const siteProgress: SiteProgress[] = [];
 
         for (const site of sitesData) {
-          const siteProgressRecord = milestoneProgressData.find(
-            (mp: any) => mp.siteId === site.id
-          );
+          const siteProgressRecord = milestoneProgressMap.get(site.id);
 
           if (siteProgressRecord) {
-            const progress = (siteProgressRecord as any).progressPercentage || 0;
+            const progress = siteProgressRecord.progressPercentage || 0;
             totalProgress += progress;
+            sitesWithRecords++;
 
             if (progress === 100) sitesCompleted++;
             else if (progress > 0) sitesInProgress++;
@@ -177,12 +203,12 @@ const MilestoneManagementScreen = () => {
               siteName: (site as any).name,
               milestoneId: milestone.id,
               progressPercentage: progress,
-              status: (siteProgressRecord as any).status || 'not_started',
-              plannedStartDate: (siteProgressRecord as any).plannedStartDate,
-              plannedEndDate: (siteProgressRecord as any).plannedEndDate,
-              actualStartDate: (siteProgressRecord as any).actualStartDate,
-              actualEndDate: (siteProgressRecord as any).actualEndDate,
-              notes: (siteProgressRecord as any).notes,
+              status: siteProgressRecord.status || 'not_started',
+              plannedStartDate: siteProgressRecord.plannedStartDate,
+              plannedEndDate: siteProgressRecord.plannedEndDate,
+              actualStartDate: siteProgressRecord.actualStartDate,
+              actualEndDate: siteProgressRecord.actualEndDate,
+              notes: siteProgressRecord.notes,
             });
           } else {
             sitesNotStarted++;
@@ -196,8 +222,10 @@ const MilestoneManagementScreen = () => {
           }
         }
 
+        // Weighted average: only divide by sites that have progress records
+        // so uninitialized sites don't drag the average down
         const overallProgress =
-          sitesData.length > 0 ? Math.round(totalProgress / sitesData.length) : 0;
+          sitesWithRecords > 0 ? Math.round(totalProgress / sitesWithRecords) : 0;
 
         milestonesWithProgress.push({
           id: milestone.id,
@@ -316,7 +344,7 @@ const MilestoneManagementScreen = () => {
     }
 
     const weightage = parseInt(editMilestoneWeightage, 10);
-    if (isNaN(weightage) || weightage < 1 || weightage < 100) {
+    if (isNaN(weightage) || weightage < 1 || weightage > 100) {
       showSnackbar('Weightage must be between 1 and 100');
       return;
     }
