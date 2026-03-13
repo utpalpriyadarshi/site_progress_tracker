@@ -5,7 +5,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
+  FlatList,
 } from 'react-native';
+import {
+  Dialog,
+  Portal,
+  Button as PaperButton,
+  Paragraph,
+  Divider,
+  Chip,
+} from 'react-native-paper';
 import { useLogistics } from './context/LogisticsContext';
 import MaterialModel from '../../models/MaterialModel';
 import { useBomData } from '../shared/hooks/useBomData';
@@ -88,6 +97,10 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
   // BOM expansion state - track which BOMs are expanded
   const [expandedBoms, setExpandedBoms] = useState<Set<string>>(new Set());
+
+  // BOM selector dialog
+  const [bomSelectorVisible, setBomSelectorVisible] = useState(false);
+  const [linkedBomIds, setLinkedBomIds] = useState<Set<string> | null>(null); // null = all
 
   // Procurement state
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialModel | null>(null);
@@ -202,12 +215,17 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     return 'general';
   };
 
-  // Filter by discipline and search
+  // Filter by discipline, linked BOMs, and search
   const filteredRequirements = React.useMemo(() => {
     let filtered = materialRequirements;
 
     if (viewMode === 'shortages') {
       filtered = shortages;
+    }
+
+    // BOM link filter
+    if (linkedBomIds !== null) {
+      filtered = filtered.filter(req => req.bomId && linkedBomIds.has(req.bomId));
     }
 
     // Discipline filter — check both bomName and itemCode
@@ -228,7 +246,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
 
     return filtered;
-  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedDiscipline]);
+  }, [materialRequirements, shortages, viewMode, debouncedSearchQuery, selectedDiscipline, linkedBomIds]);
 
   // Filter procurement suggestions
   const filteredSuggestions = React.useMemo(() => {
@@ -276,9 +294,7 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
           message="Link materials to a Bill of Materials to track requirements."
           helpText="BOM requirements help track material needs across your project."
           actionText="Link BOM"
-          onAction={() => {
-            logger.info('[MaterialTracking] Link BOM action pressed');
-          }}
+          onAction={() => setBomSelectorVisible(true)}
         />
       );
     }
@@ -347,6 +363,8 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
     }
   };
 
+  const linkedCount = linkedBomIds ? linkedBomIds.size : boms.length;
+
   return (
     <View style={styles.container}>
 
@@ -359,6 +377,22 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
 
       {/* Compact stat summary */}
       <StatCards stats={stats} />
+
+      {/* Linked BOM chip — shown when a specific BOM is selected */}
+      {linkedBomIds !== null && (viewMode === 'requirements' || viewMode === 'shortages') && (
+        <View style={styles.linkedBomRow}>
+          <Chip
+            icon="link"
+            onClose={() => setLinkedBomIds(null)}
+            style={styles.linkedBomChip}
+          >
+            {linkedCount} BOM{linkedCount !== 1 ? 's' : ''} linked
+          </Chip>
+          <TouchableOpacity onPress={() => setBomSelectorVisible(true)}>
+            <Text style={styles.changeBomText}>Change</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Discipline filter + search — always shown for requirements/shortages */}
       {(viewMode === 'requirements' || viewMode === 'shortages') && (
@@ -381,6 +415,82 @@ const MaterialTrackingScreen: React.FC<MaterialTrackingScreenProps> = ({ navigat
         onClose={() => setShowQuotesModal(false)}
       />
 
+      {/* BOM Selector Dialog */}
+      <Portal>
+        <Dialog
+          visible={bomSelectorVisible}
+          onDismiss={() => setBomSelectorVisible(false)}
+          style={styles.bomDialog}
+        >
+          <Dialog.Title>Link BOM</Dialog.Title>
+          <Dialog.Content>
+            {boms.length === 0 ? (
+              <>
+                <Paragraph style={styles.bomDialogHint}>
+                  No BOMs found for this project.
+                </Paragraph>
+                <Paragraph style={styles.bomDialogHint}>
+                  BOMs are created by the Manager. Ask your project manager to set up a Bill of Materials first.
+                </Paragraph>
+              </>
+            ) : (
+              <>
+                <Paragraph style={styles.bomDialogHint}>
+                  Select which BOMs to track requirements from. Tap a BOM to toggle it.
+                </Paragraph>
+                <FlatList
+                  data={boms}
+                  keyExtractor={item => item.id}
+                  ItemSeparatorComponent={() => <Divider />}
+                  style={styles.bomList}
+                  renderItem={({ item: bom }) => {
+                    const itemCount = bomItems.filter(i => i.bomId === bom.id).length;
+                    const isSelected = linkedBomIds === null || linkedBomIds.has(bom.id);
+                    return (
+                      <TouchableOpacity
+                        style={[styles.bomRow, isSelected && styles.bomRowSelected]}
+                        onPress={() => {
+                          setLinkedBomIds(prev => {
+                            const base = prev ?? new Set(boms.map(b => b.id));
+                            const next = new Set(base);
+                            if (next.has(bom.id)) {
+                              next.delete(bom.id);
+                            } else {
+                              next.add(bom.id);
+                            }
+                            // If all selected, revert to null (show all)
+                            if (next.size === boms.length) return null;
+                            return next;
+                          });
+                        }}
+                      >
+                        <View style={styles.bomRowContent}>
+                          <Text style={styles.bomName}>{(bom as any).name}</Text>
+                          <Text style={styles.bomMeta}>
+                            {itemCount} item{itemCount !== 1 ? 's' : ''} · {(bom as any).status}
+                          </Text>
+                        </View>
+                        <Text style={[styles.bomCheck, isSelected && styles.bomCheckSelected]}>
+                          {isSelected ? '✓' : '○'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            {boms.length > 0 && (
+              <PaperButton onPress={() => { setLinkedBomIds(null); setBomSelectorVisible(false); }}>
+                Show All
+              </PaperButton>
+            )}
+            <PaperButton onPress={() => setBomSelectorVisible(false)}>Done</PaperButton>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
     </View>
   );
 };
@@ -389,6 +499,66 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  linkedBomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  linkedBomChip: {
+    height: 32,
+  },
+  changeBomText: {
+    fontSize: 14,
+    color: '#673AB7',
+    fontWeight: '500',
+  },
+  bomDialog: {
+    maxHeight: '80%',
+  },
+  bomDialogHint: {
+    color: '#666',
+    marginBottom: 8,
+    fontSize: 13,
+  },
+  bomList: {
+    maxHeight: 300,
+    marginTop: 8,
+  },
+  bomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    opacity: 0.5,
+  },
+  bomRowSelected: {
+    opacity: 1,
+  },
+  bomRowContent: {
+    flex: 1,
+  },
+  bomName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  bomMeta: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  bomCheck: {
+    fontSize: 18,
+    color: '#bbb',
+    marginLeft: 8,
+  },
+  bomCheckSelected: {
+    color: '#673AB7',
+    fontWeight: 'bold',
   },
 });
 

@@ -379,32 +379,59 @@ export const LogisticsProvider: React.FC<LogisticsProviderProps> = ({ children }
 
       const projectsList = projectsWithBoms.length > 0 ? projectsWithBoms : projectsWithSites;
 
-      dispatch({ type: 'SET_PROJECTS', payload: projectsList });
+      dispatch({ type: 'SET_PROJECTS', payload: allProjects });
 
-      // Validate saved selection — if stored ID is not in the valid list, switch to first valid
-      const savedIdIsValid = projectsList.some(p => p.id === state.selectedProjectId);
+      // Step 1: honour the user's assigned project_id from the DB (same as Supervisor)
+      let assignedProjectId: string | null = null;
+      if (user?.userId) {
+        try {
+          const userRecord = await database.collections.get('users').find(user.userId);
+          assignedProjectId = (userRecord as any).projectId || null;
+        } catch {
+          // non-critical
+        }
+      }
 
-      if (!savedIdIsValid && projectsList.length > 0) {
-        const firstProject = projectsList[0];
+      const assignedProject = assignedProjectId
+        ? allProjects.find(p => p.id === assignedProjectId) || null
+        : null;
+
+      if (assignedProject) {
         dispatch({
           type: 'SET_PROJECT',
-          payload: { projectId: firstProject.id, project: firstProject },
+          payload: { projectId: assignedProject.id, project: assignedProject },
         });
-        await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
-      } else if (state.selectedProjectId && projectsList.length > 0) {
-        // Selection valid but project object may be null (restored from AsyncStorage without object)
-        const project = projectsList.find(p => p.id === state.selectedProjectId) || null;
+        await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, assignedProject.id);
+        return;
+      }
+
+      // Step 2: validate saved AsyncStorage selection
+      const savedIdIsValid = allProjects.some(p => p.id === state.selectedProjectId);
+
+      if (savedIdIsValid && state.selectedProjectId) {
+        const project = allProjects.find(p => p.id === state.selectedProjectId) || null;
         if (project && !state.selectedProject) {
           dispatch({
             type: 'SET_PROJECT',
             payload: { projectId: state.selectedProjectId, project },
           });
         }
+        return;
+      }
+
+      // Step 3: fall back to first project from BOM/site filtered list
+      if (projectsList.length > 0) {
+        const firstProject = projectsList[0];
+        dispatch({
+          type: 'SET_PROJECT',
+          payload: { projectId: firstProject.id, project: firstProject },
+        });
+        await AsyncStorage.setItem(STORAGE_KEYS.PROJECT_ID, firstProject.id);
       }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load projects' });
     }
-  }, [state.selectedProjectId, state.selectedProject]);
+  }, [user?.userId, state.selectedProjectId, state.selectedProject]);
 
   const refreshSites = useCallback(async () => {
     if (!state.selectedProjectId) {
