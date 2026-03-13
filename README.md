@@ -6,7 +6,7 @@ A React Native mobile application for managing construction site progress across
 
 Built for infrastructure construction projects (rail, OHE, TSS systems), the app manages the full lifecycle from planning and design to construction execution, commercial billing, and handover. It operates fully offline using WatermelonDB with optional sync.
 
-**Current schema version:** v52 (commercial advanced billing migrations: v52–v54)
+**Current schema version:** v54 (commercial advanced billing migrations: v52–v54)
 
 ---
 
@@ -49,10 +49,11 @@ Built for infrastructure construction projects (rail, OHE, TSS systems), the app
 
 ### 👔 Manager
 - **Dashboard**: KPI cards (total items, pending approvals, BOM stats); Pending Approvals KPI with direct navigation; reactive updates
-- **BOM Management**: Bill of Materials with categories, quantities, vendor tracking
-- **BOM Import Wizard**: 5-step CSV import with validation and mapping
+- **BOM Management**: Bill of Materials with version control (v1.0 → v2.0 → v3.0 on every edit); status workflow (pre-contract: draft → submitted → won/lost; post-contract: baseline → active → closed); item locking on locked statuses; Export to Excel with share sheet
+- **BOM Import Wizard**: 5-step wizard (upload → map → validate → preview → import); RNFS-based CSV file picker from device Downloads folder; no native document-picker module required
 - **Change Orders** (v49): Change order management with reactive list, status tracking, cost impact
 - **Design Doc Approvals**: Review submitted design documents (Approve / Approve with Comment / Reject via prompt); reactive list
+- **Financial Reports**: Budget overview, profitability analysis, cost breakdown by category; Export to Excel with share sheet
 - Tutorials for new users
 
 ### 🚚 Logistics
@@ -185,16 +186,17 @@ npm run lint       # ESLint
 
 ## Recent Changes (2026)
 
-| PR | Description |
-|----|-------------|
+| Merge | Description |
+|-------|-------------|
+| Mar 2026 | BOM import wizard wired end-to-end; RNFS CSV picker from Downloads; Finance export share sheet |
+| Mar 2026 | BOM version control (v1.0→v2.0), status workflow, item locking; Manager header titles fixed; chip height clipping fixed |
+| #223 | Admin tutorial, consolidated PDF report, header UI fix |
 | #216 | Planner dashboard: KD progress uses `toFixed(1)` (11.65% → 11.7%) |
 | #215 | DB reset: wrap `unsafeResetDatabase()` in `database.write()` Writer context |
 | #214 | Commercial Phase 6A: KD progress parity, IPC-001 billing, Mark Complete |
 | #213 | Commercial Phase 6A: advance impact layout (3-col) & IPC payment risk widget |
 | #212 | Commercial Phase 6A: LD risk screen, LDRiskScreen key prop fix |
 | #210 | Commercial Phase 6B: IPC Readiness (billed KD badge, VO check), Vendor Payments (overdue filter, vendor name match) |
-| #209 | DB reset: `unsafeResetDatabase` Writer pattern (first fix attempt) |
-| #208 | Commercial Advanced Billing Phase 5 simulation fixes |
 | #196 | WBS-DesignDoc link (v50): FK, status chip, picker dialog |
 | #189–190 | Gantt Key Dates tab: diamond milestones, target-date bounds |
 | #167–171 | 3-site MRE taxonomy aligned across all 6 roles |

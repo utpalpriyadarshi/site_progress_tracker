@@ -1,7 +1,7 @@
 # Construction Site Progress Tracker — Unified Architecture
 
 **Version**: Current (March 2026)
-**Database Schema**: v52 (commercial advanced billing migrations through v54)
+**Database Schema**: v54 (commercial advanced billing migrations: v52–v54)
 **Platform**: React Native (Android & iOS)
 
 ---
@@ -163,8 +163,8 @@ MainNavigator
 │   └── Tabs: Dashboard | Items | Daily Reports | Hindrance Reports | Site Inspection | Materials
 │   Drawer: Reports History | Activity Templates | Site Management
 ├── ManagerDrawerNavigator
-│   └── Tabs: Dashboard | BOM Management | BOM Import Wizard | Change Orders
-│   Drawer: Design Doc Approvals
+│   └── Tabs: Dashboard | Finance | Milestones | Key Date Progress
+│   Drawer: BOM Management | BOM Import Wizard (hidden) | Change Orders | Design Doc Approvals
 ├── LogisticsDrawerNavigator
 │   └── Tabs: Dashboard | Material Tracking | DOORS | RFQ
 │   Drawer: Inventory | Delivery Scheduling | Analytics
@@ -304,7 +304,21 @@ SyncQueue (models/SyncQueueModel.ts)
 - **ManagerContext** exported as both `useManagerContext` and `useManager`
 - **ChangeOrders** (v49): reactive via `withChangesForTables(['change_orders'])`; silent refresh on changes, pull-to-refresh calls `loadOrders(false)`
 - **Pending Approvals KPI**: `fetchCount()` on submitted design docs; highlighted `kpiCardActionable` border when count > 0; `onPress` → `navigation.navigate('DesignDocApprovals')`
+- **BOM version control**: every `handleSaveBom` edit increments version string (`v1.0 → v2.0 → v3.0`) and `_version` field
+- **BOM status workflow**:
+  - Pre-contract: `draft → submitted → won | lost`
+  - Post-contract: `baseline → active → closed`
+  - `LOCKED_BOM_STATUSES = ['submitted', 'won', 'lost', 'closed']` in `bomConstants.ts`
+  - `BOM_STATUS_TRANSITIONS` record maps each status to its allowed next actions (label, icon, color)
+  - `useBomItemData` guards `handleSaveItem` and `confirmDeleteItem` against locked parent BOM
+- **BOM Export**: writes xlsx to Downloads via RNFS, shows filename snackbar, opens native share sheet
+- **BOM Import wizard** (`src/manager/bom-import-wizard/`):
+  - `BomImportWizardScreen.tsx`: assembles 5-step wizard; registered in `ManagerDrawerNavigator` hidden from drawer
+  - `useFileUpload`: requests `READ_EXTERNAL_STORAGE` at runtime (API ≤ 32 only); lists `.csv`/`.txt` files from `RNFS.DownloadDirectoryPath` and fallback paths; user selects a file from a dialog
+  - `useImportExecution`: creates BOM with all required fields (`type`, `version`, `siteCategory`, `quantity`, `unit`, `contingency`, `profitMargin`, `totalEstimatedCost`, `createdDate`, `updatedDate`, `appSyncStatus`, `_version`); generates `itemCode` per row
+  - `BomManagementScreen` uses `useNavigation()` and passes `() => navigation.navigate('BomImportWizard')` as `onNavigateToImport` to `useBomData`
 - **BOM Import auth path**: `useAuth` imported from `'../../../auth/AuthContext'` (3 levels up from `src/manager/bom-import-wizard/hooks/`)
+- **Financial Reports export**: saves xlsx to Downloads + opens share sheet (same pattern as BOM export)
 
 ### Logistics (`src/logistics/`)
 - **Discipline routing** in demo data:
