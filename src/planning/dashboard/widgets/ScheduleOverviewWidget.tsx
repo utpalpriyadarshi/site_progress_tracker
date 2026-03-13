@@ -88,8 +88,8 @@ const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
 
     // Use KD-weighted project progress when available, otherwise fall back to item average
     const displayProgress = projectProgress != null && projectProgress > 0
-      ? Math.round(projectProgress)
-      : overview.overallProgress;
+      ? parseFloat(projectProgress.toFixed(1))
+      : parseFloat(overview.overallProgress.toFixed(1));
 
     const progressColor = getProgressColor(
       displayProgress,
@@ -103,7 +103,7 @@ const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
             <Text variant="headlineMedium" style={[styles.progressValue, { color: progressColor }]}>
-              {displayProgress}%
+              {displayProgress.toFixed(1)}%
             </Text>
             <Text variant="bodySmall" style={styles.progressLabel}>
               {projectProgress != null && projectProgress > 0
@@ -208,7 +208,7 @@ const ScheduleOverviewWidget: React.FC<ScheduleOverviewWidgetProps> = ({
       onRefresh={onRefresh}
       accessibilityLabel={
         overview
-          ? `Schedule Overview widget, ${projectProgress != null && projectProgress > 0 ? Math.round(projectProgress) : overview.overallProgress}% complete, ${overview.delayedItems} delayed items`
+          ? `Schedule Overview widget, ${projectProgress != null && projectProgress > 0 ? projectProgress.toFixed(1) : overview.overallProgress.toFixed(1)}% complete, ${overview.delayedItems} delayed items`
           : 'Schedule Overview widget, no data'
       }
     >
