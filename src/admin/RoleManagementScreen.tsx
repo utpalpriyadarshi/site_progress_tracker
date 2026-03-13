@@ -18,6 +18,7 @@ import {
   usePasswordReset,
 } from './role-management/hooks';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 const RoleManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -121,6 +122,7 @@ const RoleManagementScreen = () => {
 
       <FAB
         style={styles.fab}
+          color="#FFFFFF"
         icon="plus"
         onPress={openCreateModal}
         accessibilityLabel="Add new user"
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
 });
 

@@ -454,7 +454,7 @@ const PurchaseOrderManagementScreen = () => {
         />
       )}
 
-      <FAB icon="plus" style={styles.fab} onPress={() => dispatch({ type: 'SHOW_CREATE_DIALOG' })} label="New PO" />
+      <FAB icon="plus" style={styles.fab} color="#FFFFFF" onPress={() => dispatch({ type: 'SHOW_CREATE_DIALOG' })} label="New PO" />
 
       {/* Create Dialog */}
       <Portal>
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   dialog: {
     maxHeight: '80%',

@@ -31,6 +31,7 @@ import { useAuth } from '../../auth/AuthContext';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import VariationOrderModel, { VOApprovalStatus } from '../../../models/VariationOrderModel';
 import { SpinnerLoading } from '../../components/common/LoadingState';
+import { COLORS } from '../../theme/colors';
 
 // ==================== Types ====================
 
@@ -541,6 +542,7 @@ const VariationOrderScreen: React.FC = () => {
         <FAB
           icon="plus"
           style={styles.fab}
+          color="#FFFFFF"
           onPress={() => dispatch({ type: 'SHOW_ADD', payload: true })}
           label="Add VO"
         />
@@ -644,7 +646,7 @@ const styles = StyleSheet.create({
   emptyList: { alignItems: 'center', paddingVertical: 40 },
   emptyListText: { fontSize: 14, color: '#999', marginTop: 12 },
 
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#007AFF' },
+  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: COLORS.PRIMARY },
 });
 
 export default function VariationOrderScreenWithBoundary() {

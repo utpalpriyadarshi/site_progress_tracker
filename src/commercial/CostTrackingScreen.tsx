@@ -21,6 +21,7 @@ import {
 import type { CommercialTabParamList } from '../nav/CommercialNavigator';
 import { useDebounceSearch } from './shared/hooks/useDebounceSearch';
 import { SpinnerLoading } from '../components/common/LoadingState';
+import { COLORS } from '../theme/colors';
 
 /**
  * CostTrackingScreen (v2.20 - Refactored)
@@ -326,6 +327,7 @@ const CostTrackingScreen = () => {
       {/* Create FAB */}
       <FAB
         style={styles.fab}
+          color="#FFFFFF"
         icon="plus"
         onPress={() => {
           dispatch(costTrackingActions.resetForm());
@@ -422,7 +424,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
 });
 

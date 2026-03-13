@@ -25,6 +25,7 @@ import {
   FiltersBar,
 } from './invoice-management/components';
 import { InvoiceListSkeleton } from './shared';
+import { COLORS } from '../theme/colors';
 
 /**
  * InvoiceManagementScreen (v2.11 Phase 5 - Sprint 6) - REFACTORED
@@ -334,6 +335,7 @@ const InvoiceManagementScreen = () => {
       {/* Create FAB */}
       <FAB
         style={styles.fab}
+          color="#FFFFFF"
         icon="plus"
         onPress={() => dispatch(invoiceManagementActions.openCreateDialog())}
         label="Add Invoice"
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
 });
 

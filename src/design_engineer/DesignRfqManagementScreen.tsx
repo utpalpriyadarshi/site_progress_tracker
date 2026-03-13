@@ -850,6 +850,7 @@ const DesignRfqManagementScreen = () => {
         <FAB
           icon="plus"
           style={styles.fab}
+          color="#FFFFFF"
           onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
           label="New Design RFQ"
           accessible
@@ -1022,7 +1023,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   siteSelector: {
     marginTop: 4,

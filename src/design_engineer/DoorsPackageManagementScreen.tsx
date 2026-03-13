@@ -365,6 +365,7 @@ const DoorsPackageManagementScreen = () => {
         <FAB
           icon="plus"
           style={styles.fab}
+          color="#FFFFFF"
           onPress={() => dispatch({ type: 'OPEN_DIALOG' })}
           label="New Package"
           accessible
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   fabSecondary: {
     position: 'absolute',

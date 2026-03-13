@@ -455,6 +455,7 @@ const BudgetManagementScreen = () => {
       {/* Create FAB */}
       <FAB
         style={styles.fab}
+          color="#FFFFFF"
         icon="plus"
         onPress={() => {
           dispatch(budgetManagementActions.resetForm());
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   dialogContent: {
     paddingHorizontal: 24,

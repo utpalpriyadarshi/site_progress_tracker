@@ -17,6 +17,7 @@ import {
   useProjectDelete,
 } from './project-management/hooks';
 import { EmptyState } from '../components/common/EmptyState';
+import { COLORS } from '../theme/colors';
 
 const ProjectManagementScreen = () => {
   const { showSnackbar } = useSnackbar();
@@ -105,6 +106,7 @@ const ProjectManagementScreen = () => {
 
       <FAB
         style={styles.fab}
+          color="#FFFFFF"
         icon="plus"
         onPress={openCreateModal}
         accessibilityLabel="Add new project"
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
 });
 
