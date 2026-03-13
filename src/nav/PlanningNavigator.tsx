@@ -227,7 +227,7 @@ const PlanningTabs: React.FC = memo(() => {
     headerTintColor: COLORS.SURFACE,
     headerTitleStyle: {
       fontWeight: 'bold' as const,
-      fontSize: 20,
+      fontSize: 17,
     },
     headerLeft: HeaderLeft,
     headerRight: HeaderRight,
@@ -250,7 +250,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={PlanningDashboard}
         options={{
           title: 'Dashboard',
-          headerTitle: 'Planning Dashboard',
+          headerTitle: 'Dashboard',
           tabBarAccessibilityLabel: 'Dashboard tab, overview of project planning',
         }}
       />
@@ -259,7 +259,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={KeyDateManagementScreen}
         options={{
           title: 'Key Dates',
-          headerTitle: 'Key Date Management',
+          headerTitle: 'Key Dates',
           tabBarAccessibilityLabel: 'Key Dates tab, manage key dates and site associations',
         }}
       />
@@ -268,7 +268,7 @@ const PlanningTabs: React.FC = memo(() => {
         component={UnifiedSchedule}
         options={{
           title: 'Schedule',
-          headerTitle: 'Schedule Management',
+          headerTitle: 'Schedule',
           tabBarAccessibilityLabel: 'Schedule tab, manage project schedule',
         }}
       />
