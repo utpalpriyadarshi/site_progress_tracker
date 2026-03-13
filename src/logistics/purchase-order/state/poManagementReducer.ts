@@ -20,12 +20,13 @@ export interface PurchaseOrder {
   rfqId?: string;
   vendorId: string;
   vendorName?: string;
-  orderDate: number;
+  poDate: number;
   expectedDeliveryDate?: number;
   actualDeliveryDate?: number;
   status: string;
-  totalAmount: number;
-  description?: string;
+  poValue: number;
+  notes?: string;
+  quantity?: number;
   createdById: string;
   createdAt: Date;
 }
@@ -47,6 +48,8 @@ export interface POManagementState {
   ui: {
     loading: boolean;
     showCreateDialog: boolean;
+    showEditDialog: boolean;
+    editingPoId: string | null;
   };
 
   // Data state
@@ -63,13 +66,15 @@ export interface POManagementState {
     filterStatus: string | null;
   };
 
-  // Form state (create dialog)
+  // Form state (create/edit dialog)
   form: {
     newDescription: string;
     newVendorId: string;
+    newVendorName: string;
     newRfqId: string;
     newTotalAmount: string;
     newExpectedDeliveryDays: string;
+    newQuantity: string;
   };
 }
 
@@ -81,6 +86,8 @@ export type POManagementAction =
   | { type: 'STOP_LOADING' }
   | { type: 'SHOW_CREATE_DIALOG' }
   | { type: 'HIDE_CREATE_DIALOG' }
+  | { type: 'SHOW_EDIT_DIALOG'; payload: PurchaseOrder }
+  | { type: 'HIDE_EDIT_DIALOG' }
 
   // Data actions
   | { type: 'SET_PURCHASE_ORDERS'; payload: PurchaseOrder[] }
@@ -105,9 +112,12 @@ export type POManagementAction =
   // Form field actions
   | { type: 'SET_NEW_DESCRIPTION'; payload: string }
   | { type: 'SET_NEW_VENDOR_ID'; payload: string }
+  | { type: 'SET_NEW_VENDOR_NAME'; payload: string }
+  | { type: 'SELECT_VENDOR'; payload: { id: string; name: string } }
   | { type: 'SET_NEW_RFQ_ID'; payload: string }
   | { type: 'SET_NEW_TOTAL_AMOUNT'; payload: string }
   | { type: 'SET_NEW_EXPECTED_DELIVERY_DAYS'; payload: string }
+  | { type: 'SET_NEW_QUANTITY'; payload: string }
   | { type: 'RESET_FORM' }
 
   // Reset action
@@ -119,6 +129,8 @@ export const initialPOManagementState: POManagementState = {
   ui: {
     loading: true,
     showCreateDialog: false,
+    showEditDialog: false,
+    editingPoId: null,
   },
   data: {
     purchaseOrders: [],
@@ -133,9 +145,11 @@ export const initialPOManagementState: POManagementState = {
   form: {
     newDescription: '',
     newVendorId: '',
+    newVendorName: '',
     newRfqId: '',
     newTotalAmount: '',
     newExpectedDeliveryDays: '30',
+    newQuantity: '1',
   },
 };
 
@@ -181,6 +195,35 @@ export const poManagementReducer = (
         ui: {
           ...state.ui,
           showCreateDialog: false,
+        },
+      };
+
+    case 'SHOW_EDIT_DIALOG':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          showEditDialog: true,
+          editingPoId: action.payload.id,
+        },
+        form: {
+          newDescription: action.payload.notes || '',
+          newVendorId: action.payload.vendorId || '',
+          newVendorName: action.payload.vendorName || '',
+          newRfqId: action.payload.rfqId || '',
+          newTotalAmount: String(action.payload.poValue || ''),
+          newExpectedDeliveryDays: '30',
+          newQuantity: String(action.payload.quantity || '1'),
+        },
+      };
+
+    case 'HIDE_EDIT_DIALOG':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          showEditDialog: false,
+          editingPoId: null,
         },
       };
 
@@ -291,6 +334,26 @@ export const poManagementReducer = (
         },
       };
 
+    case 'SET_NEW_VENDOR_NAME':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          newVendorName: action.payload,
+          newVendorId: '', // Clear chip selection when typing manually
+        },
+      };
+
+    case 'SELECT_VENDOR':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          newVendorId: action.payload.id,
+          newVendorName: action.payload.name,
+        },
+      };
+
     case 'SET_NEW_RFQ_ID':
       return {
         ...state,
@@ -318,15 +381,26 @@ export const poManagementReducer = (
         },
       };
 
+    case 'SET_NEW_QUANTITY':
+      return {
+        ...state,
+        form: {
+          ...state.form,
+          newQuantity: action.payload,
+        },
+      };
+
     case 'RESET_FORM':
       return {
         ...state,
         form: {
           newDescription: '',
           newVendorId: '',
+          newVendorName: '',
           newRfqId: '',
           newTotalAmount: '',
           newExpectedDeliveryDays: '30',
+          newQuantity: '1',
         },
       };
 
