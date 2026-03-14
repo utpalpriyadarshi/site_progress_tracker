@@ -86,6 +86,14 @@ yarn-error.log
 .env.local
 .env.production
 SUPABASE_CREDENTIALS.txt
+
+# Supabase — credentials, keys, and config (keep locally, do not commit)
+Supabase DB Password*.txt
+fix_supabase_rls.sql
+supabase_password_reset_setup.sql
+docs/archive/SUPABASE_*.md
+src/services/supabase/
+supabase/
 # config/jwt.config.production.ts
 
 # Claude Code temporary files
