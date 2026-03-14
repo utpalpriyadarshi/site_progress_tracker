@@ -32,6 +32,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonList } from '../components/common/LoadingState';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { COLORS } from '../theme/colors';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { commonStyles } from '../styles/common';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ConfirmDialog } from '../components/dialogs/ConfirmDialog';
@@ -98,6 +99,11 @@ const MilestoneManagementScreen = () => {
   // Progress Dialog
   const [progressDialogVisible, setProgressDialogVisible] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<MilestoneWithProgress | null>(null);
+  // Per-site inline editing inside the progress dialog
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [editingProgress, setEditingProgress] = useState('');
+  const [editingStatus, setEditingStatus] = useState('not_started');
+  const [savingProgress, setSavingProgress] = useState(false);
 
   // Expanded milestone for timeline view
   const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
@@ -113,6 +119,18 @@ const MilestoneManagementScreen = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  // Reactivity: re-fetch silently when milestone data changes (e.g. Planning user updates progress)
+  useEffect(() => {
+    if (!projectId) return;
+    const subscription = database
+      .withChangesForTables(['milestones', 'milestone_progress'])
+      .subscribe(() => {
+        loadData();
+      });
+    return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -142,17 +160,32 @@ const MilestoneManagementScreen = () => {
         .query(Q.where('project_id', projectId))
         .fetch();
 
-      // Load progress for each milestone
+      // Bulk-fetch all milestone_progress for this project in one query (avoids N+1)
+      const milestoneIds = milestonesData.map((m: any) => m.id);
+      const allProgressRecords = milestoneIds.length > 0
+        ? await database.collections
+            .get('milestone_progress')
+            .query(Q.where('milestone_id', Q.oneOf(milestoneIds)))
+            .fetch()
+        : [];
+
+      // Group progress records by milestoneId for O(1) lookup
+      const progressByMilestone = new Map<string, Map<string, any>>();
+      for (const record of allProgressRecords as any[]) {
+        if (!progressByMilestone.has(record.milestoneId)) {
+          progressByMilestone.set(record.milestoneId, new Map());
+        }
+        progressByMilestone.get(record.milestoneId)!.set(record.siteId, record);
+      }
+
       const milestonesWithProgress: MilestoneWithProgress[] = [];
 
       for (const milestone of milestonesData) {
-        const milestoneProgressData = await database.collections
-          .get('milestone_progress')
-          .query(Q.where('milestone_id', milestone.id))
-          .fetch();
+        const milestoneProgressMap = progressByMilestone.get(milestone.id) || new Map();
 
         // Calculate overall progress across all sites
         let totalProgress = 0;
+        let sitesWithRecords = 0;
         let sitesCompleted = 0;
         let sitesInProgress = 0;
         let sitesNotStarted = 0;
@@ -160,13 +193,12 @@ const MilestoneManagementScreen = () => {
         const siteProgress: SiteProgress[] = [];
 
         for (const site of sitesData) {
-          const siteProgressRecord = milestoneProgressData.find(
-            (mp: any) => mp.siteId === site.id
-          );
+          const siteProgressRecord = milestoneProgressMap.get(site.id);
 
           if (siteProgressRecord) {
-            const progress = (siteProgressRecord as any).progressPercentage || 0;
+            const progress = siteProgressRecord.progressPercentage || 0;
             totalProgress += progress;
+            sitesWithRecords++;
 
             if (progress === 100) sitesCompleted++;
             else if (progress > 0) sitesInProgress++;
@@ -177,12 +209,12 @@ const MilestoneManagementScreen = () => {
               siteName: (site as any).name,
               milestoneId: milestone.id,
               progressPercentage: progress,
-              status: (siteProgressRecord as any).status || 'not_started',
-              plannedStartDate: (siteProgressRecord as any).plannedStartDate,
-              plannedEndDate: (siteProgressRecord as any).plannedEndDate,
-              actualStartDate: (siteProgressRecord as any).actualStartDate,
-              actualEndDate: (siteProgressRecord as any).actualEndDate,
-              notes: (siteProgressRecord as any).notes,
+              status: siteProgressRecord.status || 'not_started',
+              plannedStartDate: siteProgressRecord.plannedStartDate,
+              plannedEndDate: siteProgressRecord.plannedEndDate,
+              actualStartDate: siteProgressRecord.actualStartDate,
+              actualEndDate: siteProgressRecord.actualEndDate,
+              notes: siteProgressRecord.notes,
             });
           } else {
             sitesNotStarted++;
@@ -196,8 +228,10 @@ const MilestoneManagementScreen = () => {
           }
         }
 
+        // Weighted average: only divide by sites that have progress records
+        // so uninitialized sites don't drag the average down
         const overallProgress =
-          sitesData.length > 0 ? Math.round(totalProgress / sitesData.length) : 0;
+          sitesWithRecords > 0 ? Math.round(totalProgress / sitesWithRecords) : 0;
 
         milestonesWithProgress.push({
           id: milestone.id,
@@ -316,7 +350,7 @@ const MilestoneManagementScreen = () => {
     }
 
     const weightage = parseInt(editMilestoneWeightage, 10);
-    if (isNaN(weightage) || weightage < 1 || weightage < 100) {
+    if (isNaN(weightage) || weightage < 1 || weightage > 100) {
       showSnackbar('Weightage must be between 1 and 100');
       return;
     }
@@ -375,7 +409,77 @@ const MilestoneManagementScreen = () => {
 
   const handleViewProgress = (milestone: MilestoneWithProgress) => {
     setSelectedMilestone(milestone);
+    setEditingSiteId(null);
     setProgressDialogVisible(true);
+  };
+
+  const startEditSite = (sp: SiteProgress) => {
+    setEditingSiteId(sp.siteId);
+    setEditingProgress(String(sp.progressPercentage));
+    setEditingStatus(sp.status || 'not_started');
+  };
+
+  const cancelEditSite = () => setEditingSiteId(null);
+
+  const handleSaveSiteProgress = async () => {
+    if (!selectedMilestone || !editingSiteId || !projectId) return;
+
+    const pct = parseInt(editingProgress, 10);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      showSnackbar('Progress must be between 0 and 100');
+      return;
+    }
+
+    setSavingProgress(true);
+    try {
+      const existing = await database.collections
+        .get('milestone_progress')
+        .query(
+          Q.where('milestone_id', selectedMilestone.id),
+          Q.where('site_id', editingSiteId)
+        )
+        .fetch();
+
+      await database.write(async () => {
+        if (existing.length > 0) {
+          await existing[0].update((r: any) => {
+            r.progressPercentage = pct;
+            r.status = editingStatus;
+            if (pct === 100 && !r.actualEndDate) r.actualEndDate = Date.now();
+            if (pct > 0 && !r.actualStartDate) r.actualStartDate = Date.now();
+            r.appSyncStatus = 'pending';
+            r.version = (r.version || 0) + 1;
+          });
+        } else {
+          await database.collections.get('milestone_progress').create((r: any) => {
+            r.milestoneId = selectedMilestone.id;
+            r.siteId = editingSiteId;
+            r.projectId = projectId;
+            r.progressPercentage = pct;
+            r.status = editingStatus;
+            if (pct > 0) r.actualStartDate = Date.now();
+            if (pct === 100) r.actualEndDate = Date.now();
+            r.appSyncStatus = 'pending';
+            r.version = 1;
+          });
+        }
+      });
+
+      showSnackbar('Progress saved');
+      setEditingSiteId(null);
+      // Refresh the selected milestone's data in the dialog
+      const updatedSiteProgress = selectedMilestone.siteProgress.map(sp =>
+        sp.siteId === editingSiteId
+          ? { ...sp, progressPercentage: pct, status: editingStatus }
+          : sp
+      );
+      setSelectedMilestone({ ...selectedMilestone, siteProgress: updatedSiteProgress });
+    } catch (error) {
+      logger.error('[MilestoneManagement] Error saving site progress', error as Error);
+      showSnackbar('Failed to save progress');
+    } finally {
+      setSavingProgress(false);
+    }
   };
 
   // Batch Approval Functions
@@ -453,6 +557,7 @@ const MilestoneManagementScreen = () => {
             await database.collections.get('milestone_progress').create((record: any) => {
               record.milestoneId = batchSelectedMilestone.id;
               record.siteId = siteId;
+              record.projectId = projectId;
               record.progressPercentage = 100;
               record.status = 'completed';
               record.actualStartDate = Date.now();
@@ -581,9 +686,9 @@ const MilestoneManagementScreen = () => {
               mode="outlined"
               onPress={() => handleViewProgress(milestone)}
               style={styles.actionButton}
-              icon="chart-timeline-variant"
+              icon="table-edit"
             >
-              View Progress
+              Per-Site Progress
             </Button>
             {/* Batch Approve button - only show if there are sites not yet completed */}
             {milestone.sitesNotStarted + milestone.sitesInProgress > 0 && (
@@ -631,38 +736,37 @@ const MilestoneManagementScreen = () => {
 
           {isExpanded && (
             <View style={styles.timelineView}>
-              <Title style={styles.timelineTitle}>Site-Level Timeline</Title>
+              <Text style={styles.timelineTitle}>Site-Level Timeline</Text>
               {milestone.siteProgress.map((sp) => (
                 <View key={sp.siteId} style={styles.timelineItem}>
                   <View style={styles.timelineItemHeader}>
-                    <Paragraph style={styles.timelineItemSite}>{sp.siteName}</Paragraph>
-                    <Chip
-                      style={[
-                        styles.timelineItemStatus,
-                        { backgroundColor: getStatusColor(sp.status) },
-                      ]}
-                      textStyle={styles.chipSmallText}
-                    >
-                      {sp.status.replace('_', ' ').toUpperCase()}
-                    </Chip>
+                    <Text style={styles.timelineItemSite}>{sp.siteName}</Text>
+                    <View style={[styles.timelineStatusBadge, { backgroundColor: getStatusColor(sp.status) }]}>
+                      <Text style={styles.timelineStatusText}>
+                        {sp.status.replace(/_/g, ' ').toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
-                  <ProgressBar
-                    progress={sp.progressPercentage / 100}
-                    color={getProgressColor(sp.progressPercentage)}
-                    style={styles.timelineProgressBar}
-                  />
+                  <View style={styles.timelineProgressRow}>
+                    <ProgressBar
+                      progress={sp.progressPercentage / 100}
+                      color={getProgressColor(sp.progressPercentage)}
+                      style={styles.timelineProgressBar}
+                    />
+                    <Text style={styles.timelineProgressPct}>{sp.progressPercentage}%</Text>
+                  </View>
                   <View style={styles.timelineDates}>
-                    <Paragraph style={styles.timelineDate}>
-                      Planned: {formatDate(sp.plannedStartDate)} - {formatDate(sp.plannedEndDate)}
-                    </Paragraph>
-                    <Paragraph style={styles.timelineDate}>
-                      Actual: {formatDate(sp.actualStartDate)} -{' '}
+                    <Text style={styles.timelineDate}>
+                      Planned: {formatDate(sp.plannedStartDate)} — {formatDate(sp.plannedEndDate)}
+                    </Text>
+                    <Text style={styles.timelineDate}>
+                      Actual: {formatDate(sp.actualStartDate)} —{' '}
                       {sp.actualEndDate ? formatDate(sp.actualEndDate) : 'Ongoing'}
-                    </Paragraph>
+                    </Text>
                   </View>
-                  {sp.notes && (
-                    <Paragraph style={styles.timelineNotes}>📝 {sp.notes}</Paragraph>
-                  )}
+                  {sp.notes ? (
+                    <Text style={styles.timelineNotes}>📝 {sp.notes}</Text>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -688,6 +792,27 @@ const MilestoneManagementScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Workflow Info Banner */}
+        <Card mode="outlined" style={styles.workflowCard}>
+          <Card.Content>
+            <View style={styles.workflowHeader}>
+              <Icon name="information-outline" size={18} color={COLORS.INFO} style={styles.workflowIcon} />
+              <Text style={styles.workflowTitle}>How Milestones Work</Text>
+            </View>
+            <Text style={styles.workflowStep}>
+              <Text style={styles.workflowBold}>Planning</Text> updates per-site progress (0–100%) for each milestone.
+            </Text>
+            <Text style={styles.workflowStep}>
+              <Text style={styles.workflowBold}>You (Manager)</Text> can edit progress per site via{' '}
+              <Text style={styles.workflowBold}>Per-Site Progress</Text>, or mark entire sites as complete
+              via <Text style={styles.workflowBold}>Batch Approve</Text>.
+            </Text>
+            <Text style={styles.workflowStep}>
+              Standard milestones (PM100–PM700) are predefined — only custom milestones can be renamed or deleted.
+            </Text>
+          </Card.Content>
+        </Card>
+
         {/* Header Actions */}
         <View style={styles.header}>
           <Button
@@ -822,47 +947,102 @@ const MilestoneManagementScreen = () => {
         </Dialog>
       </Portal>
 
-      {/* Progress Dialog */}
+      {/* Per-Site Progress Dialog */}
       <Portal>
         <Dialog
           visible={progressDialogVisible}
-          onDismiss={() => setProgressDialogVisible(false)}
+          onDismiss={() => { setProgressDialogVisible(false); setEditingSiteId(null); }}
           style={styles.progressDialog}
         >
-          <Dialog.Title>
-            {selectedMilestone?.milestoneName} - Site Progress
-          </Dialog.Title>
+          <Dialog.Title>{selectedMilestone?.milestoneName}</Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView>
-              <DataTable>
-                <DataTable.Header>
-                  <DataTable.Title>Site</DataTable.Title>
-                  <DataTable.Title>Progress</DataTable.Title>
-                  <DataTable.Title>Status</DataTable.Title>
-                </DataTable.Header>
+              {selectedMilestone?.siteProgress.map((sp) => {
+                const isEditing = editingSiteId === sp.siteId;
+                return (
+                  <View key={sp.siteId} style={styles.progressSiteRow}>
+                    <View style={styles.progressSiteHeader}>
+                      <Text style={styles.progressSiteName}>{sp.siteName}</Text>
+                      {!isEditing && (
+                        <Button
+                          mode="text"
+                          compact
+                          icon="pencil"
+                          onPress={() => startEditSite(sp)}
+                          style={styles.editSiteButton}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </View>
 
-                {selectedMilestone?.siteProgress.map((sp) => (
-                  <DataTable.Row key={sp.siteId}>
-                    <DataTable.Cell>{sp.siteName}</DataTable.Cell>
-                    <DataTable.Cell>{sp.progressPercentage}%</DataTable.Cell>
-                    <DataTable.Cell>
-                      <Chip
-                        style={[
-                          styles.statusChip,
-                          { backgroundColor: getStatusColor(sp.status) },
-                        ]}
-                        textStyle={styles.chipSmallText}
-                      >
-                        {sp.status.replace('_', ' ').toUpperCase()}
-                      </Chip>
-                    </DataTable.Cell>
-                  </DataTable.Row>
-                ))}
-              </DataTable>
+                    {isEditing ? (
+                      <View style={styles.progressEditRow}>
+                        <TextInput
+                          label="Progress %"
+                          value={editingProgress}
+                          onChangeText={setEditingProgress}
+                          mode="outlined"
+                          keyboardType="numeric"
+                          style={styles.progressEditInput}
+                          dense
+                        />
+                        <View style={styles.statusPickerRow}>
+                          {(['not_started', 'in_progress', 'on_hold', 'completed'] as const).map(s => (
+                            <Button
+                              key={s}
+                              mode={editingStatus === s ? 'contained' : 'outlined'}
+                              compact
+                              onPress={() => setEditingStatus(s)}
+                              style={styles.statusPickerBtn}
+                              buttonColor={editingStatus === s ? getStatusColor(s) : undefined}
+                              textColor={editingStatus === s ? '#fff' : undefined}
+                            >
+                              {s.replace(/_/g, ' ')}
+                            </Button>
+                          ))}
+                        </View>
+                        <View style={styles.progressEditActions}>
+                          <Button mode="text" onPress={cancelEditSite} disabled={savingProgress}>
+                            Cancel
+                          </Button>
+                          <Button
+                            mode="contained"
+                            onPress={handleSaveSiteProgress}
+                            loading={savingProgress}
+                            disabled={savingProgress}
+                          >
+                            Save
+                          </Button>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.progressDisplayRow}>
+                        <ProgressBar
+                          progress={sp.progressPercentage / 100}
+                          color={getProgressColor(sp.progressPercentage)}
+                          style={styles.progressDialogBar}
+                        />
+                        <View style={styles.progressDialogMeta}>
+                          <Text style={styles.progressDialogPct}>{sp.progressPercentage}%</Text>
+                          <View style={[styles.timelineStatusBadge, { backgroundColor: getStatusColor(sp.status) }]}>
+                            <Text style={styles.timelineStatusText}>
+                              {sp.status.replace(/_/g, ' ').toUpperCase()}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                    <Divider style={styles.progressSiteDivider} />
+                  </View>
+                );
+              })}
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setProgressDialogVisible(false)}>Cancel</Button>
+            <Button onPress={() => { setProgressDialogVisible(false); setEditingSiteId(null); }}>
+              Close
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -1180,7 +1360,7 @@ const styles = StyleSheet.create({
   timelineProgressBar: {
     height: 6,
     borderRadius: 3,
-    marginBottom: 8,
+    flex: 1,
   },
   timelineDates: {
     marginTop: 4,
@@ -1208,10 +1388,122 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressDialog: {
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
-  statusChip: {
-    height: 20,
+  // Per-site progress dialog rows
+  progressSiteRow: {
+    paddingHorizontal: 4,
+    paddingTop: 12,
+  },
+  progressSiteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressSiteName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  editSiteButton: {
+    marginLeft: 8,
+  },
+  progressDisplayRow: {
+    marginBottom: 4,
+  },
+  progressDialogBar: {
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  progressDialogMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressDialogPct: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  progressEditRow: {
+    marginBottom: 8,
+  },
+  progressEditInput: {
+    marginBottom: 8,
+  },
+  statusPickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 8,
+  },
+  statusPickerBtn: {
+    marginBottom: 4,
+  },
+  progressEditActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  progressSiteDivider: {
+    marginTop: 12,
+  },
+  // Timeline fixes
+  timelineStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  timelineStatusText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  timelineProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  timelineProgressPct: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    minWidth: 36,
+    textAlign: 'right',
+  },
+  // Workflow banner
+  workflowCard: {
+    margin: 16,
+    marginBottom: 0,
+    borderColor: COLORS.INFO,
+    backgroundColor: '#EBF5FB',
+  },
+  workflowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  workflowIcon: {
+    marginRight: 6,
+  },
+  workflowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.INFO,
+  },
+  workflowStep: {
+    fontSize: 12,
+    color: '#444',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  workflowBold: {
+    fontWeight: '700',
+    color: '#222',
   },
   // Batch Approval Styles
   batchApproveButton: {
