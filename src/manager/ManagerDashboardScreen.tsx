@@ -5,7 +5,7 @@
  * Displays:
  * - Project header with name, timeline, overall health
  * - 8 KPI cards in 4x2 grid:
- *   1. Overall Project Completion % (60% items + 40% milestones)
+ *   1. Overall Project Completion % (KD-weighted, matches Planning dashboard)
  *   2. Sites on Schedule vs Delayed
  *   3. Budget Utilization %
  *   4. Open Hindrances Count
@@ -49,6 +49,9 @@ import {
 import { formatCurrency } from './dashboard/utils/dashboardFormatters';
 import { DashboardSkeleton } from './shared';
 import { COLORS } from '../theme/colors';
+import { calculateSiteProgressFromItems } from '../planning/utils/progressCalculations';
+import { calculateSiteProgressFromDesignDocuments, calculateKDProgress } from '../planning/utils/designDocumentProgress';
+import { useEngineeringData } from './dashboard/hooks/useEngineeringData';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -86,20 +89,6 @@ interface ProjectInfo {
   budget: number;
 }
 
-interface EngineeringData {
-  pm200Progress: number;
-  pm200Status: string;
-  totalDoors: number;
-  doorsApproved: number;
-  doorsUnderReview: number;
-  doorsOpenIssues: number;
-  totalRequirements: number;
-  compliantRequirements: number;
-  totalRfqs: number;
-  rfqsQuotesReceived: number;
-  rfqsUnderEvaluation: number;
-  rfqsAwarded: number;
-}
 
 interface SiteProgressData {
   siteId: string;
@@ -207,20 +196,7 @@ const ManagerDashboardScreen = () => {
     activeSupervisors: 0,
   });
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null);
-  const [engineeringData, setEngineeringData] = useState<EngineeringData>({
-    pm200Progress: 0,
-    pm200Status: 'not_started',
-    totalDoors: 0,
-    doorsApproved: 0,
-    doorsUnderReview: 0,
-    doorsOpenIssues: 0,
-    totalRequirements: 0,
-    compliantRequirements: 0,
-    totalRfqs: 0,
-    rfqsQuotesReceived: 0,
-    rfqsUnderEvaluation: 0,
-    rfqsAwarded: 0,
-  });
+  const { data: engineeringData, loading: engineeringLoading } = useEngineeringData();
   const [sitesProgress, setSitesProgress] = useState<SiteProgressData[]>([]);
   const [equipmentData, setEquipmentData] = useState<EquipmentMaterialsData>({
     pm300Progress: 0,
@@ -292,7 +268,6 @@ const ManagerDashboardScreen = () => {
       await Promise.all([
         loadProjectInfo(),
         calculateStats(),
-        loadEngineeringData(),
         loadSitesProgress(),
         loadEquipmentMaterialsData(),
         loadFinancialData(),
@@ -404,8 +379,8 @@ const ManagerDashboardScreen = () => {
 
       const sitesDelayed = totalSites - sitesOnSchedule;
 
-      // Calculate overall completion (60% items + 40% milestones)
-      const overallCompletion = await calculateHybridProgress();
+      // Calculate overall completion using KD-weighted formula (matches Planning dashboard)
+      const overallCompletion = await calculateKDWeightedProgress();
 
       // Get site IDs for this project
       const siteIds = sites.map((s) => s.id);
@@ -527,87 +502,126 @@ const ManagerDashboardScreen = () => {
     }
   };
 
-  // Calculate hybrid progress: 60% weighted items + 40% milestones
-  const calculateHybridProgress = async (): Promise<number> => {
+  // Calculate KD-weighted progress (matches Planning dashboard formula)
+  const calculateKDWeightedProgress = async (): Promise<number> => {
     if (!projectId) return 0;
 
     try {
-      // Get all sites for this project first
-      const sites = await database.collections
-        .get('sites')
+      const keyDates = await database.collections
+        .get('key_dates')
         .query(Q.where('project_id', projectId))
         .fetch();
 
-      if (sites.length === 0) return 0;
+      if (keyDates.length === 0) return 0;
 
-      const siteIds = sites.map((s) => s.id);
+      const kdIds = keyDates.map((kd: any) => kd.id);
 
-      // Get all items for these sites
-      const items = await database.collections
-        .get('items')
-        .query(Q.where('site_id', Q.oneOf(siteIds)))
+      // Fetch all key_date_sites for these KDs in one query
+      const allKdSites = await database.collections
+        .get('key_date_sites')
+        .query(Q.where('key_date_id', Q.oneOf(kdIds)))
         .fetch();
 
-      if (items.length === 0) return 0;
-
-      // Calculate weighted items progress (60%)
-      const totalWeightage = items.reduce((sum, item: any) => sum + (item.weightage || 1), 0);
-      const weightedProgress = items.reduce((sum, item: any) => {
-        const weightage = item.weightage || 1;
-        const progress = item.getProgressPercentage ? item.getProgressPercentage() : 0;
-        return sum + (weightage * progress);
-      }, 0);
-
-      const itemsProgress = totalWeightage > 0 ? (weightedProgress / totalWeightage) : 0;
-
-      // Calculate milestones progress (40%)
-      const milestones = await database.collections
-        .get('milestones')
-        .query(Q.where('project_id', projectId), Q.where('is_active', true))
-        .fetch();
-
-      if (milestones.length === 0) {
-        // If no milestones, use 100% items progress
-        return itemsProgress;
-      }
-
-      const totalMilestoneWeight = milestones.reduce(
-        (sum, m: any) => sum + (m.weightage || 0),
-        0
-      );
-
-      // Get milestone progress records
-      const milestoneProgressRecords = await database.collections
-        .get('milestone_progress')
-        .query(Q.where('project_id', projectId))
-        .fetch();
-
-      // Calculate average milestone progress across all sites
-      const milestoneProgressMap = new Map<string, number[]>();
-
-      milestoneProgressRecords.forEach((mp: any) => {
-        if (!milestoneProgressMap.has(mp.milestoneId)) {
-          milestoneProgressMap.set(mp.milestoneId, []);
-        }
-        milestoneProgressMap.get(mp.milestoneId)!.push(mp.progressPercentage || 0);
+      // Group sites by key_date_id
+      const sitesByKdId: Record<string, any[]> = {};
+      allKdSites.forEach((kds: any) => {
+        if (!sitesByKdId[kds.keyDateId]) sitesByKdId[kds.keyDateId] = [];
+        sitesByKdId[kds.keyDateId].push(kds);
       });
 
-      const weightedMilestoneProgress = milestones.reduce((sum, milestone: any) => {
-        const progressArray = milestoneProgressMap.get(milestone.id) || [0];
-        const avgProgress =
-          progressArray.reduce((a, b) => a + b, 0) / progressArray.length;
-        return sum + (milestone.weightage * avgProgress);
-      }, 0);
+      // Fetch all items and design docs for relevant sites
+      const allSiteIds = [...new Set(allKdSites.map((kds: any) => kds.siteId))];
+      const [allItems, allDocs] = await Promise.all([
+        allSiteIds.length > 0
+          ? database.collections.get('items').query(Q.where('site_id', Q.oneOf(allSiteIds))).fetch()
+          : Promise.resolve([]),
+        database.collections
+          .get('design_documents')
+          .query(Q.where('project_id', projectId))
+          .fetch(),
+      ]);
 
-      const milestonesProgress =
-        totalMilestoneWeight > 0 ? weightedMilestoneProgress / totalMilestoneWeight : 0;
+      // Group items by site_id
+      const itemsBySite: Record<string, any[]> = {};
+      allItems.forEach((item: any) => {
+        if (!itemsBySite[item.siteId]) itemsBySite[item.siteId] = [];
+        itemsBySite[item.siteId].push(item);
+      });
 
-      // Hybrid calculation: 60% items + 40% milestones
-      const hybridProgress = itemsProgress * 0.6 + milestonesProgress * 0.4;
+      // Group docs by key_date_id and site_id
+      const docsByKeyDate: Record<string, any[]> = {};
+      const docsBySite: Record<string, any[]> = {};
+      allDocs.forEach((doc: any) => {
+        if (doc.keyDateId) {
+          if (!docsByKeyDate[doc.keyDateId]) docsByKeyDate[doc.keyDateId] = [];
+          docsByKeyDate[doc.keyDateId].push(doc);
+        }
+        if (doc.siteId) {
+          if (!docsBySite[doc.siteId]) docsBySite[doc.siteId] = [];
+          docsBySite[doc.siteId].push(doc);
+        }
+      });
 
-      return Math.round(hybridProgress * 10) / 10; // Round to 1 decimal
+      let totalWeightedProgress = 0;
+      let totalWeightage = 0;
+
+      for (const kd of keyDates as any[]) {
+        const weightage = kd.weightage || 0;
+        const mode = kd.progressMode;
+
+        if (mode === 'manual' || mode === 'binary') {
+          totalWeightedProgress += weightage * kd.progressPercentage;
+          totalWeightage += weightage;
+          continue;
+        }
+
+        const kdSites = sitesByKdId[kd.id] || [];
+        const directDocs = docsByKeyDate[kd.id] || [];
+        const seenIds = new Set(directDocs.map((d: any) => d.id));
+        const siteDocs = kdSites.flatMap((s: any) =>
+          (docsBySite[s.siteId] || []).filter((d: any) => !seenIds.has(d.id))
+        );
+        const kdDocs = [...directDocs, ...siteDocs];
+
+        let kdProgress = kd.progressPercentage; // fallback
+        let kdItemProgress = 0;
+        let kdDocProgress = 0;
+
+        const hasSites = kdSites.length > 0;
+        const hasDocs = kdDocs.length > 0;
+
+        if (hasSites) {
+          let siteWeightedItemProgress = 0;
+          for (const site of kdSites) {
+            const siteItems = itemsBySite[site.siteId] || [];
+            const contribution = site.contributionPercentage / 100;
+            siteWeightedItemProgress += contribution * calculateSiteProgressFromItems(siteItems);
+          }
+          kdItemProgress = siteWeightedItemProgress;
+        }
+
+        if (hasDocs) {
+          kdDocProgress = calculateSiteProgressFromDesignDocuments(kdDocs);
+        }
+
+        if (hasSites || hasDocs) {
+          const { combined } = calculateKDProgress(
+            kdItemProgress, kdDocProgress, kd.designWeightage || 0, hasSites, hasDocs
+          );
+          kdProgress = combined;
+        }
+
+        totalWeightedProgress += weightage * kdProgress;
+        totalWeightage += weightage;
+      }
+
+      const progress = totalWeightage > 0
+        ? Math.round((totalWeightedProgress / totalWeightage) * 100) / 100
+        : 0;
+
+      return progress;
     } catch (error) {
-      logger.error('[ManagerDashboard] Error calculating hybrid progress', error as Error);
+      logger.error('[ManagerDashboard] Error calculating KD-weighted progress', error as Error);
       return 0;
     }
   };
@@ -659,110 +673,6 @@ const ManagerDashboardScreen = () => {
         routes: [{ name: role }],
       })
     );
-  };
-
-  const loadEngineeringData = async () => {
-    if (!projectId) return;
-
-    try {
-      // Get PM200 milestone progress
-      const pm200Milestone = await database.collections
-        .get('milestones')
-        .query(Q.where('project_id', projectId), Q.where('milestone_code', 'PM200'))
-        .fetch();
-
-      let pm200Progress = 0;
-      let pm200Status = 'not_started';
-
-      if (pm200Milestone.length > 0) {
-        const milestoneId = pm200Milestone[0].id;
-        const progressRecords = await database.collections
-          .get('milestone_progress')
-          .query(Q.where('milestone_id', milestoneId))
-          .fetch();
-
-        if (progressRecords.length > 0) {
-          // Calculate average progress across all sites
-          const totalProgress = progressRecords.reduce(
-            (sum, record: any) => sum + (record.progressPercentage || 0),
-            0
-          );
-          pm200Progress = totalProgress / progressRecords.length;
-
-          // Determine status
-          if (pm200Progress === 0) {
-            pm200Status = 'not_started';
-          } else if (pm200Progress < 100) {
-            pm200Status = 'in_progress';
-          } else {
-            pm200Status = 'completed';
-          }
-        }
-      }
-
-      // Get DOORS packages data
-      const doorsPackages = await database.collections.get('doors_packages').query().fetch();
-      const totalDoors = doorsPackages.length;
-
-      let doorsApproved = 0;
-      let doorsUnderReview = 0;
-      let doorsOpenIssues = 0;
-
-      doorsPackages.forEach((pkg: any) => {
-        if (pkg.status === 'approved') {
-          doorsApproved++;
-        } else if (pkg.status === 'under_review') {
-          doorsUnderReview++;
-        } else if (pkg.status === 'open_issues') {
-          doorsOpenIssues++;
-        }
-      });
-
-      // Get total requirements count
-      const allRequirements = await database.collections
-        .get('doors_requirements')
-        .query()
-        .fetch();
-      const totalRequirements = allRequirements.length;
-      const compliantRequirements = allRequirements.filter(
-        (req: any) => req.complianceStatus === 'compliant'
-      ).length;
-
-      // Get RFQ data
-      const allRfqs = await database.collections.get('rfqs').query().fetch();
-      const totalRfqs = allRfqs.length;
-
-      let rfqsQuotesReceived = 0;
-      let rfqsUnderEvaluation = 0;
-      let rfqsAwarded = 0;
-
-      allRfqs.forEach((rfq: any) => {
-        if (rfq.status === 'quotes_received') {
-          rfqsQuotesReceived++;
-        } else if (rfq.status === 'evaluated') {
-          rfqsUnderEvaluation++;
-        } else if (rfq.status === 'awarded') {
-          rfqsAwarded++;
-        }
-      });
-
-      setEngineeringData({
-        pm200Progress: Math.round(pm200Progress),
-        pm200Status,
-        totalDoors,
-        doorsApproved,
-        doorsUnderReview,
-        doorsOpenIssues,
-        totalRequirements,
-        compliantRequirements,
-        totalRfqs,
-        rfqsQuotesReceived,
-        rfqsUnderEvaluation,
-        rfqsAwarded,
-      });
-    } catch (error) {
-      logger.error('[ManagerDashboard] Error loading engineering data', error as Error);
-    }
   };
 
   const loadSitesProgress = async () => {
@@ -1043,11 +953,12 @@ const ManagerDashboardScreen = () => {
   };
 
   const loadFinancialData = async () => {
-    if (!projectId || !projectInfo) return;
+    if (!projectId) return;
 
     try {
-      // Get project budget from projectInfo
-      const projectBudget = projectInfo.budget || 0;
+      // Fetch project directly to avoid race condition with projectInfo state
+      const project = await database.collections.get('projects').find(projectId);
+      const projectBudget = (project as any).budget || 0;
       const contractValue = projectBudget; // Assuming contract value = budget (can be modified)
 
       // Get all BOMs for the project
@@ -1804,17 +1715,12 @@ const ManagerDashboardScreen = () => {
         <Title style={styles.sectionTitle}>Engineering Progress</Title>
         <Paragraph style={styles.sectionSubtitle}>PM200 Milestone + DOORS + RFQ Status</Paragraph>
 
-        <EngineeringSection data={engineeringData} />
-        <Button
-          mode="text"
-          compact
-          icon="chevron-right"
-          contentStyle={styles.viewDetailsContent}
-          style={styles.viewDetailsRow}
-          onPress={() => (navigation as any).navigate('DesignDocApprovals')}
-        >
-          View Customer Review Queue
-        </Button>
+        <EngineeringSection
+          data={engineeringData}
+          loading={engineeringLoading}
+          onPressPM200={() => (navigation as any).navigate('Milestones')}
+          onPressDoors={() => (navigation as any).navigate('DesignDocApprovals')}
+        />
       </View>
 
       {/* Section 3: Site Progress */}
