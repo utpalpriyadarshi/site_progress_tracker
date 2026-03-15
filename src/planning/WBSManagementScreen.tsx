@@ -573,6 +573,7 @@ const WBSManagementScreen = () => {
           <FAB
             icon="plus"
             style={styles.fab}
+            color="#FFFFFF"
             onPress={handleAddItem}
             label="Add Item"
             accessible
@@ -749,8 +750,10 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 16,
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.PRIMARY,
   },
   noSiteContainer: {
     flex: 1,
