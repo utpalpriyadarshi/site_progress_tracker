@@ -508,7 +508,9 @@ const KeyDateManagementScreenComponent: React.FC<KeyDateManagementProps> = ({
       <FAB
         icon="plus"
         style={styles.fab}
+        color="#FFFFFF"
         onPress={handleOpenAdd}
+        label="Add Key Date"
         accessibilityLabel="Add new key date"
       />
 
@@ -858,6 +860,7 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+    backgroundColor: COLORS.PRIMARY,
   },
   dialog: {
     maxHeight: '80%',
