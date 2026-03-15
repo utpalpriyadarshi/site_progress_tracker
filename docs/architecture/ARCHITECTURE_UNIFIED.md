@@ -282,7 +282,17 @@ SyncQueue (models/SyncQueueModel.ts)
   - `useGanttTimeline(items, zoomLevel, externalBounds?)` — Key Dates tab passes `externalBounds` from `targetDate` timestamps
   - `GanttLegend` variant: `'tasks'` | `'key_dates'`
   - `GanttHeader` `leftColumnLabel` prop: default `'Task'`, Key Dates passes `'Key Date'`
-- **Dashboard widgets**: `ProjectProgressWidget` shows KD-weighted breakdown; uses `KDBreakdownItem[]` from `hooks`
+- **Dashboard widgets** (9 total):
+  - `WBSProgressWidget` — unified widget with `SegmentedButtons` tabs: **Summary** (overall %, completed/on-track/delayed counts, timeline) + **By Phase** (stacked phase bars); replaces separate ScheduleOverviewWidget + WBSProgressWidget
+  - `ProjectProgressWidget` — KD-weighted breakdown; uses `KDBreakdownItem[]` from hooks
+  - `ScheduleOverviewWidget.tsx` retained as type source (`ScheduleOverview` interface) but not rendered directly
+- **WBS Management** (`WBSManagementScreen.tsx`):
+  - Collapsible filter panel — phase chips, status chips, and critical-path chip hidden by default behind a compact `"Filters (N)"` toggle chip in the results row; expands on tap
+  - `CLEAR_FILTERS` reducer action resets `selectedPhase` (in `state.selection`) alongside `state.filters` — previously phase was not cleared
+- **WBS utilities** (`src/planning/utils/wbsRollup.ts`):
+  - `rollupSiteWBSProgress(siteId, db)` — bottom-up iterative rollup: sums children's `completedQuantity` / `plannedQuantity` into each parent level; called from `ItemEditScreen` after save and from `WBSManagementScreen.loadItems()` after the status-fix write
+  - `propagateDatesToChildren(parentItem, db)` — top-down recursive date clamping: `childStart = max(childStart, parentStart)`, `childEnd = min(childEnd, parentEnd)`; impossible ranges inherit parent's full range; baseline dates updated unless baseline-locked; called from `ItemEditScreen` when dates changed
+- **ItemCreationScreen**: when `parentWbsCode` is set, fetches parent item and pre-fills `startDate`/`endDate` from parent's planned dates (instead of today / today+30 days)
 
 ### Design Engineer (`src/design_engineer/`)
 - **Design Documents**: 4 types; approval states: `draft | submitted | approved | approved_with_comment | rejected`

@@ -232,6 +232,10 @@ export const wbsManagementReducer = (
     case 'CLEAR_FILTERS':
       return {
         ...state,
+        selection: {
+          ...state.selection,
+          selectedPhase: 'all',
+        },
         filters: {
           searchQuery: '',
           selectedStatus: ['all'],

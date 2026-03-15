@@ -15,10 +15,11 @@ import { usePlanningContext } from './context';
 import type { PlanningDrawerParamList } from '../nav/PlanningNavigator';
 import { useSnackbar } from '../components/Snackbar';
 import { ConfirmDialog } from '../components/Dialog';
-import { SearchBar, FilterChips, SortMenu, FilterOption, SortOption } from '../components';
+import { SearchBar, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
+import { rollupSiteWBSProgress } from './utils/wbsRollup';
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 
@@ -121,7 +122,17 @@ const WBSManagementScreen = () => {
         }
       });
 
-      dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+      // Roll up child progress to parent items so the list always reflects
+      // the correct aggregated progress even after direct DB edits.
+      await rollupSiteWBSProgress(state.selection.selectedSite!.id, database);
+
+      // Re-fetch after rollup so the list shows updated parent quantities
+      const refreshedItems = await database.collections
+        .get<ItemModel>('items')
+        .query(Q.where('site_id', state.selection.selectedSite!.id))
+        .fetch();
+
+      dispatch({ type: 'SET_ITEMS', payload: { items: refreshedItems } });
 
       // Populate the map used for chip display on each card
       const map = new Map<string, LinkedDocSummary>();
@@ -254,6 +265,18 @@ const WBSManagementScreen = () => {
            !state.filters.selectedStatus.includes('all') ||
            state.filters.showCriticalPathOnly;
   }, [debouncedSearchQuery, state.filters.selectedStatus, state.filters.showCriticalPathOnly, state.selection.selectedPhase]);
+
+  // Count of non-search active filters (shown as badge on Filters chip)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (state.selection.selectedPhase !== 'all') count++;
+    if (!state.filters.selectedStatus.includes('all')) count++;
+    if (state.filters.showCriticalPathOnly) count++;
+    return count;
+  }, [state.selection.selectedPhase, state.filters.selectedStatus, state.filters.showCriticalPathOnly]);
+
+  // Collapsible filter panel visibility
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const handleAddItem = useCallback(() => {
     if (!state.selection.selectedSite) {
@@ -404,57 +427,30 @@ const WBSManagementScreen = () => {
             placeholder="Search by name or WBS code..."
           />
 
-          {/* Phase Filter Chips (Existing - Enhanced) */}
-          <ScrollView
-            horizontal
-            style={styles.phaseFilter}
-            contentContainerStyle={styles.phaseFilterContent}
-            showsHorizontalScrollIndicator={false}
-          >
-            {phases.map(phase => (
-              <Chip
-                key={phase.key}
-                selected={state.selection.selectedPhase === phase.key}
-                onPress={() => dispatch({ type: 'SET_SELECTED_PHASE', payload: { phase: phase.key } })}
-                style={styles.phaseChip}
-              >
-                {phase.label}
-              </Chip>
-            ))}
-          </ScrollView>
-
-          {/* Status Filter Chips (New) */}
-          <FilterChips
-            filters={STATUS_FILTERS}
-            selectedFilters={state.filters.selectedStatus}
-            onFilterToggle={handleStatusToggle}
-          />
-
-          {/* Critical Path Only Filter (New) */}
-          <View style={styles.criticalPathFilter}>
-            <Chip
-              selected={state.filters.showCriticalPathOnly}
-              onPress={() => dispatch({ type: 'TOGGLE_CRITICAL_PATH_FILTER' })}
-              icon={state.filters.showCriticalPathOnly ? 'check' : 'alert'}
-              style={[
-                styles.criticalPathChip,
-                state.filters.showCriticalPathOnly && styles.criticalPathChipActive,
-              ]}
-              textStyle={state.filters.showCriticalPathOnly && styles.criticalPathChipText}
-            >
-              Critical Path Only
-            </Chip>
-          </View>
-
-          {/* Results Row with Sort and Clear All */}
+          {/* Results Row: count | Filters toggle (with badge) | Clear | Sort */}
           <View style={styles.resultsRow}>
             <Text variant="bodySmall" style={styles.resultCount}>
               Showing {displayedItems.length} of {state.data.items.length} items
             </Text>
 
+            <Chip
+              selected={filtersExpanded || activeFilterCount > 0}
+              onPress={() => setFiltersExpanded(prev => !prev)}
+              icon={filtersExpanded ? 'chevron-up' : 'filter-variant'}
+              compact
+              style={styles.filterToggleChip}
+              accessibilityLabel={
+                activeFilterCount > 0
+                  ? `Filters, ${activeFilterCount} active`
+                  : filtersExpanded ? 'Collapse filters' : 'Expand filters'
+              }
+            >
+              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
+            </Chip>
+
             {hasActiveFilters && (
               <Button mode="text" onPress={clearAllFilters} compact>
-                Clear All
+                Clear
               </Button>
             )}
 
@@ -466,6 +462,68 @@ const WBSManagementScreen = () => {
               onDirectionChange={(direction) => dispatch({ type: 'SET_SORT_DIRECTION', payload: { direction } })}
             />
           </View>
+
+          {/* Collapsible Filter Panel */}
+          {filtersExpanded && (
+            <View style={styles.filterPanel}>
+              {/* Phase chips */}
+              <ScrollView
+                horizontal
+                style={styles.phaseFilter}
+                contentContainerStyle={styles.phaseFilterContent}
+                showsHorizontalScrollIndicator={false}
+              >
+                {phases.map(phase => (
+                  <Chip
+                    key={phase.key}
+                    selected={state.selection.selectedPhase === phase.key}
+                    onPress={() => dispatch({ type: 'SET_SELECTED_PHASE', payload: { phase: phase.key } })}
+                    style={styles.phaseChip}
+                    compact
+                  >
+                    {phase.label}
+                  </Chip>
+                ))}
+              </ScrollView>
+
+              {/* Status chips + Critical Path chip in one shared row */}
+              <ScrollView
+                horizontal
+                style={styles.phaseFilter}
+                contentContainerStyle={styles.statusRowContent}
+                showsHorizontalScrollIndicator={false}
+              >
+                {STATUS_FILTERS.map(filter => {
+                  const isSelected = state.filters.selectedStatus.includes(filter.id);
+                  return (
+                    <Chip
+                      key={filter.id}
+                      selected={isSelected}
+                      onPress={() => handleStatusToggle(filter.id)}
+                      icon={filter.icon}
+                      compact
+                      style={styles.phaseChip}
+                    >
+                      {filter.label}
+                    </Chip>
+                  );
+                })}
+                <Chip
+                  selected={state.filters.showCriticalPathOnly}
+                  onPress={() => dispatch({ type: 'TOGGLE_CRITICAL_PATH_FILTER' })}
+                  icon={state.filters.showCriticalPathOnly ? 'check' : 'alert'}
+                  compact
+                  style={[
+                    styles.criticalPathChip,
+                    state.filters.showCriticalPathOnly && styles.criticalPathChipActive,
+                  ]}
+                  textStyle={state.filters.showCriticalPathOnly ? styles.criticalPathChipText : undefined}
+                >
+                  Critical
+                </Chip>
+              </ScrollView>
+            </View>
+          )}
 
           {/* Items List */}
           <FlatList
@@ -526,6 +584,7 @@ const WBSManagementScreen = () => {
           <FAB
             icon="plus"
             style={styles.fab}
+            color="#FFFFFF"
             onPress={handleAddItem}
             label="Add Item"
             accessible
@@ -624,27 +683,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectorCard: {
-    margin: 12,
-    marginBottom: 6,
+    margin: 8,
+    marginBottom: 4,
     elevation: 2,
   },
   phaseFilter: {
-    maxHeight: 50,
+    maxHeight: 46,
   },
   phaseFilterContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     gap: 6,
   },
-  phaseChip: {
-    marginRight: 6,
-  },
-  criticalPathFilter: {
-    paddingHorizontal: 16,
+  statusRowContent: {
+    paddingHorizontal: 12,
     paddingVertical: 4,
+    gap: 6,
+    alignItems: 'center',
+  },
+  phaseChip: {
+    marginRight: 4,
   },
   criticalPathChip: {
-    alignSelf: 'flex-start',
+    marginLeft: 4,
   },
   criticalPathChipActive: {
     backgroundColor: COLORS.ERROR,
@@ -653,13 +714,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+  filterPanel: {
+    backgroundColor: 'white',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E0E0E0',
+    paddingBottom: 4,
+  },
+  filterToggleChip: {
+    marginHorizontal: 4,
+  },
   resultsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     backgroundColor: 'white',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E0E0E0',
   },
   resultCount: {
     flex: 1,
@@ -689,8 +761,10 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 16,
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.PRIMARY,
   },
   noSiteContainer: {
     flex: 1,

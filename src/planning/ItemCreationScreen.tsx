@@ -44,6 +44,8 @@ import {
 } from './state/item-form';
 import { WBSCodeGenerator } from '../../services/planning/WBSCodeGenerator';
 import { database } from '../../models/database';
+import { Q } from '@nozbe/watermelondb';
+import ItemModel from '../../models/ItemModel';
 import { logger } from '../services/LoggingService';
 import { useAccessibility } from '../utils/accessibility';
 import { usePlanningContext } from './context';
@@ -96,6 +98,29 @@ const ItemCreationScreen: React.FC<Props> = ({ navigation, route }) => {
 
     generateWbsCode();
   }, [siteId, parentWbsCode, showSnackbar]);
+
+  // Pre-fill start/end dates from parent item when creating a child
+  useEffect(() => {
+    if (!siteId || !parentWbsCode) return;
+
+    const prefillParentDates = async () => {
+      try {
+        const parents = await database.collections
+          .get<ItemModel>('items')
+          .query(Q.where('wbs_code', parentWbsCode), Q.where('site_id', siteId))
+          .fetch();
+        if (parents.length === 0) return;
+
+        const parent = parents[0];
+        dispatch({ type: 'SET_START_DATE', payload: { date: new Date(parent.plannedStartDate) } });
+        dispatch({ type: 'SET_END_DATE',   payload: { date: new Date(parent.plannedEndDate) } });
+      } catch (error) {
+        logger.error('[ItemCreation] Error pre-filling parent dates', error as Error);
+      }
+    };
+
+    prefillParentDates();
+  }, [siteId, parentWbsCode]);
 
   // Handle field updates
   const updateField = useCallback((field: keyof ItemFormData, value: any) => {
