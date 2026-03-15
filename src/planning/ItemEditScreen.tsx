@@ -59,6 +59,7 @@ import { usePlanningContext } from './context';
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
 import { COLORS } from '../theme/colors';
+import { rollupSiteWBSProgress } from './utils/wbsRollup';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
@@ -187,6 +188,11 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
           i.keyDateId = state.form.keyDateId || null;
         });
       });
+
+      // Roll up progress to parent and ancestor items
+      if (state.data.originalItem!.parentWbsCode) {
+        await rollupSiteWBSProgress(state.data.originalItem!.siteId, database);
+      }
 
       dispatch({ type: 'COMPLETE_SAVING' });
       setSnackbarMessage(MESSAGES.SUCCESS_UPDATE);

@@ -19,6 +19,7 @@ import { SearchBar, SortMenu, FilterOption, SortOption } from '../components';
 import { logger } from '../services/LoggingService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { EmptyState } from '../components/common/EmptyState';
+import { rollupSiteWBSProgress } from './utils/wbsRollup';
 import { useAccessibility } from '../utils/accessibility';
 import { useDebounce } from '../utils/performance';
 
@@ -121,7 +122,17 @@ const WBSManagementScreen = () => {
         }
       });
 
-      dispatch({ type: 'SET_ITEMS', payload: { items: siteItems } });
+      // Roll up child progress to parent items so the list always reflects
+      // the correct aggregated progress even after direct DB edits.
+      await rollupSiteWBSProgress(state.selection.selectedSite!.id, database);
+
+      // Re-fetch after rollup so the list shows updated parent quantities
+      const refreshedItems = await database.collections
+        .get<ItemModel>('items')
+        .query(Q.where('site_id', state.selection.selectedSite!.id))
+        .fetch();
+
+      dispatch({ type: 'SET_ITEMS', payload: { items: refreshedItems } });
 
       // Populate the map used for chip display on each card
       const map = new Map<string, LinkedDocSummary>();
