@@ -35,7 +35,6 @@ import TutorialService from '../../services/TutorialService';
 import {
   UpcomingMilestonesWidget,
   CriticalPathWidget,
-  ScheduleOverviewWidget,
   RecentActivitiesWidget,
   ResourceUtilizationWidget,
   WBSProgressWidget,
@@ -218,7 +217,7 @@ const PlanningDashboardScreen: React.FC = () => {
     if (allWidgetsLoaded && state.loading) {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'SET_LAST_UPDATED', payload: new Date() });
-      announce('Planning Dashboard loaded with 10 widgets');
+      announce('Planning Dashboard loaded with 9 widgets');
     }
   }, [allWidgetsLoaded, state.loading, announce]);
 
@@ -272,13 +271,15 @@ const PlanningDashboardScreen: React.FC = () => {
   const renderWidgets = () => {
     // Priority 1: Critical widgets - load immediately
     const widgets = [
-      <ScheduleOverviewWidget
-        key="schedule"
+      <WBSProgressWidget
+        key="wbsProgress"
+        phases={wbsProgress.phases}
+        summary={wbsProgress.summary}
         overview={scheduleOverview.overview}
         projectProgress={projectProgressData.projectProgress}
-        loading={scheduleOverview.loading || projectProgressData.loading}
-        error={scheduleOverview.error}
-        onPress={navigateToSchedule}
+        loading={scheduleOverview.loading || wbsProgress.loading || projectProgressData.loading}
+        error={scheduleOverview.error || wbsProgress.error}
+        onPress={navigateToWBS}
         onRefresh={scheduleOverview.refresh}
         onPressCompleted={handleScheduleCompleted}
         onPressOnTrack={handleScheduleOnTrack}
@@ -344,15 +345,6 @@ const PlanningDashboardScreen: React.FC = () => {
           onPress={navigateToGantt}
           onItemPress={(item) => navigation.navigate('Gantt', { siteId: item.siteId })}
           onRefresh={criticalPath.refresh}
-        />,
-        <WBSProgressWidget
-          key="wbs"
-          phases={wbsProgress.phases}
-          summary={wbsProgress.summary}
-          loading={wbsProgress.loading}
-          error={wbsProgress.error}
-          onPress={navigateToWBS}
-          onRefresh={wbsProgress.refresh}
         />,
         <ResourceUtilizationWidget
           key="resources"
