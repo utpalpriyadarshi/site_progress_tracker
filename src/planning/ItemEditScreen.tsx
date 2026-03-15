@@ -59,7 +59,7 @@ import { usePlanningContext } from './context';
 // Utils
 import { MESSAGES, SNACKBAR_DURATION, NAVIGATION_DELAY } from './item-edit/utils';
 import { COLORS } from '../theme/colors';
-import { rollupSiteWBSProgress } from './utils/wbsRollup';
+import { rollupSiteWBSProgress, propagateDatesToChildren } from './utils/wbsRollup';
 
 type Props = NativeStackScreenProps<PlanningStackParamList, 'ItemEdit'>;
 
@@ -138,6 +138,11 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
     dispatch({ type: 'START_SAVING' });
     try {
+      // Detect date change before write (originalItem still has old values here)
+      const datesChanged =
+        state.data.originalItem!.plannedStartDate !== state.form.startDate.getTime() ||
+        state.data.originalItem!.plannedEndDate   !== state.form.endDate.getTime();
+
       // Calculate status based on completed quantity
       const completedQty = parseFloat(state.form.completedQuantity) || 0;
       const plannedQty = parseFloat(state.form.quantity);
@@ -192,6 +197,11 @@ const ItemEditScreen: React.FC<Props> = ({ navigation, route }) => {
       // Roll up progress to parent and ancestor items
       if (state.data.originalItem!.parentWbsCode) {
         await rollupSiteWBSProgress(state.data.originalItem!.siteId, database);
+      }
+
+      // Propagate new dates downward to children (originalItem now has updated dates)
+      if (datesChanged) {
+        await propagateDatesToChildren(state.data.originalItem!, database);
       }
 
       dispatch({ type: 'COMPLETE_SAVING' });

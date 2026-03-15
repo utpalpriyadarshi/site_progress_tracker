@@ -118,3 +118,101 @@ export async function rollupSiteWBSProgress(
     }
   });
 }
+
+// ─── Date propagation ────────────────────────────────────────────────────────
+
+/**
+ * Propagate a parent item's planned dates downward through all descendants.
+ *
+ * Clamping rules (applied per child):
+ *   childStart = max(childStart, parentStart)
+ *   childEnd   = min(childEnd,   parentEnd)
+ *   if childStart > childEnd → set both to parent's dates
+ *
+ * Children already within the parent's range are left untouched.
+ * Baseline dates are also updated unless the item is baseline-locked.
+ * A single database.write() persists all changes.
+ */
+
+type DateUpdate = {
+  item: ItemModel;
+  startDate: number;
+  endDate: number;
+};
+
+function collectDateUpdates(
+  parentWbsCode: string,
+  parentStart: number,
+  parentEnd: number,
+  childrenOf: Map<string, ItemModel[]>,
+  updates: DateUpdate[],
+): void {
+  const children = childrenOf.get(parentWbsCode) ?? [];
+
+  for (const child of children) {
+    let newStart = Math.max(child.plannedStartDate, parentStart);
+    let newEnd   = Math.min(child.plannedEndDate,   parentEnd);
+
+    // If clamping produces an impossible range, inherit parent's full range
+    if (newStart > newEnd) {
+      newStart = parentStart;
+      newEnd   = parentEnd;
+    }
+
+    const changed =
+      newStart !== child.plannedStartDate ||
+      newEnd   !== child.plannedEndDate;
+
+    if (changed) {
+      updates.push({ item: child, startDate: newStart, endDate: newEnd });
+    }
+
+    // Recurse using child's clamped dates as the constraint for grandchildren
+    collectDateUpdates(child.wbsCode, newStart, newEnd, childrenOf, updates);
+  }
+}
+
+export async function propagateDatesToChildren(
+  parentItem: ItemModel,
+  db: Database,
+): Promise<void> {
+  // Fetch all items for this site
+  const allItems = await db.collections
+    .get<ItemModel>('items')
+    .query(Q.where('site_id', parentItem.siteId))
+    .fetch();
+
+  // Build children map: parentWbsCode → [child, ...]
+  const childrenOf = new Map<string, ItemModel[]>();
+  for (const item of allItems) {
+    if (!item.parentWbsCode) continue;
+    const siblings = childrenOf.get(item.parentWbsCode) ?? [];
+    siblings.push(item);
+    childrenOf.set(item.parentWbsCode, siblings);
+  }
+
+  const updates: DateUpdate[] = [];
+  collectDateUpdates(
+    parentItem.wbsCode,
+    parentItem.plannedStartDate,
+    parentItem.plannedEndDate,
+    childrenOf,
+    updates,
+  );
+
+  if (updates.length === 0) return;
+
+  await db.write(async () => {
+    for (const { item, startDate, endDate } of updates) {
+      await item.update((i: any) => {
+        i.plannedStartDate = startDate;
+        i.plannedEndDate   = endDate;
+        // Keep baseline in sync unless it has been locked
+        if (!item.isBaselineLocked) {
+          i.baselineStartDate = startDate;
+          i.baselineEndDate   = endDate;
+        }
+      });
+    }
+  });
+}
