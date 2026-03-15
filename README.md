@@ -21,11 +21,12 @@ Built for infrastructure construction projects (rail, OHE, TSS systems), the app
 - Category name migration utilities
 
 ### 📋 Planner
-- **Dashboard**: Widgets for milestones, critical path, schedule health, WBS progress, resource utilization, KD-weighted project progress (decimal display)
+- **Dashboard**: 9 widgets — milestones, critical path, unified WBS Progress (Summary / By Phase tabs), project KD-weighted progress, KD progress chart, KD timeline, site progress, resource utilization, recent activities
 - **Key Dates**: Contract-level key dates (CMRL categories G/A/B/C/D/E/F), delay damages, weightage, per-site assignments, dual-track progress (site progress + design doc progress)
 - **Schedule**: Timeline / Calendar / List views with site & critical-path filtering
 - **Gantt Chart**: Interactive timeline with zoom (day/week/month); Tasks sub-tab (critical path, baseline overlay) + Key Dates sub-tab (diamond milestones, target-date bounds); scroll-synced header
-- **Drawer screens**: Site Management, WBS Management (4-level WBS codes), Item Creation/Edit, Milestone Tracking, Baseline Planning (Kahn's algorithm, irreversible lock)
+- **WBS Management**: 4-level WBS codes; collapsible filter panel (phase / status / critical-path chips hidden by default behind a "Filters (N)" toggle); parent progress auto-rolls up from children on save; parent date changes propagate down to descendants (clamped); child creation pre-fills dates from parent
+- **Drawer screens**: Site Management, WBS Management, Item Creation/Edit, Milestone Tracking, Baseline Planning (Kahn's algorithm, irreversible lock)
 - Tutorials for new users
 
 ### 🏗️ Design Engineer
@@ -188,6 +189,7 @@ npm run lint       # ESLint
 
 | Merge | Description |
 |-------|-------------|
+| #227 | WBS filter panel collapse; parent↔child progress rollup & date propagation; FAB style consistency; dashboard widget consolidation (10→9) |
 | Mar 2026 | BOM import wizard wired end-to-end; RNFS CSV picker from Downloads; Finance export share sheet |
 | Mar 2026 | BOM version control (v1.0→v2.0), status workflow, item locking; Manager header titles fixed; chip height clipping fixed |
 | #223 | Admin tutorial, consolidated PDF report, header UI fix |
